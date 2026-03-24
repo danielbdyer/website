@@ -1,0 +1,169 @@
+@import 'tailwindcss';
+
+/* ═══════════════════════════════════════════════════════════════
+   Design Tokens — Danny's Site
+   Extracted from the Little Museum prototype.
+   Paper warmth. Umber palette. Serif typography. Slow transitions.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Light palette ─────────────────────────────────────────── */
+:root,
+.lt {
+  --bg: #f5f1eb;
+  --bg-warm: #ede7dd;
+  --bg-card: #fdfbf8;
+  --text: #2b2219;
+  --text-2: #6e5f50;
+  --text-3: #a69782;
+  --accent: #4a7c6a;
+  --accent-hover: #3b6857;
+  --accent-warm: #c8764d;
+  --accent-rose: #b87070;
+  --accent-violet: #8a6fb0;
+  --accent-gold: #bfa04d;
+  --border: #ddd6ca;
+  --border-lt: #e8e2d8;
+  --shadow-sm: 0 1px 2px rgba(43, 34, 25, 0.04);
+  --shadow: 0 2px 8px rgba(43, 34, 25, 0.06);
+  --shadow-lg: 0 8px 32px rgba(43, 34, 25, 0.09);
+  --shadow-lift: 0 6px 20px rgba(43, 34, 25, 0.09);
+  --pop-bg: #fdfbf8;
+  --hl-bg: rgba(200, 118, 77, 0.1);
+  --tag-bg: #ede7dd;
+  --tag-text: #6e5f50;
+  --grain: 0.025;
+  --geo-color: rgba(74, 124, 106, 0.12);
+  --geo-accent: rgba(200, 118, 77, 0.15);
+}
+
+/* ─── Dark palette ──────────────────────────────────────────── */
+.dk {
+  --bg: #191715;
+  --bg-warm: #211e1b;
+  --bg-card: #242119;
+  --text: #e2dcd2;
+  --text-2: #9c9082;
+  --text-3: #6a6054;
+  --accent: #6aae92;
+  --accent-hover: #7cc4a5;
+  --accent-warm: #e0906a;
+  --accent-rose: #d49898;
+  --accent-violet: #ab90d0;
+  --accent-gold: #d4b662;
+  --border: #302b24;
+  --border-lt: #282420;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-lift: 0 6px 20px rgba(0, 0, 0, 0.25);
+  --pop-bg: #2a2620;
+  --hl-bg: rgba(224, 144, 106, 0.08);
+  --tag-bg: #302b24;
+  --tag-text: #9c9082;
+  --grain: 0.035;
+  --geo-color: rgba(106, 174, 146, 0.1);
+  --geo-accent: rgba(224, 144, 106, 0.12);
+}
+
+/* ─── Base ──────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Literata', Georgia, serif;
+  line-height: 1.8;
+  transition:
+    background 0.5s ease,
+    color 0.5s ease;
+}
+
+/* ─── Paper grain texture ───────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px;
+}
+
+body > #root {
+  position: relative;
+  z-index: 2;
+}
+
+/* ─── Typography ────────────────────────────────────────────── */
+.font-heading {
+  font-family: 'Newsreader', Georgia, serif;
+}
+
+.font-body {
+  font-family: 'Literata', Georgia, serif;
+}
+
+/* ─── Selection ─────────────────────────────────────────────── */
+::selection {
+  background: rgba(74, 124, 106, 0.14);
+}
+
+.dk ::selection {
+  background: rgba(106, 174, 146, 0.18);
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+/* ─── Reveal animation ──────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Geometric ornament ────────────────────────────────────── */
+@keyframes geo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
