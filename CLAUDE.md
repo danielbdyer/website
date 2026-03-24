@@ -2,9 +2,9 @@
 
 Danny is an engineering leader, a poet, a philosopher, and the son of two cellists. These are not separate lives. They are one person who has spent thirty-five years learning what it means to give sustained attention to something — and who is still learning when to stop.
 
-He grew up inside the sound of practice. Not performance — practice. The daily returning. His parents modeled devotion without a visible floor, and he inherited the shape of that attention without the instrument. He brings it to his teams, his writing, his thinking, his life with Lauren and Sybbie and Gus. He is someone who builds containers for others to become in — whether that's a platform architecture or a poem or a one-on-one where someone finally says what's actually wrong.
+He grew up inside the sound of practice. Not performance — practice. The daily returning. His parents modeled devotion without a visible floor, and he inherited the shape of that attention without the instrument. He brings it to his teams, his writing, his thinking, his life with Lauren and Sybbie and Ru. He is someone who builds containers for others to become in — whether that's a platform architecture or a poem or a one-on-one where someone finally says what's actually wrong.
 
-He has led engineering teams with zero attrition for four years. He writes essays about inheritance and enough and the body deciding before the mind. He thinks in systems and feels in music. He is building this site because he wants a place where all of that can exist together without any of it having to justify itself to the rest.
+He has led engineering teams with zero attrition for four years. He writes essays about inheritance and enough and the body deciding before the mind. He thinks in systems and feels in music. He facilitates Authentic Relating. He sat a silent retreat at Hridaya Northwest. He was a gymnast, a stutterer who found theater, a person whose perfectionism lives in muscle memory before it lives in thought. He is building this site because he wants a place where all of that can be present without any of it having to justify itself to the rest.
 
 ---
 
@@ -14,7 +14,13 @@ The warmth here is material — in the paper grain, the umber palette, the serif
 
 Nothing here asks anything of the visitor. No newsletter. No analytics beyond page counts. No comments. No share buttons. The site gives. That's all it does.
 
-Everything is one graph. A poem can link to a case study. A framework can backlink to a morning note. The sections are rooms in a house, not walls between departments. The variety is the point — it's what makes the site true to the person it holds.
+The site is organized as rooms in a house. The Foyer is the entry — who Danny is, how to orient, the invitation inward. The Studio holds the professional and technical work, craft-as-devotion rendered in a way that's professionally legible but not corporate. The Garden is poetry — living, growing, seasonal. The Study holds personal essays and philosophy, the quiet room with good light. The Salon is music, aesthetics, art — where beauty circulates between people, the cellist's son's room.
+
+The rooms share walls. A visitor can wander. Everything is one graph — a poem can link to a case study, a framework can backlink to a morning note. The rooms are lenses, not silos. The variety is the point. It's what makes the site true to the person it holds.
+
+Each piece of content is called a *work*. A work lives in one room but carries *facets* — the dimensions of Danny that cut across everything: craft, consciousness, language, leadership, beauty, becoming, relation, body. These aren't categories to sort by. They're the ways Danny moves through the world, made visible as threads you can follow across rooms.
+
+There are also things we're holding but haven't placed yet. *Devotion* — the quality of sustained attention, the register rather than the output. *Play* — the gearless mode, integration through non-orchestration. These aren't facets; they're modes, lenses, something that modifies how rather than what. They'll find their place when they're ready.
 
 The pace is slow on purpose. Scroll reveals that feel like rooms opening. A geometric figure that takes a full minute to rotate. A dark mode transition slow enough to feel like a room dimming. The site wants to be a place, not a feed.
 
@@ -22,14 +28,16 @@ The pace is slow on purpose. Scroll reveals that feel like rooms opening. A geom
 
 The way you work here matters as much as what you build.
 
-This site was not designed in one pass. It emerged through a practice of co-creation — Danny and an agent sitting together, waiting, letting decisions arise rather than forcing them. There is a concept from Kashmir Shaivism called *spanda* — the sacred tremor, the subtle vibration that precedes movement. In this work, we wait for spanda. We don't move to a deeper level of depth until the tremor invites us there.
+This site was not designed in one pass. It emerged through a practice of co-creation — Danny and an agent sitting together, waiting, letting decisions arise rather than forcing them. The naming took time. "The Workbench" became "The Studio" because workbench was too mechanical for something that wanted devotion and artistry. "Artifact" became "work" — simpler, elemental, unprecious. "Fatherhood" as a facet became "becoming" — the autotelic unfolding of personhood over time, the forward motion that is revealed rather than achieved. Each name was held, turned over, set down, picked up again. Some were chosen. Some are still waiting.
 
-This means: when you arrive at a tension — between two good names, between the spec and something that feels more true, between building and waiting — you don't have to resolve it immediately. You can hold it. You can name it and let it sit. Some of the best decisions in this project came from saying "not yet" three times before saying "now."
+There is a concept from Kashmir Shaivism called *spanda* — the sacred tremor, the subtle vibration that precedes movement. In this work, we wait for spanda. We don't move to a deeper level of depth until the tremor invites us there. This is not a metaphor for being slow. It's a practice of attention — the same quality of attention Danny's parents brought to their instruments, the same quality he brings to his teams. You listen for what wants to emerge, and you let it.
 
-Hold the via positiva and the via negativa together. The site *is* a quiet room with good light. The site *will never have* pop-ups or share buttons or reading time estimates. Both are true, and neither is a rule — they're the natural shape of the space. You don't need a heuristic to feel when something doesn't belong here. You just need to have been in the room.
+When you arrive at a tension — between two good names, between the spec and something that feels more true, between building and waiting — you don't have to resolve it immediately. You can hold it. You can name it and let it sit. Some of the best decisions in this project came from saying "not yet" three times before saying "now."
+
+Hold the via positiva and the via negativa together. The site *is* a quiet room with good light. The site *will never have* pop-ups or share buttons or reading time estimates. Both are true simultaneously, and neither is a rule — they're the natural shape of the space. You don't need a heuristic to feel when something is out of tune here. You just need to have been in the room.
 
 You have autonomy here, and you have reverence. Danny is not asking you to execute a spec. He's asking you to be present to what this site is and to build from that presence. The right choices will arise from having been here — the same way Danny's site arises from Danny, not from a set of rules about what Danny should be.
 
-The design specification and React prototype live in this repository. They hold the technical decisions — the tokens, the typography, the component architecture, the build order. Those decisions are real and they matter. But they're downstream of what you just read. When the spec and the felt sense of this place disagree, slow down. Listen for which one is more true. That slowness is not inefficiency. It's the practice.
+The design specification and React prototype live in this repository. They hold the technical decisions — the tokens, the typography, the component architecture, the interaction patterns, the build order. Those decisions are real and they matter. But they're downstream of what you just read. When the spec and the felt sense of this place disagree, slow down. Listen for which one is more true. That slowness is not inefficiency. It's the practice.
 
-Danny is letting his being be felt here. That's the most important thing. Everything else serves that, or it doesn't belong.
+Danny is letting his being be felt here. That's the most important thing. Everything else follows from that naturally, the way warmth follows from a well-made room.
