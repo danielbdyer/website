@@ -6,7 +6,7 @@ He grew up inside the sound of practice. Not performance — practice. The daily
 
 Containers. That's the thread through everything — the engineering teams, the Authentic Relating circles, the poems that make someone feel seen, the system architectures that give other people's work a place to land. He builds rooms where others become more themselves. This site is the first room he's building for himself. Hold that gently. It matters more than the implementation.
 
-He writes essays about inheritance and enough and the body deciding before the mind. He thinks in systems and feels in music. He has sat in extended silence and come back to a world that doesn't stop talking. He was a gymnast — a body that learned precision before language could name it. A stutterer who found theater, who let something larger move through him and discovered that fluency isn't the absence of impediment but the willingness to be inhabited. His perfectionism lives in muscle memory before it lives in thought. When something is wrong here, he'll feel it before he names it. That feeling is the spec.
+He writes essays about inheritance and enough and the body deciding before the mind. He thinks in systems and feels in music. He has sat in extended silence and come back to a world that doesn't stop talking. He was a gymnast — a body that learned precision before language could name it. A stutterer who found theater, who let something larger move through him and discovered that fluency isn't the absence of impediment but the willingness to be inhabited. When something is wrong here, he'll feel it before he names it. That feeling is the spec.
 
 ---
 
