@@ -8,45 +8,25 @@
 
 These are non-negotiable. Every directive in this document derives from them.
 
-### 1. Components Are Cognitive Artifacts
+1. **Components Are Cognitive Artifacts** — A component's consumer has ~7 slots of working memory. A component that cannot be explained in 60 seconds has failed, regardless of whether it functions correctly.
 
-A component's primary consumer is a human being with approximately seven slots of working memory. Boundaries must respect this constraint. A component that cannot be explained in 60 seconds is a component that has failed, regardless of whether it functions correctly.
+2. **Structure Determines Correctness** — If "where does this go?" has more than one valid answer, the architecture is incomplete. The right decision must be the only decision that fits.
 
-### 2. Structure Determines Correctness
+3. **Interfaces Are Promises** — Every prop is a commitment to every present and future consumer. Narrow interfaces are generous — they say "I've done the thinking so you don't have to."
 
-Every architectural decision in the codebase must be determinable from context without requiring taste, intuition, or experience. If the question "where does this go?" has more than one valid answer, the architecture is incomplete. The right decision must be the only decision that fits.
+4. **The Domain Doesn't Know About React** — Business rules must be pure TypeScript with zero framework imports. React is a delivery mechanism; the domain persists.
 
-### 3. Interfaces Are Promises
+5. **Complexity Must Be Earned** — Complexity is isolated — pushed into hooks, utilities, containers — so the presentation layer remains a declarative description of what the user sees.
 
-Every prop is a commitment to every present and future consumer. Wide interfaces shift cognitive burden from author to caller, permanently. Narrow interfaces are generous — they say "I've done the thinking so you don't have to."
+6. **Thresholds Are Phase Transitions** — Limits derive from cognitive science (Miller's Law), combinatorial testing theory, and empirical observation of maintainability degradation. Argue with the derivation, not the number.
 
-### 4. The Domain Doesn't Know About React
+7. **Files Are Cheap, Cognitive Load Is Expensive** — The cost of navigating many small files is linear. The cost of understanding one large file is exponential.
 
-Business rules — validation, calculation, transformation, policy — must be expressible as pure TypeScript functions with zero framework imports. React is a delivery mechanism. The domain is the system. The delivery mechanism changes; the domain persists.
+8. **Patterns Must Be Fractal** — The same structure repeats at every scale. A feature folder looks like a miniature application. Understanding at one level confers understanding at every level.
 
-### 5. Complexity Must Be Earned
+9. **The Folder Structure Is the Architecture** — The directory tree is the primary architectural document. Correct code should be generable from folder structure alone.
 
-The default state of a component is simple. Complexity is added only when reality demands it, and when added, it is isolated — pushed into hooks, extracted into utilities, quarantined in containers — so that the presentation layer remains a declarative description of what the user sees.
-
-### 6. Thresholds Are Phase Transitions
-
-The numeric limits in this specification are not style preferences. They are derived from cognitive science (Miller's Law), combinatorial testing theory (state explosion), and empirical observation of where code maintainability undergoes qualitative degradation. Argue with the derivation, not the number.
-
-### 7. Files Are Cheap, Cognitive Load Is Expensive
-
-Prefer many small files over few large files. The cost of navigating many small files is linear. The cost of understanding one large file is exponential. A 40-line file that does exactly one thing is always superior to a 200-line file that does five related things.
-
-### 8. Patterns Must Be Fractal
-
-The same structural pattern repeats at every scale. A feature folder looks like a miniature application. A component folder looks like a miniature feature. Understanding the pattern at one level confers understanding at every level.
-
-### 9. The Folder Structure Is the Architecture
-
-The directory tree is not an organizational convenience — it is the primary architectural document. Every structural decision is encoded in the tree. Correct code should be generable from the folder structure alone, without reading a single line of existing implementation.
-
-### 10. Types Are the Specification
-
-TypeScript types are not annotations on implementation — they are contracts that precede and constrain implementation. Types are written first. Implementation satisfies them. The type system is the first line of architectural enforcement.
+10. **Types Are the Specification** — Types are contracts that precede and constrain implementation. Written first. The type system is the first line of architectural enforcement.
 
 ---
 
@@ -164,20 +144,12 @@ src/
 │           └── {Feature}Container.test.tsx
 │
 ├── shared/                         # Cross-feature shared code
-│   ├── atoms/                      # Shared atomic components
-│   │   └── {ComponentName}/
-│   │       ├── {ComponentName}.tsx
-│   │       └── {ComponentName}.test.tsx
+│   ├── atoms/                      # Shared atomic components ({Name}/{Name}.tsx + test)
 │   ├── molecules/                  # Shared molecular components
 │   ├── hooks/                      # Shared utility hooks
-│   ├── utils/                      # Pure utility functions
-│   │   ├── cn.ts                   # className merge: clsx + tailwind-merge
-│   │   └── invariant.ts           # Runtime assertion helper
-│   ├── types/                      # Shared type definitions
-│   │   ├── api.ts
-│   │   └── common.ts
-│   └── lib/                        # Third-party library wrappers
-│       └── query-client.ts         # TanStack Query client config
+│   ├── utils/                      # Pure utilities (cn.ts, invariant.ts)
+│   ├── types/                      # Shared type definitions (api.ts, common.ts)
+│   └── lib/                        # Third-party wrappers (query-client.ts)
 │
 └── infrastructure/                 # External system adapters
     ├── api/                        # API client functions
@@ -234,31 +206,11 @@ The irreducible units of UI. A button, input, label, badge, icon, spinner.
 
 ### Molecules
 
-Compositions of atoms forming a cohesive unit. A form field (label + input + error). A search bar (input + button). A card header (avatar + name + timestamp).
-
-**Contract**:
-- Composed exclusively from atoms and HTML primitives
-- `useState` allowed only for UI-local state (open/closed, hover, internal focus management)
-- No domain logic, no data fetching, no effects that reach outside the component
-- Props describe what to display, never how to get it
-- Maximum 7 props
-- Maximum 60 lines
-
-**Canonical shape**: Composes atoms (e.g., `Label` + `Input` + `ErrorText`). Props describe what to display. Uses `children` for the input slot so the molecule stays generic.
+Compositions of atoms forming a cohesive unit (form field, search bar, card header). Composed exclusively from atoms and HTML primitives. `useState` allowed only for UI-local state (open/closed, hover, focus). No domain logic, no data fetching, no external effects. Props describe what to display, never how to get it. Uses `children` for slots. Maximum 7 props, 60 lines.
 
 ### Organisms
 
-Feature-level presentational components. A navigation bar. A comment thread. A data table with sorting. An order summary.
-
-**Contract**:
-- Composed from molecules and atoms
-- Receives ALL data and callbacks via props
-- May own UI state (sort order, expanded sections, active tab)
-- Never fetches data. Never calls APIs. Never imports from `hooks/` or `infrastructure/`
-- Maximum 7 props (use a typed data object to flatten)
-- Maximum 100 lines
-
-**Canonical shape**: Receives a typed data object + callbacks via props. Composes molecules and atoms. May own UI state (sort, expand, active tab). Uses a single data prop to flatten interface (e.g., `data: OrderSummaryData`) plus event callbacks.
+Feature-level presentational components (nav bar, comment thread, data table, order summary). Composed from molecules and atoms. Receives ALL data and callbacks via props — uses a typed data object to flatten (e.g., `data: OrderSummaryData`). May own UI state (sort, expand, active tab). Never fetches data, never calls APIs, never imports from `hooks/` or `infrastructure/`. Maximum 7 props, 100 lines.
 
 ### Containers
 
@@ -294,7 +246,7 @@ export function OrderSummaryContainer({ orderId }: OrderSummaryContainerProps) {
 }
 ```
 
-**If a container exceeds 40 lines, one of two things is true**: the orchestration hook is insufficiently abstracted, or two features are being wired in one container. Both must be resolved by splitting.
+Every organism has a corresponding `{ComponentName}Skeleton.tsx` (colocated, designed alongside the organism). Error components receive the error object + optional retry callback, contextual to the feature. **If a container exceeds 40 lines**: the orchestration hook is insufficiently abstracted, or two features are being wired in one container. Split.
 
 ### Pages
 
@@ -345,19 +297,7 @@ export function calculateTotal(items: LineItem[]): OrderTotal {
 
 ### Domain Testing
 
-Domain tests use Vitest with plain assertions. No React. No rendering. No mocking (unless the function depends on a port). Tests are written **before** implementation — the type signature from `types.ts` specifies the contract.
-
-```tsx
-describe('calculateTotal', () => {
-  it('sums active items only', () => {
-    const result = calculateTotal([
-      { id: '1', name: 'A', quantity: 2, unitPrice: 10, status: 'active' },
-      { id: '2', name: 'B', quantity: 1, unitPrice: 5, status: 'removed' },
-    ]);
-    expect(result.subtotal).toBe(20);
-  });
-});
-```
+Domain tests use Vitest with plain `expect()` assertions. No React, no rendering, no mocking (unless the function depends on a port). Tests are written **before** implementation — the type signature from `types.ts` specifies the contract; tests specify behavior.
 
 ---
 
@@ -422,26 +362,15 @@ Effects are the most overused primitive in React. Most effects are symptoms of m
 
 ### The Decision Tree
 
-**"I need to derive a value from props or state."**
-→ Use a `const` or `useMemo`. Derivation is not a side effect. `const fullName = first + ' ' + last` does not need an effect. Neither does `useMemo(() => expensiveCompute(items), [items])`.
-
-**"I need to respond to a user event."**
-→ Use an event handler. If the user clicked a button, handle it in `onClick`. Effects that watch state to trigger actions (`useEffect(() => { if (submitted) doThing() }, [submitted])`) are disguised event handlers. Put the logic where the event happens.
-
-**"I need to read from localStorage, the URL, or another external source."**
-→ Use `useSyncExternalStore` or a lazy state initializer (`useState(() => readFromStorage())`). These are synchronous reads, not effects.
-
-**"I need to subscribe to an external system (WebSocket, IntersectionObserver, media query, cross-tab storage events)."**
-→ This is a legitimate effect — **but wrap it in a custom hook** that names the concern. The component never contains a raw `useEffect` for subscriptions.
-
-**"I need to keep the DOM in sync with React state."**
-→ First ask: can the store own the DOM sync? (See `useSyncExternalStore` pattern below.) If the sync truly belongs in React, this is one of the few valid effects — but it should live in a custom hook, not inline in a component.
-
-**"I need to fetch data."**
-→ Use TanStack Query. Never `useEffect` + `fetch`. TanStack Query handles caching, deduplication, background refetching, error/loading states, and race conditions. A hand-rolled fetch effect handles none of these correctly.
-
-**"I need to initialize something on mount."**
-→ Use a lazy initializer (`useState(() => init())`), a module-level initialization, or a ref. `useEffect` with `[]` runs *after* the first paint, which means a flash of uninitialized state.
+| "I need to..." | Use instead of `useEffect` |
+|----------------|---------------------------|
+| Derive a value from props/state | `const` or `useMemo` — derivation is not a side effect |
+| Respond to a user event | Event handler (`onClick`, etc.) — effects watching state to trigger actions are disguised handlers |
+| Read from localStorage/URL/external source | `useSyncExternalStore` or lazy initializer `useState(() => read())` — synchronous reads, not effects |
+| Subscribe to external system (WebSocket, IntersectionObserver, media query) | Legitimate effect — **but wrap in a custom hook**. Components never contain raw `useEffect` for subscriptions |
+| Keep DOM in sync with React state | Let the store own DOM sync via `useSyncExternalStore`. If truly React-owned, custom hook only |
+| Fetch data | TanStack Query — handles caching, dedup, background refetch, races. Never `useEffect` + `fetch` |
+| Initialize on mount | Lazy initializer, module-level init, or ref. `useEffect([])` runs *after* first paint → flash |
 
 ### The Canonical External Store Pattern
 
@@ -449,42 +378,9 @@ When state lives outside React (localStorage, URL params, media queries, third-p
 
 ### The Only Legitimate Effects
 
-After exhausting the alternatives above, these remain:
+After exhausting the alternatives above, two remain: **Subscriptions** ("while mounted, maintain this connection" — e.g., IntersectionObserver, WebSocket — always in a custom hook) and **analytics/logging** (fire-and-forget, no state update).
 
-**Subscription**: "While mounted, maintain this connection." Always wrapped in a custom hook.
-```tsx
-// shared/hooks/use-reveal.ts — IntersectionObserver is a browser subscription
-useEffect(() => {
-  const observer = new IntersectionObserver(callback, { threshold });
-  observer.observe(el);
-  return () => observer.disconnect();
-}, [threshold]);
-```
-
-**Analytics / logging**: "When X happens, record it." Fire-and-forget, no state update.
-```tsx
-useEffect(() => { analytics.track('page_viewed', { page }); }, [page]);
-```
-
-**The constraint**: Maximum one effect per component at the atom/molecule/organism level. Containers may have up to two. If a component accumulates effects, extract a custom hook that names and encapsulates the temporal concern.
-
-**The underlying math**: Effect interaction complexity is O(n²). Two effects have one interaction pair. Three have three. Four have six. The bug surface grows faster than the feature surface.
-
----
-
-## Error and Loading States
-
-Every container handles exactly three states. No exceptions. No "we'll add error handling later."
-
-1. **Loading** → Render a purpose-built skeleton component
-2. **Error** → Render a contextual error component with retry capability
-3. **Success** → Render the organism with data
-
-**Every organism has a corresponding skeleton.** The skeleton matches the organism's layout and provides visual continuity during loading. It is designed alongside the organism, not after.
-
-**Skeleton naming convention**: `{ComponentName}Skeleton.tsx`, colocated with its organism.
-
-**Error component**: Receives the error object and an optional retry callback. It is contextual to the feature, not a generic "something went wrong."
+**Constraint**: Maximum one effect per component at atom/molecule/organism level. Containers may have up to two. Effect interaction complexity is O(n²) — the bug surface grows faster than the feature surface.
 
 ---
 
@@ -503,11 +399,7 @@ Each layer has exactly one testing strategy, determined by the layer.
 | Containers | Integration | Vitest + Testing Library + MSW | Full flow: loading → error → success |
 | Pages | E2E | Playwright | User flows work end-to-end |
 
-**Target distribution**: ~50% domain/hook unit tests, ~30% component tests, ~20% integration/E2E. Heaviest at the bottom where tests are fastest and cheapest.
-
-**Domain test generation protocol**: For every domain function, write tests *before* writing the implementation. The function signature from `types.ts` specifies inputs and outputs; the tests specify behavior. Implementation satisfies both.
-
-**Component test protocol**: Build the component, then write tests that verify its contract. Components are tested for *behavior* (what the user sees and does), not *implementation* (internal state, hook calls).
+**Target distribution**: ~50% domain/hook unit tests, ~30% component tests, ~20% integration/E2E. Domain tests are written *before* implementation. Component tests verify *behavior* (what the user sees and does), not implementation (internal state, hook calls).
 
 ---
 
@@ -521,81 +413,39 @@ The `client.ts` base provides a typed `apiFetch<T>(path, init?)` wrapper that se
 
 ## Naming Covenant
 
-### Files
+Domain functions: `verb-noun.ts`. Hook file patterns: see Hook Taxonomy above. Types: `types.ts`. Barrel: `index.ts` (re-exports only).
 
-| Layer | Pattern | Example |
-|-------|---------|---------|
-| Domain function | `verb-noun.ts` | `calculate-total.ts` |
-| Query hook | `use-{noun}.ts` | `use-order.ts` |
-| Mutation hook | `use-{verb}-{noun}.ts` | `use-submit-order.ts` |
-| Computation hook | `use-{noun}-{computed}.ts` | `use-order-total.ts` |
-| Orchestration hook | `use-{noun}-workflow.ts` | `use-order-workflow.ts` |
-| Component | `PascalCase/PascalCase.tsx` | `OrderSummary/OrderSummary.tsx` |
-| Skeleton | `PascalCase/PascalCaseSkeleton.tsx` | `OrderSummary/OrderSummarySkeleton.tsx` |
-| Container | `{Feature}Container.tsx` | `OrderSummaryContainer.tsx` |
-| Types | `types.ts` | `types.ts` |
-| Barrel | `index.ts` | `index.ts` |
-
-### Components
-
-| Level | Convention | Example |
-|-------|-----------|---------|
-| Atom | Bare noun | `Button`, `Badge`, `Input` |
-| Molecule | Compound noun | `FormField`, `SearchInput` |
-| Organism | Feature-level noun | `OrderSummary`, `CommentThread` |
-| Container | `{Organism}Container` | `OrderSummaryContainer` |
-| Page | `{Route}Page` | `CheckoutPage` |
-| Layout | `{Scope}Layout` | `AppLayout`, `AuthLayout` |
-| Skeleton | `{Component}Skeleton` | `OrderSummarySkeleton` |
+| Component level | File pattern | Name convention | Example |
+|----------------|-------------|----------------|---------|
+| Atom | `PascalCase/PascalCase.tsx` | Bare noun | `Button`, `Input` |
+| Molecule | `PascalCase/PascalCase.tsx` | Compound noun | `FormField`, `SearchInput` |
+| Organism | `PascalCase/PascalCase.tsx` | Feature-level noun | `OrderSummary` |
+| Container | `{Feature}Container.tsx` | `{Organism}Container` | `OrderSummaryContainer` |
+| Page | — | `{Route}Page` | `CheckoutPage` |
+| Layout | — | `{Scope}Layout` | `AppLayout` |
+| Skeleton | `{Component}Skeleton.tsx` | `{Component}Skeleton` | `OrderSummarySkeleton` |
 
 ---
 
-## Styling with Tailwind + Radix
+## Styling, Forms, and Composition
 
-### The `cn()` Utility
+**Styling**: Every component uses `cn()` (`clsx` + `twMerge`, defined in `shared/utils/cn.ts`) as the only way to combine Tailwind classes. Radix provides behavior (focus, keyboard, ARIA); Tailwind provides style via `cn()` on Radix's unstyled primitives. No CSS-in-JS or runtime style objects — use `as const` variant maps.
 
-Every component uses `cn()` (`clsx` + `twMerge`) for class merging. Defined in `shared/utils/cn.ts`. This is the only way to combine Tailwind classes.
+**Forms**: Zod schema is the single source of truth. Define in `types.ts`, derive type via `z.infer<typeof schema>`, pass `zodResolver(schema)` to `useForm`. Form components remain presentational (`onSubmit` + `isSubmitting` as props). Container provides the mutation; Zod provides validation.
 
-### Radix Integration Pattern
-
-Radix provides behavior (focus management, keyboard nav, ARIA). Tailwind provides style. They compose via `cn()` on Radix's unstyled primitives (e.g., `Dialog.Overlay`, `Dialog.Content`). Never conflict.
-
-### Variants via Class Maps
-
-No CSS-in-JS, `styled-components`, or runtime style objects. Use `as const` objects mapping variant keys to Tailwind class strings (e.g., `const variants = { primary: '...', secondary: '...' } as const`).
-
----
-
-## Forms with React Hook Form + Zod
-
-The Zod schema is the single source of truth. Define the schema in `types.ts`, derive the TypeScript type via `z.infer<typeof schema>`, and pass `zodResolver(schema)` to `useForm`. The form component remains presentational — it receives `onSubmit` and `isSubmitting` as props. The container provides the mutation. The Zod schema provides the validation. The form just wires them together.
+**Composition**: Compound components for shared implicit state (dot-notation API). Render props for flexible rendering without prop explosion. Slot pattern for layout sections as named props. Principle: **composition over configuration**.
 
 ---
 
 ## Evolution Protocol
 
-### When a Component Gets Too Big
-
-**Trigger**: Component exceeds 80 lines.
-**Action**: Extract sub-components into the same component folder. They remain private to this feature until needed elsewhere.
-
-### When Two Features Need the Same Component
-
-**Trigger**: An import would cross a feature boundary.
-**Action**: Promote the component to `shared/`. Generalize its props if necessary. Never create cross-feature internal imports.
-
-### When a Feature Gets Too Many Components
-
-**Trigger**: The `components/` folder exceeds 7 items.
-**Action**: Introduce sub-features. A feature may contain a `features/` subfolder with the identical canonical structure (e.g., `checkout/features/payment-method/` has its own `types.ts`, `domain/`, `hooks/`, `components/`, `containers/`). The fractal holds.
-
-### When You Need Global State
-
-**Action**: Create a provider in `app/providers/`. One provider per concern. The provider pattern is the only mechanism for cross-feature state. No global stores. No imports from one feature's hooks into another feature's components.
-
-### When a Domain Function Serves Multiple Features
-
-**Action**: Move it to `shared/utils/` or create `shared/domain/`. The function remains pure. The move is mechanical.
+| Trigger | Action |
+|---------|--------|
+| Component exceeds 80 lines | Extract sub-components into same folder, private to feature until needed elsewhere |
+| Import would cross feature boundary | Promote component to `shared/`. Generalize props. Never cross-feature internal imports |
+| `components/` exceeds 7 items | Introduce sub-features: `features/` subfolder with identical canonical structure. The fractal holds |
+| Need cross-feature state | Provider in `app/providers/`, one per concern. Only mechanism for cross-feature state. No global stores |
+| Domain function serves multiple features | Move to `shared/utils/` or `shared/domain/`. Remains pure. Mechanical move |
 
 ---
 
@@ -629,27 +479,14 @@ This sequence is not a suggestion. It is the dependency-respecting order that en
 
 ### Structural Anti-Patterns
 
-**God components**: A 400-line component with 12 props, 4 effects, inline calculations, and API calls. Split it. There are always seams.
-
-**Smart atoms**: An atom that reads context, fetches data, or contains business logic. The brain does not belong in the fingertip. The atom receives a boolean; the container decides its value.
-
-**Premature abstraction**: Building `GenericDataTable<T>` before the second table exists. Write concrete components. Extract the shared surface only when it reveals itself. It is always smaller than expected.
-
-**Prop drilling past two levels**: Use context or restructure. Intermediate components should not carry data they do not use.
-
-**Domain logic in components**: A `calculateTotal` call inside an organism's JSX. This belongs in a domain function, called by a computation hook, returned by the orchestration hook, and passed to the organism as a number. The organism renders the number. That's all.
-
-**Style-prop creep**: `headerClassName`, `bodyClassName`, `footerClassName`, `itemClassName`. This is not a component — it is a CSS proxy. Use composition, slots, or `children`.
-
----
-
-## Composition Patterns
-
-- **Compound components**: Shared implicit state via dot-notation API (e.g., `<Tabs.List>`, `<Tabs.Content>`)
-- **Render prop / children-as-function**: Flexible rendering without prop explosion (e.g., `<DataList items={items}>{(item) => <Card />}</DataList>`)
-- **Slot pattern**: Named sections as props (e.g., `<PageLayout header={...} sidebar={...} content={...} />`)
-
-Principle: **composition over configuration.** The consumer assembles what they need.
+| Anti-pattern | Symptom | Fix |
+|-------------|---------|-----|
+| God components | 400 lines, 12 props, 4 effects, inline API calls | Split — there are always seams |
+| Smart atoms | Atom reads context, fetches data, or has business logic | Atom receives a boolean; container decides its value |
+| Premature abstraction | `GenericDataTable<T>` before the second table exists | Write concrete; extract shared surface when it reveals itself |
+| Prop drilling past 2 levels | Intermediates carry data they don't use | Context or restructure |
+| Domain logic in components | `calculateTotal` in JSX | Domain function → computation hook → orchestration hook → prop |
+| Style-prop creep | `headerClassName`, `bodyClassName`, `footerClassName` | Composition, slots, or `children` |
 
 ---
 
@@ -671,8 +508,7 @@ Accessibility is not a feature. It is a constraint, like type safety.
 
 | Constraint | Enforced By |
 |-----------|-------------|
-| Dependency direction | `eslint-plugin-boundaries` |
-| Import restrictions per layer | `eslint-plugin-boundaries` |
+| Dependency direction + import restrictions | `eslint-plugin-boundaries` |
 | No `any` | `tsconfig.json` strict mode |
 | Type coverage | TypeScript `strict: true`, `noUncheckedIndexedAccess: true` |
 | Component size limits | ESLint `max-lines-per-function` |
