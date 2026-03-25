@@ -92,6 +92,44 @@ Some implications:
 
 ---
 
+## The Agentic Surface
+
+The seven dimensions above describe the medium as it meets a human visitor through a browser. But this site is built in a medium that now has a second surface — one that existed before but was inert, and has become functional.
+
+The markdown files in this repository are not documentation. They are not source that compiles into the real thing and then disappears. They are a **presentational layer** in their own right — a surface with its own grammar, its own graph, its own capacity for meaning. In the agentic era, this surface has become operational. An agent reads `CLAUDE.md` and the reading *constitutes* how the site gets built, the way a browser reading HTML constitutes how the site gets rendered. The markdown layer doesn't describe the site. It *is* the site, at the stratum where intent becomes structure.
+
+This is not a metaphor. The markdown files have real properties of a medium:
+
+**Hypertextuality.** The files link to each other — `CLAUDE.md` references `REACT_NORTH_STAR.md`, `MEDIUM.md` references every gap specification by name, `SPECIFICATION_MAP.md` is a graph of all of them. These references are not citations. They are the same kind of link that makes the rendered webpage a hypertext: connections that carry meaning. A reference from `MEDIUM.md` to `GRAPH_AND_LINKING.md` isn't a pointer to a file — it's a claim that the site's hypertextuality and its linking specification share a concern. The graph between documents is a real graph. It has nodes (files), edges (references), and semantics (why this file points to that one).
+
+**Semantic structure.** Headings are not formatting. They are the skeletal system of a concern. When `SPECIFICATION_MAP.md` organizes specifications into tiers — Ground, Soul and Structure, Content and Expression, Spatial and Navigational — those headings are the ontology of the site's self-knowledge. A heading is a node. A section beneath it is the concern that node names. The heading hierarchy is navigable, parseable, meaningful — not to a browser, but to an agent that needs to understand what the site knows about itself and where to find it.
+
+**Addressability.** Every file has a path. Every heading has an anchor. A specification can be referenced not just as a file but as a concern within a file — `TRANSPARENCY.md#temporal-archaeology` is an address with the same ontological weight as a URL. It says: *this concern exists, it has a location, it can be pointed to.* The markdown layer has its own address space, and that space is navigable.
+
+**Temporality.** Git gives every file a history. Every heading that was added, renamed, or removed is a dated event. The markdown layer doesn't just exist in a current state — it unfolds through time, the same way the rendered surface unfolds through scroll and transition. The specification layer's temporality is the record of the site learning what it is.
+
+**Editability.** This is the dimension the rendered surface doesn't have — or rather, has only through the mediation of this layer. The markdown surface is where change happens. Editing a specification is the creative act that produces the site's next state. The rendered surface is read-only for the visitor; the markdown surface is read-write for the maker (Danny) and the agent. This asymmetry is not incidental. It's the medium's architecture: one surface for encounter, one for becoming.
+
+### What This Changes
+
+If the markdown layer is a first-class presentational surface, not just a source layer, several things follow:
+
+**The graph between documents wants to be formalized.** Right now, references between specifications are prose — "this is the dimension that `GRAPH_AND_LINKING.md` inhabits." These are real edges in a real graph, but they're encoded in natural language, which means they're visible to human readers and to agents that understand English, but not to tooling that could visualize, validate, or navigate the graph programmatically. Formalizing the edges — whether through structured frontmatter, a link syntax, or a separate graph definition — would make the markdown layer's hypertextuality as explicit as the rendered layer's.
+
+**Headings become a navigable ontology.** The heading structure across all specification files is, collectively, a map of everything the site knows about itself. If headings are nodes, the full heading tree is the site's self-knowledge rendered as a hierarchy. This tree could be extracted, visualized, diffed over time, and used as a navigation structure in its own right — not on the rendered site, but in the agentic surface, as a way for agents (and Danny) to orient within the site's conceptual architecture.
+
+**The specification map is already this.** `SPECIFICATION_MAP.md` is, in effect, a table of contents for the markdown surface — a navigable index of concerns, with their status (exists, gap, deferred) and their relationships. It's doing for the agentic surface what `INFORMATION_ARCHITECTURE.md` will do for the rendered surface: providing wayfinding. This parallel is not accidental. Both surfaces are media. Both need navigation.
+
+**The build pipeline has a new input.** If the markdown surface is presentational, it's not just consumed as instructions — it could be consumed as content that renders *itself* on the site, preserving its own structure (headings, links, graph) rather than being digested into a different format. The annotation layer described in `TRANSPARENCY.md` is one version of this. But the stronger version is: the markdown layer's graph, rendered as a navigable map on the site, showing visitors the architecture of the site's self-understanding. Not a docs section. The site's skeleton, made visible.
+
+**Editing is the site's metabolism.** Every commit to a specification file is the site changing what it knows about itself. If the markdown surface is a medium, then git commits are the events in that medium — the way scroll events and transitions are events in the rendered medium. The site's temporal archaeology (held in `TRANSPARENCY.md`) is the history of the agentic surface, not just the rendered one.
+
+This reframing doesn't require new implementation. It requires recognition — that the markdown layer already has medium-properties, and that attending to those properties (formalizing links, treating headings as ontology, preserving edit history as temporal data) makes the agentic surface richer and more navigable for everyone who works in it: agents, Danny, and eventually visitors who want to see the site's architecture from the inside.
+
+The seven dimensions above describe the medium the visitor encounters. This section names the medium the maker inhabits. They are two surfaces of the same site, and the site is the richer for having both.
+
+---
+
 ## The Medium and This Site
 
 Danny's site uses the medium's dimensions with unusual intentionality. Most websites treat temporality as something to minimize (fast loads, instant transitions). This one treats it as a material to shape. Most websites treat responsiveness as a layout problem. This one treats it as a way of meeting people. Most websites treat the interface as separate from the content. This one insists they are the same thing.
