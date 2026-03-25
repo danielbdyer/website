@@ -14,13 +14,16 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [dark, setDark] = useState(false);
+function getInitialTheme(): boolean {
+  try {
+    return localStorage.getItem('theme') === 'dark';
+  } catch {
+    return false;
+  }
+}
 
-  useEffect(() => {
-    const stored = localStorage.getItem('theme');
-    if (stored === 'dark') setDark(true);
-  }, []);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [dark, setDark] = useState(getInitialTheme);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -31,9 +34,5 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const toggle = useCallback(() => setDark((d) => !d), []);
 
-  return (
-    <ThemeContext value={{ dark, toggle }}>
-      {children}
-    </ThemeContext>
-  );
+  return <ThemeContext value={{ dark, toggle }}>{children}</ThemeContext>;
 }

@@ -6,6 +6,44 @@
    Paper warmth. Umber palette. Serif typography. Slow transitions.
    ═══════════════════════════════════════════════════════════════ */
 
+/* ─── Tailwind theme integration ───────────────────────────────
+   Maps CSS custom properties → Tailwind utilities so you can
+   write `bg-bg`, `text-text-2`, `border-border` etc. instead of
+   `bg-[var(--bg)]`. Keeps the single source of truth in :root.
+   ──────────────────────────────────────────────────────────── */
+@theme {
+  --color-bg: var(--bg);
+  --color-bg-warm: var(--bg-warm);
+  --color-bg-card: var(--bg-card);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-rose: var(--accent-rose);
+  --color-accent-violet: var(--accent-violet);
+  --color-accent-gold: var(--accent-gold);
+  --color-border: var(--border);
+  --color-border-lt: var(--border-lt);
+  --color-pop-bg: var(--pop-bg);
+  --color-hl-bg: var(--hl-bg);
+  --color-tag-bg: var(--tag-bg);
+  --color-tag-text: var(--tag-text);
+  --color-geo: var(--geo-color);
+  --color-geo-accent: var(--geo-accent);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-default: var(--shadow);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-lift: var(--shadow-lift);
+
+  --font-heading: 'Newsreader', Georgia, serif;
+  --font-body: 'Literata', Georgia, serif;
+
+  --animate-geo-spin: geo-spin 60s linear infinite;
+}
+
 /* ─── Light palette ─────────────────────────────────────────── */
 :root,
 .lt {

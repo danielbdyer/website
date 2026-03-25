@@ -30,10 +30,7 @@ function Nav() {
         to="/"
         className="flex items-center gap-1.5 font-heading text-base font-medium italic text-[var(--text)] no-underline transition-colors duration-200 hover:text-[var(--accent)] group"
       >
-        <Diamond
-          size={7}
-          className="transition-transform duration-300 group-hover:rotate-45"
-        />
+        <Diamond size={7} className="transition-transform duration-300 group-hover:rotate-45" />
         <span>Danny Dyer</span>
       </Link>
 
@@ -83,7 +80,14 @@ const ROOMS = [
 
 function SunIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
     </svg>
@@ -92,7 +96,14 @@ function SunIcon() {
 
 function MoonIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
     </svg>
   );
