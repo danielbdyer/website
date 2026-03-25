@@ -76,6 +76,39 @@ This is not a changelog. A changelog narrates what happened. The archaeological 
 
 This resonates with the site's deepest concerns. Danny's facet of *becoming* — "the autotelic unfolding of personhood over time, the forward motion that is revealed rather than achieved" — applies to the site itself. The site is becoming. The archaeological layer makes that becoming visible.
 
+### Held: The Time Slider
+
+*This idea is alive but not committed. It is recorded here as structural reasoning, not as a specification to implement.*
+
+Imagine: a control — a slider, a dial, a gesture — that lets a visitor move the site backward in time. Not a version history page. The site itself, shifting.
+
+The behavior would be content-anchored. You're reading a poem in the Garden. You slide backward. The poem stays — it existed then too — but the room around it changes. The navigation might simplify. A facet that was later added disappears. The design tokens shift to an earlier palette. The specification strata visible through the annotation layer thin out — fewer concerns had been named. You're seeing the same site at a younger moment in its becoming, oriented around a piece of content that serves as your fixed point.
+
+Content that didn't yet exist at the selected moment simply isn't there. A room that was empty is visibly empty. A specification that hadn't been written yet is a gap in the strata — which is what the specification map already calls it, just at a different point in time.
+
+What makes this interesting structurally (regardless of whether it's ever rendered):
+
+**Git already holds the data.** Every file's history is a timeline. The specification map, the content files, the design tokens, the configuration — all of them have dated states. The time slider is a UI over a data source that already exists.
+
+**Content is the anchor, not time.** You don't navigate to "the site in March 2026." You navigate to a work, and then you can ask "what was this site when this work first appeared?" The content is the fixed point; the site is what moves. This respects the primacy of works — they're not entries in a timeline, they're the things around which the timeline organizes itself.
+
+**Absence is information.** Sliding to a moment before a specification existed shows you a site that didn't yet know something about itself. Sliding to a moment before a room had any works shows you an empty room. These absences are not bugs — they're the site's honesty about its own incompleteness at that moment. The same "gaps are visible" principle from the specification map, extended through time.
+
+**The site as organism.** If you scrub the slider slowly, you'd see something like growth — specifications appearing, content accumulating, rooms filling, the design system thickening, the graph of links densifying. The site would look like a living thing developing. Not because it's animated to look that way, but because it actually grew that way, and the slider is just showing you the record.
+
+**What this requires architecturally (if ever built):**
+- Build-time computation of file-level timelines from git history
+- A temporal index: for any given date, which files existed and in what state
+- Content-anchored navigation: the ability to fix one piece of content and recompute the surrounding site state for a historical moment
+- Graceful degradation of the interface as features are "removed" moving backward (components that didn't exist yet simply aren't rendered)
+- A clear decision about whether the historical view is read-only (a snapshot) or navigable (can you follow links within the historical state?)
+
+**What it doesn't require:**
+- Rebuilding the site at every historical state. The strata and content are data; only the current rendering engine is needed.
+- Perfection. Some historical states will be rough, incomplete, broken. That's the point — you're seeing the site in its becoming, not a curated retrospective.
+
+This idea is held. It may emerge when the site has enough temporal depth to make the slider meaningful — when there's enough history to move through. For now, it informs the architectural decisions: preserve temporal data, use snapshot identifiers, keep git history clean and meaningful, design specifications with dual readership in mind. Even if the slider is never built, the site is better for having been built *as if it could be*.
+
 ---
 
 ## Configuration as Content
