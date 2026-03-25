@@ -54,7 +54,7 @@ TypeScript types are not annotations on implementation — they are contracts th
 
 | Concern | Choice | Non-Negotiable |
 |---------|--------|----------------|
-| Language | TypeScript 5+ (strict mode) | Yes |
+| Language | TypeScript 6+ (strict mode) | Yes |
 | Framework | React 19+ | Yes |
 | Build | Vite | Yes |
 | Routing | TanStack Router | Yes |
@@ -215,40 +215,7 @@ shared/atoms         →  features/*
 features/*           →  other-feature/components/*  (no cross-feature internals)
 ```
 
-**These rules are enforced by `eslint-plugin-boundaries` configuration, not by convention.**
-
-```javascript
-// .eslintrc.js — boundaries configuration
-{
-  plugins: ['boundaries'],
-  settings: {
-    'boundaries/elements': [
-      { type: 'domain', pattern: 'features/*/domain/*' },
-      { type: 'hooks', pattern: 'features/*/hooks/*' },
-      { type: 'components', pattern: 'features/*/components/*' },
-      { type: 'containers', pattern: 'features/*/containers/*' },
-      { type: 'shared', pattern: 'shared/*' },
-      { type: 'infrastructure', pattern: 'infrastructure/*' },
-      { type: 'app', pattern: 'app/*' },
-    ],
-    'boundaries/ignore': ['**/*.test.*'],
-  },
-  rules: {
-    'boundaries/element-types': [2, {
-      default: 'disallow',
-      rules: [
-        { from: 'domain', allow: ['shared'] },
-        { from: 'hooks', allow: ['domain', 'shared', 'infrastructure'] },
-        { from: 'components', allow: ['shared'] },
-        { from: 'containers', allow: ['hooks', 'components', 'shared'] },
-        { from: 'app', allow: ['containers', 'shared'] },
-      ]
-    }],
-    'boundaries/no-unknown': [2],
-    'boundaries/no-private': [2],
-  }
-}
-```
+**These rules are enforced by `eslint-plugin-boundaries` in `eslint.config.js`, not by convention.** See the actual configuration in the repository for the full rule set using ESLint flat config and `boundaries/dependencies`.
 
 ---
 
@@ -675,24 +642,109 @@ export interface ValidationResult {
 
 ---
 
-## Effects
+## Effects — You Probably Don't Need One
 
-Effects establish relationships with time. Each type has a distinct purpose and a distinct test strategy.
+Effects are the most overused primitive in React. Most effects are symptoms of misplaced logic. Before writing `useEffect`, exhaust every alternative. The right answer is almost always not an effect.
 
-**Setup-only**: "When X becomes true, do Y once."
+### The Decision Tree
+
+**"I need to derive a value from props or state."**
+→ Use a `const` or `useMemo`. Derivation is not a side effect. `const fullName = first + ' ' + last` does not need an effect. Neither does `useMemo(() => expensiveCompute(items), [items])`.
+
+**"I need to respond to a user event."**
+→ Use an event handler. If the user clicked a button, handle it in `onClick`. Effects that watch state to trigger actions (`useEffect(() => { if (submitted) doThing() }, [submitted])`) are disguised event handlers. Put the logic where the event happens.
+
+**"I need to read from localStorage, the URL, or another external source."**
+→ Use `useSyncExternalStore` or a lazy state initializer (`useState(() => readFromStorage())`). These are synchronous reads, not effects.
+
+**"I need to subscribe to an external system (WebSocket, IntersectionObserver, media query, cross-tab storage events)."**
+→ This is a legitimate effect — **but wrap it in a custom hook** that names the concern. The component never contains a raw `useEffect` for subscriptions.
+
+**"I need to keep the DOM in sync with React state."**
+→ First ask: can the store own the DOM sync? (See `useSyncExternalStore` pattern below.) If the sync truly belongs in React, this is one of the few valid effects — but it should live in a custom hook, not inline in a component.
+
+**"I need to fetch data."**
+→ Use TanStack Query. Never `useEffect` + `fetch`. TanStack Query handles caching, deduplication, background refetching, error/loading states, and race conditions. A hand-rolled fetch effect handles none of these correctly.
+
+**"I need to initialize something on mount."**
+→ Use a lazy initializer (`useState(() => init())`), a module-level initialization, or a ref. `useEffect` with `[]` runs *after* the first paint, which means a flash of uninitialized state.
+
+### The Canonical External Store Pattern
+
+When state lives outside React (localStorage, URL params, media queries, third-party libraries), use `useSyncExternalStore`. This eliminates effects entirely and gives React the ability to read the store synchronously during render.
+
+```tsx
+// theme-store.ts — the store owns its own side effects
+const listeners = new Set<() => void>();
+
+function emitChange() {
+  for (const listener of listeners) listener();
+}
+
+export const themeStore = {
+  subscribe(listener: () => void) {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
+  },
+  getSnapshot(): boolean {
+    return localStorage.getItem('theme') === 'dark';
+  },
+  getServerSnapshot(): boolean {
+    return false;
+  },
+  toggle() {
+    const next = !this.getSnapshot();
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dk', next);
+    document.documentElement.classList.toggle('lt', !next);
+    emitChange();
+  },
+};
+
+// Initialize DOM state on module load — before React renders.
+const dark = themeStore.getSnapshot();
+document.documentElement.classList.toggle('dk', dark);
+document.documentElement.classList.toggle('lt', !dark);
+```
+
+```tsx
+// ThemeProvider.tsx — zero effects
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const dark = useSyncExternalStore(
+    themeStore.subscribe,
+    themeStore.getSnapshot,
+    themeStore.getServerSnapshot,
+  );
+
+  return <ThemeContext value={{ dark, toggle: themeStore.toggle }}>{children}</ThemeContext>;
+}
+```
+
+**Why this is better than useState + useEffect:**
+- No flash of wrong state (store initializes before React renders)
+- No wasted render cycle (synchronous read, not post-paint effect)
+- Cross-tab sync comes free via `storage` events in `subscribe`
+- Store is testable as a plain module — no React rendering needed
+- DOM side effects live in the store, not scattered across components
+
+### The Only Legitimate Effects
+
+After exhausting the alternatives above, these remain:
+
+**Subscription**: "While mounted, maintain this connection." Always wrapped in a custom hook.
+```tsx
+// shared/hooks/use-reveal.ts — IntersectionObserver is a browser subscription
+useEffect(() => {
+  const observer = new IntersectionObserver(callback, { threshold });
+  observer.observe(el);
+  return () => observer.disconnect();
+}, [threshold]);
+```
+
+**Analytics / logging**: "When X happens, record it." Fire-and-forget, no state update.
 ```tsx
 useEffect(() => { analytics.track('page_viewed', { page }); }, [page]);
 ```
-
-**Subscription**: "While mounted, maintain this connection."
-```tsx
-useEffect(() => {
-  const unsub = eventBus.on('update', handler);
-  return () => unsub();
-}, [handler]);
-```
-
-**Synchronization**: "Keep two sources of truth aligned." These are usually code smells. Ask whether `useMemo`, a controlled component pattern, or the `select` option in TanStack Query can eliminate the effect entirely.
 
 **The constraint**: Maximum one effect per component at the atom/molecule/organism level. Containers may have up to two. If a component accumulates effects, extract a custom hook that names and encapsulates the temporal concern.
 
@@ -1009,11 +1061,25 @@ This sequence is not a suggestion. It is the dependency-respecting order that en
 
 ## Anti-Patterns
 
+### Effect Anti-Patterns (Most Common)
+
+**`useEffect` as event handler**: Watching state to trigger actions. `useEffect(() => { if (submitted) save() }, [submitted])` is a disguised click handler. Put the logic in `onClick`. The flag variable is the smell.
+
+**`useEffect` for derived state**: `useEffect(() => setFullName(first + ' ' + last), [first, last])`. This is a `const`. Or `useMemo` if expensive. Never an effect. The extra render cycle and potential for stale reads are bugs waiting to happen.
+
+**`useEffect` for data fetching**: `useEffect(() => { fetch(url).then(setData) }, [url])`. This ignores race conditions, caching, deduplication, error states, and background refetching. Use TanStack Query.
+
+**`useState` + `useEffect` for external reads**: `useEffect(() => { setTheme(localStorage.get('theme')) }, [])`. This reads *after* paint, causing a flash. Use `useSyncExternalStore` or a lazy initializer — both read synchronously.
+
+**`useEffect` for DOM sync that belongs to a store**: If state lives outside React (localStorage, URL, WebSocket), the store should own its own DOM side effects. React's job is to subscribe to the store, not to echo its changes back into the DOM.
+
+**`useEffect` with `[]` for initialization**: This runs after the first paint. If you need state before paint, use a lazy initializer (`useState(() => init())`), module-level initialization, or `useSyncExternalStore`.
+
+### Structural Anti-Patterns
+
 **God components**: A 400-line component with 12 props, 4 effects, inline calculations, and API calls. Split it. There are always seams.
 
 **Smart atoms**: An atom that reads context, fetches data, or contains business logic. The brain does not belong in the fingertip. The atom receives a boolean; the container decides its value.
-
-**`useEffect` as event handler**: Watching state to trigger actions. If the user clicked a button, handle it in the click handler. Effects are for synchronization with external systems.
 
 **Premature abstraction**: Building `GenericDataTable<T>` before the second table exists. Write concrete components. Extract the shared surface only when it reveals itself. It is always smaller than expected.
 
@@ -1022,8 +1088,6 @@ This sequence is not a suggestion. It is the dependency-respecting order that en
 **Domain logic in components**: A `calculateTotal` call inside an organism's JSX. This belongs in a domain function, called by a computation hook, returned by the orchestration hook, and passed to the organism as a number. The organism renders the number. That's all.
 
 **Style-prop creep**: `headerClassName`, `bodyClassName`, `footerClassName`, `itemClassName`. This is not a component — it is a CSS proxy. Use composition, slots, or `children`.
-
-**Synchronized state**: Two pieces of state kept in sync via `useEffect`. If one derives from the other, compute it. `useMemo` or a plain `const` eliminates the effect, the extra render, and the bug.
 
 ---
 
