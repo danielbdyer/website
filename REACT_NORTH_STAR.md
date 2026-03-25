@@ -28,6 +28,14 @@ These are non-negotiable. Every directive in this document derives from them.
 
 10. **Types Are the Specification** — Types are contracts that precede and constrain implementation. Written first. The type system is the first line of architectural enforcement.
 
+11. **Dependencies Point Inward** — The domain core has zero external dependencies. Each layer depends only on layers closer to the core. Infrastructure adapts the outside world to domain interfaces, never the reverse. This is the Dependency Inversion Principle made spatial — hexagonal architecture where ports face outward and the domain faces only itself.
+
+12. **Data Is Immutable** — Functions receive data and return new data. State transitions produce new values, never mutate existing ones. Arrays are filtered and mapped, never spliced. Objects are spread, never assigned into. Immutability makes pure functions possible, makes React's reconciliation correct, and eliminates stale closures and shared-mutable-state bugs.
+
+13. **Compose, Don't Configure** — Build larger things by assembling smaller independent pieces. Atoms compose into molecules. Hooks compose behaviors. Providers compose context. Prefer many small functions over one with many parameters. When two concerns vary independently, they are separate compositions, not branches in a configuration object. This is the Composite pattern at every scale.
+
+14. **Render Is a Pure Function** — A component's JSX is determined entirely by its props and hook return values — referential transparency applied to the view layer. Same inputs, same output. Hooks are called unconditionally, in the same order, at the top. No side effects in the render path. The component is a pure pipeline from data to pixels.
+
 ---
 
 ## Technology Stack
@@ -381,6 +389,32 @@ When state lives outside React (localStorage, URL params, media queries, third-p
 After exhausting the alternatives above, two remain: **Subscriptions** ("while mounted, maintain this connection" — e.g., IntersectionObserver, WebSocket — always in a custom hook) and **analytics/logging** (fire-and-forget, no state update).
 
 **Constraint**: Maximum one effect per component at atom/molecule/organism level. Containers may have up to two. Effect interaction complexity is O(n²) — the bug surface grows faster than the feature surface.
+
+---
+
+## State — It Has Exactly One Correct Home
+
+State placement is the most consequential decision in a React codebase. Misplaced state causes cascading problems: unnecessary re-renders, prop drilling that shouldn't exist, contexts that grow into god objects, duplicated sources of truth. Before writing `useState`, determine where the state belongs.
+
+### The Decision Tree
+
+| "This state is..." | Place it in | Mechanism |
+|---------------------|-------------|-----------|
+| UI-only, single component (open/closed, hover, focus) | The component | `useState` |
+| UI-only, shared between siblings | Nearest common parent | Lifted `useState`, passed as props |
+| Remote/server data | TanStack Query cache | `useQuery` — never duplicate in local state |
+| Derived from other state or props | Not state at all | `const` or `useMemo` — derivation, not duplication |
+| Needed across component tree (>2 levels deep) | Feature-level context | `createContext` + provider in container |
+| Cross-feature or app-wide | `app/providers/` | One provider per concern, never a god context |
+| Persistent across sessions (theme, preferences) | External store | `useSyncExternalStore` + localStorage/etc. |
+| Shareable via URL (filters, pagination, selected tab) | URL search params | TanStack Router `searchParams` — the URL is the state |
+| Outlives React entirely (audio, WebSocket) | Module-level external store | `useSyncExternalStore` — React subscribes, store owns |
+
+### The Cardinal Rules
+
+**Never copy server state into local state.** `const [data, setData] = useState(null)` followed by an effect that calls `setData(response)` is the most common state anti-pattern. TanStack Query owns server state. Read from the cache; don't mirror it.
+
+**Never derive state into state.** If `fullName` can be computed from `firstName` and `lastName`, it is not state — it is a `const`. Using `useState` + `useEffect` for derivation creates a render where the derived value is stale.
 
 ---
 
