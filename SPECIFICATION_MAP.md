@@ -12,11 +12,12 @@ This map was produced through a practice of exhaustive enumeration: starting fro
 
 ### Tier 0 — The Ground
 
-Before any specification about *this* site, there is the question of what a webpage *is*. The medium has its own ontology — dimensions that exist whether or not we attend to them. Every specification downstream is an exploration of one or more of these dimensions.
+Before any specification about *this* site, there are two foundational questions: what is a webpage, and what is this site's relationship to its own making? The first is ontological — the medium has dimensions that exist whether or not we attend to them. The second is architectural — this site publishes its own definition as part of itself, making the specifications not just build instructions but a visible, navigable, temporal layer of the experience.
 
 | # | File | Status | Purpose |
 |---|---|---|---|
-| 0 | `MEDIUM.md` | **Exists** | The epistemography of the webpage as a medium. Names the seven dimensions — hypertextuality, temporality, responsiveness, addressability, semantic structure, social existence, materiality — and traces how each specification inhabits them. This is the philosophical ground beneath the map: not what *this* site is, but what *any* webpage is, so that every downstream decision inherits the right assumptions about the medium it's working in. |
+| 0a | `MEDIUM.md` | **Exists** | The epistemography of the webpage as a medium. Names the seven dimensions — hypertextuality, temporality, responsiveness, addressability, semantic structure, social existence, materiality — and traces how each specification inhabits them. This is the philosophical ground beneath the map: not what *this* site is, but what *any* webpage is, so that every downstream decision inherits the right assumptions about the medium it's working in. |
+| 0b | `TRANSPARENCY.md` | **Exists** | The site's commitment to publishing its own definition. Every specification lives two lives: as an agentic interface (instructing the agent that builds) and as published content (a visible stratum of the site itself). Defines the strata model, temporal archaeology (navigating the site's self-understanding through git history), configuration-as-content, and the annotation system that connects surface elements to their specification origins. This document makes the specification map not just an internal inventory but part of what the site gives to its visitors. |
 
 ### Tier 1 — Soul and Structure
 
