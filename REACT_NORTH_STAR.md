@@ -8,45 +8,33 @@
 
 These are non-negotiable. Every directive in this document derives from them.
 
-### 1. Components Are Cognitive Artifacts
+1. **Components Are Cognitive Artifacts** — A component's consumer has ~7 slots of working memory. A component that cannot be explained in 60 seconds has failed, regardless of whether it functions correctly.
 
-A component's primary consumer is a human being with approximately seven slots of working memory. Boundaries must respect this constraint. A component that cannot be explained in 60 seconds is a component that has failed, regardless of whether it functions correctly.
+2. **Structure Determines Correctness** — If "where does this go?" has more than one valid answer, the architecture is incomplete. The right decision must be the only decision that fits.
 
-### 2. Structure Determines Correctness
+3. **Interfaces Are Promises** — Every prop is a commitment to every present and future consumer. Narrow interfaces are generous — they say "I've done the thinking so you don't have to."
 
-Every architectural decision in the codebase must be determinable from context without requiring taste, intuition, or experience. If the question "where does this go?" has more than one valid answer, the architecture is incomplete. The right decision must be the only decision that fits.
+4. **The Domain Doesn't Know About React** — Business rules must be pure TypeScript with zero framework imports. React is a delivery mechanism; the domain persists.
 
-### 3. Interfaces Are Promises
+5. **Complexity Must Be Earned** — Complexity is isolated — pushed into hooks, utilities, containers — so the presentation layer remains a declarative description of what the user sees.
 
-Every prop is a commitment to every present and future consumer. Wide interfaces shift cognitive burden from author to caller, permanently. Narrow interfaces are generous — they say "I've done the thinking so you don't have to."
+6. **Thresholds Are Phase Transitions** — Limits derive from cognitive science (Miller's Law), combinatorial testing theory, and empirical observation of maintainability degradation. Argue with the derivation, not the number.
 
-### 4. The Domain Doesn't Know About React
+7. **Files Are Cheap, Cognitive Load Is Expensive** — The cost of navigating many small files is linear. The cost of understanding one large file is exponential.
 
-Business rules — validation, calculation, transformation, policy — must be expressible as pure TypeScript functions with zero framework imports. React is a delivery mechanism. The domain is the system. The delivery mechanism changes; the domain persists.
+8. **Patterns Must Be Fractal** — The same structure repeats at every scale. A feature folder looks like a miniature application. Understanding at one level confers understanding at every level.
 
-### 5. Complexity Must Be Earned
+9. **The Folder Structure Is the Architecture** — The directory tree is the primary architectural document. Correct code should be generable from folder structure alone.
 
-The default state of a component is simple. Complexity is added only when reality demands it, and when added, it is isolated — pushed into hooks, extracted into utilities, quarantined in containers — so that the presentation layer remains a declarative description of what the user sees.
+10. **Types Are the Specification** — Types are contracts that precede and constrain implementation. Written first. The type system is the first line of architectural enforcement.
 
-### 6. Thresholds Are Phase Transitions
+11. **Dependencies Point Inward** — The domain core has zero external dependencies. Each layer depends only on layers closer to the core. Infrastructure adapts the outside world to domain interfaces, never the reverse. This is the Dependency Inversion Principle made spatial — hexagonal architecture where ports face outward and the domain faces only itself.
 
-The numeric limits in this specification are not style preferences. They are derived from cognitive science (Miller's Law), combinatorial testing theory (state explosion), and empirical observation of where code maintainability undergoes qualitative degradation. Argue with the derivation, not the number.
+12. **Data Is Immutable** — Functions receive data and return new data. State transitions produce new values, never mutate existing ones. Arrays are filtered and mapped, never spliced. Objects are spread, never assigned into. Immutability makes pure functions possible, makes React's reconciliation correct, and eliminates stale closures and shared-mutable-state bugs.
 
-### 7. Files Are Cheap, Cognitive Load Is Expensive
+13. **Compose, Don't Configure** — Build larger things by assembling smaller independent pieces. Atoms compose into molecules. Hooks compose behaviors. Providers compose context. Prefer many small functions over one with many parameters. When two concerns vary independently, they are separate compositions, not branches in a configuration object. This is the Composite pattern at every scale.
 
-Prefer many small files over few large files. The cost of navigating many small files is linear. The cost of understanding one large file is exponential. A 40-line file that does exactly one thing is always superior to a 200-line file that does five related things.
-
-### 8. Patterns Must Be Fractal
-
-The same structural pattern repeats at every scale. A feature folder looks like a miniature application. A component folder looks like a miniature feature. Understanding the pattern at one level confers understanding at every level.
-
-### 9. The Folder Structure Is the Architecture
-
-The directory tree is not an organizational convenience — it is the primary architectural document. Every structural decision is encoded in the tree. Correct code should be generable from the folder structure alone, without reading a single line of existing implementation.
-
-### 10. Types Are the Specification
-
-TypeScript types are not annotations on implementation — they are contracts that precede and constrain implementation. Types are written first. Implementation satisfies them. The type system is the first line of architectural enforcement.
+14. **Render Is a Pure Function** — A component's JSX is determined entirely by its props and hook return values — referential transparency applied to the view layer. Same inputs, same output. Hooks are called unconditionally, in the same order, at the top. No side effects in the render path. The component is a pure pipeline from data to pixels.
 
 ---
 
@@ -75,17 +63,12 @@ TypeScript types are not annotations on implementation — they are contracts th
 
 ### Why These
 
-**TanStack Router**: File-based routing with full type safety. Route params, search params, and loaders are typed end-to-end. No `as` casts. No runtime surprises.
-
-**TanStack Query**: Declarative server state with normalized caching, background refetching, optimistic updates, and Suspense integration. Eliminates hand-rolled data fetching hooks and the entire class of bugs they produce.
-
-**Radix UI**: Unstyled, accessible primitives. They provide behavior (focus management, keyboard navigation, ARIA) without opinions about appearance. Tailwind provides the appearance. This separation is correct.
-
-**React Hook Form + Zod**: Forms are validated by schemas, not by imperative logic. The Zod schema is the single source of truth for both client validation and type inference. `z.infer<typeof schema>` eliminates type drift between form data and domain types.
-
-**eslint-plugin-boundaries**: Enforces dependency direction rules as lint errors, not conventions. If the linter allows an import, someone will eventually write it. The boundaries must be machine-enforced.
-
-**MSW**: Intercepts network requests at the service worker level. Tests and development use the same mock layer. No test-specific API abstractions. No mocking `fetch` in unit tests.
+- **TanStack Router**: File-based routing, fully typed params/search/loaders end-to-end
+- **TanStack Query**: Declarative server state — caching, deduplication, background refetch, Suspense
+- **Radix UI**: Unstyled accessible primitives (behavior without appearance opinions); Tailwind provides appearance
+- **React Hook Form + Zod**: Schema-driven validation; `z.infer<typeof schema>` eliminates type drift
+- **eslint-plugin-boundaries**: Dependency direction as lint errors, not conventions
+- **MSW**: Network-level mocking shared between tests and development
 
 ---
 
@@ -169,20 +152,12 @@ src/
 │           └── {Feature}Container.test.tsx
 │
 ├── shared/                         # Cross-feature shared code
-│   ├── atoms/                      # Shared atomic components
-│   │   └── {ComponentName}/
-│   │       ├── {ComponentName}.tsx
-│   │       └── {ComponentName}.test.tsx
+│   ├── atoms/                      # Shared atomic components ({Name}/{Name}.tsx + test)
 │   ├── molecules/                  # Shared molecular components
 │   ├── hooks/                      # Shared utility hooks
-│   ├── utils/                      # Pure utility functions
-│   │   ├── cn.ts                   # className merge: clsx + tailwind-merge
-│   │   └── invariant.ts           # Runtime assertion helper
-│   ├── types/                      # Shared type definitions
-│   │   ├── api.ts
-│   │   └── common.ts
-│   └── lib/                        # Third-party library wrappers
-│       └── query-client.ts         # TanStack Query client config
+│   ├── utils/                      # Pure utilities (cn.ts, invariant.ts)
+│   ├── types/                      # Shared type definitions (api.ts, common.ts)
+│   └── lib/                        # Third-party wrappers (query-client.ts)
 │
 └── infrastructure/                 # External system adapters
     ├── api/                        # API client functions
@@ -235,115 +210,15 @@ The irreducible units of UI. A button, input, label, badge, icon, spinner.
 
 **Forbidden imports**: `useState` (for domain state), `useEffect`, `useContext`, `useQuery`, `useMutation`, any feature module, any API client.
 
-**Canonical form**:
-
-```tsx
-import { type ComponentPropsWithRef, forwardRef } from 'react';
-import { cn } from '@/shared/utils/cn';
-
-interface ButtonProps extends ComponentPropsWithRef<'button'> {
-  variant?: 'primary' | 'secondary' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-}
-
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', className, children, ...props }, ref) => (
-    <button
-      ref={ref}
-      className={cn(buttonVariants[variant], buttonSizes[size], className)}
-      {...props}
-    >
-      {children}
-    </button>
-  ),
-);
-
-Button.displayName = 'Button';
-
-const buttonVariants = { /* Tailwind classes */ } as const;
-const buttonSizes = { /* Tailwind classes */ } as const;
-```
-
-**Notes**: Every visual atom accepts `className` for compositional styling. Every interactive atom uses `forwardRef`. These are not optional.
+**Canonical shape**: `forwardRef` component extending `ComponentPropsWithRef<'element'>`, variant/size props with defaults, `cn()` for class merging, `as const` variant maps. Every visual atom accepts `className`. Every interactive atom uses `forwardRef`. These are not optional.
 
 ### Molecules
 
-Compositions of atoms forming a cohesive unit. A form field (label + input + error). A search bar (input + button). A card header (avatar + name + timestamp).
-
-**Contract**:
-- Composed exclusively from atoms and HTML primitives
-- `useState` allowed only for UI-local state (open/closed, hover, internal focus management)
-- No domain logic, no data fetching, no effects that reach outside the component
-- Props describe what to display, never how to get it
-- Maximum 7 props
-- Maximum 60 lines
-
-**Canonical form**:
-
-```tsx
-import { Input } from '@/shared/atoms/Input';
-import { Label } from '@/shared/atoms/Label';
-import { ErrorText } from '@/shared/atoms/ErrorText';
-
-interface FormFieldProps {
-  label: string;
-  name: string;
-  error?: string;
-  children: React.ReactNode;
-}
-
-export function FormField({ label, name, error, children }: FormFieldProps) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={name}>{label}</Label>
-      {children}
-      {error && <ErrorText>{error}</ErrorText>}
-    </div>
-  );
-}
-```
+Compositions of atoms forming a cohesive unit (form field, search bar, card header). Composed exclusively from atoms and HTML primitives. `useState` allowed only for UI-local state (open/closed, hover, focus). No domain logic, no data fetching, no external effects. Props describe what to display, never how to get it. Uses `children` for slots. Maximum 7 props, 60 lines.
 
 ### Organisms
 
-Feature-level presentational components. A navigation bar. A comment thread. A data table with sorting. An order summary.
-
-**Contract**:
-- Composed from molecules and atoms
-- Receives ALL data and callbacks via props
-- May own UI state (sort order, expanded sections, active tab)
-- Never fetches data. Never calls APIs. Never imports from `hooks/` or `infrastructure/`
-- Maximum 7 props (use a typed data object to flatten)
-- Maximum 100 lines
-
-**Canonical form**:
-
-```tsx
-import type { OrderSummaryData } from '../types';
-import { LineItem } from './LineItem/LineItem';
-import { PriceDisplay } from '@/shared/atoms/PriceDisplay';
-
-interface OrderSummaryProps {
-  data: OrderSummaryData;
-  onRemoveItem: (itemId: string) => void;
-}
-
-export function OrderSummary({ data, onRemoveItem }: OrderSummaryProps) {
-  return (
-    <section aria-label="Order summary">
-      <h2 className="text-lg font-semibold mb-4">Your Order</h2>
-      <ul className="divide-y">
-        {data.items.map((item) => (
-          <LineItem key={item.id} item={item} onRemove={onRemoveItem} />
-        ))}
-      </ul>
-      <footer className="flex justify-between pt-4 border-t mt-4">
-        <span className="font-medium">Total</span>
-        <PriceDisplay amount={data.total} size="lg" />
-      </footer>
-    </section>
-  );
-}
-```
+Feature-level presentational components (nav bar, comment thread, data table, order summary). Composed from molecules and atoms. Receives ALL data and callbacks via props — uses a typed data object to flatten (e.g., `data: OrderSummaryData`). May own UI state (sort, expand, active tab). Never fetches data, never calls APIs, never imports from `hooks/` or `infrastructure/`. Maximum 7 props, 100 lines.
 
 ### Containers
 
@@ -379,7 +254,7 @@ export function OrderSummaryContainer({ orderId }: OrderSummaryContainerProps) {
 }
 ```
 
-**If a container exceeds 40 lines, one of two things is true**: the orchestration hook is insufficiently abstracted, or two features are being wired in one container. Both must be resolved by splitting.
+Every organism has a corresponding `{ComponentName}Skeleton.tsx` (colocated, designed alongside the organism). Error components receive the error object + optional retry callback, contextual to the feature. **If a container exceeds 40 lines**: the orchestration hook is insufficiently abstracted, or two features are being wired in one container. Split.
 
 ### Pages
 
@@ -407,9 +282,15 @@ The `domain/` folder within each feature is the hexagonal core. It contains pure
 
 ### Domain Function Taxonomy
 
-**Calculations**: Transform data into derived data.
+| Type | Purpose | Example file |
+|------|---------|-------------|
+| **Calculation** | Transform data into derived data | `calculate-total.ts` |
+| **Validation** | Check business constraints, return `ValidationResult` | `validate-order.ts` |
+| **Transformation** | Reshape data between forms (e.g., API → domain) | `transform-api-order.ts` |
+| **Predicate** | Boolean question about state | `can-submit-order.ts` |
+
 ```tsx
-// domain/calculate-total.ts
+// domain/calculate-total.ts — canonical example (all types follow this shape)
 import type { LineItem, OrderTotal } from '../types';
 
 export function calculateTotal(items: LineItem[]): OrderTotal {
@@ -422,70 +303,9 @@ export function calculateTotal(items: LineItem[]): OrderTotal {
 }
 ```
 
-**Validations**: Determine whether data satisfies business constraints.
-```tsx
-// domain/validate-order.ts
-import type { OrderSummaryData, ValidationResult } from '../types';
-
-export function validateOrder(data: OrderSummaryData): ValidationResult {
-  const errors = [];
-  if (data.items.length === 0) errors.push({ field: 'items', code: 'EMPTY', message: 'Order must have at least one item' });
-  if (data.total <= 0) errors.push({ field: 'total', code: 'INVALID', message: 'Total must be positive' });
-  return { isValid: errors.length === 0, errors };
-}
-```
-
-**Transformations**: Reshape data from one form to another.
-```tsx
-// domain/transform-api-order.ts
-import type { ApiOrder, OrderSummaryData } from '../types';
-
-export function transformApiOrder(raw: ApiOrder): OrderSummaryData {
-  const items = raw.line_items.map((li) => ({
-    id: li.id,
-    name: li.product_name,
-    quantity: li.qty,
-    unitPrice: li.unit_price_cents / 100,
-    status: li.cancelled ? 'removed' as const : 'active' as const,
-  }));
-  return { items, ...calculateTotal(items) };
-}
-```
-
-**Predicates**: Boolean questions about state.
-```tsx
-// domain/can-submit-order.ts
-export function canSubmitOrder(data: OrderSummaryData): boolean {
-  return data.items.some((i) => i.status === 'active') && data.total > 0;
-}
-```
-
 ### Domain Testing
 
-Domain tests use Vitest with plain assertions. No React. No rendering. No mocking (unless the function depends on a port, in which case mock the port).
-
-```tsx
-// domain/calculate-total.test.ts
-import { describe, it, expect } from 'vitest';
-import { calculateTotal } from './calculate-total';
-
-describe('calculateTotal', () => {
-  it('sums active items only', () => {
-    const result = calculateTotal([
-      { id: '1', name: 'A', quantity: 2, unitPrice: 10, status: 'active' },
-      { id: '2', name: 'B', quantity: 1, unitPrice: 5, status: 'removed' },
-    ]);
-    expect(result.subtotal).toBe(20);
-  });
-
-  it('waives shipping above $100', () => {
-    const result = calculateTotal([
-      { id: '1', name: 'A', quantity: 1, unitPrice: 150, status: 'active' },
-    ]);
-    expect(result.shipping).toBe(0);
-  });
-});
-```
+Domain tests use Vitest with plain `expect()` assertions. No React, no rendering, no mocking (unless the function depends on a port). Tests are written **before** implementation — the type signature from `types.ts` specifies the contract; tests specify behavior.
 
 ---
 
@@ -502,57 +322,11 @@ Hooks are the React integration layer. They bridge domain logic and external sys
 | Computation | `use-{noun}-{computed}.ts` | Wrap pure domain function in `useMemo` | Domain functions only |
 | Orchestration | `use-{noun}-workflow.ts` | Combine hooks into unified state for container | Other hooks in same feature |
 
-### Query Hook
+### Key Patterns
 
-```tsx
-// hooks/use-order.ts
-import { useQuery } from '@tanstack/react-query';
-import { getOrder } from '@/infrastructure/api/endpoints/orders';
-import { transformApiOrder } from '../domain/transform-api-order';
+**Query hooks** use TanStack Query's `select` to delegate transformation to domain functions — the hook doesn't contain the logic, it delegates. **Mutation hooks** call the API client and invalidate relevant queries on success. **Computation hooks** are one-line `useMemo` calls wrapping pure domain functions — the hook is a membrane, not a brain.
 
-export function useOrder(orderId: string) {
-  return useQuery({
-    queryKey: ['order', orderId],
-    queryFn: () => getOrder(orderId),
-    select: transformApiOrder,
-  });
-}
-```
-
-**Note the `select` usage**: API response transformation happens in `select`, powered by a domain function. The hook doesn't contain the transformation — it delegates to the domain layer.
-
-### Mutation Hook
-
-```tsx
-// hooks/use-remove-item.ts
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { removeOrderItem } from '@/infrastructure/api/endpoints/orders';
-
-export function useRemoveItem(orderId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (itemId: string) => removeOrderItem(orderId, itemId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', orderId] }),
-  });
-}
-```
-
-### Computation Hook
-
-```tsx
-// hooks/use-order-total.ts
-import { useMemo } from 'react';
-import { calculateTotal } from '../domain/calculate-total';
-import type { LineItem } from '../types';
-
-export function useOrderTotal(items: LineItem[]) {
-  return useMemo(() => calculateTotal(items), [items]);
-}
-```
-
-**The gold standard**: The hook is a one-line `useMemo` wrapping a pure function. All logic lives in the domain layer. The hook is a membrane, not a brain.
-
-### Orchestration Hook
+### Orchestration Hook (the container's entire interface)
 
 ```tsx
 // hooks/use-order-workflow.ts
@@ -584,61 +358,9 @@ export function useOrderWorkflow(orderId: string): OrderWorkflowState {
 
 For each feature, `types.ts` is written **before any implementation** and serves as the contract every other file fulfills.
 
-```tsx
-// features/order-summary/types.ts
+A feature's `types.ts` defines: domain entities (`LineItem`), computed aggregates (`OrderTotal`), organism data shapes (`OrderSummaryData`), API response shapes (`ApiOrder`), orchestration hook return types (`OrderWorkflowState`), and validation results (`ValidationResult`).
 
-/** Domain entity */
-export interface LineItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  status: 'active' | 'removed';
-}
-
-/** Computed domain aggregate */
-export interface OrderTotal {
-  subtotal: number;
-  tax: number;
-  shipping: number;
-  total: number;
-}
-
-/** Shape the organism receives */
-export interface OrderSummaryData extends OrderTotal {
-  items: LineItem[];
-}
-
-/** API response shape (infrastructure layer) */
-export interface ApiOrder {
-  id: string;
-  line_items: Array<{
-    id: string;
-    product_name: string;
-    qty: number;
-    unit_price_cents: number;
-    cancelled: boolean;
-  }>;
-}
-
-/** What the orchestration hook returns */
-export interface OrderWorkflowState {
-  data: OrderSummaryData | null;
-  isLoading: boolean;
-  error: Error | null;
-  canSubmit: boolean;
-  removeItem: (itemId: string) => void;
-  isRemoving: boolean;
-}
-
-/** Validation result */
-export interface ValidationResult {
-  isValid: boolean;
-  errors: Array<{ field: string; code: string; message: string }>;
-}
-```
-
-**Every file in the feature is an implementation of something defined here.** Domain functions implement transformations between these types. Hooks produce these types. Components receive them as props. The types are the architecture's spine.
+**Every file in the feature implements something defined here.** Domain functions transform between these types. Hooks produce them. Components receive them as props. The types are the architecture's spine.
 
 ---
 
@@ -648,123 +370,51 @@ Effects are the most overused primitive in React. Most effects are symptoms of m
 
 ### The Decision Tree
 
-**"I need to derive a value from props or state."**
-→ Use a `const` or `useMemo`. Derivation is not a side effect. `const fullName = first + ' ' + last` does not need an effect. Neither does `useMemo(() => expensiveCompute(items), [items])`.
-
-**"I need to respond to a user event."**
-→ Use an event handler. If the user clicked a button, handle it in `onClick`. Effects that watch state to trigger actions (`useEffect(() => { if (submitted) doThing() }, [submitted])`) are disguised event handlers. Put the logic where the event happens.
-
-**"I need to read from localStorage, the URL, or another external source."**
-→ Use `useSyncExternalStore` or a lazy state initializer (`useState(() => readFromStorage())`). These are synchronous reads, not effects.
-
-**"I need to subscribe to an external system (WebSocket, IntersectionObserver, media query, cross-tab storage events)."**
-→ This is a legitimate effect — **but wrap it in a custom hook** that names the concern. The component never contains a raw `useEffect` for subscriptions.
-
-**"I need to keep the DOM in sync with React state."**
-→ First ask: can the store own the DOM sync? (See `useSyncExternalStore` pattern below.) If the sync truly belongs in React, this is one of the few valid effects — but it should live in a custom hook, not inline in a component.
-
-**"I need to fetch data."**
-→ Use TanStack Query. Never `useEffect` + `fetch`. TanStack Query handles caching, deduplication, background refetching, error/loading states, and race conditions. A hand-rolled fetch effect handles none of these correctly.
-
-**"I need to initialize something on mount."**
-→ Use a lazy initializer (`useState(() => init())`), a module-level initialization, or a ref. `useEffect` with `[]` runs *after* the first paint, which means a flash of uninitialized state.
+| "I need to..." | Use instead of `useEffect` |
+|----------------|---------------------------|
+| Derive a value from props/state | `const` or `useMemo` — derivation is not a side effect |
+| Respond to a user event | Event handler (`onClick`, etc.) — effects watching state to trigger actions are disguised handlers |
+| Read from localStorage/URL/external source | `useSyncExternalStore` or lazy initializer `useState(() => read())` — synchronous reads, not effects |
+| Subscribe to external system (WebSocket, IntersectionObserver, media query) | Legitimate effect — **but wrap in a custom hook**. Components never contain raw `useEffect` for subscriptions |
+| Keep DOM in sync with React state | Let the store own DOM sync via `useSyncExternalStore`. If truly React-owned, custom hook only |
+| Fetch data | TanStack Query — handles caching, dedup, background refetch, races. Never `useEffect` + `fetch` |
+| Initialize on mount | Lazy initializer, module-level init, or ref. `useEffect([])` runs *after* first paint → flash |
 
 ### The Canonical External Store Pattern
 
-When state lives outside React (localStorage, URL params, media queries, third-party libraries), use `useSyncExternalStore`. This eliminates effects entirely and gives React the ability to read the store synchronously during render.
-
-```tsx
-// theme-store.ts — the store owns its own side effects
-const listeners = new Set<() => void>();
-
-function emitChange() {
-  for (const listener of listeners) listener();
-}
-
-export const themeStore = {
-  subscribe(listener: () => void) {
-    listeners.add(listener);
-    return () => { listeners.delete(listener); };
-  },
-  getSnapshot(): boolean {
-    return localStorage.getItem('theme') === 'dark';
-  },
-  getServerSnapshot(): boolean {
-    return false;
-  },
-  toggle() {
-    const next = !this.getSnapshot();
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dk', next);
-    document.documentElement.classList.toggle('lt', !next);
-    emitChange();
-  },
-};
-
-// Initialize DOM state on module load — before React renders.
-const dark = themeStore.getSnapshot();
-document.documentElement.classList.toggle('dk', dark);
-document.documentElement.classList.toggle('lt', !dark);
-```
-
-```tsx
-// ThemeProvider.tsx — zero effects
-function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const dark = useSyncExternalStore(
-    themeStore.subscribe,
-    themeStore.getSnapshot,
-    themeStore.getServerSnapshot,
-  );
-
-  return <ThemeContext value={{ dark, toggle: themeStore.toggle }}>{children}</ThemeContext>;
-}
-```
-
-**Why this is better than useState + useEffect:**
-- No flash of wrong state (store initializes before React renders)
-- No wasted render cycle (synchronous read, not post-paint effect)
-- Cross-tab sync comes free via `storage` events in `subscribe`
-- Store is testable as a plain module — no React rendering needed
-- DOM side effects live in the store, not scattered across components
+When state lives outside React (localStorage, URL params, media queries, third-party libraries), use `useSyncExternalStore`. The store exposes `subscribe`, `getSnapshot`, and `getServerSnapshot`; React reads it synchronously during render. The store owns its own DOM side effects (e.g., toggling classes on `documentElement`). Module-level initialization runs before React renders — no flash of wrong state, no wasted render cycle, and cross-tab sync comes free via `storage` events.
 
 ### The Only Legitimate Effects
 
-After exhausting the alternatives above, these remain:
+After exhausting the alternatives above, two remain: **Subscriptions** ("while mounted, maintain this connection" — e.g., IntersectionObserver, WebSocket — always in a custom hook) and **analytics/logging** (fire-and-forget, no state update).
 
-**Subscription**: "While mounted, maintain this connection." Always wrapped in a custom hook.
-```tsx
-// shared/hooks/use-reveal.ts — IntersectionObserver is a browser subscription
-useEffect(() => {
-  const observer = new IntersectionObserver(callback, { threshold });
-  observer.observe(el);
-  return () => observer.disconnect();
-}, [threshold]);
-```
-
-**Analytics / logging**: "When X happens, record it." Fire-and-forget, no state update.
-```tsx
-useEffect(() => { analytics.track('page_viewed', { page }); }, [page]);
-```
-
-**The constraint**: Maximum one effect per component at the atom/molecule/organism level. Containers may have up to two. If a component accumulates effects, extract a custom hook that names and encapsulates the temporal concern.
-
-**The underlying math**: Effect interaction complexity is O(n²). Two effects have one interaction pair. Three have three. Four have six. The bug surface grows faster than the feature surface.
+**Constraint**: Maximum one effect per component at atom/molecule/organism level. Containers may have up to two. Effect interaction complexity is O(n²) — the bug surface grows faster than the feature surface.
 
 ---
 
-## Error and Loading States
+## State — It Has Exactly One Correct Home
 
-Every container handles exactly three states. No exceptions. No "we'll add error handling later."
+State placement is the most consequential decision in a React codebase. Misplaced state causes cascading problems: unnecessary re-renders, prop drilling that shouldn't exist, contexts that grow into god objects, duplicated sources of truth. Before writing `useState`, determine where the state belongs.
 
-1. **Loading** → Render a purpose-built skeleton component
-2. **Error** → Render a contextual error component with retry capability
-3. **Success** → Render the organism with data
+### The Decision Tree
 
-**Every organism has a corresponding skeleton.** The skeleton matches the organism's layout and provides visual continuity during loading. It is designed alongside the organism, not after.
+| "This state is..." | Place it in | Mechanism |
+|---------------------|-------------|-----------|
+| UI-only, single component (open/closed, hover, focus) | The component | `useState` |
+| UI-only, shared between siblings | Nearest common parent | Lifted `useState`, passed as props |
+| Remote/server data | TanStack Query cache | `useQuery` — never duplicate in local state |
+| Derived from other state or props | Not state at all | `const` or `useMemo` — derivation, not duplication |
+| Needed across component tree (>2 levels deep) | Feature-level context | `createContext` + provider in container |
+| Cross-feature or app-wide | `app/providers/` | One provider per concern, never a god context |
+| Persistent across sessions (theme, preferences) | External store | `useSyncExternalStore` + localStorage/etc. |
+| Shareable via URL (filters, pagination, selected tab) | URL search params | TanStack Router `searchParams` — the URL is the state |
+| Outlives React entirely (audio, WebSocket) | Module-level external store | `useSyncExternalStore` — React subscribes, store owns |
 
-**Skeleton naming convention**: `{ComponentName}Skeleton.tsx`, colocated with its organism.
+### The Cardinal Rules
 
-**Error component**: Receives the error object and an optional retry callback. It is contextual to the feature, not a generic "something went wrong."
+**Never copy server state into local state.** `const [data, setData] = useState(null)` followed by an effect that calls `setData(response)` is the most common state anti-pattern. TanStack Query owns server state. Read from the cache; don't mirror it.
+
+**Never derive state into state.** If `fullName` can be computed from `firstName` and `lastName`, it is not state — it is a `const`. Using `useState` + `useEffect` for derivation creates a render where the derived value is stale.
 
 ---
 
@@ -783,11 +433,7 @@ Each layer has exactly one testing strategy, determined by the layer.
 | Containers | Integration | Vitest + Testing Library + MSW | Full flow: loading → error → success |
 | Pages | E2E | Playwright | User flows work end-to-end |
 
-**Target distribution**: ~50% domain/hook unit tests, ~30% component tests, ~20% integration/E2E. Heaviest at the bottom where tests are fastest and cheapest.
-
-**Domain test generation protocol**: For every domain function, write tests *before* writing the implementation. The function signature from `types.ts` specifies inputs and outputs; the tests specify behavior. Implementation satisfies both.
-
-**Component test protocol**: Build the component, then write tests that verify its contract. Components are tested for *behavior* (what the user sees and does), not *implementation* (internal state, hook calls).
+**Target distribution**: ~50% domain/hook unit tests, ~30% component tests, ~20% integration/E2E. Domain tests are written *before* implementation. Component tests verify *behavior* (what the user sees and does), not implementation (internal state, hook calls).
 
 ---
 
@@ -795,252 +441,45 @@ Each layer has exactly one testing strategy, determined by the layer.
 
 API clients and external service adapters live in `infrastructure/`, isolated from both domain and presentation.
 
-```tsx
-// infrastructure/api/client.ts
-const BASE_URL = import.meta.env.VITE_API_URL;
-
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
-  });
-  if (!response.ok) throw new ApiError(response.status, await response.text());
-  return response.json();
-}
-
-export class ApiError extends Error {
-  constructor(public status: number, public body: string) {
-    super(`API error ${status}`);
-    this.name = 'ApiError';
-  }
-}
-```
-
-```tsx
-// infrastructure/api/endpoints/orders.ts
-import { apiFetch } from '../client';
-import type { ApiOrder } from '@/features/order-summary/types';
-
-export function getOrder(orderId: string): Promise<ApiOrder> {
-  return apiFetch(`/orders/${orderId}`);
-}
-
-export function removeOrderItem(orderId: string, itemId: string): Promise<void> {
-  return apiFetch(`/orders/${orderId}/items/${itemId}`, { method: 'DELETE' });
-}
-```
-
-**API clients are thin.** They call `fetch` with the right URL and return typed data. They do not transform, validate, or process. Transformation happens in domain functions, invoked via TanStack Query's `select`.
+The `client.ts` base provides a typed `apiFetch<T>(path, init?)` wrapper that sets headers and throws a typed `ApiError(status, body)` on non-OK responses. Endpoint files (e.g., `orders.ts`) are thin functions that call `apiFetch` with the right URL and return typed data. **They do not transform, validate, or process.** Transformation happens in domain functions, invoked via TanStack Query's `select`.
 
 ---
 
 ## Naming Covenant
 
-### Files
+Domain functions: `verb-noun.ts`. Hook file patterns: see Hook Taxonomy above. Types: `types.ts`. Barrel: `index.ts` (re-exports only).
 
-| Layer | Pattern | Example |
-|-------|---------|---------|
-| Domain function | `verb-noun.ts` | `calculate-total.ts` |
-| Query hook | `use-{noun}.ts` | `use-order.ts` |
-| Mutation hook | `use-{verb}-{noun}.ts` | `use-submit-order.ts` |
-| Computation hook | `use-{noun}-{computed}.ts` | `use-order-total.ts` |
-| Orchestration hook | `use-{noun}-workflow.ts` | `use-order-workflow.ts` |
-| Component | `PascalCase/PascalCase.tsx` | `OrderSummary/OrderSummary.tsx` |
-| Skeleton | `PascalCase/PascalCaseSkeleton.tsx` | `OrderSummary/OrderSummarySkeleton.tsx` |
-| Container | `{Feature}Container.tsx` | `OrderSummaryContainer.tsx` |
-| Types | `types.ts` | `types.ts` |
-| Barrel | `index.ts` | `index.ts` |
-
-### Components
-
-| Level | Convention | Example |
-|-------|-----------|---------|
-| Atom | Bare noun | `Button`, `Badge`, `Input` |
-| Molecule | Compound noun | `FormField`, `SearchInput` |
-| Organism | Feature-level noun | `OrderSummary`, `CommentThread` |
-| Container | `{Organism}Container` | `OrderSummaryContainer` |
-| Page | `{Route}Page` | `CheckoutPage` |
-| Layout | `{Scope}Layout` | `AppLayout`, `AuthLayout` |
-| Skeleton | `{Component}Skeleton` | `OrderSummarySkeleton` |
+| Component level | File pattern | Name convention | Example |
+|----------------|-------------|----------------|---------|
+| Atom | `PascalCase/PascalCase.tsx` | Bare noun | `Button`, `Input` |
+| Molecule | `PascalCase/PascalCase.tsx` | Compound noun | `FormField`, `SearchInput` |
+| Organism | `PascalCase/PascalCase.tsx` | Feature-level noun | `OrderSummary` |
+| Container | `{Feature}Container.tsx` | `{Organism}Container` | `OrderSummaryContainer` |
+| Page | — | `{Route}Page` | `CheckoutPage` |
+| Layout | — | `{Scope}Layout` | `AppLayout` |
+| Skeleton | `{Component}Skeleton.tsx` | `{Component}Skeleton` | `OrderSummarySkeleton` |
 
 ---
 
-## Styling with Tailwind + Radix
+## Styling, Forms, and Composition
 
-### The `cn()` Utility
+**Styling**: Every component uses `cn()` (`clsx` + `twMerge`, defined in `shared/utils/cn.ts`) as the only way to combine Tailwind classes. Radix provides behavior (focus, keyboard, ARIA); Tailwind provides style via `cn()` on Radix's unstyled primitives. No CSS-in-JS or runtime style objects — use `as const` variant maps.
 
-Every component uses `cn()` for class merging. This is the only way to combine Tailwind classes.
+**Forms**: Zod schema is the single source of truth. Define in `types.ts`, derive type via `z.infer<typeof schema>`, pass `zodResolver(schema)` to `useForm`. Form components remain presentational (`onSubmit` + `isSubmitting` as props). Container provides the mutation; Zod provides validation.
 
-```tsx
-// shared/utils/cn.ts
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-```
-
-### Radix Integration Pattern
-
-Radix provides behavior. Tailwind provides style. They compose, never conflict.
-
-```tsx
-import * as Dialog from '@radix-ui/react-dialog';
-import { cn } from '@/shared/utils/cn';
-
-interface ModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  children: React.ReactNode;
-}
-
-export function Modal({ open, onOpenChange, title, children }: ModalProps) {
-  return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
-        <Dialog.Content className={cn(
-          'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
-          'w-full max-w-md rounded-lg bg-white p-6 shadow-xl',
-        )}>
-          <Dialog.Title className="text-lg font-semibold">{title}</Dialog.Title>
-          {children}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-```
-
-### Variants via Class Maps
-
-Do not use CSS-in-JS, `styled-components`, or runtime style objects. Use const objects mapping variant keys to Tailwind class strings.
-
-```tsx
-const variants = {
-  primary: 'bg-blue-600 text-white hover:bg-blue-700',
-  secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-  ghost: 'bg-transparent text-gray-700 hover:bg-gray-100',
-} as const;
-
-const sizes = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg',
-} as const;
-```
-
----
-
-## Forms with React Hook Form + Zod
-
-The Zod schema is the single source of truth. Form state, validation, and TypeScript types all derive from it.
-
-```tsx
-// features/checkout/types.ts
-import { z } from 'zod';
-
-export const shippingSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  address: z.string().min(1, 'Address is required'),
-  city: z.string().min(1, 'City is required'),
-  state: z.string().length(2, 'Use 2-letter state code'),
-  zip: z.string().regex(/^\d{5}(-\d{4})?$/, 'Invalid ZIP code'),
-});
-
-export type ShippingFormData = z.infer<typeof shippingSchema>;
-```
-
-```tsx
-// features/checkout/components/ShippingForm/ShippingForm.tsx
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { shippingSchema, type ShippingFormData } from '../../types';
-import { FormField } from '@/shared/molecules/FormField';
-import { Input } from '@/shared/atoms/Input';
-import { Button } from '@/shared/atoms/Button';
-
-interface ShippingFormProps {
-  onSubmit: (data: ShippingFormData) => void;
-  isSubmitting: boolean;
-}
-
-export function ShippingForm({ onSubmit, isSubmitting }: ShippingFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm<ShippingFormData>({
-    resolver: zodResolver(shippingSchema),
-  });
-
-  return (
-    <div className="space-y-4" role="form" aria-label="Shipping address">
-      <FormField label="Full name" name="name" error={errors.name?.message}>
-        <Input {...register('name')} />
-      </FormField>
-      <FormField label="Address" name="address" error={errors.address?.message}>
-        <Input {...register('address')} />
-      </FormField>
-      <Button onClick={handleSubmit(onSubmit)} disabled={isSubmitting}>
-        {isSubmitting ? 'Saving...' : 'Continue'}
-      </Button>
-    </div>
-  );
-}
-```
-
-**The form component is still presentational.** It receives `onSubmit` and `isSubmitting` as props. The container provides the mutation. The Zod schema provides the validation. The form itself just wires them together.
+**Composition**: Compound components for shared implicit state (dot-notation API). Render props for flexible rendering without prop explosion. Slot pattern for layout sections as named props. Principle: **composition over configuration**.
 
 ---
 
 ## Evolution Protocol
 
-### When a Component Gets Too Big
-
-**Trigger**: Component exceeds 80 lines.
-**Action**: Extract sub-components into the same component folder. They remain private to this feature until needed elsewhere.
-
-### When Two Features Need the Same Component
-
-**Trigger**: An import would cross a feature boundary.
-**Action**: Promote the component to `shared/`. Generalize its props if necessary. Never create cross-feature internal imports.
-
-### When a Feature Gets Too Many Components
-
-**Trigger**: The `components/` folder exceeds 7 items.
-**Action**: Introduce sub-features. A feature may contain a `features/` subfolder with the identical canonical structure. The fractal holds.
-
-```
-features/checkout/
-├── types.ts
-├── features/
-│   ├── payment-method/
-│   │   ├── types.ts
-│   │   ├── domain/
-│   │   ├── hooks/
-│   │   ├── components/
-│   │   └── containers/
-│   └── shipping-address/
-│       ├── types.ts
-│       ├── domain/
-│       ├── hooks/
-│       ├── components/
-│       └── containers/
-├── hooks/
-│   └── use-checkout-workflow.ts
-└── containers/
-    └── CheckoutContainer.tsx
-```
-
-### When You Need Global State
-
-**Action**: Create a provider in `app/providers/`. One provider per concern. The provider pattern is the only mechanism for cross-feature state. No global stores. No imports from one feature's hooks into another feature's components.
-
-### When a Domain Function Serves Multiple Features
-
-**Action**: Move it to `shared/utils/` or create `shared/domain/`. The function remains pure. The move is mechanical.
+| Trigger | Action |
+|---------|--------|
+| Component exceeds 80 lines | Extract sub-components into same folder, private to feature until needed elsewhere |
+| Import would cross feature boundary | Promote component to `shared/`. Generalize props. Never cross-feature internal imports |
+| `components/` exceeds 7 items | Introduce sub-features: `features/` subfolder with identical canonical structure. The fractal holds |
+| Need cross-feature state | Provider in `app/providers/`, one per concern. Only mechanism for cross-feature state. No global stores |
+| Domain function serves multiple features | Move to `shared/utils/` or `shared/domain/`. Remains pure. Mechanical move |
 
 ---
 
@@ -1063,68 +502,25 @@ This sequence is not a suggestion. It is the dependency-respecting order that en
 
 ### Effect Anti-Patterns (Most Common)
 
-**`useEffect` as event handler**: Watching state to trigger actions. `useEffect(() => { if (submitted) save() }, [submitted])` is a disguised click handler. Put the logic in `onClick`. The flag variable is the smell.
-
-**`useEffect` for derived state**: `useEffect(() => setFullName(first + ' ' + last), [first, last])`. This is a `const`. Or `useMemo` if expensive. Never an effect. The extra render cycle and potential for stale reads are bugs waiting to happen.
-
-**`useEffect` for data fetching**: `useEffect(() => { fetch(url).then(setData) }, [url])`. This ignores race conditions, caching, deduplication, error states, and background refetching. Use TanStack Query.
-
-**`useState` + `useEffect` for external reads**: `useEffect(() => { setTheme(localStorage.get('theme')) }, [])`. This reads *after* paint, causing a flash. Use `useSyncExternalStore` or a lazy initializer — both read synchronously.
-
-**`useEffect` for DOM sync that belongs to a store**: If state lives outside React (localStorage, URL, WebSocket), the store should own its own DOM side effects. React's job is to subscribe to the store, not to echo its changes back into the DOM.
-
-**`useEffect` with `[]` for initialization**: This runs after the first paint. If you need state before paint, use a lazy initializer (`useState(() => init())`), module-level initialization, or `useSyncExternalStore`.
+| Anti-pattern | Example smell | Correct alternative |
+|-------------|--------------|-------------------|
+| Effect as event handler | `if (submitted) save()` in effect | Put logic in `onClick` |
+| Effect for derived state | `setFullName(first + last)` in effect | `const` or `useMemo` |
+| Effect for data fetching | `fetch(url).then(setData)` in effect | TanStack Query |
+| Effect for external reads | `setTheme(localStorage.get(...))` in effect | `useSyncExternalStore` or lazy initializer |
+| Effect for store-owned DOM sync | Echoing external state back to DOM | Store owns its own side effects |
+| Effect with `[]` for init | Runs after first paint → flash | Lazy initializer or module-level init |
 
 ### Structural Anti-Patterns
 
-**God components**: A 400-line component with 12 props, 4 effects, inline calculations, and API calls. Split it. There are always seams.
-
-**Smart atoms**: An atom that reads context, fetches data, or contains business logic. The brain does not belong in the fingertip. The atom receives a boolean; the container decides its value.
-
-**Premature abstraction**: Building `GenericDataTable<T>` before the second table exists. Write concrete components. Extract the shared surface only when it reveals itself. It is always smaller than expected.
-
-**Prop drilling past two levels**: Use context or restructure. Intermediate components should not carry data they do not use.
-
-**Domain logic in components**: A `calculateTotal` call inside an organism's JSX. This belongs in a domain function, called by a computation hook, returned by the orchestration hook, and passed to the organism as a number. The organism renders the number. That's all.
-
-**Style-prop creep**: `headerClassName`, `bodyClassName`, `footerClassName`, `itemClassName`. This is not a component — it is a CSS proxy. Use composition, slots, or `children`.
-
----
-
-## Composition Patterns
-
-**Compound components** for complex UI with shared implicit state:
-
-```tsx
-<Tabs defaultValue="overview">
-  <Tabs.List>
-    <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
-    <Tabs.Trigger value="details">Details</Tabs.Trigger>
-  </Tabs.List>
-  <Tabs.Content value="overview">...</Tabs.Content>
-  <Tabs.Content value="details">...</Tabs.Content>
-</Tabs>
-```
-
-**Render prop / children-as-function** for flexible rendering without prop explosion:
-
-```tsx
-<DataList items={items}>
-  {(item) => <OrderCard key={item.id} order={item} />}
-</DataList>
-```
-
-**Slot pattern** for layout components that accept named sections:
-
-```tsx
-<PageLayout
-  header={<BreadcrumbNav />}
-  sidebar={<FilterPanel />}
-  content={<ResultsList />}
-/>
-```
-
-These patterns share a principle: **composition over configuration.** The consumer assembles what they need. The component does not anticipate every combination via props.
+| Anti-pattern | Symptom | Fix |
+|-------------|---------|-----|
+| God components | 400 lines, 12 props, 4 effects, inline API calls | Split — there are always seams |
+| Smart atoms | Atom reads context, fetches data, or has business logic | Atom receives a boolean; container decides its value |
+| Premature abstraction | `GenericDataTable<T>` before the second table exists | Write concrete; extract shared surface when it reveals itself |
+| Prop drilling past 2 levels | Intermediates carry data they don't use | Context or restructure |
+| Domain logic in components | `calculateTotal` in JSX | Domain function → computation hook → orchestration hook → prop |
+| Style-prop creep | `headerClassName`, `bodyClassName`, `footerClassName` | Composition, slots, or `children` |
 
 ---
 
@@ -1146,8 +542,7 @@ Accessibility is not a feature. It is a constraint, like type safety.
 
 | Constraint | Enforced By |
 |-----------|-------------|
-| Dependency direction | `eslint-plugin-boundaries` |
-| Import restrictions per layer | `eslint-plugin-boundaries` |
+| Dependency direction + import restrictions | `eslint-plugin-boundaries` |
 | No `any` | `tsconfig.json` strict mode |
 | Type coverage | TypeScript `strict: true`, `noUncheckedIndexedAccess: true` |
 | Component size limits | ESLint `max-lines-per-function` |
