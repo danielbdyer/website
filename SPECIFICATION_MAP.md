@@ -10,88 +10,129 @@ This map was produced through a practice of exhaustive enumeration: starting fro
 
 ## Reading Order
 
-The agentic surface has a directed reading order. This is not a suggestion — it is content architecture. The sequence determines which context is present when each file is encountered, and that context shapes how the file is understood. An agent arriving at `REACT_NORTH_STAR.md` after reading `CLAUDE.md`, `MEDIUM.md`, and `DOMAIN_MODEL.md` understands the fourteen axioms as expressions of care within a specific medium for a specific domain. An agent arriving at it cold sees technical constraints.
+The agentic surface has a directed reading order — not a list but a graph. The structure determines which context is present when each file is encountered, and that context shapes how the file is understood. An agent arriving at `REACT_NORTH_STAR.md` after reading `CLAUDE.md`, `MEDIUM.md`, and `DOMAIN_MODEL.md` understands the fourteen axioms as expressions of care within a specific medium for a specific domain. An agent arriving at it cold sees technical constraints.
 
-The order descends from being through medium through self-knowledge through structure to operation:
+### The Entry Sequence
+
+The first four files are genuinely linear. Each prepares ground the next one needs.
 
 ```
- 1. CLAUDE.md                  ← The foyer. Who Danny is, how to be here.
-                                  Establishes the lens for everything after.
-    │
- 2. ├── MEDIUM.md              ← The ground. What a webpage is — the seven
-    │                             dimensions, the agentic surface. You must
-    │                             understand the medium before you build in it.
-    │
- 3. ├── TRANSPARENCY.md        ← The site's relationship to its own making.
-    │                             Reframes everything that follows: specs are
-    │                             not just instructions, they are content.
-    │
- 4. ├── SPECIFICATION_MAP.md   ← This file. The inventory and wayfinding.
-    │                             Now you know what exists, what's missing,
-    │                             and how the concerns are organized.
-    │
- 5. ├── DOMAIN_MODEL.md        ← The semantic architecture. Rooms, facets,
-    │   (gap — see #2 below)      works, modes, and their relationships.
-    │                             Currently split across CLAUDE.md and
-    │                             DANNY_FOUNDATION.md; neither is canonical.
-    │
- 6. ├── DESIGN_SYSTEM.md       ← The visual language and its rationale.
-    │   (gap — see #6 below)      Why umber, why serif, why paper grain.
-    │                             The aesthetic philosophy made operational.
-    │
- 7. ├── REACT_NORTH_STAR.md    ← The component architecture. How domain
-    │                             and design become code. Axioms, atoms,
-    │                             dependency law, threshold system.
-    │
- 8. ├── CONTENT_SCHEMA.md      ← Works as data. The bridge between the
-    │   (gap — see #5 below)      domain model and the component layer.
-    │                             Frontmatter, types, directory structure.
-    │
- 9. ├── VOICE_AND_COPY.md      ← How the site speaks in its own voice.
-    │   (gap — see #7 below)      Microcopy register, empty states, labels.
-    │
-10. ├── INFORMATION_ARCHITECTURE.md  ← How visitors move. URL design,
-    │   (gap — see #9 below)           room navigation, wayfinding, the
-    │                                   visitor's journey.
-    │
-11. ├── GRAPH_AND_LINKING.md   ← The one-graph commitment made concrete.
-    │   (gap — see #10 below)     Backlinks, facet threading, link ontology.
-    │
-12. ├── INTERACTION_DESIGN.md  ← Motion, time, choreography. Scroll
-    │   (gap — see #11 below)     reveals, dark mode as dimming, duration
-    │                             as material.
-    │
-13. ├── CONTENT_AUTHORING.md   ← Danny's workflow. How works enter the
-    │   (gap — see #8 below)      site. The writer's interface.
-    │
-    │   ── Technical Contracts ──
-    │
-14. ├── PERFORMANCE_BUDGET.md  ← Speed vs. intentional slowness.
-15. ├── ACCESSIBILITY.md       ← The medium meeting everyone.
-16. ├── RESPONSIVE_STRATEGY.md ← Rooms across viewports. Print.
-17. ├── SEO_AND_META.md        ← The site's social body.
-18. ├── TESTING_STRATEGY.md    ← What to test and why.
-19. ├── SECURITY.md            ← Privacy, CSP, data stance.
-    │
-    │   ── Operations ──
-    │
-20. ├── DEPLOYMENT.md          ← Where the site lives. CI/CD, hosting.
-21. ├── DEPENDENCY_POLICY.md   ← When to add, how to evaluate.
-22. ├── EVOLUTION_PROTOCOL.md  ← How the codebase grows over time.
-23. └── MEDIA_STRATEGY.md      ← Images, audio, video pipeline.
+CLAUDE.md                     The foyer. Who Danny is, how to be here.
+  │                           Establishes the lens for everything after.
+  │
+  ├─→ MEDIUM.md               The ground. What a webpage is — the seven
+  │                           dimensions, the agentic surface. You must
+  │                           understand the medium before you build in it.
+  │
+  ├─→ TRANSPARENCY.md         The site's relationship to its own making.
+  │                           Reframes everything that follows: specs are
+  │                           not just instructions, they are content.
+  │
+  └─→ SPECIFICATION_MAP.md    This file. The inventory and wayfinding.
+                              Now you know what exists, what's missing,
+                              and how the concerns are organized.
 ```
 
-**Why this order matters:**
+After the entry sequence, the graph forks into two independent roots.
 
-The first four files (CLAUDE.md → MEDIUM.md → TRANSPARENCY.md → SPECIFICATION_MAP.md) form the **entry sequence**. They move from soul to medium to self-knowledge to map. After reading them, an agent knows: who Danny is, what a webpage is, that these specifications are themselves part of the site, and what the full landscape of concerns looks like. This is the equivalent of walking through the foyer and getting oriented before entering any room.
+### The Two Trunks
 
-Files 5–9 (domain model through voice) form the **expression layer**. They answer: what is this site about, what does it look like, how is it built, what goes in it, and how does it speak. These are read together because each informs the others — the domain model shapes the content schema, the design system shapes the component architecture, the voice shapes the content authoring.
+Domain model and design system are parallel concerns. Neither depends on the other. One is semantic — what this site is *about*. The other is material — what this site *looks and feels like*. Both descend directly from the entry sequence, and each has its own descendants.
 
-Files 10–13 (information architecture through content authoring) form the **navigation layer**. They answer: how does a visitor move, how does content connect, how does the interface choreograph experience, and how does Danny get his work into the system.
+```
+                    ┌─────────────────────────┐
+                    │     Entry Sequence       │
+                    │  CLAUDE → MEDIUM →       │
+                    │  TRANSPARENCY → MAP      │
+                    └────────────┬────────────┘
+                                 │
+                 ┌───────────────┴───────────────┐
+                 │                               │
+          The Semantic Root                The Material Root
+                 │                               │
+          DOMAIN_MODEL.md                 DESIGN_SYSTEM.md
+          Rooms, facets, works,           Why umber, why serif,
+          modes, relationships.           why paper grain. The
+          (gap — currently split          aesthetic philosophy
+          across CLAUDE.md and            made operational.
+          DANNY_FOUNDATION.md)            (gap)
+                 │                               │
+       ┌─────────┼──────────┐          ┌─────────┼──────────┐
+       │         │          │          │         │          │
+       ▼         ▼          ▼          ▼         ▼          ▼
+   CONTENT   INFO_ARCH  GRAPH &    VOICE &   INTER-    MEDIA
+   SCHEMA    .md        LINKING    COPY.md   ACTION    STRATEGY
+   .md                  .md                  DESIGN    .md
+   Works as  How rooms  The one-   How the   .md       Images,
+   data.     become     graph      site      Motion,   audio,
+   Front-    navigation commitment speaks.   time,     video
+   matter,   — URLs,    made       Micro-    choreo-   pipeline.
+   types,    wayfinding,concrete.  copy      graphy.
+   directory the        Backlinks, register. Dark mode
+   structure.visitor's  facet               as dimming.
+             journey.   threading.
+       │                    │
+       ▼                    │
+   CONTENT                  │
+   AUTHORING.md             │
+   Danny's workflow.        │
+   How works enter          │
+   the site.                │
+                            │
+       ┌────────────────────┘
+       │
+       │  (GRAPH_AND_LINKING depends on both
+       │   DOMAIN_MODEL and CONTENT_SCHEMA —
+       │   it sits at their intersection)
+```
 
-Files 14–23 are **contracts and operations** — the constraints and infrastructure that make the site reliable, accessible, deployable, and maintainable. They're read last not because they matter least, but because they're most meaningful after the intent they serve is understood.
+### The Confluence
 
-**The entry point is always CLAUDE.md.** Every agent session begins there. The reading order below is the path from CLAUDE.md outward — but in practice, an agent working on a specific concern may jump directly to the relevant specification after the entry sequence. The order defines the *default path*, not a mandatory linear reading. It ensures that when files are encountered in sequence, each one lands in prepared ground.
+The component architecture is where the two trunks meet. It can't be understood without both the semantic root (what are we building *for*) and the material root (what does it *feel* like). This is the most-connected node in the graph.
+
+```
+   DOMAIN_MODEL ──────┐
+                      ▼
+               REACT_NORTH_STAR.md
+               How domain and design become
+               code. Axioms, atoms, dependency
+               law, threshold system.
+                      ▲
+   DESIGN_SYSTEM ─────┘
+```
+
+### Contracts
+
+Technical contracts draw from both trunks and the confluence. They don't form a sequence — they're parallel leaves, each rooted in whichever upstream concerns they constrain.
+
+```
+   REACT_NORTH_STAR + INTERACTION_DESIGN ──→ PERFORMANCE_BUDGET.md
+   REACT_NORTH_STAR + DESIGN_SYSTEM ───────→ ACCESSIBILITY.md
+   DESIGN_SYSTEM + REACT_NORTH_STAR ───────→ RESPONSIVE_STRATEGY.md
+   CONTENT_SCHEMA + INFO_ARCHITECTURE ─────→ SEO_AND_META.md
+   REACT_NORTH_STAR ──────────────────────→ TESTING_STRATEGY.md
+   (minimal dependencies) ────────────────→ SECURITY.md
+```
+
+### Operations
+
+The outermost layer. These are meaningful only after the intent they serve is understood.
+
+```
+   REACT_NORTH_STAR ──────→ DEPLOYMENT.md
+   REACT_NORTH_STAR ──────→ DEPENDENCY_POLICY.md
+   (all of the above) ────→ EVOLUTION_PROTOCOL.md
+```
+
+### How to Navigate
+
+**The entry sequence is the one path everyone walks.** Soul → medium → self-knowledge → map. Non-negotiable, always linear, always first.
+
+**After the entry sequence, follow the trunk you need.** Working on content structure? Follow the semantic root: domain model → content schema → content authoring. Working on visual language or motion? Follow the material root: design system → interaction design → voice. Working on components? You need both trunks first — domain model and design system — before the architecture file makes full sense.
+
+**Contracts and operations are read when relevant**, not in sequence. An agent working on accessibility reads the entry sequence, then design system, then component architecture, then the accessibility spec. An agent working on deployment reads the entry sequence, then component architecture, then deployment. The graph tells you which upstream files prepare the ground for any given concern.
+
+**The entry point is always CLAUDE.md.** Every agent session begins there. The graph defines the dependency structure — which files prepare ground for which other files — not a mandatory linear path through all twenty-three documents.
 
 ---
 
