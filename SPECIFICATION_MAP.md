@@ -10,6 +10,14 @@ This map was produced through a practice of exhaustive enumeration: starting fro
 
 ## The Complete Set
 
+### Tier 0 — The Ground
+
+Before any specification about *this* site, there is the question of what a webpage *is*. The medium has its own ontology — dimensions that exist whether or not we attend to them. Every specification downstream is an exploration of one or more of these dimensions.
+
+| # | File | Status | Purpose |
+|---|---|---|---|
+| 0 | `MEDIUM.md` | **Exists** | The epistemography of the webpage as a medium. Names the seven dimensions — hypertextuality, temporality, responsiveness, addressability, semantic structure, social existence, materiality — and traces how each specification inhabits them. This is the philosophical ground beneath the map: not what *this* site is, but what *any* webpage is, so that every downstream decision inherits the right assumptions about the medium it's working in. |
+
 ### Tier 1 — Soul and Structure
 
 These files define what the site *is*. Without them, an agent is building blind.
