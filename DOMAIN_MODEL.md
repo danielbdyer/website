@@ -141,12 +141,15 @@ Further specifics — link syntax, backlink rendering, how the graph is prevente
 Some concerns have been raised and intentionally left unresolved here, because resolving them belongs to a file downstream.
 
 - **How facets appear in the UI.** Whether they are shown as tags, used as filters, color-coded, or surfaced only via a facet-view page is an information architecture question. Held in `INFORMATION_ARCHITECTURE.md` (gap).
-- **What "seasonal" means for the Garden.** Whether the Garden rotates works with the actual seasons, whether some works are hidden at certain times, whether seasonality is a lifecycle state or a presentation choice — held in `CONTENT_SCHEMA.md` and `CONTENT_AUTHORING.md` (both gaps).
-- **How The Foyer is composed.** The Foyer is a room but not a content container; what it actually renders (a letter, a figure, a portrait, a map) is an IA/design question. Held in `INFORMATION_ARCHITECTURE.md`.
+- **How The Foyer is composed.** The Foyer is a room but not a content container; what it actually renders (a letter, a figure, a portrait, a map) is an IA/design question. Held in `INFORMATION_ARCHITECTURE.md`. Note that the Foyer is also *not named as such to visitors* — it is implicit home, reached via the wordmark rather than a labeled nav link. The word "Foyer" belongs to the internal vocabulary.
 - **How audio and other media enter the Salon.** The Salon is the cellist's son's room, and audio is potentially first-class there. Held in `MEDIA_STRATEGY.md` (gap).
 - **Content types (poem, essay, case study, note).** These words are used throughout this file informally. Whether they become a formal type axis (with different rendering, different frontmatter, different routes) or remain descriptive labels is held in `CONTENT_SCHEMA.md`.
 
 These are not open problems to be solved before the next step. They are questions the domain model is consciously not answering, so that the files downstream have room to answer them well.
+
+### Decided, not deferred
+
+- **Seasonality is not a structural feature.** The word "seasonal" appears in `CLAUDE.md` as metaphor — the Garden grows the way a garden grows, organically and imperfectly. It does not appear as a lifecycle field, a rotation mechanism, or a visibility rule. Works do not carry a season. The Garden does not hide poems in winter. Should a future need arise (eras of life, thematic groupings), it will earn its own naming; "seasons" does not reserve that space.
 
 ---
 
