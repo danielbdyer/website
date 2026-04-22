@@ -123,9 +123,13 @@ src/
 ├── app/                            # Application shell
 │   ├── App.tsx                     # Root component, provider composition
 │   ├── routes/                     # TanStack Router route definitions
-│   │   ├── __root.tsx              # Root layout
+│   │   ├── __root.tsx              # Root layout (composes the shell)
 │   │   ├── index.tsx               # Home page
 │   │   └── checkout.tsx            # Route page
+│   ├── layout/                     # App-shell components (Nav, Footer, etc.)
+│   │   ├── Nav.tsx
+│   │   ├── Footer.tsx
+│   │   └── ThemeToggle.tsx
 │   └── providers/                  # Global providers (auth, theme, etc.)
 │       ├── AuthProvider.tsx
 │       ├── ThemeProvider.tsx
@@ -173,7 +177,8 @@ src/
 Arrows indicate allowed import direction. All unlisted directions are forbidden.
 
 ```
-app/routes       →  features/*/containers, shared/*, app/providers
+app/routes       →  features/*/containers, shared/*, app/providers, app/layout
+app/layout       →  app/providers, shared/*
 features/containers  →  features/hooks, features/components
 features/hooks       →  features/domain, features/types, shared/hooks, infrastructure/api, TanStack Query
 features/components  →  features/types (for prop types only), shared/atoms, shared/molecules
