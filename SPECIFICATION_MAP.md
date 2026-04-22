@@ -147,8 +147,8 @@ DESIGN_SYSTEM.md
         Depends on: DESIGN_SYSTEM + DOMAIN_MODEL (cross-dependency).
 ```
 
-**`DESIGN_SYSTEM.md`** | Outside | Gap | Depends on: Entry sequence
-The visual language and its rationale. Not just the token values (those live in `tokens.css`) but *why* umber, *why* serif, *why* paper grain. The aesthetic philosophy that guides every visual decision — materiality, structural warmth, the kind of warmth you feel in a space where someone chose every surface with care and then didn't mention it. Palette, typography, spacing, the Diamond and Ornament vocabulary, how these compose into the site's visual identity. This is probably the most important gap in the specification set — the second-most-important file after `CLAUDE.md`.
+**`DESIGN_SYSTEM.md`** | Outside | Exists | Depends on: Entry sequence
+The visual language and its rationale. Not just the token values (those live in `tokens.css`) but *why* umber, *why* serif, *why* paper grain. Holds the "warmth over polish" anchor, materiality (paper / grain / shadow / border), the umber palette with one primary accent and four held accents, typography (Literata + Newsreader), space and rhythm, a motion gesture (full vocabulary deferred to `INTERACTION_DESIGN.md`), and the ornamental vocabulary (Diamond, Ornament).
 
 **`VOICE_AND_COPY.md`** | Outside | Gap | Depends on: `DESIGN_SYSTEM.md`
 How the site speaks in its own voice — not in Danny's works, but in navigation labels, button text, empty states, error messages, page titles, meta descriptions. The microcopy register. A site that "opens a door and stands back" speaks differently than one that leans forward. This file defines that speech. Depends on the design system because voice is an extension of visual identity — the same sensibility expressed in language rather than color and type.
@@ -294,6 +294,7 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 | `SPECIFICATION_MAP.md` | Exists | This file. Living document. |
 | `REACT_NORTH_STAR.md` | Exists | Comprehensive for component architecture. Partially covers threshold concerns (performance, accessibility) and grounds concerns (testing, dependencies). |
 | `DOMAIN_MODEL.md` | Exists | The inside trunk's root. Absorbed the structural content previously held in `DANNY_FOUNDATION.md`. |
+| `DESIGN_SYSTEM.md` | Exists | The outside trunk's root. Holds the rationale behind `tokens.css` — warmth over polish, the umber palette, two serifs, materiality. Four non-primary accents named and held. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 
