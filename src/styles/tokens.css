@@ -205,3 +205,88 @@ body > #root {
     transform: rotate(360deg);
   }
 }
+
+/* ─── Prose (work body rendering) ───────────────────────────── */
+/* Minimal typography for markdown-rendered work bodies. The CSS reset
+   zeros margins globally; .prose restores the rhythm needed for reading
+   prose, headings, lists, and quotes. Kept narrow for skeleton — this
+   will deepen as DESIGN_SYSTEM articulates per-content-type rendering. */
+.prose p {
+  margin-bottom: 1.4em;
+}
+
+.prose h2 {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  color: var(--text);
+}
+
+.prose h3 {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: var(--text);
+}
+
+.prose ul,
+.prose ol {
+  margin-bottom: 1.4em;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin-bottom: 0.4em;
+}
+
+.prose blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 1em;
+  margin: 1.4em 0;
+  color: var(--text-2);
+  font-style: italic;
+}
+
+.prose a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.prose a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--bg-warm);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
+.prose pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--bg-warm);
+  padding: 1em;
+  border-radius: 4px;
+  margin: 1.4em 0;
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}

@@ -14,6 +14,7 @@ import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SalonRouteImport } from './routes/salon'
 import { Route as GardenRouteImport } from './routes/garden'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RoomSlugRouteImport } from './routes/$room.$slug'
 
 const StudyRoute = StudyRouteImport.update({
   id: '/study',
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoomSlugRoute = RoomSlugRouteImport.update({
+  id: '/$room/$slug',
+  path: '/$room/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/salon': typeof SalonRoute
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
+  '/$room/$slug': typeof RoomSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/salon': typeof SalonRoute
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
+  '/$room/$slug': typeof RoomSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,21 @@ export interface FileRoutesById {
   '/salon': typeof SalonRoute
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
+  '/$room/$slug': typeof RoomSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/garden' | '/salon' | '/studio' | '/study'
+  fullPaths: '/' | '/garden' | '/salon' | '/studio' | '/study' | '/$room/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/garden' | '/salon' | '/studio' | '/study'
-  id: '__root__' | '/' | '/garden' | '/salon' | '/studio' | '/study'
+  to: '/' | '/garden' | '/salon' | '/studio' | '/study' | '/$room/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/garden'
+    | '/salon'
+    | '/studio'
+    | '/study'
+    | '/$room/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +93,7 @@ export interface RootRouteChildren {
   SalonRoute: typeof SalonRoute
   StudioRoute: typeof StudioRoute
   StudyRoute: typeof StudyRoute
+  RoomSlugRoute: typeof RoomSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$room/$slug': {
+      id: '/$room/$slug'
+      path: '/$room/$slug'
+      fullPath: '/$room/$slug'
+      preLoaderRoute: typeof RoomSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +149,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalonRoute: SalonRoute,
   StudioRoute: StudioRoute,
   StudyRoute: StudyRoute,
+  RoomSlugRoute: RoomSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -161,6 +161,7 @@ src/
 │   ├── hooks/                      # Shared utility hooks
 │   ├── utils/                      # Pure utilities (cn.ts, invariant.ts)
 │   ├── types/                      # Shared type definitions (api.ts, common.ts)
+│   ├── content/                    # Build-time content loader (schema, loader, types)
 │   └── lib/                        # Third-party wrappers (query-client.ts)
 │
 └── infrastructure/                 # External system adapters
