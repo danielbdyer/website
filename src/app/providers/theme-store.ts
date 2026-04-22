@@ -15,7 +15,13 @@ function emitChange() {
 
 function isDark(): boolean {
   try {
-    return localStorage.getItem('theme') === 'dark';
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark') return true;
+    if (stored === 'light') return false;
+    // No explicit preference stored — honor the system preference.
+    // ACCESSIBILITY.md commits to prefers-color-scheme as the default
+    // until the visitor makes an explicit choice via the toggle.
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
   } catch {
     return false;
   }

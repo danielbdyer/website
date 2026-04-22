@@ -1,6 +1,6 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { getWork, roomSchema } from '@/shared/content';
-import { WorkView } from '@/features/works/components/WorkView/WorkView';
+import { WorkView } from '@/shared/organisms/WorkView/WorkView';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 
 export const Route = createFileRoute('/$room/$slug')({

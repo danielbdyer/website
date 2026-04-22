@@ -13,8 +13,15 @@ function RootLayout() {
   return (
     <ThemeProvider>
       <div className="min-h-screen">
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <Nav />
-        <main className="max-w-[700px] mx-auto px-6 pt-8 pb-24 min-h-[calc(100vh-200px)]">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="max-w-[700px] mx-auto px-6 pt-8 pb-24 min-h-[calc(100vh-200px)] focus:outline-none"
+        >
           <Outlet />
         </main>
         <Footer />

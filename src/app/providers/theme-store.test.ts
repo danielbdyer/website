@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { themeStore } from './theme-store';
 
 describe('themeStore', () => {
@@ -7,7 +7,35 @@ describe('themeStore', () => {
     document.documentElement.classList.remove('dk', 'lt');
   });
 
-  it('defaults to light when no preference is stored', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('defaults to light when no preference is stored and system is light', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: false })) as unknown as typeof window.matchMedia,
+    );
+    expect(themeStore.getSnapshot()).toBe(false);
+  });
+
+  it('honors prefers-color-scheme: dark when no explicit theme is stored', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query.includes('dark'),
+      })) as unknown as typeof window.matchMedia,
+    );
+    expect(themeStore.getSnapshot()).toBe(true);
+  });
+
+  it('explicit stored "light" wins over system dark preference', () => {
+    localStorage.setItem('theme', 'light');
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true })) as unknown as typeof window.matchMedia,
+    );
     expect(themeStore.getSnapshot()).toBe(false);
   });
 

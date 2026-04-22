@@ -211,14 +211,14 @@ CONTENT_SCHEMA + INFORMATION_ARCHITECTURE
         The house meeting the hostile world.
 ```
 
-**`PERFORMANCE_BUDGET.md`** | Threshold | Gap | Depends on: `REACT_NORTH_STAR.md` + `INTERACTION_DESIGN.md`
-The house meeting expectations of responsiveness. Core Web Vitals targets, bundle size limits, image and font loading strategy. The tension this file resolves: slow transitions are intentional (interaction design says so); slow page loads are not. "Slow on purpose" has a precise technical meaning here, and this file owns that distinction. Depends on the component architecture (what's being loaded) and interaction design (what intentional slowness looks like, so it can be distinguished from unintentional slowness).
+**`PERFORMANCE_BUDGET.md`** | Threshold | Exists | Depends on: `REACT_NORTH_STAR.md` + `INTERACTION_DESIGN.md`
+The house meeting expectations of responsiveness. Web Vitals targets (LCP ≤ 1.5s, INP ≤ 100ms, CLS ≤ 0.05), bundle-size targets (100KB JS gzipped, 15KB CSS), current-state measurement, and the explicit SSG pivot to TanStack Start as the chosen path to hit targets. Names what counts as intentional slowness vs. unintentional. Font loading, image handling budgets, and monitoring strategy.
 
-**`ACCESSIBILITY.md`** | Threshold | Gap | Depends on: `REACT_NORTH_STAR.md` + `DESIGN_SYSTEM.md`
-The house meeting all bodies. WCAG 2.1 AA commitments, keyboard navigation patterns, screen reader behavior, reduced-motion alternatives, focus management, ARIA live regions for dynamic content. `REACT_NORTH_STAR.md` mentions accessibility requirements briefly; this file owns them fully. A site that "gives" must give to everyone. Depends on the component architecture (accessibility is implemented in components) and the design system (color contrast, type sizing, focus indicators are design decisions).
+**`ACCESSIBILITY.md`** | Threshold | Exists | Depends on: `REACT_NORTH_STAR.md` + `DESIGN_SYSTEM.md`
+The house meeting all bodies. WCAG 2.1 AA baseline. User preferences (`prefers-reduced-motion`, `prefers-color-scheme`, `prefers-contrast`) as first-class invariants. Keyboard navigation with skip link, semantic HTML with landmarks, color contrast audited per token, screen-reader patterns, custom `:focus-visible` ring. Known gaps held in the backlog.
 
-**`RESPONSIVE_STRATEGY.md`** | Threshold | Gap | Depends on: `DESIGN_SYSTEM.md` + `REACT_NORTH_STAR.md`
-The house meeting all viewports. Breakpoints, mobile behavior, touch interactions, print styles, browser support matrix. For a site about poetry and essays with a "paper on the walls" aesthetic, print rendering is a first-class concern — a poem should print as beautifully as it renders. Depends on the design system (responsive design is the design language adapting) and the component architecture (responsive behavior is implemented in components).
+**`RESPONSIVE_STRATEGY.md`** | Threshold | Exists | Depends on: `DESIGN_SYSTEM.md` + `REACT_NORTH_STAR.md`
+The house meeting all viewports. The single 700px column as the one layout, zero explicit breakpoints today, minimum 44×44 touch-target commitment, hover-state mitigations for touch devices, browser support tiers, high-DPI handling, and print as a first-class surface (held in backlog — print stylesheet not yet written).
 
 **`SEO_AND_META.md`** | Threshold | Gap | Depends on: `CONTENT_SCHEMA.md` + `INFORMATION_ARCHITECTURE.md`
 The house meeting machines. Open Graph tags, structured data, social card design, sitemap generation, RSS/Atom syndication. How the site presents itself to link previews and search engines. For a poet-essayist, syndication (RSS) matters — readers should be able to subscribe. How each room and work generates its own meta representation. Depends on the content schema (meta is generated from content data) and information architecture (URLs and site structure determine what's indexable).
@@ -301,6 +301,10 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 | `VOICE_AND_COPY.md` | Exists | The site's speaking voice (the house's voice, not the works'). Register, surface conventions, microcopy rules, declinations, and the `[bracketed]` draft pattern honored by the 404 and four room descriptions today. |
 | `INTERACTION_DESIGN.md` | Exists | Motion as material. The four durations, the signature easing curve, Reveal as reading rhythm, dark mode as room dimming, the geometric figure as ambient pulse. Reduced motion noted as a known gap. |
 | `CONTENT_AUTHORING.md` | Exists | Danny's workflow. Write in the repo, `pnpm dev` previews everything including drafts, `pnpm build` publishes only the published. Smallest valid work is two fields and a body. No CMS, no staging, no publish button. |
+| `ACCESSIBILITY.md` | Exists | WCAG 2.1 AA baseline with user preferences (`prefers-reduced-motion`, `prefers-color-scheme`) as first-class invariants. Skip link, `:focus-visible` ring, semantic HTML. Known gaps held in `BACKLOG.md`. |
+| `RESPONSIVE_STRATEGY.md` | Exists | Single 700px column, no breakpoints today. 44×44 touch-target minimum. Print held in backlog. |
+| `PERFORMANCE_BUDGET.md` | Exists | Web Vitals targets. Names the SSG pivot to TanStack Start as the deliberate performance path, held in backlog until the third-work threshold. |
+| `BACKLOG.md` | Exists | Held concerns with trigger conditions. Not a roadmap — a list of work the site knows it owes itself. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 
