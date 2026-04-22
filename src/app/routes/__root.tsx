@@ -2,9 +2,11 @@ import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { ThemeProvider } from '@/app/providers';
 import { Nav } from '@/app/layout/Nav';
 import { Footer } from '@/app/layout/Footer';
+import { NotFound } from '@/app/layout/NotFound';
 
 export const Route = createRootRoute({
   component: RootLayout,
+  notFoundComponent: NotFound,
 });
 
 function RootLayout() {
