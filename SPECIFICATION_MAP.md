@@ -282,6 +282,30 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 
 ---
 
+## The Agentic Surface: Skills
+
+The specs above are a **reference layer** — dense, authoritative, organized for coherence. They are the right shape for an agent that needs to understand *why* something is the way it is. They are a heavier shape than is needed for an agent that simply has a task to do.
+
+Alongside the specs, the repo now carries a **task layer** at [`.claude/skills/`](./.claude/skills/). Each skill is a short markdown file with frontmatter that matches Claude's skill convention. Skills do not duplicate spec content; they are thin, action-shaped walks through the spec graph for recurring tasks.
+
+The task layer today:
+
+| Skill | When it applies | Primary specs it walks |
+|---|---|---|
+| [`write-a-work`](./.claude/skills/write-a-work/SKILL.md) | Publishing a new poem / essay / case study / note. | `CONTENT_AUTHORING`, `CONTENT_SCHEMA`, `DOMAIN_MODEL`, `GRAPH_AND_LINKING`, `VOICE_AND_COPY` |
+| [`add-component`](./.claude/skills/add-component/SKILL.md) | Building a new UI piece at any level (atom / molecule / organism / app-layout). | `REACT_NORTH_STAR`, `DESIGN_SYSTEM`, `VOICE_AND_COPY`, `ACCESSIBILITY`, `RESPONSIVE_STRATEGY`, `INTERACTION_DESIGN` |
+| [`evolve-domain`](./.claude/skills/evolve-domain/SKILL.md) | Changing the site's ontology — a new facet, a new room, making modes concrete, a new content type. | `DOMAIN_MODEL`, `CONTENT_SCHEMA`, `CLAUDE`, `GRAPH_AND_LINKING`, `DESIGN_SYSTEM` |
+| [`audit-canaries`](./.claude/skills/audit-canaries/SKILL.md) | Running accessibility / performance / SEO audits, or diagnosing a canary failure. | `ACCESSIBILITY`, `PERFORMANCE_BUDGET`, `SEO_AND_META`, `BACKLOG` |
+| [`write-a-spec`](./.claude/skills/write-a-spec/SKILL.md) | Adding a new spec file or meaningfully updating one. | `CLAUDE`, `MEDIUM`, `TRANSPARENCY`, `SPECIFICATION_MAP`, `VOICE_AND_COPY` |
+
+**The discipline.** Skills are *thin by design.* A skill that becomes long has almost certainly drifted toward duplicating spec content — when that happens, extract the duplicated prose back to a spec and reference it. The skill layer and the spec layer speak to different needs (task and reference); keeping them honest about their roles keeps both navigable.
+
+**When to add a new skill.** The trigger is the same as any other part of this codebase: when a task has surfaced as a recurring pattern that benefits from a dedicated entry point. Not before. The current five cover the dominant tasks; future skills will earn their place.
+
+**When a skill and a spec disagree.** The spec wins. Skills are downstream of specs by construction. A skill that contradicts a spec is a skill that has aged; update it.
+
+---
+
 ## Current State
 
 **What exists today:**
