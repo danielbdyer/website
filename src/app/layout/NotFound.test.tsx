@@ -18,10 +18,10 @@ function renderInRouter() {
 }
 
 describe('NotFound', () => {
-  it('renders the quiet 404 copy', async () => {
+  it('renders placeholder-bracketed 404 copy', async () => {
     renderInRouter();
-    expect(await screen.findByText("This door doesn't open.")).toBeInTheDocument();
-    expect(screen.getByText('The rest of the house is still here.')).toBeInTheDocument();
+    expect(await screen.findByText("[This door doesn't open.]")).toBeInTheDocument();
+    expect(screen.getByText('[The rest of the house is still here.]')).toBeInTheDocument();
   });
 
   it('offers a link home', async () => {
@@ -32,7 +32,7 @@ describe('NotFound', () => {
 
   it('includes an ornament between the message and the link', async () => {
     const { container } = renderInRouter();
-    await screen.findByText("This door doesn't open.");
+    await screen.findByText("[This door doesn't open.]");
     const svg = container.querySelector('svg');
     expect(svg).not.toBeNull();
   });
