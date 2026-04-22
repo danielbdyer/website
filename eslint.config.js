@@ -128,7 +128,10 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      'max-lines-per-function': ['warn', { max: 120, skipBlankLines: true, skipComments: true }],
+      // North star: target 60 lines, hard limit 80. ESLint's max-lines-per-function
+      // only supports a single severity, so we enforce the hard limit here. The 60-line
+      // target is held culturally and in REACT_NORTH_STAR.md's threshold tables.
+      'max-lines-per-function': ['error', { max: 80, skipBlankLines: true, skipComments: true }],
     },
   },
 );
