@@ -96,8 +96,8 @@ DOMAIN_MODEL.md
 **`DOMAIN_MODEL.md`** | Inside | Exists | Depends on: Entry sequence
 The ontology. Rooms, facets, works, modes, and their relationships as a conceptual system. The single source of truth for what a room *is*, what a facet *means*, what a work *contains*, and how they relate. Absorbs the structural content previously split between `CLAUDE.md` (which keeps the soul) and `DANNY_FOUNDATION.md` (retired). Currently covers rooms, works, facets, modes (held architecturally absent), work-to-work relationships, and explicitly defers several downstream concerns to files that will own them.
 
-**`CONTENT_SCHEMA.md`** | Inside | Gap | Depends on: `DOMAIN_MODEL.md`
-Works as data. Frontmatter shape, file naming conventions, directory structure for content files, content types (poem, essay, case study, note), required vs. optional fields, how facets are encoded, how room assignment works. This is the bridge between the domain model ("works live in rooms and carry facets") and the component architecture ("containers call one orchestration hook and render one organism"). Without it, an agent has vision on one side and plumbing on the other, with no pipe between them.
+**`CONTENT_SCHEMA.md`** | Inside | Exists | Depends on: `DOMAIN_MODEL.md`
+Works as data. Filesystem convention (`src/content/{room}/{slug}.md`), the Zod-validated frontmatter shape with minimal required fields (`title`, `date`) and richly optional ones (`summary`, `facets`, `type`, `draft`), content types as rendering hints, draft handling as a frontmatter flag, body as GitHub-flavored markdown with MDX held as a per-file option, build-time loading via `import.meta.glob`, and explicit deferrals for media, link syntax, and series/collections.
 
 **`GRAPH_AND_LINKING.md`** | Inside | Gap | Depends on: `DOMAIN_MODEL.md` + `CONTENT_SCHEMA.md`
 The "one graph" commitment made concrete. How backlinks work, how a poem links to a case study, how facets create navigable threads across rooms, what prevents the graph from becoming noise as it grows. This is architecturally significant — "everything is one graph" is a core promise in `CLAUDE.md`, but no specification exists for how it's implemented or maintained. Includes the ontological question: what can link to what, and what does a link *mean*? Depends on the domain model (what entities exist to link) and the content schema (how links are encoded in frontmatter or body).
@@ -295,6 +295,7 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 | `REACT_NORTH_STAR.md` | Exists | Comprehensive for component architecture. Partially covers threshold concerns (performance, accessibility) and grounds concerns (testing, dependencies). |
 | `DOMAIN_MODEL.md` | Exists | The inside trunk's root. Absorbed the structural content previously held in `DANNY_FOUNDATION.md`. |
 | `DESIGN_SYSTEM.md` | Exists | The outside trunk's root. Holds the rationale behind `tokens.css` — warmth over polish, the umber palette, two serifs, materiality. Four non-primary accents named and held. |
+| `CONTENT_SCHEMA.md` | Exists | Works as data. Filesystem-first, Zod-validated frontmatter, minimal required fields, draft as a frontmatter flag, MDX held per-file. No content or loader exists yet — both appear with the first work. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 
