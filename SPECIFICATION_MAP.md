@@ -156,8 +156,8 @@ How the site speaks in its own voice — not in Danny's works, but in navigation
 **`INTERACTION_DESIGN.md`** | Outside | Gap | Depends on: `DESIGN_SYSTEM.md`
 Motion, transitions, scroll behavior, pace, and dark mode as a room dimming. The temporal/kinetic design language. This site uses time as a material — slow transitions, scroll reveals that feel like rooms opening, a geometric figure that takes a full minute to rotate. This file specifies the choreographic vocabulary: easing curves, duration philosophy, stagger patterns, how motion serves the feeling of place rather than performing delight. Dark mode lives here — it's a transition experience, not a toggle. Depends on the design system because motion is the design language in time.
 
-**`INFORMATION_ARCHITECTURE.md`** | Outside | Gap | Depends on: `DESIGN_SYSTEM.md` + `DOMAIN_MODEL.md`
-The hallways and doors. Navigation model, URL design, room-to-route mapping, the visitor's journey from arrival through orientation to wandering to deepening. How the house metaphor manifests in actual wayfinding. Some of this is implied by the existing route structure (`/studio`, `/garden`, etc.) but the *intent* behind the structure — what each room's landing page contains, how a visitor discovers works within a room, how rooms invite you into adjacent rooms — isn't specified anywhere. Depends on the design system (navigation is a spatial/visual concern) and the domain model (you need to know what rooms exist before you can map them to routes). This is the one outside file with a cross-dependency on inside.
+**`INFORMATION_ARCHITECTURE.md`** | Outside | Exists | Depends on: `DESIGN_SYSTEM.md` + `DOMAIN_MODEL.md`
+The hallways and doors. Names the four registers (arrival, orientation, wandering, deepening) and maps each to a surface. Specifies URL design (`/`, `/{room}`, `/{room}/{slug}`, `/facet/{facet}`), the sticky text-only nav with the wordmark as home, room-landing shape, the Foyer's composition, work-page anatomy with the no-dead-ends commitment, facet chips + facet pages grouped by room, and error/empty-state behavior. Holds search and the graph-view surface as deferred concepts; holds the time-slider location in the nav top-right.
 
 ## The House — Where Inside Meets Outside
 
@@ -296,6 +296,7 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 | `DOMAIN_MODEL.md` | Exists | The inside trunk's root. Absorbed the structural content previously held in `DANNY_FOUNDATION.md`. |
 | `DESIGN_SYSTEM.md` | Exists | The outside trunk's root. Holds the rationale behind `tokens.css` — warmth over polish, the umber palette, two serifs, materiality. Four non-primary accents named and held. |
 | `CONTENT_SCHEMA.md` | Exists | Works as data. Filesystem-first, Zod-validated frontmatter, minimal required fields, draft as a frontmatter flag, MDX held per-file. No content or loader exists yet — both appear with the first work. |
+| `INFORMATION_ARCHITECTURE.md` | Exists | The hallways and doors. The four registers, URL design, the nav and Foyer, room landings, work pages with no dead ends, facet surfaces, error and empty states. Work and facet routes noted as gaps until content arrives; a 404 route and empty-room invitation can be built before. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 
