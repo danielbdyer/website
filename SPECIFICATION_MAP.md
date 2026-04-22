@@ -93,8 +93,8 @@ DOMAIN_MODEL.md
         Depends on: CONTENT_SCHEMA.
 ```
 
-**`DOMAIN_MODEL.md`** | Inside | Gap | Depends on: Entry sequence
-The ontology. Rooms, facets, works, modes, and their relationships as a conceptual system. The single source of truth for what a room *is*, what a facet *means*, what a work *contains*, and how they relate. Currently split between `CLAUDE.md` (which holds the poetic description) and `DANNY_FOUNDATION.md` (which holds a tabular version with stale open questions). Neither is canonical. This file should resolve that — absorbing the structural content from both and becoming the authoritative reference for the site's semantic architecture. `CLAUDE.md` keeps the soul; this file keeps the structure.
+**`DOMAIN_MODEL.md`** | Inside | Exists | Depends on: Entry sequence
+The ontology. Rooms, facets, works, modes, and their relationships as a conceptual system. The single source of truth for what a room *is*, what a facet *means*, what a work *contains*, and how they relate. Absorbs the structural content previously split between `CLAUDE.md` (which keeps the soul) and `DANNY_FOUNDATION.md` (retired). Currently covers rooms, works, facets, modes (held architecturally absent), work-to-work relationships, and explicitly defers several downstream concerns to files that will own them.
 
 **`CONTENT_SCHEMA.md`** | Inside | Gap | Depends on: `DOMAIN_MODEL.md`
 Works as data. Frontmatter shape, file naming conventions, directory structure for content files, content types (poem, essay, case study, note), required vs. optional fields, how facets are encoded, how room assignment works. This is the bridge between the domain model ("works live in rooms and carry facets") and the component architecture ("containers call one orchestration hook and render one organism"). Without it, an agent has vision on one side and plumbing on the other, with no pipe between them.
@@ -293,9 +293,9 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 | `TRANSPARENCY.md` | Exists | Complete for its scope. |
 | `SPECIFICATION_MAP.md` | Exists | This file. Living document. |
 | `REACT_NORTH_STAR.md` | Exists | Comprehensive for component architecture. Partially covers threshold concerns (performance, accessibility) and grounds concerns (testing, dependencies). |
-| `DANNY_FOUNDATION.md` | Unplaced | Contains stale open questions already answered (tech stack, navigation). Tabular content model overlaps with `CLAUDE.md`'s poetic version. Neither is canonical. This file's role resolves when `DOMAIN_MODEL.md` is written — it gets absorbed, retired as a historical artifact, or refreshed. It is not a node in the reading order graph; it is a question the graph is holding. |
+| `DOMAIN_MODEL.md` | Exists | The inside trunk's root. Absorbed the structural content previously held in `DANNY_FOUNDATION.md`. |
 
-**The domain model overlap:** `CLAUDE.md` and `DANNY_FOUNDATION.md` both describe rooms, facets, works, and design principles in different registers — one poetic, one tabular. An agent reading both receives the concepts twice with no clear authority hierarchy. The resolution is implied by the graph structure: `DOMAIN_MODEL.md` becomes the inside trunk's root. `CLAUDE.md` keeps the soul. `DOMAIN_MODEL.md` keeps the structure. `DANNY_FOUNDATION.md` is absorbed or retired. This decision should be made before the content schema is written.
+**The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 
 ---
 
