@@ -284,25 +284,25 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 
 ## The Agentic Surface: Skills
 
-The specs above are a **reference layer** — dense, authoritative, organized for coherence. They are the right shape for an agent that needs to understand *why* something is the way it is. They are a heavier shape than is needed for an agent that simply has a task to do.
+The specs above are a **reference layer** — dense, authoritative, organized for coherence. They are the right shape for an agent that needs to understand *why* something is the way it is.
 
-Alongside the specs, the repo now carries a **task layer** at [`.claude/skills/`](./.claude/skills/). Each skill is a short markdown file with frontmatter that matches Claude's skill convention. Skills do not duplicate spec content; they are thin, action-shaped walks through the spec graph for recurring tasks.
+Alongside the specs, the repo carries a **task-orientation layer** at [`.claude/skills/`](./.claude/skills/). Each skill is an *orientation toward an outcome Danny has requested* — a persistent bundle of the right specs, practices, and sensibilities to bring to that kind of work. Skills are not task-step walkthroughs; they are the context an agent needs to do right work of a certain kind, loaded as core memory when Danny names the outcome.
 
-The task layer today:
+The five outcomes today:
 
-| Skill | When it applies | Primary specs it walks |
+| Skill | The outcome Danny is requesting | Primary specs it orients to |
 |---|---|---|
-| [`write-a-work`](./.claude/skills/write-a-work/SKILL.md) | Publishing a new poem / essay / case study / note. | `CONTENT_AUTHORING`, `CONTENT_SCHEMA`, `DOMAIN_MODEL`, `GRAPH_AND_LINKING`, `VOICE_AND_COPY` |
-| [`add-component`](./.claude/skills/add-component/SKILL.md) | Building a new UI piece at any level (atom / molecule / organism / app-layout). | `REACT_NORTH_STAR`, `DESIGN_SYSTEM`, `VOICE_AND_COPY`, `ACCESSIBILITY`, `RESPONSIVE_STRATEGY`, `INTERACTION_DESIGN` |
-| [`evolve-domain`](./.claude/skills/evolve-domain/SKILL.md) | Changing the site's ontology — a new facet, a new room, making modes concrete, a new content type. | `DOMAIN_MODEL`, `CONTENT_SCHEMA`, `CLAUDE`, `GRAPH_AND_LINKING`, `DESIGN_SYSTEM` |
-| [`audit-canaries`](./.claude/skills/audit-canaries/SKILL.md) | Running accessibility / performance / SEO audits, or diagnosing a canary failure. | `ACCESSIBILITY`, `PERFORMANCE_BUDGET`, `SEO_AND_META`, `BACKLOG` |
-| [`write-a-spec`](./.claude/skills/write-a-spec/SKILL.md) | Adding a new spec file or meaningfully updating one. | `CLAUDE`, `MEDIUM`, `TRANSPARENCY`, `SPECIFICATION_MAP`, `VOICE_AND_COPY` |
+| [`coding`](./.claude/skills/coding/SKILL.md) | Writing, modifying, or reviewing code on this site. | `REACT_NORTH_STAR`, `DESIGN_SYSTEM`, `INTERACTION_DESIGN`, `ACCESSIBILITY`, `VOICE_AND_COPY`, `PERFORMANCE_BUDGET`, `RESPONSIVE_STRATEGY` |
+| [`writing-prose`](./.claude/skills/writing-prose/SKILL.md) | Authoring a work — poem, essay, case study, note. | `CONTENT_AUTHORING`, `CONTENT_SCHEMA`, `DOMAIN_MODEL`, `GRAPH_AND_LINKING`, `CLAUDE` |
+| [`writing-specs`](./.claude/skills/writing-specs/SKILL.md) | Adding or updating a specification file. | `CLAUDE`, `MEDIUM`, `TRANSPARENCY`, `SPECIFICATION_MAP`, `VOICE_AND_COPY` |
+| [`architecting`](./.claude/skills/architecting/SKILL.md) | Making a structural decision — domain change, stack pivot, spec reconciliation, or a held tension that needs acknowledgment. | `CLAUDE` (spanda), `DOMAIN_MODEL`, `SPECIFICATION_MAP`, `BACKLOG`, `PERFORMANCE_BUDGET`, `REACT_NORTH_STAR` |
+| [`auditing`](./.claude/skills/auditing/SKILL.md) | Running accessibility / performance / SEO canaries, or distinguishing a regression from a known tradeoff. | `ACCESSIBILITY`, `PERFORMANCE_BUDGET`, `SEO_AND_META`, `BACKLOG` |
 
-**The discipline.** Skills are *thin by design.* A skill that becomes long has almost certainly drifted toward duplicating spec content — when that happens, extract the duplicated prose back to a spec and reference it. The skill layer and the spec layer speak to different needs (task and reference); keeping them honest about their roles keeps both navigable.
+**The discipline.** Skills bundle; they never duplicate. When a skill and a spec disagree, the spec wins. When a skill grows long, extract the duplicated content back to a spec and reference it from the skill. The skill layer speaks to *orientation* (how to approach this kind of work); the spec layer speaks to *reference* (what the decision actually is). Keeping that distinction honest keeps both useful.
 
-**When to add a new skill.** The trigger is the same as any other part of this codebase: when a task has surfaced as a recurring pattern that benefits from a dedicated entry point. Not before. The current five cover the dominant tasks; future skills will earn their place.
+**Why outcomes rather than tasks.** The earlier draft of this layer was five task-oriented skills (`write-a-work`, `add-component`, ...). The current draft replaces them with five *outcome* orientations. The shift matters: Danny requests outcomes, not tasks. "Help me code on this site" loads `coding` — the full orientation, persistent as core memory for the session. Task-level help emerges *inside* that orientation when needed. The outcome-skill surface is smaller and richer; the task-step breakdown lives inside the relevant spec, a click away.
 
-**When a skill and a spec disagree.** The spec wins. Skills are downstream of specs by construction. A skill that contradicts a spec is a skill that has aged; update it.
+**When to add a new skill.** When a new outcome category surfaces — a kind of work that doesn't fit any of the five above, that Danny requests often enough to warrant its own core memory bundle. Not before.
 
 ---
 
