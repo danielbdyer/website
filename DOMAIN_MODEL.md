@@ -47,7 +47,7 @@ Each room is an atmosphere as much as a category. The room a work lives in is th
 ### Invariants
 
 - A work lives in **exactly one** room. No work is co-owned by two rooms; a work that feels like it belongs in two is usually a work that belongs in one and reaches into the other via a facet or a link.
-- The Foyer is a room but not a content container. It holds the site's introduction, not works. This distinction matters for the content model: when code iterates "works in a room," the Foyer returns an empty set and that is correct, not a bug.
+- **Do not scaffold around the Foyer's current emptiness.** The Foyer does not today hold works, and code that iterates works-by-room may return an empty set for the Foyer. Treat that as a genuine empty set, not a special case — no `if (room === 'foyer') { /* skip */ }` branches, no separate code paths for the Foyer as "the weird room." The possibility of a Foyer work — a letter, an introduction rendered as a work, a portrait-as-work — is intentionally left open; nothing in the model should need to change to welcome such a work when it arrives.
 - Rooms do not nest. There are no sub-rooms. A room that grows too large becomes a signal to reconsider whether a new dimension of Danny's life wants naming, not a signal to subdivide.
 
 ---
