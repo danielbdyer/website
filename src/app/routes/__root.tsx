@@ -3,6 +3,7 @@ import { ThemeProvider } from '@/app/providers';
 import { Nav } from '@/app/layout/Nav';
 import { Footer } from '@/app/layout/Footer';
 import { NotFound } from '@/app/layout/NotFound';
+import { JsonLd, personSchema, websiteSchema } from '@/shared/seo';
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -13,6 +14,7 @@ function RootLayout() {
   return (
     <ThemeProvider>
       <div className="min-h-screen">
+        <JsonLd data={[websiteSchema(), personSchema()]} />
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>

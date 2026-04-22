@@ -6,6 +6,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router';
+import { axe } from '@/test/axe';
 import { NotFound } from './NotFound';
 
 function renderInRouter() {
@@ -35,5 +36,12 @@ describe('NotFound', () => {
     await screen.findByText("[This door doesn't open.]");
     const svg = container.querySelector('svg');
     expect(svg).not.toBeNull();
+  });
+
+  it('has no accessibility violations', async () => {
+    const { container } = renderInRouter();
+    await screen.findByText("[This door doesn't open.]");
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

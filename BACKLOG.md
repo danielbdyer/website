@@ -30,8 +30,11 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Trigger:** When design tokens change often enough that manual verification stops being reliable.
 
 ### `axe-core` integration in tests
-**Why:** Catch accessibility regressions automatically. Would run against rendered pages via `@axe-core/playwright` or `jest-axe`.
-**Trigger:** When the first work exists and pages have meaningful content to audit, or when an accessibility regression slips into production.
+**State:** Implemented as of the canary-baseline pass. `jest-axe` is wired into vitest via `src/test/axe.ts`; NotFound and WorkView tests assert zero violations. `color-contrast` and `region` checks are disabled in the vitest suite because they need a real browser — those are covered by Lighthouse CI against the built site.
+
+### Expand axe coverage to more components
+**Why:** Today, only NotFound and WorkView run axe. Nav, Footer, ThemeToggle, and the Foyer page have no a11y assertion.
+**Trigger:** When any of those components gain interactive complexity, or when a regression is caught in Lighthouse but not in component tests.
 
 ---
 
@@ -152,5 +155,28 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Trigger:** Before the site ships to production. The absence of data collection is itself a security decision worth declaring.
 
 ### SEO and meta
-**Why:** `SEO_AND_META.md` is a gap. Owns Open Graph tags, structured data, social card design, sitemap, RSS/Atom feeds.
-**Trigger:** When the first work is written. Meta tags are a per-work concern; until works exist, there's nothing to generate meta for.
+**State:** Specification exists (`SEO_AND_META.md`). Schema.org JSON-LD is implemented for `WebSite`, `Person`, the `CreativeWork` subtypes for works, and `BreadcrumbList` for work pages. Remaining items below are sub-tasks of the spec.
+
+### Per-page title and meta description
+**Why:** Each route should emit its own `<title>` and `<meta name="description">`. Today the `<title>` is "Danny Dyer" globally from `index.html`; the description is not set.
+**Trigger:** Before the first deploy, or alongside the SSG pivot — with static HTML, per-page meta becomes straightforward.
+
+### Open Graph image generation
+**Why:** Each work wants a 1200×630 OG image rendered from its title, date, and facets over the umber ground. Specified in `SEO_AND_META.md`.
+**Trigger:** Before the first deploy, once a shared aesthetic for the card is decided.
+
+### Sitemap generation
+**Why:** `sitemap.xml` listing every published work, room, and facet page. Generated from the `Graph` object at build time.
+**Trigger:** With the first work.
+
+### RSS / Atom feeds
+**Why:** Per-room feeds and a site-wide feed, full-content not summaries. Specified in `SEO_AND_META.md`.
+**Trigger:** With the first work that a reader might want to follow.
+
+### `robots.txt`
+**Why:** Minimal `Allow: /` + sitemap pointer.
+**Trigger:** Before the first deploy.
+
+### Web Vitals production analytics
+**State:** `web-vitals` library is wired (`src/shared/seo/web-vitals.ts`) and logs to the console in dev. Production forwarding is deferred.
+**Trigger:** When a deployment and analytics provider are chosen (`DEPLOYMENT.md`).

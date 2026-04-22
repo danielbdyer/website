@@ -6,6 +6,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router';
+import { axe } from '@/test/axe';
 import type { Work } from '@/shared/content/schema';
 import { WorkView } from './WorkView';
 
@@ -85,5 +86,12 @@ describe('WorkView', () => {
     await screen.findByRole('heading', { name: 'A Working Title' });
     expect(screen.getByRole('heading', { name: 'A Heading' })).toBeInTheDocument();
     expect(screen.getByText('italic').tagName).toBe('EM');
+  });
+
+  it('has no accessibility violations', async () => {
+    const { container } = renderWork(makeWork({ facets: ['craft'], summary: 'A line.' }));
+    await screen.findByRole('heading', { name: 'A Working Title' });
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

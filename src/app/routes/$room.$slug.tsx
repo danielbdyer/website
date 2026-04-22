@@ -2,6 +2,7 @@ import { createFileRoute, notFound } from '@tanstack/react-router';
 import { getWork, roomSchema } from '@/shared/content';
 import { WorkView } from '@/shared/organisms/WorkView/WorkView';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
+import { breadcrumbSchema, JsonLd, workSchema } from '@/shared/seo';
 
 export const Route = createFileRoute('/$room/$slug')({
   loader: ({ params }) => {
@@ -17,8 +18,11 @@ export const Route = createFileRoute('/$room/$slug')({
 function WorkPage() {
   const { work } = Route.useLoaderData();
   return (
-    <Reveal>
-      <WorkView work={work} />
-    </Reveal>
+    <>
+      <JsonLd data={[workSchema(work), breadcrumbSchema(work)]} />
+      <Reveal>
+        <WorkView work={work} />
+      </Reveal>
+    </>
   );
 }

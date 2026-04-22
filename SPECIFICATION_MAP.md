@@ -220,8 +220,8 @@ The house meeting all bodies. WCAG 2.1 AA baseline. User preferences (`prefers-r
 **`RESPONSIVE_STRATEGY.md`** | Threshold | Exists | Depends on: `DESIGN_SYSTEM.md` + `REACT_NORTH_STAR.md`
 The house meeting all viewports. The single 700px column as the one layout, zero explicit breakpoints today, minimum 44×44 touch-target commitment, hover-state mitigations for touch devices, browser support tiers, high-DPI handling, and print as a first-class surface (held in backlog — print stylesheet not yet written).
 
-**`SEO_AND_META.md`** | Threshold | Gap | Depends on: `CONTENT_SCHEMA.md` + `INFORMATION_ARCHITECTURE.md`
-The house meeting machines. Open Graph tags, structured data, social card design, sitemap generation, RSS/Atom syndication. How the site presents itself to link previews and search engines. For a poet-essayist, syndication (RSS) matters — readers should be able to subscribe. How each room and work generates its own meta representation. Depends on the content schema (meta is generated from content data) and information architecture (URLs and site structure determine what's indexable).
+**`SEO_AND_META.md`** | Threshold | Exists | Depends on: `CONTENT_SCHEMA.md` + `INFORMATION_ARCHITECTURE.md`
+The house meeting machines. Per-page title/meta patterns, Schema.org JSON-LD for `WebSite` / `Person` on every page and `CreativeWork`-family + `BreadcrumbList` on work pages (implemented via `src/shared/seo/`), Open Graph image generation (held), sitemap and feeds (held), `robots.txt` (held). Most surface-level items are cheaper on the other side of the SSG pivot.
 
 **`SECURITY.md`** | Threshold | Gap | Depends on: Minimal upstream
 The house meeting the hostile world. Content Security Policy, dependency auditing stance, data handling (the site likely collects nothing, but that decision should be explicit), privacy posture. Lighter for a static content site but the posture still needs to be named — the absence of data collection is itself a design decision worth declaring.
@@ -304,6 +304,7 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 | `ACCESSIBILITY.md` | Exists | WCAG 2.1 AA baseline with user preferences (`prefers-reduced-motion`, `prefers-color-scheme`) as first-class invariants. Skip link, `:focus-visible` ring, semantic HTML. Known gaps held in `BACKLOG.md`. |
 | `RESPONSIVE_STRATEGY.md` | Exists | Single 700px column, no breakpoints today. 44×44 touch-target minimum. Print held in backlog. |
 | `PERFORMANCE_BUDGET.md` | Exists | Web Vitals targets. Names the SSG pivot to TanStack Start as the deliberate performance path, held in backlog until the third-work threshold. |
+| `SEO_AND_META.md` | Exists | Per-page meta patterns and Schema.org JSON-LD, implemented for every route. Sitemap, feeds, OG images, and robots.txt held in backlog. |
 | `BACKLOG.md` | Exists | Held concerns with trigger conditions. Not a roadmap — a list of work the site knows it owes itself. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
