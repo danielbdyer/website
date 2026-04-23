@@ -224,7 +224,10 @@ The house meeting all viewports. The single 700px column as the one layout, zero
 The house meeting machines. Per-page title/meta patterns, Schema.org JSON-LD for `WebSite` / `Person` on every page and `CreativeWork`-family + `BreadcrumbList` on work pages (implemented via `src/shared/seo/`), Open Graph image generation (held), sitemap and feeds (held), `robots.txt` (held). Most surface-level items are cheaper on the other side of the SSG pivot.
 
 **`SECURITY.md`** | Threshold | Gap | Depends on: Minimal upstream
-The house meeting the hostile world. Content Security Policy, dependency auditing stance, data handling (the site likely collects nothing, but that decision should be explicit), privacy posture. Lighter for a static content site but the posture still needs to be named — the absence of data collection is itself a design decision worth declaring.
+The house meeting the hostile world. Content Security Policy, dependency auditing stance. Privacy is now split into its own file (`PRIVACY.md`); this one remains a gap focused on threat posture. Lighter for a static content site but the posture still needs to be named — the absence of data collection is itself a design decision worth declaring.
+
+**`PRIVACY.md`** | Threshold | Exists | Depends on: Minimal upstream
+The site's relationship to visitor data. Declines all personal-data collection, cookies (except a `theme` localStorage entry), third-party trackers, fingerprinting, session replay. Commits to aggregate-only, IP-non-retained, privacy-respecting Web Vitals when analytics eventually wires. Names a known privacy leak (Google Fonts) with a clear path to self-hosting in the backlog.
 
 ## The Grounds — What Supports the House
 
@@ -329,6 +332,7 @@ The five outcomes today:
 | `RESPONSIVE_STRATEGY.md` | Exists | Single 700px column, no breakpoints today. 44×44 touch-target minimum. Print held in backlog. |
 | `PERFORMANCE_BUDGET.md` | Exists | Web Vitals targets. Names the SSG pivot to TanStack Start as the deliberate performance path, held in backlog until the third-work threshold. |
 | `SEO_AND_META.md` | Exists | Per-page meta patterns and Schema.org JSON-LD, implemented for every route. Sitemap, feeds, OG images, and robots.txt held in backlog. |
+| `PRIVACY.md` | Exists | Privacy posture for a static content site. Declines tracking, cookies, fingerprinting. Web Vitals forwarding held until a privacy-respecting provider is chosen. |
 | `BACKLOG.md` | Exists | Held concerns with trigger conditions. Not a roadmap — a list of work the site knows it owes itself. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.

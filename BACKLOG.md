@@ -191,14 +191,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ---
 
-## Privacy
-
-### Web Vitals consent gating
-**Why:** `reportWebVitals()` fires unconditionally in `main.tsx`. Today it only logs to console in dev and has no production forwarding, so this is latent. When `DEPLOYMENT.md` wires a provider, the consent question becomes real. Name the stance before carelessly bolting analytics on.
-**Trigger:** Immediate for the stance declaration (in `SEO_AND_META.md` or a new `PRIVACY.md`). Implementation waits for the analytics provider decision.
-
----
-
 ## Operational
 
 ### CI workflow (GitHub Actions)
