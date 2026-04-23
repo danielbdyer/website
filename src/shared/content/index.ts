@@ -9,4 +9,4 @@ export {
   type WorkType,
 } from './schema';
 
-export { getAllWorks, getWorksByRoom, getWork } from './loader';
+export { getAllWorks, getWorksByRoom, getWork, parseWork } from './loader';

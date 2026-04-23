@@ -1,4 +1,5 @@
 import matter from 'gray-matter';
+import { marked } from 'marked';
 import type { Room } from '@/shared/types/common';
 import {
   isPublished,
@@ -7,18 +8,19 @@ import {
   type Work,
 } from '@/shared/content/schema';
 
-// Vite resolves this at build time; see CONTENT_SCHEMA.md.
-// Empty today — src/content/ does not exist yet. The glob is harmless
-// when no files match; it returns {} and produces an empty Works set.
-const rawFiles = import.meta.glob('/src/content/**/*.md', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-}) as Record<string, string>;
-
-function parseWork(path: string, raw: string): Work {
-  // Path looks like /src/content/{room}/{slug}.md
-  const match = /\/src\/content\/([^/]+)\/([^/]+)\.md$/.exec(path);
+/**
+ * Parse a raw markdown file into a Work.
+ *
+ * Pure function — given a path and the raw file contents, returns a validated
+ * Work or throws a descriptive error. Exported primarily so the parsing logic
+ * is directly testable with fixture strings, without needing a Vite context.
+ *
+ * See CONTENT_SCHEMA.md for the trust stance on markdown rendering:
+ * the source is the trusted repo, so marked output is not sanitized.
+ */
+export function parseWork(path: string, raw: string): Work {
+  // Path looks like /src/content/{room}/{slug}.md or /src/content/{room}/{slug}.mdx
+  const match = /\/src\/content\/([^/]+)\/([^/]+)\.mdx?$/.exec(path);
   if (!match) {
     throw new Error(`Content file at unexpected path: ${path}`);
   }
@@ -37,13 +39,26 @@ function parseWork(path: string, raw: string): Work {
     );
   }
 
+  const body = parsed.content;
+  const html = marked.parse(body, { async: false });
+
   return {
     ...frontmatter.data,
     room: room.data,
     slug: slug!,
-    body: parsed.content,
+    body,
+    html,
   };
 }
+
+// Vite resolves this at build time; see CONTENT_SCHEMA.md.
+// Empty today — src/content/ does not exist yet. The glob is harmless
+// when no files match; it returns {} and produces an empty Works set.
+const rawFiles = import.meta.glob('/src/content/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
 
 const allWorks: Work[] = Object.entries(rawFiles).map(([path, raw]) => parseWork(path, raw));
 

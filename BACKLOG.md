@@ -185,17 +185,9 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Code Quality
 
-### Export `parseWork` for testability + loader test
-**Why:** `parseWork` in `src/shared/content/loader.ts` is private. The loader has zero test coverage because `import.meta.glob` is Vite-specific. Exporting the parser lets us test parsing with fixture strings.
-**Trigger:** Immediate — small refactor + tests.
-
 ### Extend `.prose` style coverage
 **Why:** Current `.prose` covers `p`, `h2`, `h3`, `ul`, `ol`, `li`, `blockquote`, `code`, `pre`, `hr`, `a`. Missing: `strong`, `em` nested, `kbd`, `table` and descendants, `sup`/`sub`, `figure`/`figcaption`, `mark`. When the first work uses any of these, the rendering will be bare.
 **Trigger:** Immediate — small extension.
-
-### Render-time → load-time markdown parsing
-**Why:** `WorkView` calls `marked.parse(work.body)` on every render. A static site should compute this once. Move HTML into `Work` at load time; `WorkView` reads `work.html` directly.
-**Trigger:** Immediate — small perf fix. (Subsumed by the SSG pivot when it lands, but trivial to do now.)
 
 ### Tests for Nav, Footer, GeometricFigure
 **Why:** These three are untested today. Each is small and has at least one thing worth asserting (Nav: the four room links + active state; Footer: the ornament + identity lines; GeometricFigure: renders with aria-hidden).

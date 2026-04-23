@@ -17,6 +17,7 @@ function makeWork(overrides: Partial<Work> = {}): Work {
     room: 'garden',
     slug: 'a-poem',
     body: 'Line one.\nLine two.',
+    html: '<p>Line one.<br>Line two.</p>',
     ...overrides,
   };
 }

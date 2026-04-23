@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { marked } from 'marked';
 import {
   createMemoryHistory,
   createRootRoute,
@@ -11,6 +12,8 @@ import type { Work } from '@/shared/content/schema';
 import { WorkView } from './WorkView';
 
 function makeWork(overrides: Partial<Work> = {}): Work {
+  const body = overrides.body ?? 'The first paragraph.\n\nThe second paragraph.';
+  const html = overrides.html ?? marked.parse(body, { async: false });
   return {
     title: 'A Working Title',
     date: new Date('2026-03-14'),
@@ -18,8 +21,9 @@ function makeWork(overrides: Partial<Work> = {}): Work {
     draft: false,
     room: 'garden',
     slug: 'a-working-title',
-    body: 'The first paragraph.\n\nThe second paragraph.',
     ...overrides,
+    body,
+    html,
   };
 }
 

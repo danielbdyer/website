@@ -38,7 +38,10 @@ export type WorkFrontmatter = z.infer<typeof workFrontmatterSchema>;
 export interface Work extends WorkFrontmatter {
   room: Room;
   slug: string;
+  /** Raw markdown body, for syndication feeds and for re-rendering if needed. */
   body: string;
+  /** Pre-rendered HTML, computed at load time so WorkView does not re-parse per render. */
+  html: string;
 }
 
 export function isPublished(work: Work, now: Date = new Date()): boolean {

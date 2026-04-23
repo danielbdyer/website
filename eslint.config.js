@@ -134,4 +134,15 @@ export default tseslint.config(
       'max-lines-per-function': ['error', { max: 80, skipBlankLines: true, skipComments: true }],
     },
   },
+
+  // Test files use describe() to containerize related assertions; the 80-line
+  // limit fights that legitimate pattern. Disable the function-size rule for
+  // test files — the per-test cognitive load is what matters, not the per-
+  // describe total.
+  {
+    files: ['**/*.test.{ts,tsx}'],
+    rules: {
+      'max-lines-per-function': 'off',
+    },
+  },
 );

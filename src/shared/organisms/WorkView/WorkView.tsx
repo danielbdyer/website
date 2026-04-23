@@ -1,5 +1,4 @@
 import { Link } from '@tanstack/react-router';
-import { marked } from 'marked';
 import type { Work } from '@/shared/content/schema';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
 
@@ -26,7 +25,6 @@ interface WorkViewProps {
 export function WorkView({ work }: WorkViewProps) {
   const roomLabel = ROOM_LABELS[work.room];
   const roomPath = ROOM_TO[work.room];
-  const html = marked.parse(work.body, { async: false });
   const formattedDate = work.date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -65,7 +63,7 @@ export function WorkView({ work }: WorkViewProps) {
         <p className="text-[0.95rem] text-text-2 italic leading-relaxed mb-8">{work.summary}</p>
       )}
 
-      <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />
+      <div className="prose" dangerouslySetInnerHTML={{ __html: work.html }} />
 
       <Ornament />
 
