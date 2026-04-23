@@ -189,10 +189,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** When `pnpm dev` is running and a visitor views a draft work, no visual cue shows the work is unpublished. A subtle `[draft]` badge on `WorkView` under `import.meta.env.DEV && work.draft` prevents accidental inference.
 **Trigger:** Immediate — small UI addition gated on dev mode.
 
-### Router devtools wired
-**Why:** `@tanstack/router-devtools` is installed but not rendered. Adding it conditionally in `main.tsx` under `import.meta.env.DEV` gives route-state visibility during authoring.
-**Trigger:** Immediate — small dev-DX win.
-
 ### Root error boundary
 **Why:** If any component throws at runtime, the whole page becomes a white screen. An `<ErrorBoundary>` in `__root.tsx` with a quiet recovery surface (stylistically matching `NotFound`) keeps failures inside the house.
 **Trigger:** Immediate — small robustness addition.
@@ -204,10 +200,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 ### Theme sync across tabs
 **Why:** Two tabs open, toggle in one, the other stays out of sync until refresh. A `storage` event listener in `theme-store.ts` emits the change.
 **Trigger:** Immediate — pairs with the system-listener change.
-
-### Bundle visualizer
-**Why:** `rollup-plugin-visualizer` would make the ~623KB bundle's composition legible. Useful while the SSG pivot is pending — tells us exactly what is costing what.
-**Trigger:** Immediate — dev-DX win that informs future decisions.
 
 ### Favicon and site icons
 **Why:** `index.html` references no favicon; the browser tab shows the default. Even a simple SVG favicon (Diamond-based) identifies the site. Also needs `apple-touch-icon` for iOS bookmarks and `theme-color` meta for mobile browser chrome.

@@ -1,9 +1,20 @@
+import { lazy, Suspense } from 'react';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { ThemeProvider } from '@/app/providers';
 import { Nav } from '@/app/layout/Nav';
 import { Footer } from '@/app/layout/Footer';
 import { NotFound } from '@/app/layout/NotFound';
 import { JsonLd, personSchema, websiteSchema } from '@/shared/seo';
+
+// Router devtools are only imported in dev — lazy-loaded so the dev bundle
+// doesn't block first paint, and so production never ships the code.
+const RouterDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@tanstack/router-devtools').then((m) => ({
+        default: m.TanStackRouterDevtools,
+      })),
+    )
+  : () => null;
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -28,6 +39,9 @@ function RootLayout() {
         </main>
         <Footer />
       </div>
+      <Suspense fallback={null}>
+        <RouterDevtools />
+      </Suspense>
     </ThemeProvider>
   );
 }
