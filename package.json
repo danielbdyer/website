@@ -9,7 +9,8 @@
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "test": "vitest",
-    "audit": "pnpm build && lhci autorun --config=./lighthouserc.cjs"
+    "lighthouse": "pnpm build && lhci autorun --config=./lighthouserc.cjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.168.3",
@@ -42,8 +43,10 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "husky": "^9.1.7",
     "jest-axe": "^10.0.0",
     "jsdom": "^29.0.1",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
     "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^4.2.2",

@@ -1,0 +1,7 @@
+pnpm exec lint-staged
+pnpm exec tsc -b
+
+staged_ts=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx)$' || true)
+if [ -n "$staged_ts" ]; then
+  pnpm exec vitest related --run $staged_ts
+fi

@@ -193,10 +193,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** No automated gate exists today. A contributor could commit broken code and push. A GitHub Actions workflow at `.github/workflows/ci.yml` running `pnpm install`, `pnpm exec tsc -b`, `pnpm exec eslint src/`, `pnpm test --run`, and `pnpm build` on every push and PR closes the loop.
 **Trigger:** Immediate — before first collaborator merge or first deploy.
 
-### Pre-commit hooks (husky + lint-staged)
-**Why:** Lint + typecheck + test can be skipped if the committer forgets. Hooks catch regressions at the earliest possible moment.
-**Trigger:** Immediate — pairs with CI workflow for defense-in-depth.
-
 ### Lighthouse CI in workflow
-**Why:** `lighthouserc.js` exists but never runs automatically. Adding a step to the CI workflow that runs `pnpm audit` and publishes the report means perf / a11y / SEO regressions are caught per-PR.
+**Why:** `lighthouserc.cjs` exists but never runs automatically. Adding a step to the CI workflow that runs `pnpm lighthouse` and publishes the report means perf / a11y / SEO regressions are caught per-PR.
 **Trigger:** Immediate — extension of the CI workflow.
