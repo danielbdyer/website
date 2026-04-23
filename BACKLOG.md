@@ -33,7 +33,7 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **State:** Implemented as of the canary-baseline pass. `jest-axe` is wired into vitest via `src/test/axe.ts`; NotFound and WorkView tests assert zero violations. `color-contrast` and `region` checks are disabled in the vitest suite because they need a real browser — those are covered by Lighthouse CI against the built site.
 
 ### Expand axe coverage to more components
-**Why:** Today, only NotFound and WorkView run axe. Nav, Footer, ThemeToggle, and the Foyer page have no a11y assertion.
+**Why:** Today, axe runs on NotFound, WorkView, Nav, and Footer. ThemeToggle and the Foyer page still have no a11y assertion.
 **Trigger:** When any of those components gain interactive complexity, or when a regression is caught in Lighthouse but not in component tests.
 
 ---
@@ -184,10 +184,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 ---
 
 ## Code Quality
-
-### Tests for Nav, Footer, GeometricFigure
-**Why:** These three are untested today. Each is small and has at least one thing worth asserting (Nav: the four room links + active state; Footer: the ornament + identity lines; GeometricFigure: renders with aria-hidden).
-**Trigger:** Immediate — small additions.
 
 ### Visible draft indicator in dev
 **Why:** When `pnpm dev` is running and a visitor views a draft work, no visual cue shows the work is unpublished. A subtle `[draft]` badge on `WorkView` under `import.meta.env.DEV && work.draft` prevents accidental inference.
