@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { ThemeProvider } from '@/app/providers';
+import { ErrorBoundary } from '@/app/layout/ErrorBoundary';
 import { Nav } from '@/app/layout/Nav';
 import { Footer } from '@/app/layout/Footer';
 import { NotFound } from '@/app/layout/NotFound';
@@ -35,7 +36,9 @@ function RootLayout() {
           tabIndex={-1}
           className="max-w-[700px] mx-auto px-6 pt-8 pb-24 min-h-[calc(100vh-200px)] focus:outline-none"
         >
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
         <Footer />
       </div>
