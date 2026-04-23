@@ -6,6 +6,16 @@ The commitment: **every page carries an accurate self-description for machines t
 
 ---
 
+## Site-Level Meta
+
+These are declared in `index.html` and apply to every page:
+
+- **Favicon:** `/favicon.svg` — a single SVG that adapts via `@media (prefers-color-scheme: dark)` so the Diamond mark reads correctly in both light and dark browser chrome.
+- **Apple touch icon:** `/apple-touch-icon.svg` — 180×180 with the umber ground as background (iOS ignores transparency). The Diamond sits centered on the paper tone.
+- **Theme color:** two `<meta name="theme-color">` tags with `media` attributes for light and dark. Mobile browser chrome (Safari's URL bar, Android's status bar) picks up the matching tone — the chrome becomes paper on light mode, the deep umber on dark.
+- **Site-level description:** a single `<meta name="description">` in `index.html`. Per-page descriptions will override once the SSG pivot makes per-page `<title>` and meta straightforward.
+- **Language:** `<html lang="en">`. Remains static until the site carries non-English content.
+
 ## Per-Page Meta
 
 Every route emits at minimum:

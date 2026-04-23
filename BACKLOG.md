@@ -185,10 +185,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Code Quality
 
-### Favicon and site icons
-**Why:** `index.html` references no favicon; the browser tab shows the default. Even a simple SVG favicon (Diamond-based) identifies the site. Also needs `apple-touch-icon` for iOS bookmarks and `theme-color` meta for mobile browser chrome.
-**Trigger:** Immediate — small identity addition.
-
 ---
 
 ## Operational
