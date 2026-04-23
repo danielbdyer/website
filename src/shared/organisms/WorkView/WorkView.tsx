@@ -44,7 +44,14 @@ export function WorkView({ work }: WorkViewProps) {
         {work.title}
       </h1>
 
-      <div className="text-[0.85rem] text-text-2 italic mb-2">{formattedDate}</div>
+      <div className="text-[0.85rem] text-text-2 italic mb-2">
+        {import.meta.env.DEV && work.draft && (
+          <span className="text-accent-warm tracking-wider text-[0.7rem] mr-2 not-italic uppercase">
+            draft
+          </span>
+        )}
+        {formattedDate}
+      </div>
 
       {work.facets.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">

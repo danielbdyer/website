@@ -98,4 +98,16 @@ describe('WorkView', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it('shows a DRAFT indicator in dev when work.draft is true', async () => {
+    renderWork(makeWork({ draft: true }));
+    await screen.findByRole('heading', { name: 'A Working Title' });
+    expect(screen.getByText('draft')).toBeInTheDocument();
+  });
+
+  it('does not show the DRAFT indicator when work.draft is false', async () => {
+    renderWork(makeWork({ draft: false }));
+    await screen.findByRole('heading', { name: 'A Working Title' });
+    expect(screen.queryByText('draft')).not.toBeInTheDocument();
+  });
 });
