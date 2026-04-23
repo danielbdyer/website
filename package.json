@@ -9,7 +9,7 @@
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "test": "vitest",
-    "audit": "pnpm build && lhci autorun --config=./lighthouserc.js"
+    "audit": "pnpm build && lhci autorun --config=./lighthouserc.cjs"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.168.3",

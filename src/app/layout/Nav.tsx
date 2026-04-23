@@ -11,10 +11,10 @@ const ROOMS = [
 
 export function Nav() {
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between max-w-[700px] mx-auto px-6 py-5 bg-[var(--bg)] transition-[background] duration-500">
+    <nav className="sticky top-0 z-50 flex items-center justify-between max-w-[700px] mx-auto px-6 py-5 bg-bg transition-[background] duration-500">
       <Link
         to="/"
-        className="flex items-center gap-1.5 font-heading text-base font-medium italic text-[var(--text)] no-underline transition-colors duration-200 hover:text-[var(--accent)] group"
+        className="flex items-center gap-1.5 font-heading text-base font-medium italic text-text no-underline transition-colors duration-200 hover:text-accent group"
       >
         <Diamond size={7} className="transition-transform duration-300 group-hover:rotate-45" />
         <span>Danny Dyer</span>
@@ -25,7 +25,7 @@ export function Nav() {
           <Link
             key={to}
             to={to}
-            className="text-[0.8rem] text-[var(--text-2)] no-underline tracking-wide transition-colors duration-200 hover:text-[var(--text)] [&.active]:text-[var(--text)]"
+            className="text-[0.8rem] text-text-2 no-underline tracking-wide transition-colors duration-200 hover:text-text [&.active]:text-text"
             activeProps={{ className: 'active' }}
           >
             {label}

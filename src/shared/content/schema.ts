@@ -24,7 +24,9 @@ export const workTypeSchema = z.enum(TYPES);
 
 export const workFrontmatterSchema = z.object({
   title: z.string().min(1),
-  date: z.coerce.date(),
+  date: z.coerce.date().refine((d) => !Number.isNaN(d.getTime()), {
+    message: 'Invalid date — expected a parseable date string',
+  }),
   summary: z.string().optional(),
   facets: z.array(facetSchema).default([]),
   type: workTypeSchema.optional(),

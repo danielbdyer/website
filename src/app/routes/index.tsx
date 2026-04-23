@@ -14,7 +14,7 @@ function FoyerPage() {
           <div className="shrink-0 w-20 h-20">
             <GeometricFigure />
           </div>
-          <div className="font-heading text-[1.15rem] font-light italic text-[var(--text-2)] leading-relaxed">
+          <div className="font-heading text-[1.15rem] font-light italic text-text-2 leading-relaxed">
             <p>The door is open.</p>
             <p>The rooms are waiting.</p>
           </div>

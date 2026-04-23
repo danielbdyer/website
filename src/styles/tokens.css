@@ -7,9 +7,10 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── Tailwind theme integration ───────────────────────────────
-   Maps CSS custom properties → Tailwind utilities so you can
-   write `bg-bg`, `text-text-2`, `border-border` etc. instead of
-   `bg-[var(--bg)]`. Keeps the single source of truth in :root.
+   Maps CSS custom properties → Tailwind utilities. Use named tokens
+   (`bg-bg`, `text-text-2`, `border-border`) in components rather than
+   `bg-[var(--bg)]` arbitrary-value syntax. DESIGN_SYSTEM.md commits
+   to named tokens; the single source of truth lives in :root below.
    ──────────────────────────────────────────────────────────── */
 @theme {
   --color-bg: var(--bg);

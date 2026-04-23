@@ -37,23 +37,23 @@ export function WorkView({ work }: WorkViewProps) {
     <article>
       <Link
         to={roomPath}
-        className="text-[0.85rem] text-[var(--text-2)] italic no-underline transition-colors duration-200 hover:text-[var(--accent)]"
+        className="text-[0.85rem] text-text-2 italic no-underline transition-colors duration-200 hover:text-accent"
       >
         ← {roomLabel}
       </Link>
 
-      <h1 className="font-heading text-[1.85rem] font-normal tracking-tight mt-4 mb-3 text-[var(--text)]">
+      <h1 className="font-heading text-[1.85rem] font-normal tracking-tight mt-4 mb-3 text-text">
         {work.title}
       </h1>
 
-      <div className="text-[0.85rem] text-[var(--text-2)] italic mb-2">{formattedDate}</div>
+      <div className="text-[0.85rem] text-text-2 italic mb-2">{formattedDate}</div>
 
       {work.facets.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">
           {work.facets.map((facet) => (
             <span
               key={facet}
-              className="text-[0.72rem] px-2 py-0.5 rounded bg-[var(--tag-bg)] text-[var(--tag-text)]"
+              className="text-[0.72rem] px-2 py-0.5 rounded bg-tag-bg text-tag-text"
             >
               {facet}
             </span>
@@ -62,9 +62,7 @@ export function WorkView({ work }: WorkViewProps) {
       )}
 
       {work.summary && (
-        <p className="text-[0.95rem] text-[var(--text-2)] italic leading-relaxed mb-8">
-          {work.summary}
-        </p>
+        <p className="text-[0.95rem] text-text-2 italic leading-relaxed mb-8">{work.summary}</p>
       )}
 
       <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />
@@ -73,7 +71,7 @@ export function WorkView({ work }: WorkViewProps) {
 
       <Link
         to={roomPath}
-        className="text-[0.9rem] text-[var(--text-2)] italic no-underline transition-colors duration-200 hover:text-[var(--accent)]"
+        className="text-[0.9rem] text-text-2 italic no-underline transition-colors duration-200 hover:text-accent"
       >
         Keep wandering in {roomLabel} →
       </Link>

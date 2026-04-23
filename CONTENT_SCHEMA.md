@@ -156,6 +156,14 @@ The body of a work is the content beneath the frontmatter — the prose itself. 
 
 **MDX as a held option.** When a work needs an embedded component — an audio player in a Salon piece, a diagram in a case study — the extension becomes `.mdx` and the loader switches to an MDX compiler for that file. The schema does not change; only the rendering pipeline differs. MDX is declined by default because plain markdown keeps authoring frictionless; it is adopted per-file when the work demands it.
 
+### The trust stance
+
+The markdown parser (`marked`) renders HTML directly. Inline HTML within a work's body is rendered as HTML, not escaped. The site does *not* sanitize parser output at render time.
+
+This is deliberate. The content source is the repository — every markdown file is authored by Danny and committed through git. There is no user-generated input to defend against. Introducing a sanitizer (DOMPurify or similar) would add ~40KB to the bundle to guard against a threat that does not exist.
+
+If the content source ever changes — e.g., works accepting submissions, comments, or any untrusted input — the trust stance must be revisited at that moment. For now: **trusted source, no sanitization, inline HTML allowed in markdown bodies.**
+
 ---
 
 ## Links

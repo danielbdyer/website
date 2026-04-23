@@ -185,14 +185,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Code Quality
 
-### Named token retrofit
-**Why:** `DESIGN_SYSTEM.md` names `bg-bg`, `text-text-2`, `border-border` as the canonical style. Several components still use `bg-[var(--bg)]` arbitrary-value syntax. The `@theme` block in `tokens.css` already maps the tokens; the retrofit is mechanical.
-**Trigger:** Immediate — pure consistency pass.
-
-### Zod date validity refinement
-**Why:** `workFrontmatterSchema` uses `date: z.coerce.date()`. An invalid date string coerces to `Invalid Date` and passes the schema. Adding `.refine(d => !Number.isNaN(d.getTime()), 'Invalid date')` catches this at build time.
-**Trigger:** Immediate — small correctness fix.
-
 ### Export `parseWork` for testability + loader test
 **Why:** `parseWork` in `src/shared/content/loader.ts` is private. The loader has zero test coverage because `import.meta.glob` is Vite-specific. Exporting the parser lets us test parsing with fixture strings.
 **Trigger:** Immediate — small refactor + tests.
@@ -204,14 +196,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 ### Render-time → load-time markdown parsing
 **Why:** `WorkView` calls `marked.parse(work.body)` on every render. A static site should compute this once. Move HTML into `Work` at load time; `WorkView` reads `work.html` directly.
 **Trigger:** Immediate — small perf fix. (Subsumed by the SSG pivot when it lands, but trivial to do now.)
-
-### `lighthouserc.js` format verification
-**Why:** `package.json` has `"type": "module"`, which makes `.js` files ESM. `lighthouserc.js` uses CommonJS `module.exports`. LHCI may or may not handle this; worth verifying rather than discovering at canary time. If it fails, rename to `lighthouserc.cjs`.
-**Trigger:** Immediate — quick check.
-
-### Marked sanitization stance declaration
-**Why:** `marked.parse(body)` renders HTML directly; we trust the content because it's from the repo. The trust decision is not declared anywhere. Silent trust is worse than declared trust.
-**Trigger:** Immediate — small `CONTENT_SCHEMA.md` amendment.
 
 ### Tests for Nav, Footer, GeometricFigure
 **Why:** These three are untested today. Each is small and has at least one thing worth asserting (Nav: the four room links + active state; Footer: the ornament + identity lines; GeometricFigure: renders with aria-hidden).
