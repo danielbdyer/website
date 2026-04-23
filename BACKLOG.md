@@ -185,10 +185,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Code Quality
 
-### Extend `.prose` style coverage
-**Why:** Current `.prose` covers `p`, `h2`, `h3`, `ul`, `ol`, `li`, `blockquote`, `code`, `pre`, `hr`, `a`. Missing: `strong`, `em` nested, `kbd`, `table` and descendants, `sup`/`sub`, `figure`/`figcaption`, `mark`. When the first work uses any of these, the rendering will be bare.
-**Trigger:** Immediate — small extension.
-
 ### Tests for Nav, Footer, GeometricFigure
 **Why:** These three are untested today. Each is small and has at least one thing worth asserting (Nav: the four room links + active state; Footer: the ornament + identity lines; GeometricFigure: renders with aria-hidden).
 **Trigger:** Immediate — small additions.
