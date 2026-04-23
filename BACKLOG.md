@@ -180,3 +180,91 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 ### Web Vitals production analytics
 **State:** `web-vitals` library is wired (`src/shared/seo/web-vitals.ts`) and logs to the console in dev. Production forwarding is deferred.
 **Trigger:** When a deployment and analytics provider are chosen (`DEPLOYMENT.md`).
+
+---
+
+## Code Quality
+
+### Named token retrofit
+**Why:** `DESIGN_SYSTEM.md` names `bg-bg`, `text-text-2`, `border-border` as the canonical style. Several components still use `bg-[var(--bg)]` arbitrary-value syntax. The `@theme` block in `tokens.css` already maps the tokens; the retrofit is mechanical.
+**Trigger:** Immediate — pure consistency pass.
+
+### Zod date validity refinement
+**Why:** `workFrontmatterSchema` uses `date: z.coerce.date()`. An invalid date string coerces to `Invalid Date` and passes the schema. Adding `.refine(d => !Number.isNaN(d.getTime()), 'Invalid date')` catches this at build time.
+**Trigger:** Immediate — small correctness fix.
+
+### Export `parseWork` for testability + loader test
+**Why:** `parseWork` in `src/shared/content/loader.ts` is private. The loader has zero test coverage because `import.meta.glob` is Vite-specific. Exporting the parser lets us test parsing with fixture strings.
+**Trigger:** Immediate — small refactor + tests.
+
+### Extend `.prose` style coverage
+**Why:** Current `.prose` covers `p`, `h2`, `h3`, `ul`, `ol`, `li`, `blockquote`, `code`, `pre`, `hr`, `a`. Missing: `strong`, `em` nested, `kbd`, `table` and descendants, `sup`/`sub`, `figure`/`figcaption`, `mark`. When the first work uses any of these, the rendering will be bare.
+**Trigger:** Immediate — small extension.
+
+### Render-time → load-time markdown parsing
+**Why:** `WorkView` calls `marked.parse(work.body)` on every render. A static site should compute this once. Move HTML into `Work` at load time; `WorkView` reads `work.html` directly.
+**Trigger:** Immediate — small perf fix. (Subsumed by the SSG pivot when it lands, but trivial to do now.)
+
+### `lighthouserc.js` format verification
+**Why:** `package.json` has `"type": "module"`, which makes `.js` files ESM. `lighthouserc.js` uses CommonJS `module.exports`. LHCI may or may not handle this; worth verifying rather than discovering at canary time. If it fails, rename to `lighthouserc.cjs`.
+**Trigger:** Immediate — quick check.
+
+### Marked sanitization stance declaration
+**Why:** `marked.parse(body)` renders HTML directly; we trust the content because it's from the repo. The trust decision is not declared anywhere. Silent trust is worse than declared trust.
+**Trigger:** Immediate — small `CONTENT_SCHEMA.md` amendment.
+
+### Tests for Nav, Footer, GeometricFigure
+**Why:** These three are untested today. Each is small and has at least one thing worth asserting (Nav: the four room links + active state; Footer: the ornament + identity lines; GeometricFigure: renders with aria-hidden).
+**Trigger:** Immediate — small additions.
+
+### Visible draft indicator in dev
+**Why:** When `pnpm dev` is running and a visitor views a draft work, no visual cue shows the work is unpublished. A subtle `[draft]` badge on `WorkView` under `import.meta.env.DEV && work.draft` prevents accidental inference.
+**Trigger:** Immediate — small UI addition gated on dev mode.
+
+### Router devtools wired
+**Why:** `@tanstack/router-devtools` is installed but not rendered. Adding it conditionally in `main.tsx` under `import.meta.env.DEV` gives route-state visibility during authoring.
+**Trigger:** Immediate — small dev-DX win.
+
+### Root error boundary
+**Why:** If any component throws at runtime, the whole page becomes a white screen. An `<ErrorBoundary>` in `__root.tsx` with a quiet recovery surface (stylistically matching `NotFound`) keeps failures inside the house.
+**Trigger:** Immediate — small robustness addition.
+
+### Theme store reacts to system preference changes
+**Why:** `prefers-color-scheme` is read once at module load. If a visitor with no stored preference has their system switch from light to dark mid-session (sunset mode), the site doesn't follow. A `matchMedia` change listener in `theme-store.ts` closes this.
+**Trigger:** Immediate — small ACCESSIBILITY extension.
+
+### Theme sync across tabs
+**Why:** Two tabs open, toggle in one, the other stays out of sync until refresh. A `storage` event listener in `theme-store.ts` emits the change.
+**Trigger:** Immediate — pairs with the system-listener change.
+
+### Bundle visualizer
+**Why:** `rollup-plugin-visualizer` would make the ~623KB bundle's composition legible. Useful while the SSG pivot is pending — tells us exactly what is costing what.
+**Trigger:** Immediate — dev-DX win that informs future decisions.
+
+### Favicon and site icons
+**Why:** `index.html` references no favicon; the browser tab shows the default. Even a simple SVG favicon (Diamond-based) identifies the site. Also needs `apple-touch-icon` for iOS bookmarks and `theme-color` meta for mobile browser chrome.
+**Trigger:** Immediate — small identity addition.
+
+---
+
+## Privacy
+
+### Web Vitals consent gating
+**Why:** `reportWebVitals()` fires unconditionally in `main.tsx`. Today it only logs to console in dev and has no production forwarding, so this is latent. When `DEPLOYMENT.md` wires a provider, the consent question becomes real. Name the stance before carelessly bolting analytics on.
+**Trigger:** Immediate for the stance declaration (in `SEO_AND_META.md` or a new `PRIVACY.md`). Implementation waits for the analytics provider decision.
+
+---
+
+## Operational
+
+### CI workflow (GitHub Actions)
+**Why:** No automated gate exists today. A contributor could commit broken code and push. A GitHub Actions workflow at `.github/workflows/ci.yml` running `pnpm install`, `pnpm exec tsc -b`, `pnpm exec eslint src/`, `pnpm test --run`, and `pnpm build` on every push and PR closes the loop.
+**Trigger:** Immediate — before first collaborator merge or first deploy.
+
+### Pre-commit hooks (husky + lint-staged)
+**Why:** Lint + typecheck + test can be skipped if the committer forgets. Hooks catch regressions at the earliest possible moment.
+**Trigger:** Immediate — pairs with CI workflow for defense-in-depth.
+
+### Lighthouse CI in workflow
+**Why:** `lighthouserc.js` exists but never runs automatically. Adding a step to the CI workflow that runs `pnpm audit` and publishes the report means perf / a11y / SEO regressions are caught per-PR.
+**Trigger:** Immediate — extension of the CI workflow.
