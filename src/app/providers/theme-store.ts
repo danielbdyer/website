@@ -3,6 +3,17 @@
  *
  * Owns localStorage reads/writes and DOM class synchronization.
  * React subscribes via useSyncExternalStore — no effects needed.
+ *
+ * Also listens to two external signals so the site stays coherent
+ * without the visitor having to refresh:
+ *
+ * - `matchMedia('(prefers-color-scheme: dark)')` — if the visitor
+ *   has no explicit stored preference, the system setting is the
+ *   source of truth, and it should respond to changes (e.g., macOS
+ *   sunset mode) in real time.
+ *
+ * - `storage` event — when the visitor has two tabs open and toggles
+ *   in one, the other tab rehydrates from localStorage.
  */
 
 type Listener = () => void;
@@ -34,6 +45,30 @@ function applyToDOM(dark: boolean) {
 
 // Set DOM state on module load — before React renders, no flash.
 applyToDOM(isDark());
+
+// Reactivity to the system preference, when no explicit choice is stored.
+// Uses optional chaining because jsdom (tests) may not implement matchMedia.
+const systemPreference = window.matchMedia?.('(prefers-color-scheme: dark)');
+systemPreference?.addEventListener?.('change', () => {
+  const stored = (() => {
+    try {
+      return localStorage.getItem('theme');
+    } catch {
+      return null;
+    }
+  })();
+  // Only follow the system when there's no explicit stored choice.
+  if (stored === 'dark' || stored === 'light') return;
+  applyToDOM(isDark());
+  emitChange();
+});
+
+// Reactivity across tabs. Another tab writes to localStorage; this one picks it up.
+window.addEventListener?.('storage', (e) => {
+  if (e.key !== 'theme') return;
+  applyToDOM(isDark());
+  emitChange();
+});
 
 export const themeStore = {
   subscribe(listener: Listener): () => void {

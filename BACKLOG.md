@@ -193,14 +193,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** If any component throws at runtime, the whole page becomes a white screen. An `<ErrorBoundary>` in `__root.tsx` with a quiet recovery surface (stylistically matching `NotFound`) keeps failures inside the house.
 **Trigger:** Immediate — small robustness addition.
 
-### Theme store reacts to system preference changes
-**Why:** `prefers-color-scheme` is read once at module load. If a visitor with no stored preference has their system switch from light to dark mid-session (sunset mode), the site doesn't follow. A `matchMedia` change listener in `theme-store.ts` closes this.
-**Trigger:** Immediate — small ACCESSIBILITY extension.
-
-### Theme sync across tabs
-**Why:** Two tabs open, toggle in one, the other stays out of sync until refresh. A `storage` event listener in `theme-store.ts` emits the change.
-**Trigger:** Immediate — pairs with the system-listener change.
-
 ### Favicon and site icons
 **Why:** `index.html` references no favicon; the browser tab shows the default. Even a simple SVG favicon (Diamond-based) identifies the site. Also needs `apple-touch-icon` for iOS bookmarks and `theme-color` meta for mobile browser chrome.
 **Trigger:** Immediate — small identity addition.

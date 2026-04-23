@@ -72,4 +72,33 @@ describe('themeStore', () => {
   it('getServerSnapshot returns false for SSR safety', () => {
     expect(themeStore.getServerSnapshot()).toBe(false);
   });
+
+  it('responds to storage events from other tabs', () => {
+    let calls = 0;
+    const unsubscribe = themeStore.subscribe(() => {
+      calls++;
+    });
+
+    // Simulate another tab toggling to dark.
+    localStorage.setItem('theme', 'dark');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'theme' }));
+
+    expect(calls).toBe(1);
+    expect(themeStore.getSnapshot()).toBe(true);
+    expect(document.documentElement.classList.contains('dk')).toBe(true);
+
+    unsubscribe();
+  });
+
+  it('ignores storage events for unrelated keys', () => {
+    let calls = 0;
+    const unsubscribe = themeStore.subscribe(() => {
+      calls++;
+    });
+
+    window.dispatchEvent(new StorageEvent('storage', { key: 'something-else' }));
+
+    expect(calls).toBe(0);
+    unsubscribe();
+  });
 });
