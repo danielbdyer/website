@@ -185,6 +185,14 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Code Quality
 
+### Frontmatter validation in the pre-commit hook
+**Why:** `CONTENT_SCHEMA.md` specifies Zod-validated frontmatter, and `src/shared/content/schema.ts` already holds the schema. When a `.md` under `src/content/{room}/` is staged, the pre-commit hook should parse its frontmatter and run the schema against it — catching a malformed `type`, a missing `title`, or an unknown facet at the moment of commit rather than at build time.
+**Trigger:** The first work. Until then, there is no content directory to validate.
+
+### Wikilink resolvability in the pre-commit hook
+**Why:** `GRAPH_AND_LINKING.md` commits that unresolved wikilinks fail the build. The pre-commit hook can surface that failure earlier — parse `[[slug]]` and `[[room/slug]]` in any staged `.md` under `src/content/`, fail if any target isn't in the resolved set.
+**Trigger:** Pairs with the wikilink-resolution loader item under Content. Both ship together.
+
 ---
 
 ## Operational
@@ -196,3 +204,11 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 ### Lighthouse CI in workflow
 **Why:** `lighthouserc.cjs` exists but never runs automatically. Adding a step to the CI workflow that runs `pnpm lighthouse` and publishes the report means perf / a11y / SEO regressions are caught per-PR.
 **Trigger:** Immediate — extension of the CI workflow.
+
+### Dependency CVE audit in CI
+**Why:** `pnpm audit` catches newly-disclosed vulnerabilities in the dependency tree. Pre-commit is the wrong seat for this — it blocks the committer on pre-existing state and hits the network on every lockfile touch. CI is the right seat: `pnpm audit --audit-level high` as a step in the CI workflow, failing the PR on any new high-severity finding. Owns the security posture that `SECURITY.md` will eventually declare.
+**Trigger:** Alongside the CI workflow item. Resolve the existing CVEs first (see below) so the check has a clean baseline to regress against.
+
+### CVE remediation — vite and transitive handlebars
+**Why:** As of this backlog entry, `pnpm audit` reports 6 high and 1 critical vulnerability in the installed tree. The two concrete ones: vite is pinned at 8.0.4 and patches live at 8.0.5+ (two high-severity advisories, both about dev-server file-read bypasses); eslint-plugin-boundaries pulls handlebars <4.7.9, which has a critical JavaScript-injection advisory. Both are dev-only paths, so the runtime surface is narrow, but the lockfile should be clean before the CI audit check lands.
+**Trigger:** Immediate — before the "Dependency CVE audit in CI" item is taken up, so the audit gate starts from zero.
