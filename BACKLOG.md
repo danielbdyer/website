@@ -155,17 +155,9 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** Each work wants a 1200×630 OG image rendered from its title, date, and facets over the umber ground. Specified in `SEO_AND_META.md`.
 **Trigger:** Before the first deploy, once a shared aesthetic for the card is decided.
 
-### Sitemap generation
-**Why:** `sitemap.xml` listing every published work, room, and facet page. Generated from the `Graph` object at build time.
-**Trigger:** With the first work.
-
 ### RSS / Atom feeds
 **Why:** Per-room feeds and a site-wide feed, full-content not summaries. Specified in `SEO_AND_META.md`.
 **Trigger:** With the first work that a reader might want to follow.
-
-### `robots.txt`
-**Why:** Minimal `Allow: /` + sitemap pointer.
-**Trigger:** Before the first deploy.
 
 ### Web Vitals production analytics
 **State:** `web-vitals` library is wired (`src/shared/seo/web-vitals.ts`) and logs to the console in dev. Production forwarding is deferred.

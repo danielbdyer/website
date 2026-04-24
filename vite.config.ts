@@ -37,6 +37,12 @@ export default defineConfig({
         crawlLinks: true,
         failOnError: true,
       },
+      // sitemap.xml generated from the prerender set, written to dist/client.
+      // `host` is required for absolute-URL <loc> entries.
+      sitemap: {
+        enabled: true,
+        host: 'https://danielbdyer.com',
+      },
     }),
     viteReact(),
     tailwindcss(),
