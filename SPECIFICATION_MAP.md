@@ -235,8 +235,16 @@ The grounds are everything that supports the house without being the house itsel
 
 ```
 REACT_NORTH_STAR
-  ├─→ DEPLOYMENT.md
-  │     The land. Where the house physically lives.
+  ├─→ RENDERING_STRATEGY.md
+  │     The delivery mechanism. How HTML reaches the
+  │     browser — SPA, SSR, SSG, or a blend.
+  │
+  │     ├─→ DEPLOYMENT.md
+  │     │     The land. Where the house physically lives.
+  │     │     Host choice follows from rendering model.
+  │     │
+  │     └─→ (feeds SEO_AND_META on the threshold:
+  │          per-page meta becomes natural with SSG.)
   │
   ├─→ DEPENDENCY_POLICY.md
   │     The supply chain. What materials, how chosen.
@@ -254,8 +262,11 @@ CONTENT_SCHEMA + DESIGN_SYSTEM
         The master plan. How the house grows over time.
 ```
 
-**`DEPLOYMENT.md`** | Grounds | Gap | Depends on: `REACT_NORTH_STAR.md`
-The land. Build pipeline, hosting platform, CI/CD configuration, environments (dev/staging/production), DNS, SSL, CDN, caching strategy, environment variables. Where the house physically lives and how it gets there. Depends on the component architecture because deployment is shaped by what's being deployed — static generation, bundle strategy, environment needs.
+**`RENDERING_STRATEGY.md`** | Grounds | Exists | Depends on: `REACT_NORTH_STAR.md` + `PERFORMANCE_BUDGET.md` + `CONTENT_SCHEMA.md`
+How HTML reaches the browser. Names the current model (static generation via TanStack Start — every route prerendered to HTML at build time, then hydrated), the archaeology of the pivot from client-rendered SPA that got us here, and the fuller horizon of Start capabilities the site may grow into (server functions, API routes, streaming SSR, middleware). A rendering strategy is a first-class grounds concern because it shapes bundle weight, first-paint, SEO legibility, and what deployment looks like. Feeds `DEPLOYMENT.md` and `SEO_AND_META.md`.
+
+**`DEPLOYMENT.md`** | Grounds | Gap | Depends on: `REACT_NORTH_STAR.md` + `RENDERING_STRATEGY.md`
+The land. Build pipeline, hosting platform, CI/CD configuration, environments (dev/staging/production), DNS, SSL, CDN, caching strategy, environment variables. Where the house physically lives and how it gets there. The host choice follows from the rendering model — static output from SSG works on any static host; a future adoption of server functions or API routes requires a Node-capable runtime.
 
 **`DEPENDENCY_POLICY.md`** | Grounds | Partially covered in `REACT_NORTH_STAR.md` | Depends on: `REACT_NORTH_STAR.md`
 The supply chain. When to add a dependency, evaluation criteria, update cadence, the philosophical stance on third-party code. `REACT_NORTH_STAR.md` lists the non-negotiable stack; this file (if separate) would cover the *judgment framework* for future additions. May remain a section within the architecture doc if a section is sufficient — the concern is real but may not need its own room.
@@ -330,7 +341,8 @@ The five outcomes today:
 | `CONTENT_AUTHORING.md` | Exists | Danny's workflow. Write in the repo, `pnpm dev` previews everything including drafts, `pnpm build` publishes only the published. Smallest valid work is two fields and a body. No CMS, no staging, no publish button. |
 | `ACCESSIBILITY.md` | Exists | WCAG 2.1 AA baseline with user preferences (`prefers-reduced-motion`, `prefers-color-scheme`) as first-class invariants. Skip link, `:focus-visible` ring, semantic HTML. Known gaps held in `BACKLOG.md`. |
 | `RESPONSIVE_STRATEGY.md` | Exists | Single 700px column, no breakpoints today. 44×44 touch-target minimum. Print held in backlog. |
-| `PERFORMANCE_BUDGET.md` | Exists | Web Vitals targets. Names the SSG pivot to TanStack Start as the deliberate performance path, held in backlog until the third-work threshold. |
+| `PERFORMANCE_BUDGET.md` | Exists | Web Vitals targets. The SSG pivot has shipped (see `RENDERING_STRATEGY.md`); the remaining bundle lever is moving the content loader to `createServerFn`, which drops `marked` + `gray-matter` from the client and brings the 100KB JS target back in reach. |
+| `RENDERING_STRATEGY.md` | Exists | How HTML reaches the browser. Current model: SSG via TanStack Start, every route prerendered at build time. Archaeology of the SPA → SSG pivot preserved in the file. Fuller Horizon holds the Start capabilities beyond SSG (server functions, API routes, streaming, middleware) with per-capability triggers. |
 | `SEO_AND_META.md` | Exists | Per-page meta patterns and Schema.org JSON-LD, implemented for every route. Sitemap, feeds, OG images, and robots.txt held in backlog. |
 | `PRIVACY.md` | Exists | Privacy posture for a static content site. Declines tracking, cookies, fingerprinting. Web Vitals forwarding held until a privacy-respecting provider is chosen. |
 | `BACKLOG.md` | Exists | Held concerns with trigger conditions. Not a roadmap — a list of work the site knows it owes itself. |

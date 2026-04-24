@@ -49,25 +49,18 @@ The last two are the lever to pull. They are on the client not because the *outp
 
 ## The SSG Pivot
 
-The site's correct performance architecture is **static generation**, not single-page application. Every route's HTML should be rendered at build time and served as a static file. The browser receives pre-rendered HTML on first paint; JavaScript hydrates interactive behavior (theme toggle, scroll reveal) but is not required to see any content.
+The site's delivery is **static generation**: every route's HTML is rendered at build time and served as a static file. The browser receives pre-rendered HTML on first paint; JavaScript hydrates interactive behavior (theme toggle, scroll reveal) but is not required to see any content. The architecture and archaeology live in `RENDERING_STRATEGY.md`; this section records what the pivot delivered against the budget and what remains.
 
-This has four concrete wins:
+**Delivered**
 
-1. **LCP drops dramatically.** The visible content paints in the first HTML response rather than waiting for React to hydrate.
-2. **SEO becomes real.** Search engines see rendered content, not an empty `#root` div.
-3. **Markdown parsing leaves the client bundle.** `marked` and `gray-matter` run at build time only. The client bundle shrinks by ~250KB unminified.
-4. **Interactive behavior is unchanged.** Theme toggle, scroll reveal, nav — all continue to work; hydration picks them up after the static HTML paints.
+- **LCP landed on the HTML response.** Every prerendered route paints the Nav, the room content, the Foyer's greeting, and the footer without executing JavaScript. React hydrates afterward without changing what's visible.
+- **SEO became real.** Crawlers now see rendered content, not an empty `#root` div. Per-page meta, title, theme-color, and preconnects are in each HTML file.
+- **Interactive behavior unchanged.** Theme toggle, scroll reveal, nav — all continue to work; hydration picks them up after the static HTML paints.
 
-The chosen vehicle is **TanStack Start**. Reasoning:
+**Not yet delivered**
 
-- It uses TanStack Router underneath, which the site already uses. The URL grammar, route structure, and nav code continue to work.
-- It supports SSG (prerendering at build) alongside SSR. For this site, only SSG is used.
-- It is from the TanStack team, integrated with the router, and does not introduce a second routing mental model.
-- It is a smaller pivot than Astro. Astro would be faster-at-launch by virtue of its island architecture but would mean moving off React components where possible and rewriting the routing. Given our investment, Start is the cleaner path.
-
-The pivot is held in the backlog (`BACKLOG.md`) with the trigger: **before Danny writes the third work.** Rationale: pivoting is cheapest with no content (today) and gets harder as content accumulates. But no content yet means we can't yet *verify* the pivot's benefit with real pages. The third-work threshold gives us a tangible moment when the pivot is both still feasible and concretely beneficial.
-
-Until the pivot, the current bundle cost is the cost of building now. The 200KB gzipped initial bundle is larger than the target but well within the hard limit; no page is unreadable because of it.
+- **Markdown parsing off the client.** `marked` and `gray-matter` remain in the client bundle because `src/shared/content/loader.ts` imports them at module top level and the dynamic `$room/$slug` route imports the loader. Moving the parse into `createServerFn` is the remaining lever and is named in `RENDERING_STRATEGY.md` under *Fuller Horizon → Move the content loader to a server function* with trigger "before the third work."
+- Consequence: the ~200KB gzipped initial bundle has not shrunk meaningfully. The 100KB target remains out of reach until the loader migrates.
 
 ---
 
@@ -142,6 +135,6 @@ Today:
 Enforcement gaps (all held in backlog):
 - Lighthouse CI gate
 - RUM
-- Build-time markdown parsing (via SSG pivot or a lighter plugin)
+- Moving the content loader to `createServerFn` to drop `marked` and `gray-matter` from the client bundle (see `RENDERING_STRATEGY.md`)
 - Self-hosted, subset fonts
 - Image optimization pipeline

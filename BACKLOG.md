@@ -40,15 +40,9 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Performance
 
-### SSG pivot to TanStack Start
-**Why:** The site is static content with a tiny interactive surface. Current SPA delivers HTML only after React hydrates, which costs first-paint, SEO legibility, and requires shipping `marked` + `gray-matter` to the client (~310KB added to the bundle). A build-time prerender would render every route to static HTML, move markdown parsing off the client, and preserve interactivity via hydration where needed.
-**Why TanStack Start and not Astro:** We've invested in TanStack Router, the house URL grammar, and the React component architecture. Start is from the TanStack team, uses Router underneath, and adds SSG/SSR without abandoning the existing mental model. Astro would be faster-at-launch but a bigger rewrite. Start is the cleanest pivot.
-**Trigger:** Before Danny writes the third work. A pivot is cheaper with no content; it gets harder as content accumulates. Also: when bundle size, SEO, or first-paint becomes actually painful in use.
-**Scope:** Convert the Vite+Router setup to Vite+Start, enable SSG prerendering for all routes, move markdown parsing to build-time, verify all existing tests still pass.
-
-### Build-time markdown parsing (if SSG pivot is deferred)
-**Why:** Even without a full framework pivot, `marked` and `gray-matter` could be moved off the client bundle via a custom Vite plugin that transforms content files into pre-rendered HTML at build time. A lighter alternative to the Start pivot.
-**Trigger:** If the SSG pivot is delayed beyond the third-work threshold.
+### Move the content loader to a server function
+**Why:** The SSG pivot shipped prerendering but left `marked` and `gray-matter` in the client bundle (~30KB gzipped). The loader imports them at module top level, and the dynamic `$room/$slug` route imports the loader, so both parsers flow into the client chunk even though every work is prerendered. Wrapping the parse step in `createServerFn` moves the parsers into a server-only handler whose imports are tree-shaken out of the client. Full context in `RENDERING_STRATEGY.md` under *Fuller Horizon*.
+**Trigger:** Before the third work. The bundle impact is negligible with zero works and measurable from the first publish; taking it up before publication avoids a per-work migration cost.
 
 ### Route-level code splitting
 **Why:** Every route currently loads in the initial bundle. A visitor arriving at `/garden` downloads the code for `/salon` too.
@@ -158,8 +152,8 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **State:** Specification exists (`SEO_AND_META.md`). Schema.org JSON-LD is implemented for `WebSite`, `Person`, the `CreativeWork` subtypes for works, and `BreadcrumbList` for work pages. Remaining items below are sub-tasks of the spec.
 
 ### Per-page title and meta description
-**Why:** Each route should emit its own `<title>` and `<meta name="description">`. Today the `<title>` is "Danny Dyer" globally from `index.html`; the description is not set.
-**Trigger:** Before the first deploy, or alongside the SSG pivot — with static HTML, per-page meta becomes straightforward.
+**Why:** The root route now sets a site-wide title and description in each prerendered page (via the TanStack Start `head` config), so every route has valid meta. Each route should also emit its own specific `<title>` and `<meta name="description">` — the Studio's title is currently "Danny Dyer" like every other page, and descriptions don't yet distinguish rooms or works.
+**Trigger:** Before the first deploy for the rooms. Per-work titles land with the first work (the `$room/$slug` route's loader already surfaces the work's title).
 
 ### Open Graph image generation
 **Why:** Each work wants a 1200×630 OG image rendered from its title, date, and facets over the umber ground. Specified in `SEO_AND_META.md`.
