@@ -14,7 +14,7 @@ The site is prerendered to static HTML per route at build time, using TanStack S
 - **Output shape:** `dist/client/index.html` is the prerendered foyer. `dist/client/{room}/index.html` is each room landing. Per-work pages will prerender as `dist/client/{room}/{slug}/index.html` once content exists (crawled via `crawlLinks` from each room landing). A static host serves `dist/client/` as the document root.
 - **Entry:** No `index.html` source file and no `src/main.tsx`. Start owns the HTML shell and the client entry. The site defines `src/router.tsx` (a `getRouter()` factory) and a root route (`src/app/routes/__root.tsx`) that emits the full document — `<html>` with `<HeadContent />` in head and `<Scripts />` at the end of body.
 - **Head:** Per-route meta, title, and link tags are declared in each route's `head` config. The root route sets charset, viewport, site title, description, favicon, theme-color, and the Google Fonts stylesheet — all of which are now present in every prerendered HTML file.
-- **Content:** Markdown is loaded via `import.meta.glob('/src/content/**/*.md', { eager: true, query: '?raw' })` and parsed by `marked` and `gray-matter` in `src/shared/content/loader.ts`. The loader still runs in both environments (isomorphic loader). See the follow-up under *Fuller Horizon* about shrinking this via `createServerFn`.
+- **Content:** Markdown is loaded via `import.meta.glob('/src/content/**/*.md', { eager: true, query: '?raw' })` and parsed by `marked` and `gray-matter` in `src/shared/content/loader.ts`. The loader is server-only by convention; the public API (`getAllWorks`, `getWorksByRoom`, `getWork`) lives in `src/shared/content/server-fns.ts` as `createServerFn` wrappers. Start's plugin strips the handler bodies from client chunks, so neither parser ships to the browser. The content barrel (`index.ts`) deliberately does not re-export from `loader.ts` — a re-export is enough to pull the module back into the client chunk.
 - **Theme:** `useSyncExternalStore` with `getServerSnapshot()` still handles the React side. The module-level DOM access in `theme-store.ts` is now guarded with `typeof document !== 'undefined'` so the module can be imported during prerender without a `ReferenceError`. The client-side runs the guard body before React hydrates, so the class on `<html>` corrects from the server's light default to the visitor's actual preference with no visible flash.
 - **State:** Still no server state, no data fetching, no mutations.
 
@@ -26,8 +26,7 @@ The site is prerendered to static HTML per route at build time, using TanStack S
 
 ### What the pivot did not (yet) deliver
 
-- **`marked` and `gray-matter` off the client bundle.** The loader is still isomorphic: its module-level parser imports flow into the client chunk. Moving these to a `createServerFn` handler is the cleanest fix; it's named in *Fuller Horizon* with an explicit trigger.
-- **A lighter client bundle overall.** Total is ~188KB gzipped, unchanged from the SPA baseline. The bundle shrinks when the loader moves server-side.
+- **`marked` and `gray-matter` off the client bundle.** The loader was subsequently moved to `createServerFn` wrappers in `src/shared/content/server-fns.ts`; Start's plugin strips the handler bodies from client chunks, and the barrel no longer re-exports from `loader.ts`. The client bundle dropped from ~188KB gzipped to ~118KB gzipped (≈37% reduction) as a result.
 
 ---
 
@@ -78,14 +77,6 @@ The existing stack chose TanStack Router deliberately. TanStack Start is the sam
 ## The Fuller Horizon: What Start Unlocks Beyond SSG
 
 The SSG pivot uses the smallest part of Start. These are the capabilities Start carries that the site does not need today but will want to reach for as it grows. Each is a held concern, not a plan. Each names the trigger that would make it real.
-
-### Move the content loader to a server function
-
-The first adoption of server functions — the smallest useful one — is the content loader itself. Today, `src/shared/content/loader.ts` imports `marked` and `gray-matter` at the top of the module, and the dynamic route `$room/$slug` imports from it. That import chain pulls both parsers into the client bundle (~30KB gzipped), even though every work is prerendered and the client never actually calls the parser.
-
-Wrapping the parse step in `createServerFn` moves the parsers into a server-only handler whose imports are tree-shaken out of the client bundle. The dynamic route's `loader` awaits the server function; during prerender it runs in-process, and in the prerendered HTML the result is already serialized into the route data.
-
-**Trigger:** Before the third work. The bundle impact is negligible with zero works; it's measurable the moment a work is published and proportional to the corpus as it grows. Taking this up before publication also avoids a per-work migration cost.
 
 ### Server functions (`createServerFn`)
 

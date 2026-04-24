@@ -1,12 +1,7 @@
 import matter from 'gray-matter';
 import { marked } from 'marked';
 import type { Room } from '@/shared/types/common';
-import {
-  isPublished,
-  roomSchema,
-  workFrontmatterSchema,
-  type Work,
-} from '@/shared/content/schema';
+import { isPublished, roomSchema, workFrontmatterSchema, type Work } from '@/shared/content/schema';
 
 /**
  * Parse a raw markdown file into a Work.
@@ -19,7 +14,6 @@ import {
  * the source is the trusted repo, so marked output is not sanitized.
  */
 export function parseWork(path: string, raw: string): Work {
-  // Path looks like /src/content/{room}/{slug}.md or /src/content/{room}/{slug}.mdx
   const match = /\/src\/content\/([^/]+)\/([^/]+)\.mdx?$/.exec(path);
   if (!match) {
     throw new Error(`Content file at unexpected path: ${path}`);
@@ -34,9 +28,7 @@ export function parseWork(path: string, raw: string): Work {
   const parsed = matter(raw);
   const frontmatter = workFrontmatterSchema.safeParse(parsed.data);
   if (!frontmatter.success) {
-    throw new Error(
-      `Frontmatter validation failed for ${path}:\n${frontmatter.error.message}`,
-    );
+    throw new Error(`Frontmatter validation failed for ${path}:\n${frontmatter.error.message}`);
   }
 
   const body = parsed.content;
@@ -51,9 +43,13 @@ export function parseWork(path: string, raw: string): Work {
   };
 }
 
-// Vite resolves this at build time; see CONTENT_SCHEMA.md.
-// Empty today — src/content/ does not exist yet. The glob is harmless
-// when no files match; it returns {} and produces an empty Works set.
+// Module-level glob + parse. Runs once per server build. This module is
+// SERVER-ONLY BY CONVENTION — imports `marked` and `gray-matter` at the
+// top level, which would land in any client chunk that transitively
+// imports from here. The client never does: `server-fns.ts` wraps the
+// three public functions in `createServerFn`, and the handler bodies
+// (the only place this file is referenced) are tree-shaken out of the
+// client bundle. Do not import from this file on the client.
 const rawFiles = import.meta.glob('/src/content/**/*.md', {
   eager: true,
   query: '?raw',
@@ -64,19 +60,17 @@ const allWorks: Work[] = Object.entries(rawFiles).map(([path, raw]) => parseWork
 
 const isProduction = import.meta.env.PROD;
 
-export function getAllWorks(): Work[] {
-  if (isProduction) {
-    return allWorks.filter((w) => isPublished(w));
-  }
+export function getAllWorksSync(): Work[] {
+  if (isProduction) return allWorks.filter((w) => isPublished(w));
   return allWorks;
 }
 
-export function getWorksByRoom(room: Room): Work[] {
-  return getAllWorks()
+export function getWorksByRoomSync(room: Room): Work[] {
+  return getAllWorksSync()
     .filter((w) => w.room === room)
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
-export function getWork(room: Room, slug: string): Work | undefined {
-  return getAllWorks().find((w) => w.room === room && w.slug === slug);
+export function getWorkSync(room: Room, slug: string): Work | undefined {
+  return getAllWorksSync().find((w) => w.room === room && w.slug === slug);
 }

@@ -5,10 +5,10 @@ import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { breadcrumbSchema, JsonLd, workSchema } from '@/shared/seo';
 
 export const Route = createFileRoute('/$room/$slug')({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
     const roomResult = roomSchema.safeParse(params.room);
     if (!roomResult.success) throw notFound();
-    const work = getWork(roomResult.data, params.slug);
+    const work = await getWork({ data: { room: roomResult.data, slug: params.slug } });
     if (!work) throw notFound();
     return { work };
   },

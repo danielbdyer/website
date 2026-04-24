@@ -40,10 +40,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Performance
 
-### Move the content loader to a server function
-**Why:** The SSG pivot shipped prerendering but left `marked` and `gray-matter` in the client bundle (~30KB gzipped). The loader imports them at module top level, and the dynamic `$room/$slug` route imports the loader, so both parsers flow into the client chunk even though every work is prerendered. Wrapping the parse step in `createServerFn` moves the parsers into a server-only handler whose imports are tree-shaken out of the client. Full context in `RENDERING_STRATEGY.md` under *Fuller Horizon*.
-**Trigger:** Before the third work. The bundle impact is negligible with zero works and measurable from the first publish; taking it up before publication avoids a per-work migration cost.
-
 ### Route-level code splitting
 **Why:** Every route currently loads in the initial bundle. A visitor arriving at `/garden` downloads the code for `/salon` too.
 **Trigger:** When the bundle has enough per-route weight to justify the cost of lazy loading (new components, per-route data, etc.). Today, each route is <50 lines; splitting is not worth it.

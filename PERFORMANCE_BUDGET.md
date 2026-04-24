@@ -29,21 +29,23 @@ These are aspirational and will be verified by Lighthouse / Real User Monitoring
 
 ## Current State
 
-As of the content-loader skeleton:
+As of the post-SSG state with the content loader moved to `createServerFn`:
 
-| Asset | Uncompressed | Estimated gzipped | Against target |
+| Asset | Uncompressed | Gzipped | Against target |
 |---|---|---|---|
-| JS bundle | ~623KB | ~200KB | **exceeds the 100KB target, within the 150KB hard limit** |
-| CSS bundle | ~17KB | ~4.3KB | within target |
-| Initial HTML | ~0.8KB | ~0.4KB | within target |
+| Main JS chunk (`index-*.js`) | ~386KB | ~118KB | **within the 150KB hard limit; still above the 100KB target** |
+| Reveal chunk | ~35KB | ~11.6KB | room to absorb small additions |
+| Per-route chunks | <2KB each | <0.8KB each | within target |
+| CSS bundle | ~21KB | ~4.3KB | within target |
+| Prerendered HTML (per route) | ~7KB | — | static; included in first paint |
 
-The JS bundle weight is driven primarily by three runtime dependencies loaded on the client:
+`marked` and `gray-matter` are no longer in the client bundle. The loader module is server-only (only reached via `createServerFn` handler bodies, which Start's plugin strips from client chunks). The 70KB-gzipped drop from the pre-refactor bundle reflects that extraction.
+
+The remaining JS weight is primarily:
 
 - `react` + `react-dom` + `@tanstack/react-router` — unavoidable given the stack
-- `gray-matter` — frontmatter parser, ~200KB unminified, shipped to the client because content is loaded at module evaluation time
-- `marked` — markdown parser, ~50KB unminified, shipped to the client for the same reason
-
-The last two are the lever to pull. They are on the client not because the *output* needs to be computed client-side, but because the current architecture (SPA with Vite bundling everything) puts them there by default.
+- TanStack Start's client runtime (hydration, serialization adapters, server-fn client)
+- Zod (used by the content schema, currently bundled; a future simplification could swap to lightweight validators if Zod's schema weight becomes the binding constraint)
 
 ---
 
@@ -57,10 +59,10 @@ The site's delivery is **static generation**: every route's HTML is rendered at 
 - **SEO became real.** Crawlers now see rendered content, not an empty `#root` div. Per-page meta, title, theme-color, and preconnects are in each HTML file.
 - **Interactive behavior unchanged.** Theme toggle, scroll reveal, nav — all continue to work; hydration picks them up after the static HTML paints.
 
-**Not yet delivered**
+**Delivered subsequently (the loader-to-server-fn pass)**
 
-- **Markdown parsing off the client.** `marked` and `gray-matter` remain in the client bundle because `src/shared/content/loader.ts` imports them at module top level and the dynamic `$room/$slug` route imports the loader. Moving the parse into `createServerFn` is the remaining lever and is named in `RENDERING_STRATEGY.md` under *Fuller Horizon → Move the content loader to a server function* with trigger "before the third work."
-- Consequence: the ~200KB gzipped initial bundle has not shrunk meaningfully. The 100KB target remains out of reach until the loader migrates.
+- **Markdown parsing off the client.** `src/shared/content/server-fns.ts` wraps the loader's public functions in `createServerFn`. Start's plugin strips the handler bodies from client chunks; `loader.ts` (with its `marked` + `gray-matter` imports) is only reachable through those handlers. The client chunk dropped ~70KB gzipped as a result — from 188KB to 118KB. A key subtlety: the barrel (`src/shared/content/index.ts`) must not re-export anything from `loader.ts`. Re-exporting `parseWork` for test convenience pulled the whole loader module back into the client chunk. Tests now import `parseWork` from `./loader` directly.
+- **100KB JS target is in range.** The main chunk is 118KB gzipped — above target but close enough that the remaining distance is room-absorbable rather than architectural. Further reductions likely come from Zod (content schema), Start runtime simplification, or Motion's footprint.
 
 ---
 
