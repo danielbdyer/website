@@ -113,10 +113,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** A site about poetry and essays with a "paper on the walls" aesthetic should print beautifully. Current print output includes nav and footer chrome.
 **Trigger:** When a visitor asks to print a work, or when the first work that invites printing (a long essay, a sequence of poems) exists.
 
-### Deployment pipeline specification
-**Why:** `DEPLOYMENT.md` is a gap. The site currently has no specified hosting, CI/CD, DNS, or SSL commitment.
-**Trigger:** Before the first deploy. (Implementation: pick a host, wire a build step, point DNS.)
-
 ### Dependency policy
 **Why:** `DEPENDENCY_POLICY.md` is partially covered in the north star's technology stack table. A full policy would name evaluation criteria, update cadence, and the philosophical stance on third-party code.
 **Trigger:** When a new dependency needs adding and the existing table doesn't give enough guidance.
