@@ -32,7 +32,12 @@ export function parseWork(path: string, raw: string): Work {
   }
 
   const body = parsed.content;
-  const html = marked.parse(body, { async: false });
+  // Poems are carried by their line breaks. Default markdown collapses single
+  // newlines into spaces; for poems, every newline is a `<br>`. Other types
+  // keep CommonMark's default paragraph behavior, where line breaks within a
+  // paragraph are soft wraps and a blank line begins a new paragraph.
+  const breaks = frontmatter.data.type === 'poem';
+  const html = marked.parse(body, { async: false, breaks });
 
   return {
     ...frontmatter.data,

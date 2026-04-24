@@ -63,9 +63,7 @@ title: x
 date: 2026-01-01
 ---
 body`;
-    expect(() =>
-      parseWork('/elsewhere/something.md', raw),
-    ).toThrow(/unexpected path/);
+    expect(() => parseWork('/elsewhere/something.md', raw)).toThrow(/unexpected path/);
   });
 
   it('throws when the room is unknown', () => {
@@ -74,9 +72,7 @@ title: x
 date: 2026-01-01
 ---
 body`;
-    expect(() =>
-      parseWork('/src/content/ballroom/a-piece.md', raw),
-    ).toThrow(/unknown room/);
+    expect(() => parseWork('/src/content/ballroom/a-piece.md', raw)).toThrow(/unknown room/);
   });
 
   it('throws when frontmatter is missing required fields', () => {
@@ -84,9 +80,9 @@ body`;
 title: Only title
 ---
 body`;
-    expect(() =>
-      parseWork('/src/content/garden/no-date.md', raw),
-    ).toThrow(/Frontmatter validation failed/);
+    expect(() => parseWork('/src/content/garden/no-date.md', raw)).toThrow(
+      /Frontmatter validation failed/,
+    );
   });
 
   it('throws when the date is unparseable', () => {
@@ -95,9 +91,9 @@ title: Bad date
 date: not-a-real-date
 ---
 body`;
-    expect(() =>
-      parseWork('/src/content/garden/bad-date.md', raw),
-    ).toThrow(/Frontmatter validation failed/);
+    expect(() => parseWork('/src/content/garden/bad-date.md', raw)).toThrow(
+      /Frontmatter validation failed/,
+    );
   });
 
   it('throws when a facet is unknown', () => {
@@ -107,9 +103,39 @@ date: 2026-01-01
 facets: [craft, imaginary-facet]
 ---
 body`;
-    expect(() =>
-      parseWork('/src/content/garden/unknown-facet.md', raw),
-    ).toThrow(/Frontmatter validation failed/);
+    expect(() => parseWork('/src/content/garden/unknown-facet.md', raw)).toThrow(
+      /Frontmatter validation failed/,
+    );
+  });
+
+  it('preserves single line breaks as <br> for poems', () => {
+    const raw = `---
+title: a poem
+date: 2026-04-24
+type: poem
+---
+
+listen —
+i moved across the country
+three years ago
+`;
+    const work = parseWork('/src/content/garden/a-poem.md', raw);
+    expect(work.html).toContain('<br>');
+    expect(work.html).toContain('listen —<br>i moved across the country');
+  });
+
+  it('does not insert <br> for prose without a poem type', () => {
+    const raw = `---
+title: an essay
+date: 2026-04-24
+type: essay
+---
+
+The first line.
+The second line.
+`;
+    const work = parseWork('/src/content/study/an-essay.md', raw);
+    expect(work.html).not.toContain('<br>');
   });
 
   it('throws when a type is unknown', () => {
@@ -119,8 +145,8 @@ date: 2026-01-01
 type: pamphlet
 ---
 body`;
-    expect(() =>
-      parseWork('/src/content/studio/bad-type.md', raw),
-    ).toThrow(/Frontmatter validation failed/);
+    expect(() => parseWork('/src/content/studio/bad-type.md', raw)).toThrow(
+      /Frontmatter validation failed/,
+    );
   });
 });
