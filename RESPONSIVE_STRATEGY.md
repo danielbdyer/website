@@ -41,9 +41,7 @@ Each breakpoint used is a real design decision. Adding one because a pattern "sh
 
 Any interactive element (link, button) must be at least **44×44 CSS pixels** to meet Apple's and WCAG 2.1 AAA guidance for touch targets. This covers the nav links, the theme toggle, the wordmark, future facet chips, and future work-list links.
 
-Some elements today fall below this. The theme toggle button is 24×24 visible icon plus ~10px of padding (roughly 34×34 effective). This is a **known gap**; the fix is adding padding to the button and is trivial when we take it up. Held in the backlog.
-
-Touch targets can overlap invisibly — a small visible pill can carry a larger tap region by extending padding beyond the visible background. This is preferred over inflating visible chrome for the sake of touch.
+Touch targets can overlap invisibly — a small visible pill can carry a larger tap region by extending padding beyond the visible background. This is preferred over inflating visible chrome for the sake of touch. The theme toggle uses this pattern: the outer `<button>` is `min-w-[44px] min-h-[44px]`; the inner `<span>` holds the visible hover chrome at icon scale.
 
 ---
 
@@ -120,6 +118,5 @@ Implemented today:
 - SVG ornaments and icons
 
 Known gaps (held in backlog):
-- Minimum 44×44 touch targets (theme toggle specifically falls short)
 - Print stylesheet
 - `@media (hover: hover)` guard for future hover-only interactions

@@ -52,9 +52,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** Literata and Newsreader are currently loaded from Google Fonts, which is a third-party dependency and a non-trivial latency hit. Self-hosting with subsetting (only the glyphs used) reduces weight and eliminates the third-party call.
 **Trigger:** When page weight or privacy posture matters more than the convenience of Google Fonts.
 
-### Minimum 44×44px touch targets
-**Why:** The theme toggle button is ~34×34 effective, below the WCAG AAA touch-target recommendation.
-**Trigger:** Immediate — noted in `RESPONSIVE_STRATEGY.md`. Small fix: add padding to the button so its interactive region is ≥44px.
 
 ---
 
