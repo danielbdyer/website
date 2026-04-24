@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+/* Self-hosted serif typography. Variable fonts with optical-size + weight
+   axes preserve Literata and Newsreader's heritage typographic feel across
+   sizes. Each import exposes a full set of @font-face rules with
+   per-subset `unicode-range`, so browsers only download what the rendered
+   characters require — an English-only page pulls the latin subset only.
+   See PRIVACY.md: self-hosting removes the Google Fonts third-party call. */
+@import '@fontsource-variable/literata/opsz.css';
+@import '@fontsource-variable/literata/opsz-italic.css';
+@import '@fontsource-variable/newsreader/opsz.css';
+@import '@fontsource-variable/newsreader/opsz-italic.css';
+
 /* ═══════════════════════════════════════════════════════════════
    Design Tokens — Danny's Site
    Extracted from the Little Museum prototype.
@@ -7,9 +18,10 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── Tailwind theme integration ───────────────────────────────
-   Maps CSS custom properties → Tailwind utilities so you can
-   write `bg-bg`, `text-text-2`, `border-border` etc. instead of
-   `bg-[var(--bg)]`. Keeps the single source of truth in :root.
+   Maps CSS custom properties → Tailwind utilities. Use named tokens
+   (`bg-bg`, `text-text-2`, `border-border`) in components rather than
+   `bg-[var(--bg)]` arbitrary-value syntax. DESIGN_SYSTEM.md commits
+   to named tokens; the single source of truth lives in :root below.
    ──────────────────────────────────────────────────────────── */
 @theme {
   --color-bg: var(--bg);
@@ -38,8 +50,8 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-lift: var(--shadow-lift);
 
-  --font-heading: 'Newsreader', Georgia, serif;
-  --font-body: 'Literata', Georgia, serif;
+  --font-heading: 'Newsreader Variable', Georgia, serif;
+  --font-body: 'Literata Variable', Georgia, serif;
 
   --animate-geo-spin: geo-spin 60s linear infinite;
 }
@@ -122,7 +134,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Literata', Georgia, serif;
+  font-family: 'Literata Variable', Georgia, serif;
   line-height: 1.8;
   transition:
     background 0.5s ease,
@@ -148,11 +160,11 @@ body > #root {
 
 /* ─── Typography ────────────────────────────────────────────── */
 .font-heading {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Newsreader Variable', Georgia, serif;
 }
 
 .font-body {
-  font-family: 'Literata', Georgia, serif;
+  font-family: 'Literata Variable', Georgia, serif;
 }
 
 /* ─── Selection ─────────────────────────────────────────────── */
@@ -196,6 +208,61 @@ body > #root {
   transform: translateY(0);
 }
 
+/* ─── Focus ring (keyboard only) ────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ─── Skip link ─────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  color: var(--text);
+  text-decoration: none;
+  font-family: 'Literata Variable', Georgia, serif;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  transform: translateY(-200%);
+  transition: transform 0.2s ease;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  transform: translateY(8px) translateX(8px);
+}
+
+/* ─── Reduced motion ────────────────────────────────────────── */
+/* When the visitor has asked for reduced motion, the site honors it
+   as an invariant: transitions collapse to instant, the geometric
+   figure stops rotating (still visible, static), and scroll-reveal
+   presents content immediately rather than fading in. This matches
+   the commitments in ACCESSIBILITY.md and INTERACTION_DESIGN.md. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ─── Geometric ornament ────────────────────────────────────── */
 @keyframes geo-spin {
   from {
@@ -204,4 +271,176 @@ body > #root {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ─── Prose (work body rendering) ───────────────────────────── */
+/* Minimal typography for markdown-rendered work bodies. The CSS reset
+   zeros margins globally; .prose restores the rhythm needed for reading
+   prose, headings, lists, and quotes. Kept narrow for skeleton — this
+   will deepen as DESIGN_SYSTEM articulates per-content-type rendering. */
+.prose p {
+  margin-bottom: 1.4em;
+}
+
+.prose h2 {
+  font-family: 'Newsreader Variable', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  color: var(--text);
+}
+
+.prose h3 {
+  font-family: 'Newsreader Variable', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: var(--text);
+}
+
+.prose ul,
+.prose ol {
+  margin-bottom: 1.4em;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin-bottom: 0.4em;
+}
+
+.prose blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 1em;
+  margin: 1.4em 0;
+  color: var(--text-2);
+  font-style: italic;
+}
+
+.prose a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.prose a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--bg-warm);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
+.prose pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--bg-warm);
+  padding: 1em;
+  border-radius: 4px;
+  margin: 1.4em 0;
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+.prose strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose mark {
+  background: var(--hl-bg);
+  color: var(--text);
+  padding: 0 0.15em;
+  border-radius: 2px;
+}
+
+.prose kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--bg-warm);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0.05em 0.4em;
+  color: var(--text);
+}
+
+.prose sup,
+.prose sub {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.prose sup {
+  top: -0.5em;
+}
+
+.prose sub {
+  bottom: -0.25em;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4em 0;
+  font-size: 0.95em;
+}
+
+.prose thead {
+  border-bottom: 1px solid var(--border);
+}
+
+.prose th {
+  font-family: 'Newsreader Variable', Georgia, serif;
+  font-weight: 500;
+  text-align: left;
+  padding: 0.5em 0.75em;
+  color: var(--text);
+}
+
+.prose td {
+  padding: 0.5em 0.75em;
+  border-bottom: 1px solid var(--border-lt);
+}
+
+.prose figure {
+  margin: 1.6em 0;
+}
+
+.prose figcaption {
+  font-size: 0.85em;
+  color: var(--text-2);
+  font-style: italic;
+  text-align: center;
+  margin-top: 0.5em;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.6em auto;
+  border-radius: 2px;
 }

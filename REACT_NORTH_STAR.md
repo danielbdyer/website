@@ -123,9 +123,13 @@ src/
 ├── app/                            # Application shell
 │   ├── App.tsx                     # Root component, provider composition
 │   ├── routes/                     # TanStack Router route definitions
-│   │   ├── __root.tsx              # Root layout
+│   │   ├── __root.tsx              # Root layout (composes the shell)
 │   │   ├── index.tsx               # Home page
 │   │   └── checkout.tsx            # Route page
+│   ├── layout/                     # App-shell components (Nav, Footer, etc.)
+│   │   ├── Nav.tsx
+│   │   ├── Footer.tsx
+│   │   └── ThemeToggle.tsx
 │   └── providers/                  # Global providers (auth, theme, etc.)
 │       ├── AuthProvider.tsx
 │       ├── ThemeProvider.tsx
@@ -154,9 +158,11 @@ src/
 ├── shared/                         # Cross-feature shared code
 │   ├── atoms/                      # Shared atomic components ({Name}/{Name}.tsx + test)
 │   ├── molecules/                  # Shared molecular components
+│   ├── organisms/                  # Shared organisms (see note below on content sites)
 │   ├── hooks/                      # Shared utility hooks
 │   ├── utils/                      # Pure utilities (cn.ts, invariant.ts)
 │   ├── types/                      # Shared type definitions (api.ts, common.ts)
+│   ├── content/                    # Build-time content loader (schema, loader, types)
 │   └── lib/                        # Third-party wrappers (query-client.ts)
 │
 └── infrastructure/                 # External system adapters
@@ -173,7 +179,8 @@ src/
 Arrows indicate allowed import direction. All unlisted directions are forbidden.
 
 ```
-app/routes       →  features/*/containers, shared/*, app/providers
+app/routes       →  features/*/containers, shared/*, app/providers, app/layout
+app/layout       →  app/providers, shared/*
 features/containers  →  features/hooks, features/components
 features/hooks       →  features/domain, features/types, shared/hooks, infrastructure/api, TanStack Query
 features/components  →  features/types (for prop types only), shared/atoms, shared/molecules
@@ -191,6 +198,12 @@ features/*           →  other-feature/components/*  (no cross-feature internal
 ```
 
 **These rules are enforced by `eslint-plugin-boundaries` in `eslint.config.js`, not by convention.** See the actual configuration in the repository for the full rule set using ESLint flat config and `boundaries/dependencies`.
+
+### A note on mostly-content sites
+
+The canonical structure above assumes an app organized around discrete features (checkout, user-profile, admin). A *content site* — one whose primary substance is authored works rather than bounded feature flows — relaxes this structure: the `features/` folder may be empty or absent, and what would be "feature organisms" live in `shared/organisms/` because the site has no features to bind them to.
+
+Danny's site is such a content site. Works are the universal substance; rooms are lenses, not features. `WorkView` is therefore a shared organism, and `src/features/` does not currently exist. If a future surface introduces a real bounded feature (a guestbook, a contact form, an admin surface), `features/` is created at that moment and the canonical structure applies to that feature. The absence is not a deviation from the architecture; it is the architecture meeting this site's nature.
 
 ---
 

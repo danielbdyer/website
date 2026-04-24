@@ -1,110 +1,94 @@
-import { createRootRoute, Link, Outlet } from '@tanstack/react-router';
-import { ThemeProvider, useTheme } from '@/app/providers';
-import { Diamond } from '@/shared/atoms/Diamond/Diamond';
-import { Ornament } from '@/shared/atoms/Ornament/Ornament';
+import type { ReactNode } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
+import { ThemeProvider } from '@/app/providers';
+import { ErrorBoundary } from '@/app/layout/ErrorBoundary';
+import { Nav } from '@/app/layout/Nav';
+import { Footer } from '@/app/layout/Footer';
+import { NotFound } from '@/app/layout/NotFound';
+import { JsonLd, personSchema, websiteSchema } from '@/shared/seo';
+import { reportWebVitals } from '@/shared/seo/web-vitals';
+import '@/styles/tokens.css';
+
+// Router devtools are only imported in dev — lazy-loaded so the dev bundle
+// doesn't block first paint, and so production never ships the code.
+const RouterDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@tanstack/react-router-devtools').then((m) => ({
+        default: m.TanStackRouterDevtools,
+      })),
+    )
+  : () => null;
+
+const DESCRIPTION =
+  "Danny Dyer — essays, poetry, case studies, and notes from an engineering leader, poet, and cellist's son.";
 
 export const Route = createRootRoute({
-  component: RootLayout,
+  head: () => ({
+    meta: [
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
+      { title: 'Danny Dyer' },
+      { name: 'description', content: DESCRIPTION },
+      { name: 'theme-color', content: '#f5f1eb', media: '(prefers-color-scheme: light)' },
+      { name: 'theme-color', content: '#191715', media: '(prefers-color-scheme: dark)' },
+    ],
+    // Fonts are self-hosted via @fontsource-variable; imported in
+    // src/styles/tokens.css. No Google Fonts preconnect or stylesheet.
+    links: [
+      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.svg' },
+    ],
+  }),
+  component: RootComponent,
+  notFoundComponent: NotFound,
 });
 
-function RootLayout() {
+function RootComponent() {
+  // web-vitals subscribes to PerformanceObserver; legitimate effect per the
+  // coding skill's decision table. Runs once after hydration on the client
+  // (useEffect is skipped during SSR prerender), never during server render.
+  useEffect(() => {
+    reportWebVitals();
+  }, []);
   return (
-    <ThemeProvider>
-      <div className="min-h-screen">
-        <Nav />
-        <main className="max-w-[700px] mx-auto px-6 pt-8 pb-24 min-h-[calc(100vh-200px)]">
-          <Outlet />
-        </main>
-        <Footer />
-      </div>
-    </ThemeProvider>
-  );
-}
-
-function Nav() {
-  const { dark, toggle } = useTheme();
-
-  return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between max-w-[700px] mx-auto px-6 py-5 bg-[var(--bg)] transition-[background] duration-500">
-      <Link
-        to="/"
-        className="flex items-center gap-1.5 font-heading text-base font-medium italic text-[var(--text)] no-underline transition-colors duration-200 hover:text-[var(--accent)] group"
-      >
-        <Diamond size={7} className="transition-transform duration-300 group-hover:rotate-45" />
-        <span>Danny Dyer</span>
-      </Link>
-
-      <div className="flex items-center gap-4">
-        {ROOMS.map(({ to, label }) => (
-          <Link
-            key={to}
-            to={to}
-            className="text-[0.8rem] text-[var(--text-2)] no-underline tracking-wide transition-colors duration-200 hover:text-[var(--text)] [&.active]:text-[var(--text)]"
-            activeProps={{ className: 'active' }}
+    <RootDocument>
+      <ThemeProvider>
+        <div className="min-h-screen">
+          <JsonLd data={[websiteSchema(), personSchema()]} />
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
+          <Nav />
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="max-w-[700px] mx-auto px-6 pt-8 pb-24 min-h-[calc(100vh-200px)] focus:outline-none"
           >
-            {label}
-          </Link>
-        ))}
-
-        <button
-          onClick={toggle}
-          className="bg-transparent border-none text-[var(--text-3)] cursor-pointer p-[5px] flex items-center transition-colors duration-200 rounded hover:text-[var(--text)] hover:bg-[var(--tag-bg)]"
-          aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {dark ? <SunIcon /> : <MoonIcon />}
-        </button>
-      </div>
-    </nav>
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </main>
+          <Footer />
+        </div>
+        <Suspense fallback={null}>
+          <RouterDevtools />
+        </Suspense>
+      </ThemeProvider>
+    </RootDocument>
   );
 }
 
-function Footer() {
+function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <footer className="max-w-[700px] mx-auto px-6 pb-8">
-      <Ornament />
-      <div className="flex justify-between items-center text-[0.72rem] text-[var(--text-3)]">
-        <span>Danny Dyer</span>
-        <span>danielbdyer.com</span>
-      </div>
-    </footer>
-  );
-}
-
-const ROOMS = [
-  { to: '/' as const, label: 'Foyer' },
-  { to: '/studio' as const, label: 'Studio' },
-  { to: '/garden' as const, label: 'Garden' },
-  { to: '/study' as const, label: 'Study' },
-  { to: '/salon' as const, label: 'Salon' },
-] as const;
-
-function SunIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
   );
 }

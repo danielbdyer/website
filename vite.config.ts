@@ -1,16 +1,56 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import viteReact from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { TanStackRouterVite } from '@tanstack/router-vite-plugin';
+import { visualizer } from 'rollup-plugin-visualizer';
 import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [
-    react(),
+    // tanstackStart must come before viteReact per Start's plugin contract.
+    // The plugin subsumes @tanstack/router-vite-plugin and also generates
+    // the route tree at ./src/app/routeTree.gen.ts.
+    tanstackStart({
+      // Paths resolve relative to srcDirectory (default 'src').
+      router: {
+        routesDirectory: 'app/routes',
+        generatedRouteTree: 'app/routeTree.gen.ts',
+      },
+      // SSG: every known route is prerendered to static HTML at build time.
+      // crawlLinks follows links from each page to discover paths the static
+      // list misses (the content loader will add /{room}/{slug} per work
+      // once content exists). failOnError makes a prerender failure fail
+      // the build — a quiet deploy with a broken route is worse than a
+      // loud build failure.
+      // `/` is the foyer; no separate /foyer route. Room landings below.
+      // Per-work routes (/$room/$slug) are discovered via crawlLinks once
+      // content exists; autoStaticPathsDiscovery handles the enumeration.
+      pages: [
+        { path: '/' },
+        { path: '/studio' },
+        { path: '/garden' },
+        { path: '/study' },
+        { path: '/salon' },
+      ],
+      prerender: {
+        enabled: true,
+        crawlLinks: true,
+        failOnError: true,
+      },
+      // sitemap.xml generated from the prerender set, written to dist/client.
+      // `host` is required for absolute-URL <loc> entries.
+      sitemap: {
+        enabled: true,
+        host: 'https://danielbdyer.com',
+      },
+    }),
+    viteReact(),
     tailwindcss(),
-    TanStackRouterVite({
-      routesDirectory: './src/app/routes',
-      generatedRouteTree: './src/app/routeTree.gen.ts',
+    visualizer({
+      filename: '.stats/bundle.html',
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap',
     }),
   ],
   resolve: {

@@ -93,17 +93,17 @@ DOMAIN_MODEL.md
         Depends on: CONTENT_SCHEMA.
 ```
 
-**`DOMAIN_MODEL.md`** | Inside | Gap | Depends on: Entry sequence
-The ontology. Rooms, facets, works, modes, and their relationships as a conceptual system. The single source of truth for what a room *is*, what a facet *means*, what a work *contains*, and how they relate. Currently split between `CLAUDE.md` (which holds the poetic description) and `DANNY_FOUNDATION.md` (which holds a tabular version with stale open questions). Neither is canonical. This file should resolve that — absorbing the structural content from both and becoming the authoritative reference for the site's semantic architecture. `CLAUDE.md` keeps the soul; this file keeps the structure.
+**`DOMAIN_MODEL.md`** | Inside | Exists | Depends on: Entry sequence
+The ontology. Rooms, facets, works, modes, and their relationships as a conceptual system. The single source of truth for what a room *is*, what a facet *means*, what a work *contains*, and how they relate. Absorbs the structural content previously split between `CLAUDE.md` (which keeps the soul) and `DANNY_FOUNDATION.md` (retired). Currently covers rooms, works, facets, modes (held architecturally absent), work-to-work relationships, and explicitly defers several downstream concerns to files that will own them.
 
-**`CONTENT_SCHEMA.md`** | Inside | Gap | Depends on: `DOMAIN_MODEL.md`
-Works as data. Frontmatter shape, file naming conventions, directory structure for content files, content types (poem, essay, case study, note), required vs. optional fields, how facets are encoded, how room assignment works. This is the bridge between the domain model ("works live in rooms and carry facets") and the component architecture ("containers call one orchestration hook and render one organism"). Without it, an agent has vision on one side and plumbing on the other, with no pipe between them.
+**`CONTENT_SCHEMA.md`** | Inside | Exists | Depends on: `DOMAIN_MODEL.md`
+Works as data. Filesystem convention (`src/content/{room}/{slug}.md`), the Zod-validated frontmatter shape with minimal required fields (`title`, `date`) and richly optional ones (`summary`, `facets`, `type`, `draft`), content types as rendering hints, draft handling as a frontmatter flag, body as GitHub-flavored markdown with MDX held as a per-file option, build-time loading via `import.meta.glob`, and explicit deferrals for media, link syntax, and series/collections.
 
-**`GRAPH_AND_LINKING.md`** | Inside | Gap | Depends on: `DOMAIN_MODEL.md` + `CONTENT_SCHEMA.md`
-The "one graph" commitment made concrete. How backlinks work, how a poem links to a case study, how facets create navigable threads across rooms, what prevents the graph from becoming noise as it grows. This is architecturally significant — "everything is one graph" is a core promise in `CLAUDE.md`, but no specification exists for how it's implemented or maintained. Includes the ontological question: what can link to what, and what does a link *mean*? Depends on the domain model (what entities exist to link) and the content schema (how links are encoded in frontmatter or body).
+**`GRAPH_AND_LINKING.md`** | Inside | Exists | Depends on: `DOMAIN_MODEL.md` + `CONTENT_SCHEMA.md`
+The "one graph" commitment made concrete. Wikilinks (`[[slug]]`, `[[room/slug]]`, with `|display` override) for within-site links; standard markdown for external. Unresolved wikilinks fail the build. Backlinks computed at build time, surfaced quietly in the outward invitation. The outward invitation specified as facet threads + backlinks + guaranteed return-to-room. Graph noise resistance held as cultural practice rather than enforced limit. Visible graph surface held as a future possibility whose data is already produced.
 
-**`CONTENT_AUTHORING.md`** | Inside | Gap | Depends on: `CONTENT_SCHEMA.md`
-Danny's workflow for creating and publishing works. How he writes (in-repo? external tool?), how drafts become published, whether there's a preview system, what "seasonal" means for the Garden operationally, how the content pipeline supports the practice of "this is enough, this can exist now." This is the specification of Danny's interface to his own site — a writer returning to voice, not a developer pushing code. Depends on the content schema because the authoring workflow must produce files that conform to it.
+**`CONTENT_AUTHORING.md`** | Inside | Exists | Depends on: `CONTENT_SCHEMA.md`
+Danny's workflow. Writing happens in the repository in markdown, with `pnpm dev` as the preview (drafts and future-dated works visible) and `pnpm build` as the public site (drafts and future excluded). The smallest valid work is two frontmatter fields and a body. Names the costs of editing each field (titles free, slugs costly, dates sensitive), declines a CMS / staging environment / publish button / scheduling UI, and notes that deletion is rare — drafting is preferred over deleting.
 
 ## Outside — The Rooms Themselves
 
@@ -147,17 +147,17 @@ DESIGN_SYSTEM.md
         Depends on: DESIGN_SYSTEM + DOMAIN_MODEL (cross-dependency).
 ```
 
-**`DESIGN_SYSTEM.md`** | Outside | Gap | Depends on: Entry sequence
-The visual language and its rationale. Not just the token values (those live in `tokens.css`) but *why* umber, *why* serif, *why* paper grain. The aesthetic philosophy that guides every visual decision — materiality, structural warmth, the kind of warmth you feel in a space where someone chose every surface with care and then didn't mention it. Palette, typography, spacing, the Diamond and Ornament vocabulary, how these compose into the site's visual identity. This is probably the most important gap in the specification set — the second-most-important file after `CLAUDE.md`.
+**`DESIGN_SYSTEM.md`** | Outside | Exists | Depends on: Entry sequence
+The visual language and its rationale. Not just the token values (those live in `tokens.css`) but *why* umber, *why* serif, *why* paper grain. Holds the "warmth over polish" anchor, materiality (paper / grain / shadow / border), the umber palette with one primary accent and four held accents, typography (Literata + Newsreader), space and rhythm, a motion gesture (full vocabulary deferred to `INTERACTION_DESIGN.md`), and the ornamental vocabulary (Diamond, Ornament).
 
-**`VOICE_AND_COPY.md`** | Outside | Gap | Depends on: `DESIGN_SYSTEM.md`
-How the site speaks in its own voice — not in Danny's works, but in navigation labels, button text, empty states, error messages, page titles, meta descriptions. The microcopy register. A site that "opens a door and stands back" speaks differently than one that leans forward. This file defines that speech. Depends on the design system because voice is an extension of visual identity — the same sensibility expressed in language rather than color and type.
+**`VOICE_AND_COPY.md`** | Outside | Exists | Depends on: `DESIGN_SYSTEM.md`
+How the site speaks in its own voice — not in Danny's works, but in nav labels, room descriptions, work-page chrome (kicker, metadata, outward invitation), facet pages, errors, and empty states. Names the register (quiet, italic, second-voice, never performative), surface-by-surface conventions, microcopy rules (em-dash rhythm, no exclamation points, present tense, no first-person plural), declinations (no CTAs, no social proof, no urgency language, no emoji in chrome), and the bracket-plus-`text-3` draft pattern for placeholder copy.
 
-**`INTERACTION_DESIGN.md`** | Outside | Gap | Depends on: `DESIGN_SYSTEM.md`
-Motion, transitions, scroll behavior, pace, and dark mode as a room dimming. The temporal/kinetic design language. This site uses time as a material — slow transitions, scroll reveals that feel like rooms opening, a geometric figure that takes a full minute to rotate. This file specifies the choreographic vocabulary: easing curves, duration philosophy, stagger patterns, how motion serves the feeling of place rather than performing delight. Dark mode lives here — it's a transition experience, not a toggle. Depends on the design system because motion is the design language in time.
+**`INTERACTION_DESIGN.md`** | Outside | Exists | Depends on: `DESIGN_SYSTEM.md`
+Motion as material. Names the four current durations (200ms hover, 500ms theme, 600ms reveal, 60s spin), the signature easing curve (`cubic-bezier(0.23, 1, 0.32, 1)` for arrivals; default for change), the Reveal pattern, dark mode as room dimming with the no-flash-of-wrong-theme invariant, hover and focus restraint, the geometric figure as ambient pulse, and reduced-motion as a known gap to honor. Declines page transitions for now while reserving architectural ground.
 
-**`INFORMATION_ARCHITECTURE.md`** | Outside | Gap | Depends on: `DESIGN_SYSTEM.md` + `DOMAIN_MODEL.md`
-The hallways and doors. Navigation model, URL design, room-to-route mapping, the visitor's journey from arrival through orientation to wandering to deepening. How the house metaphor manifests in actual wayfinding. Some of this is implied by the existing route structure (`/studio`, `/garden`, etc.) but the *intent* behind the structure — what each room's landing page contains, how a visitor discovers works within a room, how rooms invite you into adjacent rooms — isn't specified anywhere. Depends on the design system (navigation is a spatial/visual concern) and the domain model (you need to know what rooms exist before you can map them to routes). This is the one outside file with a cross-dependency on inside.
+**`INFORMATION_ARCHITECTURE.md`** | Outside | Exists | Depends on: `DESIGN_SYSTEM.md` + `DOMAIN_MODEL.md`
+The hallways and doors. Names the four registers (arrival, orientation, wandering, deepening) and maps each to a surface. Specifies URL design (`/`, `/{room}`, `/{room}/{slug}`, `/facet/{facet}`), the sticky text-only nav with the wordmark as home, room-landing shape, the Foyer's composition, work-page anatomy with the no-dead-ends commitment, facet chips + facet pages grouped by room, and error/empty-state behavior. Holds search and the graph-view surface as deferred concepts; holds the time-slider location in the nav top-right.
 
 ## The House — Where Inside Meets Outside
 
@@ -211,20 +211,23 @@ CONTENT_SCHEMA + INFORMATION_ARCHITECTURE
         The house meeting the hostile world.
 ```
 
-**`PERFORMANCE_BUDGET.md`** | Threshold | Gap | Depends on: `REACT_NORTH_STAR.md` + `INTERACTION_DESIGN.md`
-The house meeting expectations of responsiveness. Core Web Vitals targets, bundle size limits, image and font loading strategy. The tension this file resolves: slow transitions are intentional (interaction design says so); slow page loads are not. "Slow on purpose" has a precise technical meaning here, and this file owns that distinction. Depends on the component architecture (what's being loaded) and interaction design (what intentional slowness looks like, so it can be distinguished from unintentional slowness).
+**`PERFORMANCE_BUDGET.md`** | Threshold | Exists | Depends on: `REACT_NORTH_STAR.md` + `INTERACTION_DESIGN.md`
+The house meeting expectations of responsiveness. Web Vitals targets (LCP ≤ 1.5s, INP ≤ 100ms, CLS ≤ 0.05), bundle-size targets (100KB JS gzipped, 15KB CSS), current-state measurement, and the explicit SSG pivot to TanStack Start as the chosen path to hit targets. Names what counts as intentional slowness vs. unintentional. Font loading, image handling budgets, and monitoring strategy.
 
-**`ACCESSIBILITY.md`** | Threshold | Gap | Depends on: `REACT_NORTH_STAR.md` + `DESIGN_SYSTEM.md`
-The house meeting all bodies. WCAG 2.1 AA commitments, keyboard navigation patterns, screen reader behavior, reduced-motion alternatives, focus management, ARIA live regions for dynamic content. `REACT_NORTH_STAR.md` mentions accessibility requirements briefly; this file owns them fully. A site that "gives" must give to everyone. Depends on the component architecture (accessibility is implemented in components) and the design system (color contrast, type sizing, focus indicators are design decisions).
+**`ACCESSIBILITY.md`** | Threshold | Exists | Depends on: `REACT_NORTH_STAR.md` + `DESIGN_SYSTEM.md`
+The house meeting all bodies. WCAG 2.1 AA baseline. User preferences (`prefers-reduced-motion`, `prefers-color-scheme`, `prefers-contrast`) as first-class invariants. Keyboard navigation with skip link, semantic HTML with landmarks, color contrast audited per token, screen-reader patterns, custom `:focus-visible` ring. Known gaps held in the backlog.
 
-**`RESPONSIVE_STRATEGY.md`** | Threshold | Gap | Depends on: `DESIGN_SYSTEM.md` + `REACT_NORTH_STAR.md`
-The house meeting all viewports. Breakpoints, mobile behavior, touch interactions, print styles, browser support matrix. For a site about poetry and essays with a "paper on the walls" aesthetic, print rendering is a first-class concern — a poem should print as beautifully as it renders. Depends on the design system (responsive design is the design language adapting) and the component architecture (responsive behavior is implemented in components).
+**`RESPONSIVE_STRATEGY.md`** | Threshold | Exists | Depends on: `DESIGN_SYSTEM.md` + `REACT_NORTH_STAR.md`
+The house meeting all viewports. The single 700px column as the one layout, zero explicit breakpoints today, minimum 44×44 touch-target commitment, hover-state mitigations for touch devices, browser support tiers, high-DPI handling, and print as a first-class surface (held in backlog — print stylesheet not yet written).
 
-**`SEO_AND_META.md`** | Threshold | Gap | Depends on: `CONTENT_SCHEMA.md` + `INFORMATION_ARCHITECTURE.md`
-The house meeting machines. Open Graph tags, structured data, social card design, sitemap generation, RSS/Atom syndication. How the site presents itself to link previews and search engines. For a poet-essayist, syndication (RSS) matters — readers should be able to subscribe. How each room and work generates its own meta representation. Depends on the content schema (meta is generated from content data) and information architecture (URLs and site structure determine what's indexable).
+**`SEO_AND_META.md`** | Threshold | Exists | Depends on: `CONTENT_SCHEMA.md` + `INFORMATION_ARCHITECTURE.md`
+The house meeting machines. Per-page title/meta patterns, Schema.org JSON-LD for `WebSite` / `Person` on every page and `CreativeWork`-family + `BreadcrumbList` on work pages (implemented via `src/shared/seo/`), Open Graph image generation (held), sitemap and feeds (held), `robots.txt` (held). Most surface-level items are cheaper on the other side of the SSG pivot.
 
 **`SECURITY.md`** | Threshold | Gap | Depends on: Minimal upstream
-The house meeting the hostile world. Content Security Policy, dependency auditing stance, data handling (the site likely collects nothing, but that decision should be explicit), privacy posture. Lighter for a static content site but the posture still needs to be named — the absence of data collection is itself a design decision worth declaring.
+The house meeting the hostile world. Content Security Policy, dependency auditing stance. Privacy is now split into its own file (`PRIVACY.md`); this one remains a gap focused on threat posture. Lighter for a static content site but the posture still needs to be named — the absence of data collection is itself a design decision worth declaring.
+
+**`PRIVACY.md`** | Threshold | Exists | Depends on: Minimal upstream
+The site's relationship to visitor data. Declines all personal-data collection, cookies (except a `theme` localStorage entry), third-party trackers, fingerprinting, session replay. Commits to aggregate-only, IP-non-retained, privacy-respecting Web Vitals when analytics eventually wires. Names a known privacy leak (Google Fonts) with a clear path to self-hosting in the backlog.
 
 ## The Grounds — What Supports the House
 
@@ -232,8 +235,16 @@ The grounds are everything that supports the house without being the house itsel
 
 ```
 REACT_NORTH_STAR
-  ├─→ DEPLOYMENT.md
-  │     The land. Where the house physically lives.
+  ├─→ RENDERING_STRATEGY.md
+  │     The delivery mechanism. How HTML reaches the
+  │     browser — SPA, SSR, SSG, or a blend.
+  │
+  │     ├─→ DEPLOYMENT.md
+  │     │     The land. Where the house physically lives.
+  │     │     Host choice follows from rendering model.
+  │     │
+  │     └─→ (feeds SEO_AND_META on the threshold:
+  │          per-page meta becomes natural with SSG.)
   │
   ├─→ DEPENDENCY_POLICY.md
   │     The supply chain. What materials, how chosen.
@@ -251,8 +262,11 @@ CONTENT_SCHEMA + DESIGN_SYSTEM
         The master plan. How the house grows over time.
 ```
 
-**`DEPLOYMENT.md`** | Grounds | Gap | Depends on: `REACT_NORTH_STAR.md`
-The land. Build pipeline, hosting platform, CI/CD configuration, environments (dev/staging/production), DNS, SSL, CDN, caching strategy, environment variables. Where the house physically lives and how it gets there. Depends on the component architecture because deployment is shaped by what's being deployed — static generation, bundle strategy, environment needs.
+**`RENDERING_STRATEGY.md`** | Grounds | Exists | Depends on: `REACT_NORTH_STAR.md` + `PERFORMANCE_BUDGET.md` + `CONTENT_SCHEMA.md`
+How HTML reaches the browser. Names the current model (static generation via TanStack Start — every route prerendered to HTML at build time, then hydrated), the archaeology of the pivot from client-rendered SPA that got us here, and the fuller horizon of Start capabilities the site may grow into (server functions, API routes, streaming SSR, middleware). A rendering strategy is a first-class grounds concern because it shapes bundle weight, first-paint, SEO legibility, and what deployment looks like. Feeds `DEPLOYMENT.md` and `SEO_AND_META.md`.
+
+**`DEPLOYMENT.md`** | Grounds | Exists | Depends on: `REACT_NORTH_STAR.md` + `RENDERING_STRATEGY.md` + `PRIVACY.md`
+The land. Names what gets deployed (`dist/client/` only), host requirements (HTTPS, SPA-free routing, preview per PR, privacy-aligned logging), candidate hosts (Cloudflare Pages / GitHub Pages leading given `PRIVACY.md`), DNS/SSL expectations, the CI/CD extension pattern, two environments (preview + production), per-path cache-control rules, and the rollback model (redeploy by SHA). The specific host is Danny's choice; the commitments any host must honor are declared. Held items (404 page, `_headers` file, bot policy) carry clear triggers.
 
 **`DEPENDENCY_POLICY.md`** | Grounds | Partially covered in `REACT_NORTH_STAR.md` | Depends on: `REACT_NORTH_STAR.md`
 The supply chain. When to add a dependency, evaluation criteria, update cadence, the philosophical stance on third-party code. `REACT_NORTH_STAR.md` lists the non-negotiable stack; this file (if separate) would cover the *judgment framework* for future additions. May remain a section within the architecture doc if a section is sufficient — the concern is real but may not need its own room.
@@ -282,6 +296,30 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 
 ---
 
+## The Agentic Surface: Skills
+
+The specs above are a **reference layer** — dense, authoritative, organized for coherence. They are the right shape for an agent that needs to understand *why* something is the way it is.
+
+Alongside the specs, the repo carries a **task-orientation layer** at [`.claude/skills/`](./.claude/skills/). Each skill is an *orientation toward an outcome Danny has requested* — a persistent bundle of the right specs, practices, and sensibilities to bring to that kind of work. Skills are not task-step walkthroughs; they are the context an agent needs to do right work of a certain kind, loaded as core memory when Danny names the outcome.
+
+The five outcomes today:
+
+| Skill | The outcome Danny is requesting | Primary specs it orients to |
+|---|---|---|
+| [`coding`](./.claude/skills/coding/SKILL.md) | Writing, modifying, or reviewing code on this site. | `REACT_NORTH_STAR`, `DESIGN_SYSTEM`, `INTERACTION_DESIGN`, `ACCESSIBILITY`, `VOICE_AND_COPY`, `PERFORMANCE_BUDGET`, `RESPONSIVE_STRATEGY` |
+| [`writing-prose`](./.claude/skills/writing-prose/SKILL.md) | Authoring a work — poem, essay, case study, note. | `CONTENT_AUTHORING`, `CONTENT_SCHEMA`, `DOMAIN_MODEL`, `GRAPH_AND_LINKING`, `CLAUDE` |
+| [`writing-specs`](./.claude/skills/writing-specs/SKILL.md) | Adding or updating a specification file. | `CLAUDE`, `MEDIUM`, `TRANSPARENCY`, `SPECIFICATION_MAP`, `VOICE_AND_COPY` |
+| [`architecting`](./.claude/skills/architecting/SKILL.md) | Making a structural decision — domain change, stack pivot, spec reconciliation, or a held tension that needs acknowledgment. | `CLAUDE` (spanda), `DOMAIN_MODEL`, `SPECIFICATION_MAP`, `BACKLOG`, `PERFORMANCE_BUDGET`, `REACT_NORTH_STAR` |
+| [`auditing`](./.claude/skills/auditing/SKILL.md) | Running accessibility / performance / SEO canaries, or distinguishing a regression from a known tradeoff. | `ACCESSIBILITY`, `PERFORMANCE_BUDGET`, `SEO_AND_META`, `BACKLOG` |
+
+**The discipline.** Skills bundle; they never duplicate. When a skill and a spec disagree, the spec wins. When a skill grows long, extract the duplicated content back to a spec and reference it from the skill. The skill layer speaks to *orientation* (how to approach this kind of work); the spec layer speaks to *reference* (what the decision actually is). Keeping that distinction honest keeps both useful.
+
+**Why outcomes rather than tasks.** The earlier draft of this layer was five task-oriented skills (`write-a-work`, `add-component`, ...). The current draft replaces them with five *outcome* orientations. The shift matters: Danny requests outcomes, not tasks. "Help me code on this site" loads `coding` — the full orientation, persistent as core memory for the session. Task-level help emerges *inside* that orientation when needed. The outcome-skill surface is smaller and richer; the task-step breakdown lives inside the relevant spec, a click away.
+
+**When to add a new skill.** When a new outcome category surfaces — a kind of work that doesn't fit any of the five above, that Danny requests often enough to warrant its own core memory bundle. Not before.
+
+---
+
 ## Current State
 
 **What exists today:**
@@ -293,9 +331,24 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 | `TRANSPARENCY.md` | Exists | Complete for its scope. |
 | `SPECIFICATION_MAP.md` | Exists | This file. Living document. |
 | `REACT_NORTH_STAR.md` | Exists | Comprehensive for component architecture. Partially covers threshold concerns (performance, accessibility) and grounds concerns (testing, dependencies). |
-| `DANNY_FOUNDATION.md` | Unplaced | Contains stale open questions already answered (tech stack, navigation). Tabular content model overlaps with `CLAUDE.md`'s poetic version. Neither is canonical. This file's role resolves when `DOMAIN_MODEL.md` is written — it gets absorbed, retired as a historical artifact, or refreshed. It is not a node in the reading order graph; it is a question the graph is holding. |
+| `DOMAIN_MODEL.md` | Exists | The inside trunk's root. Absorbed the structural content previously held in `DANNY_FOUNDATION.md`. |
+| `DESIGN_SYSTEM.md` | Exists | The outside trunk's root. Holds the rationale behind `tokens.css` — warmth over polish, the umber palette, two serifs, materiality. Four non-primary accents named and held. |
+| `CONTENT_SCHEMA.md` | Exists | Works as data. Filesystem-first, Zod-validated frontmatter, minimal required fields, draft as a frontmatter flag, MDX held per-file. No content or loader exists yet — both appear with the first work. |
+| `INFORMATION_ARCHITECTURE.md` | Exists | The hallways and doors. The four registers, URL design, the nav and Foyer, room landings, work pages with no dead ends, facet surfaces, error and empty states. Work and facet routes noted as gaps until content arrives; a 404 route and empty-room invitation can be built before. |
+| `GRAPH_AND_LINKING.md` | Exists | The one graph, made concrete. Wikilink syntax, build-time resolution, backlinks, the outward invitation, graph noise resistance as cultural practice. No code yet — the graph arrives with the first work. |
+| `VOICE_AND_COPY.md` | Exists | The site's speaking voice (the house's voice, not the works'). Register, surface conventions, microcopy rules, declinations, and the `[bracketed]` draft pattern honored by the 404 and four room descriptions today. |
+| `INTERACTION_DESIGN.md` | Exists | Motion as material. The four durations, the signature easing curve, Reveal as reading rhythm, dark mode as room dimming, the geometric figure as ambient pulse. Reduced motion noted as a known gap. |
+| `CONTENT_AUTHORING.md` | Exists | Danny's workflow. Write in the repo, `pnpm dev` previews everything including drafts, `pnpm build` publishes only the published. Smallest valid work is two fields and a body. No CMS, no staging, no publish button. |
+| `ACCESSIBILITY.md` | Exists | WCAG 2.1 AA baseline with user preferences (`prefers-reduced-motion`, `prefers-color-scheme`) as first-class invariants. Skip link, `:focus-visible` ring, semantic HTML. Known gaps held in `BACKLOG.md`. |
+| `RESPONSIVE_STRATEGY.md` | Exists | Single 700px column, no breakpoints today. 44×44 touch-target minimum. Print held in backlog. |
+| `PERFORMANCE_BUDGET.md` | Exists | Web Vitals targets. The SSG pivot has shipped and the content loader has moved to `createServerFn` (see `RENDERING_STRATEGY.md`); `marked` + `gray-matter` are off the client, and the main chunk is 118KB gzipped — above the 100KB target but within the 150KB hard limit and close enough that remaining distance is room-absorbable rather than architectural. |
+| `RENDERING_STRATEGY.md` | Exists | How HTML reaches the browser. Current model: SSG via TanStack Start, every route prerendered at build time. Archaeology of the SPA → SSG pivot preserved in the file. Fuller Horizon holds the Start capabilities beyond SSG (server functions, API routes, streaming, middleware) with per-capability triggers. |
+| `DEPLOYMENT.md` | Exists | The land. Deploy target is `dist/client/` on any static host. Host requirements named (HTTPS, SPA-free routing, preview per PR, `PRIVACY.md`-aligned logging); specific host deferred to Danny. CI/CD extends the existing workflow; per-path cache-control rules and rollback model declared. |
+| `SEO_AND_META.md` | Exists | Per-page meta patterns and Schema.org JSON-LD, implemented for every route. Sitemap, feeds, OG images, and robots.txt held in backlog. |
+| `PRIVACY.md` | Exists | Privacy posture for a static content site. Declines tracking, cookies, fingerprinting. Web Vitals forwarding held until a privacy-respecting provider is chosen. |
+| `BACKLOG.md` | Exists | Held concerns with trigger conditions. Not a roadmap — a list of work the site knows it owes itself. |
 
-**The domain model overlap:** `CLAUDE.md` and `DANNY_FOUNDATION.md` both describe rooms, facets, works, and design principles in different registers — one poetic, one tabular. An agent reading both receives the concepts twice with no clear authority hierarchy. The resolution is implied by the graph structure: `DOMAIN_MODEL.md` becomes the inside trunk's root. `CLAUDE.md` keeps the soul. `DOMAIN_MODEL.md` keeps the structure. `DANNY_FOUNDATION.md` is absorbed or retired. This decision should be made before the content schema is written.
+**The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 
 ---
 

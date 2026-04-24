@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .diamond { fill: #4a7c6a; }
+    @media (prefers-color-scheme: dark) {
+      .diamond { fill: #6aae92; }
+    }
+  </style>
+  <path class="diamond" d="M16 4 L28 16 L16 28 L4 16 Z" />
+</svg>
