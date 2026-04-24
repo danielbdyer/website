@@ -88,11 +88,9 @@ The site chooses slowness where slowness deepens the encounter; it declines slow
 
 ## Font Loading
 
-`Literata` and `Newsreader` are loaded from Google Fonts with a `swap` strategy. This means the first paint uses the fallback (Georgia); a moment later, the custom fonts swap in. This is a visible flash of fallback text (FOFT), and it is acceptable: the fallback is also a serif, the column width is the same, and text reflows minimally.
+`Literata` and `Newsreader` are self-hosted via `@fontsource-variable/*` packages, imported from `src/styles/tokens.css`. The CSS emits per-subset `@font-face` rules with `unicode-range`; browsers only download the latin (and if needed latin-ext) woff2 files for English-only pages. `font-display: swap` is preserved from the fontsource defaults — the first paint uses Georgia, then the custom serifs swap in. That is a visible flash of fallback text (FOFT); it is acceptable because the fallback is also a serif at the same column width, and text reflows minimally.
 
-**Not acceptable:** blocking render on font load (FOIT — Flash of Invisible Text). The `font-display: swap` in the Google Fonts URL prevents this.
-
-**Room for improvement:** self-hosting the fonts with subsetting (only the glyphs used) would eliminate the third-party request, reduce weight, and improve consistency. Held in the backlog.
+**Not acceptable:** blocking render on font load (FOIT — Flash of Invisible Text). The `font-display: swap` in the fontsource CSS prevents this.
 
 ---
 

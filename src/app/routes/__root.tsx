@@ -20,12 +20,6 @@ const RouterDevtools = import.meta.env.DEV
     )
   : () => null;
 
-const FONTS_HREF =
-  'https://fonts.googleapis.com/css2?' +
-  'family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&' +
-  'family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400&' +
-  'display=swap';
-
 const DESCRIPTION =
   "Danny Dyer — essays, poetry, case studies, and notes from an engineering leader, poet, and cellist's son.";
 
@@ -39,12 +33,11 @@ export const Route = createRootRoute({
       { name: 'theme-color', content: '#f5f1eb', media: '(prefers-color-scheme: light)' },
       { name: 'theme-color', content: '#191715', media: '(prefers-color-scheme: dark)' },
     ],
+    // Fonts are self-hosted via @fontsource-variable; imported in
+    // src/styles/tokens.css. No Google Fonts preconnect or stylesheet.
     links: [
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       { rel: 'apple-touch-icon', href: '/apple-touch-icon.svg' },
-      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
-      { rel: 'stylesheet', href: FONTS_HREF },
     ],
   }),
   component: RootComponent,

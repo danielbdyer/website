@@ -94,7 +94,7 @@ The site reads as paper. The typography is how that reading happens. Two serif f
 
 **Line height is generous.** `1.8` body leading is looser than a product site's default (typically `1.4`–`1.6`) and is part of the "slow on purpose" choice. A visitor's eye moves down the page at a slower rate; the page breathes. This is a deliberate fight against the compressed typographic rhythm of feeds and dashboards.
 
-**No sans-serif fallback layer.** The system loads both serifs from Google Fonts via `index.html` with a `swap` strategy. If a font fails to load, the browser uses the generic serif fallback (Georgia). There is no system sans-serif in the hierarchy. A sans-serif surface would read as a different medium — and the site is not trying to be two media. `PERFORMANCE_BUDGET.md` (gap) will own the tradeoff between font weight and load time; this file owns the commitment that the fallback stays serif.
+**No sans-serif fallback layer.** Both serifs are self-hosted via `@fontsource-variable/literata` and `@fontsource-variable/newsreader`, loaded from `src/styles/tokens.css` with `font-display: swap`. If a font fails to load, the browser uses the generic serif fallback (Georgia). There is no system sans-serif in the hierarchy. A sans-serif surface would read as a different medium — and the site is not trying to be two media. `PERFORMANCE_BUDGET.md` owns the tradeoff between font weight and load time; this file owns the commitment that the fallback stays serif.
 
 ---
 

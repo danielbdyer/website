@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+/* Self-hosted serif typography. Variable fonts with optical-size + weight
+   axes preserve Literata and Newsreader's heritage typographic feel across
+   sizes. Each import exposes a full set of @font-face rules with
+   per-subset `unicode-range`, so browsers only download what the rendered
+   characters require — an English-only page pulls the latin subset only.
+   See PRIVACY.md: self-hosting removes the Google Fonts third-party call. */
+@import '@fontsource-variable/literata/opsz.css';
+@import '@fontsource-variable/literata/opsz-italic.css';
+@import '@fontsource-variable/newsreader/opsz.css';
+@import '@fontsource-variable/newsreader/opsz-italic.css';
+
 /* ═══════════════════════════════════════════════════════════════
    Design Tokens — Danny's Site
    Extracted from the Little Museum prototype.
@@ -39,8 +50,8 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-lift: var(--shadow-lift);
 
-  --font-heading: 'Newsreader', Georgia, serif;
-  --font-body: 'Literata', Georgia, serif;
+  --font-heading: 'Newsreader Variable', Georgia, serif;
+  --font-body: 'Literata Variable', Georgia, serif;
 
   --animate-geo-spin: geo-spin 60s linear infinite;
 }
@@ -123,7 +134,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Literata', Georgia, serif;
+  font-family: 'Literata Variable', Georgia, serif;
   line-height: 1.8;
   transition:
     background 0.5s ease,
@@ -149,11 +160,11 @@ body > #root {
 
 /* ─── Typography ────────────────────────────────────────────── */
 .font-heading {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Newsreader Variable', Georgia, serif;
 }
 
 .font-body {
-  font-family: 'Literata', Georgia, serif;
+  font-family: 'Literata Variable', Georgia, serif;
 }
 
 /* ─── Selection ─────────────────────────────────────────────── */
@@ -217,7 +228,7 @@ body > #root {
   background: var(--bg-card);
   color: var(--text);
   text-decoration: none;
-  font-family: 'Literata', Georgia, serif;
+  font-family: 'Literata Variable', Georgia, serif;
   font-size: 0.9rem;
   border: 1px solid var(--border);
   border-radius: 3px;
@@ -272,7 +283,7 @@ body > #root {
 }
 
 .prose h2 {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Newsreader Variable', Georgia, serif;
   font-size: 1.35rem;
   font-weight: 500;
   margin-top: 2em;
@@ -281,7 +292,7 @@ body > #root {
 }
 
 .prose h3 {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Newsreader Variable', Georgia, serif;
   font-size: 1.15rem;
   font-weight: 500;
   margin-top: 1.5em;
@@ -402,7 +413,7 @@ body > #root {
 }
 
 .prose th {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Newsreader Variable', Georgia, serif;
   font-weight: 500;
   text-align: left;
   padding: 0.5em 0.75em;

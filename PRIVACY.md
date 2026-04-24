@@ -49,9 +49,9 @@ If Danny wants a link to not leak the referer, the authored link can carry `rel=
 
 ## Fonts
 
-Typography (Literata, Newsreader) loads from Google Fonts at runtime. Each font request includes the visitor's IP and user-agent — disclosed to Google. This is acceptable today for the convenience of the CDN, but it is a known privacy leak.
+Typography (Literata, Newsreader) is self-hosted via `@fontsource-variable/literata` and `@fontsource-variable/newsreader`. The font files are bundled with the site and served from the same origin as every other asset; there is no third-party font request and no IP or user-agent disclosed to Google or any other font CDN.
 
-Self-hosting the fonts with subsetting is held in `BACKLOG.md` under "Font subsetting / self-hosting." When privacy posture matters more than the convenience of Google Fonts, that graduation happens.
+The fontsource CSS emits per-subset `@font-face` rules with `unicode-range`, so an English-only page downloads only the latin and (if needed) latin-ext subsets. Cyrillic, Greek, and Vietnamese font files are present in the build output but are never fetched unless a rendered character requires them.
 
 ---
 

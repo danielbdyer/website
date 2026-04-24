@@ -48,10 +48,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** When images arrive (in works and possibly the Salon), they need responsive sources, modern formats (AVIF, WebP), and lazy loading. None of this exists yet.
 **Trigger:** The first image in any work. Owned by `MEDIA_STRATEGY.md` when that file is written.
 
-### Font subsetting / self-hosting
-**Why:** Literata and Newsreader are currently loaded from Google Fonts, which is a third-party dependency and a non-trivial latency hit. Self-hosting with subsetting (only the glyphs used) reduces weight and eliminates the third-party call.
-**Trigger:** When page weight or privacy posture matters more than the convenience of Google Fonts.
-
 
 ---
 
