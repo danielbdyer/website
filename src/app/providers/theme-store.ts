@@ -43,32 +43,39 @@ function applyToDOM(dark: boolean) {
   document.documentElement.classList.toggle('lt', !dark);
 }
 
-// Set DOM state on module load — before React renders, no flash.
-applyToDOM(isDark());
-
-// Reactivity to the system preference, when no explicit choice is stored.
-// Uses optional chaining because jsdom (tests) may not implement matchMedia.
-const systemPreference = window.matchMedia?.('(prefers-color-scheme: dark)');
-systemPreference?.addEventListener?.('change', () => {
-  const stored = (() => {
-    try {
-      return localStorage.getItem('theme');
-    } catch {
-      return null;
-    }
-  })();
-  // Only follow the system when there's no explicit stored choice.
-  if (stored === 'dark' || stored === 'light') return;
+// Module-level side effects guarded for SSR: under prerender the module
+// loads on Node, where `document` and `window` are undefined. The theme
+// class on <html> comes from the initial server render (which uses
+// getServerSnapshot's light default); on the client, this block runs
+// before React hydrates and corrects the class to match the real
+// preference — still no flash.
+if (typeof document !== 'undefined') {
   applyToDOM(isDark());
-  emitChange();
-});
 
-// Reactivity across tabs. Another tab writes to localStorage; this one picks it up.
-window.addEventListener?.('storage', (e) => {
-  if (e.key !== 'theme') return;
-  applyToDOM(isDark());
-  emitChange();
-});
+  // Reactivity to the system preference, when no explicit choice is stored.
+  // Uses optional chaining because jsdom (tests) may not implement matchMedia.
+  const systemPreference = window.matchMedia?.('(prefers-color-scheme: dark)');
+  systemPreference?.addEventListener?.('change', () => {
+    const stored = (() => {
+      try {
+        return localStorage.getItem('theme');
+      } catch {
+        return null;
+      }
+    })();
+    // Only follow the system when there's no explicit stored choice.
+    if (stored === 'dark' || stored === 'light') return;
+    applyToDOM(isDark());
+    emitChange();
+  });
+
+  // Reactivity across tabs. Another tab writes to localStorage; this one picks it up.
+  window.addEventListener?.('storage', (e) => {
+    if (e.key !== 'theme') return;
+    applyToDOM(isDark());
+    emitChange();
+  });
+}
 
 export const themeStore = {
   subscribe(listener: Listener): () => void {

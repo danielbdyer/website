@@ -1,22 +1,45 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import viteReact from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { TanStackRouterVite } from '@tanstack/router-vite-plugin';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [
-    react(),
-    tailwindcss(),
-    TanStackRouterVite({
-      routesDirectory: './src/app/routes',
-      generatedRouteTree: './src/app/routeTree.gen.ts',
+    // tanstackStart must come before viteReact per Start's plugin contract.
+    // The plugin subsumes @tanstack/router-vite-plugin and also generates
+    // the route tree at ./src/app/routeTree.gen.ts.
+    tanstackStart({
+      // Paths resolve relative to srcDirectory (default 'src').
+      router: {
+        routesDirectory: 'app/routes',
+        generatedRouteTree: 'app/routeTree.gen.ts',
+      },
+      // SSG: every known route is prerendered to static HTML at build time.
+      // crawlLinks follows links from each page to discover paths the static
+      // list misses (the content loader will add /{room}/{slug} per work
+      // once content exists). failOnError makes a prerender failure fail
+      // the build — a quiet deploy with a broken route is worse than a
+      // loud build failure.
+      // `/` is the foyer; no separate /foyer route. Room landings below.
+      // Per-work routes (/$room/$slug) are discovered via crawlLinks once
+      // content exists; autoStaticPathsDiscovery handles the enumeration.
+      pages: [
+        { path: '/' },
+        { path: '/studio' },
+        { path: '/garden' },
+        { path: '/study' },
+        { path: '/salon' },
+      ],
+      prerender: {
+        enabled: true,
+        crawlLinks: true,
+        failOnError: true,
+      },
     }),
-    // Bundle visualizer — writes .stats/bundle.html on every build.
-    // Kept outside dist/ so it never deploys as a public file. Useful
-    // while the SSG pivot is pending for understanding what
-    // gray-matter + marked + React actually cost.
+    viteReact(),
+    tailwindcss(),
     visualizer({
       filename: '.stats/bundle.html',
       gzipSize: true,

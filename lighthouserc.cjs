@@ -12,7 +12,10 @@
 module.exports = {
   ci: {
     collect: {
-      staticDistDir: './dist',
+      // After the TanStack Start SSG pivot, the prerendered HTML per route
+      // lives at dist/client/ (dist/ also contains an SPA fallback shell
+      // that Lighthouse should not score).
+      staticDistDir: './dist/client',
       url: ['http://localhost/'],
       numberOfRuns: 1,
       settings: {
