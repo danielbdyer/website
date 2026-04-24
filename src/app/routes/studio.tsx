@@ -2,6 +2,15 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 
 export const Route = createFileRoute('/studio')({
+  head: () => ({
+    meta: [
+      { title: 'The Studio — Danny Dyer' },
+      {
+        name: 'description',
+        content: 'Case studies, essays, and technical writing by Danny Dyer.',
+      },
+    ],
+  }),
   component: StudioPage,
 });
 

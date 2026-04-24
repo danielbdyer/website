@@ -12,6 +12,15 @@ export const Route = createFileRoute('/$room/$slug')({
     if (!work) throw notFound();
     return { work };
   },
+  head: ({ loaderData }) => {
+    const work = loaderData?.work;
+    if (!work) return {};
+    const title = `${work.title} — Danny Dyer`;
+    const description = work.summary ?? `${work.title}, by Danny Dyer.`;
+    return {
+      meta: [{ title }, { name: 'description', content: description }],
+    };
+  },
   component: WorkPage,
 });
 
