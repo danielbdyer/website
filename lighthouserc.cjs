@@ -3,7 +3,8 @@
 // defined in PERFORMANCE_BUDGET.md and ACCESSIBILITY.md; the numbers here
 // should stay in sync with those specs.
 //
-// Run locally: pnpm audit
+// Run locally: pnpm lighthouse
+// Runs in CI via .github/workflows/ci.yml (the `lighthouse` job).
 // The command builds the site, serves dist/, runs Lighthouse, and asserts
 // the category scores against the thresholds below.
 
