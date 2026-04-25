@@ -3,6 +3,8 @@ dist/
 tsconfig.tsbuildinfo
 .lighthouseci/
 .stats/
+test-results/
+playwright-report/
 *.local
 .env
 .env.*
