@@ -20,7 +20,6 @@ export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
     <Link
       to="/$room/$slug"
       params={{ room: work.room, slug: work.slug }}
-      reloadDocument
       className="group block text-inherit no-underline"
     >
       <div className="mb-1.5 font-body text-[13px] italic tracking-[0.02em] text-text-3">

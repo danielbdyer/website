@@ -15,7 +15,6 @@ export function Nav() {
       <div className="mx-auto flex w-full max-w-[700px] flex-wrap items-center gap-3 px-5 py-4 sm:flex-nowrap sm:px-6 sm:py-5">
         <Link
           to="/"
-          reloadDocument
           className="order-1 group inline-flex min-h-[44px] items-center gap-1.5 font-heading text-base font-medium italic text-text no-underline transition-colors duration-200 hover:text-accent"
         >
           <Diamond size={7} className="transition-transform duration-300 group-hover:rotate-45" />
@@ -27,7 +26,6 @@ export function Nav() {
             <Link
               key={to}
               to={to}
-              reloadDocument
               className="flex min-h-[44px] items-center text-[0.8rem] tracking-wide text-text-2 no-underline transition-colors duration-200 hover:text-text [&.active]:text-text"
               activeProps={{ className: 'active' }}
             >

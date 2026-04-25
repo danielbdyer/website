@@ -54,7 +54,7 @@ function RootComponent() {
   return (
     <RootDocument>
       <ThemeProvider>
-        <div className="min-h-screen">
+        <div className="flex min-h-dvh flex-col">
           <JsonLd data={[websiteSchema(), personSchema()]} />
           <a
             href="#main-content"
@@ -66,7 +66,7 @@ function RootComponent() {
           <main
             id="main-content"
             tabIndex={-1}
-            className="mx-auto min-h-[calc(100vh-220px)] w-full max-w-[700px] px-5 pt-6 pb-20 focus:outline-none sm:px-6 sm:pt-8 sm:pb-24"
+            className="mx-auto w-full max-w-[700px] flex-1 px-5 pt-6 pb-20 focus:outline-none sm:px-6 sm:pt-8 sm:pb-24"
           >
             <ErrorBoundary>
               <Outlet />
@@ -82,11 +82,20 @@ function RootComponent() {
   );
 }
 
+// Synchronous, pre-paint theme application. Module scripts hydrate after
+// first paint, so without this the prerendered HTML always renders with
+// the `:root` (light) defaults until React mounts — a visible flash for
+// every dark-mode visitor and on every full document load. This script
+// runs during head parsing, before the body's CSS resolves, so the
+// correct class is on <html> at first paint.
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.add(d?'dk':'lt')}catch(e){document.documentElement.classList.add('lt')}})()`;
+
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
         {children}

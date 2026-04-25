@@ -45,10 +45,11 @@ function applyToDOM(dark: boolean) {
 
 // Module-level side effects guarded for SSR: under prerender the module
 // loads on Node, where `document` and `window` are undefined. The theme
-// class on <html> comes from the initial server render (which uses
-// getServerSnapshot's light default); on the client, this block runs
-// before React hydrates and corrects the class to match the real
-// preference — still no flash.
+// class on <html> is applied pre-paint by the inline init script in
+// __root.tsx's <head>; this module reapplies on hydration to keep the
+// class authoritative once React owns the page, then subscribes to
+// system + storage events so the site stays coherent across tabs and
+// macOS sunset mode without a refresh.
 if (typeof document !== 'undefined') {
   applyToDOM(isDark());
 
