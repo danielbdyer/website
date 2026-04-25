@@ -29,6 +29,18 @@ The entire deployable surface is the contents of `dist/client/` after `pnpm buil
 
 This is a deliberate constraint. The `RENDERING_STRATEGY.md` holds the Fuller Horizon — server functions, API routes, streaming SSR — any of which would require a runtime. Adopting any of them changes this file's "what gets deployed" section and the host's capability requirements. Until then, the static constraint unlocks the full set of static hosts.
 
+### Workers deploy guardrails (implemented)
+
+The repository now includes a `wrangler.jsonc` that serves `./dist/client` through Workers static assets and uses `404-page` behavior for unknown paths. This prevents accidental deploys of the wrong directory (for example `dist/` or repository root), which can silently drop hashed CSS/JS assets and produce fallback-looking pages.
+
+`package.json` includes:
+
+- `pnpm build:deploy` — build + artifact verification (`scripts/verify-deploy-artifacts.mjs`).
+- `pnpm preview:deploy` — local Workers preview using the same static asset mapping.
+- `pnpm deploy:workers` — production deploy through Wrangler with preflight verification.
+
+Deploys should run through these scripts so the built artifact shape (`dist/client`) is always validated before publishing.
+
 ---
 
 ## Host Requirements
