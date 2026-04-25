@@ -56,14 +56,17 @@ function RootComponent() {
       <ThemeProvider>
         <div className="min-h-screen">
           <JsonLd data={[websiteSchema(), personSchema()]} />
-          <a href="#main-content" className="skip-link">
+          <a
+            href="#main-content"
+            className="font-body absolute top-0 left-0 z-[100] -translate-y-[200%] rounded-[3px] border border-border bg-bg-card px-3 py-2 text-[0.9rem] text-text no-underline transition-transform duration-200 focus:translate-x-2 focus:translate-y-2"
+          >
             Skip to main content
           </a>
           <Nav />
           <main
             id="main-content"
             tabIndex={-1}
-            className="max-w-[700px] mx-auto px-6 pt-8 pb-24 min-h-[calc(100vh-200px)] focus:outline-none"
+            className="mx-auto min-h-[calc(100vh-220px)] w-full max-w-[700px] px-5 pt-6 pb-20 focus:outline-none sm:px-6 sm:pt-8 sm:pb-24"
           >
             <ErrorBoundary>
               <Outlet />

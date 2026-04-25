@@ -16,7 +16,7 @@ interface RoomGlyphProps {
 export function RoomGlyph({ room, className }: RoomGlyphProps) {
   if (room !== 'salon') return null;
   return (
-    <div className={cn('room-glyph', className)} aria-hidden="true">
+    <div className={cn('h-full w-full', className)} aria-hidden="true">
       <svg viewBox="0 0 100 100" className="block w-full h-full">
         <g fill="none" stroke="var(--text-3)" strokeWidth="0.6" opacity="0.55">
           <rect x="22" y="22" width="56" height="56" />

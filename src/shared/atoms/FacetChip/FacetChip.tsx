@@ -4,10 +4,13 @@ interface FacetChipProps {
   facet: Facet;
 }
 
-// Lowercase single-word thread. The chip is the visual unit; the styling
-// lives in components.css under .facet-chip. Renders as a <span> rather
-// than an <a> so chips compose safely inside a row-level <a> without a
-// nested-anchor warning.
+// Lowercase single-word thread. Renders as a <span> rather than an <a>
+// so chips compose safely inside a row-level <a> without a nested-anchor
+// warning.
 export function FacetChip({ facet }: FacetChipProps) {
-  return <span className="facet-chip">{facet}</span>;
+  return (
+    <span className="rounded-[2px] bg-tag-bg px-[9px] py-[2px] font-body text-[12px] tracking-[0.02em] text-tag-text">
+      {facet}
+    </span>
+  );
 }

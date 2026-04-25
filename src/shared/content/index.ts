@@ -8,6 +8,13 @@ export {
   type WorkFrontmatter,
   type WorkType,
 } from './schema';
+export {
+  SAMPLE_ROOM_NOTE,
+  SAMPLE_WORK_NOTE,
+  isPreviewWork,
+  type DisplayWork,
+  type PreviewMeta,
+} from './preview';
 
 // Public API is the server-fn wrappers. `loader.ts` is server-only by
 // convention (imports marked + gray-matter at top level); client code
@@ -15,4 +22,10 @@ export {
 // anything from it — re-exporting `parseWork` through here pulled the
 // whole loader module into the client chunk via tree-shake. Tests
 // import `parseWork` from `./loader` directly.
-export { getAllWorks, getWorksByRoom, getWork } from './server-fns';
+export {
+  getAllWorks,
+  getWorksByRoom,
+  getWork,
+  getDisplayWorksByRoom,
+  getDisplayWork,
+} from './server-fns';

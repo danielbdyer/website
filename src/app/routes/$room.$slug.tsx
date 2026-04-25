@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
-import { getWork, roomSchema } from '@/shared/content';
+import { getDisplayWork, isPreviewWork, roomSchema } from '@/shared/content';
 import { WorkView } from '@/shared/organisms/WorkView/WorkView';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { breadcrumbSchema, JsonLd, workSchema } from '@/shared/seo';
@@ -8,7 +8,7 @@ export const Route = createFileRoute('/$room/$slug')({
   loader: async ({ params }) => {
     const roomResult = roomSchema.safeParse(params.room);
     if (!roomResult.success) throw notFound();
-    const work = await getWork({ data: { room: roomResult.data, slug: params.slug } });
+    const work = await getDisplayWork({ data: { room: roomResult.data, slug: params.slug } });
     if (!work) throw notFound();
     return { work };
   },
@@ -18,7 +18,11 @@ export const Route = createFileRoute('/$room/$slug')({
     const title = `${work.title} — Danny Dyer`;
     const description = work.summary ?? `${work.title}, by Danny Dyer.`;
     return {
-      meta: [{ title }, { name: 'description', content: description }],
+      meta: [
+        { title },
+        { name: 'description', content: description },
+        ...(isPreviewWork(work) ? [{ name: 'robots', content: 'noindex, nofollow' as const }] : []),
+      ],
     };
   },
   component: WorkPage,
@@ -26,9 +30,10 @@ export const Route = createFileRoute('/$room/$slug')({
 
 function WorkPage() {
   const { work } = Route.useLoaderData();
+  const preview = isPreviewWork(work);
   return (
     <>
-      <JsonLd data={[workSchema(work), breadcrumbSchema(work)]} />
+      {!preview && <JsonLd data={[workSchema(work), breadcrumbSchema(work)]} />}
       <Reveal>
         <WorkView work={work} />
       </Reveal>

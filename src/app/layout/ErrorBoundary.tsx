@@ -43,6 +43,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <Ornament />
           <Link
             to="/"
+            reloadDocument
             className="text-[0.9rem] text-text-3 italic no-underline transition-colors duration-200 hover:text-accent"
           >
             [Back home →]

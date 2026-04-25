@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { roomSchema, type Work } from '@/shared/content/schema';
+import type { DisplayWork } from '@/shared/content/preview';
 import { z } from 'zod';
 
 // Server-only wrappers over loader.ts. `createServerFn` places each
@@ -33,9 +34,23 @@ export const getWorksByRoom = createServerFn({ method: 'GET' })
     return getWorksByRoomSync(data.room);
   });
 
+export const getDisplayWorksByRoom = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => roomInput.parse(data))
+  .handler(async ({ data }): Promise<DisplayWork[]> => {
+    const { getDisplayWorksByRoomSync } = await import('@/shared/content/display');
+    return getDisplayWorksByRoomSync(data.room);
+  });
+
 export const getWork = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => roomSlugInput.parse(data))
   .handler(async ({ data }): Promise<Work | undefined> => {
     const { getWorkSync } = await import('@/shared/content/loader');
     return getWorkSync(data.room, data.slug);
+  });
+
+export const getDisplayWork = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => roomSlugInput.parse(data))
+  .handler(async ({ data }): Promise<DisplayWork | undefined> => {
+    const { getDisplayWorkSync } = await import('@/shared/content/display');
+    return getDisplayWorkSync(data.room, data.slug);
   });

@@ -36,6 +36,16 @@ export default defineConfig({
         enabled: true,
         crawlLinks: true,
         failOnError: true,
+        onSuccess: ({ page, html }) => {
+          if (html.includes('content="noindex, nofollow"')) {
+            return {
+              sitemap: {
+                ...page.sitemap,
+                exclude: true,
+              },
+            };
+          }
+        },
       },
       // sitemap.xml generated from the prerender set, written to dist/client.
       // `host` is required for absolute-URL <loc> entries.

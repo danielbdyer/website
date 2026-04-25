@@ -1,20 +1,25 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { WorkRow } from '@/shared/molecules/WorkRow/WorkRow';
-import { getWorksByRoom } from '@/shared/content';
+import { getDisplayWorksByRoom, isPreviewWork } from '@/shared/content';
+
+const SALON_POSTURES = ['listening', 'looking'] as const;
 
 export const Route = createFileRoute('/salon')({
   loader: async () => {
-    const works = await getWorksByRoom({ data: { room: 'salon' } });
+    const works = await getDisplayWorksByRoom({ data: { room: 'salon' } });
     return { works };
   },
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { title: 'The Salon — Danny Dyer' },
       {
         name: 'description',
         content: "Music, aesthetics, beauty circulating between people. The cellist's son's room.",
       },
+      ...(loaderData?.works.some(isPreviewWork)
+        ? [{ name: 'robots', content: 'noindex, nofollow' as const }]
+        : []),
     ],
   }),
   component: SalonPage,
@@ -26,16 +31,46 @@ export const Route = createFileRoute('/salon')({
 // both registers honest. Empty room state: title + description + silence.
 function SalonPage() {
   const { works } = Route.useLoaderData();
+  const previewNote = works.find(isPreviewWork)?.preview.roomNote;
+  const previewPostures = SALON_POSTURES.filter((posture) =>
+    works.some((work) => isPreviewWork(work) && work.preview.kicker === posture),
+  );
+
   return (
     <Reveal>
-      <h1 className="room-title">The Salon</h1>
-      <p className="room-desc">
+      <h1 className="mt-6 mb-4 font-heading text-[2.15rem] leading-[1.05] font-normal tracking-[-0.01em] text-text sm:text-[42px]">
+        The Salon
+      </h1>
+      <p className="mb-10 max-w-[540px] font-body text-[15.5px] leading-[1.7] italic text-text-2 sm:mb-14 sm:text-[16.5px]">
         Music, aesthetics, beauty circulating between people. The cellist&rsquo;s son&rsquo;s room.
       </p>
+      {previewNote && (
+        <p className="-mt-4 mb-8 max-w-[620px] font-body text-[13px] leading-[1.65] italic text-text-3 sm:-mt-6 sm:text-[13.5px]">
+          {previewNote}
+        </p>
+      )}
+      {previewPostures.length > 0 && (
+        <div
+          className="mb-8 flex flex-wrap items-baseline gap-x-2 gap-y-1 font-body text-[13px] leading-[1.6] italic tracking-[0.04em] text-text-3 sm:text-[13.5px]"
+          aria-label="Salon preview registers"
+        >
+          {previewPostures.map((posture, index) => (
+            <span key={posture}>
+              {index > 0 && <span className="text-text-3">·</span>}{' '}
+              <span className="text-accent-warm">{posture}</span>
+            </span>
+          ))}
+        </div>
+      )}
       {works.length > 0 && (
-        <div className="work-rows">
+        <div className="flex flex-col">
           {works.map((work) => (
-            <WorkRow key={work.slug} work={work} />
+            <WorkRow
+              key={work.slug}
+              work={work}
+              kicker={isPreviewWork(work) ? work.preview.kicker : undefined}
+              thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
+            />
           ))}
         </div>
       )}

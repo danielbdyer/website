@@ -8,15 +8,15 @@ import {
   RouterProvider,
 } from '@tanstack/react-router';
 import { axe } from '@/test/axe';
-import type { Work } from '@/shared/content/schema';
+import type { DisplayWork } from '@/shared/content/preview';
 import { WorkView } from './WorkView';
 
-function makeWork(overrides: Partial<Work> = {}): Work {
+function makeWork(overrides: Partial<DisplayWork> = {}): DisplayWork {
   const body = overrides.body ?? 'The first paragraph.\n\nThe second paragraph.';
   const html = overrides.html ?? marked.parse(body, { async: false });
   return {
     title: 'A Working Title',
-    date: new Date('2026-03-14'),
+    date: new Date('2026-03-14T12:00:00Z'),
     facets: [],
     draft: false,
     room: 'garden',
@@ -27,7 +27,7 @@ function makeWork(overrides: Partial<Work> = {}): Work {
   };
 }
 
-function renderWork(work: Work) {
+function renderWork(work: DisplayWork) {
   const rootRoute = createRootRoute({ component: () => <WorkView work={work} /> });
   const router = createRouter({
     routeTree: rootRoute,
@@ -53,9 +53,9 @@ describe('WorkView', () => {
   });
 
   it('renders no chip row when facets is empty', async () => {
-    const { container } = renderWork(makeWork({ facets: [] }));
+    renderWork(makeWork({ facets: [] }));
     await screen.findByRole('heading', { name: 'A Working Title' });
-    expect(container.querySelector('.facet-chip')).toBeNull();
+    expect(screen.queryByLabelText('Facets')).not.toBeInTheDocument();
   });
 
   // Per the design (chats/chat1.md), the work page does NOT show the
@@ -85,6 +85,20 @@ describe('WorkView', () => {
     await screen.findByRole('heading', { name: 'A Working Title' });
     expect(screen.getByRole('heading', { name: 'A Heading' })).toBeInTheDocument();
     expect(screen.getByText('italic').tagName).toBe('EM');
+  });
+
+  it('renders a preview note when the work is sample content', async () => {
+    renderWork(
+      makeWork({
+        preview: {
+          kind: 'sample',
+          roomNote: '[Sample preview entries fill this room until authored works arrive.]',
+          workNote: '[Sample preview only. It disappears as soon as this room has authored work.]',
+        },
+      }),
+    );
+    await screen.findByRole('heading', { name: 'A Working Title' });
+    expect(screen.getByText(/Sample preview only/i)).toBeInTheDocument();
   });
 
   it('has no accessibility violations', async () => {

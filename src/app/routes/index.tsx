@@ -9,11 +9,11 @@ export const Route = createFileRoute('/')({
 function FoyerPage() {
   return (
     <Reveal>
-      <div className="foyer">
-        <div className="foyer-figure">
+      <div className="flex flex-col gap-8 py-10 sm:flex-row sm:items-center sm:gap-10 sm:py-14">
+        <div className="h-24 w-24 shrink-0 sm:h-[110px] sm:w-[110px]">
           <GeometricFigure />
         </div>
-        <div className="foyer-text">
+        <div className="font-heading text-lg leading-[1.55] font-light italic text-text-2 sm:text-[19px]">
           <p>The door is open.</p>
           <p>The rooms are waiting.</p>
         </div>

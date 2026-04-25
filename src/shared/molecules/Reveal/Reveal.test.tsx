@@ -34,7 +34,8 @@ const originalIO = globalThis.IntersectionObserver;
 describe('Reveal', () => {
   beforeEach(() => {
     observers = [];
-    globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+    globalThis.IntersectionObserver =
+      MockIntersectionObserver as unknown as typeof IntersectionObserver;
   });
 
   afterEach(() => {
@@ -49,8 +50,9 @@ describe('Reveal', () => {
       </Reveal>,
     );
     expect(getByText('hello')).toBeInTheDocument();
-    expect(container.firstChild).toHaveClass('reveal');
-    expect(container.firstChild).not.toHaveClass('revealed');
+    expect(container.firstChild).toHaveClass('opacity-0');
+    expect(container.firstChild).toHaveClass('translate-y-[14px]');
+    expect(container.firstChild).not.toHaveClass('opacity-100');
   });
 
   it('adds the revealed class once the child intersects', () => {
@@ -60,7 +62,8 @@ describe('Reveal', () => {
       </Reveal>,
     );
     observers[0]!.fire(true);
-    expect(container.firstChild).toHaveClass('revealed');
+    expect(container.firstChild).toHaveClass('opacity-100');
+    expect(container.firstChild).toHaveClass('translate-y-0');
   });
 
   it('applies delay as a CSS transition-delay', () => {

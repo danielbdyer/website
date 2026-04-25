@@ -11,27 +11,34 @@ const ROOMS = [
 
 export function Nav() {
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between max-w-[700px] mx-auto px-6 py-5 bg-bg transition-[background] duration-500">
-      <Link
-        to="/"
-        className="flex items-center gap-1.5 font-heading text-base font-medium italic text-text no-underline transition-colors duration-200 hover:text-accent group"
-      >
-        <Diamond size={7} className="transition-transform duration-300 group-hover:rotate-45" />
-        <span>Danny Dyer</span>
-      </Link>
+    <nav className="sticky top-0 z-50 border-b border-border/70 bg-bg/95 backdrop-blur-sm transition-[background] duration-500 supports-[backdrop-filter]:bg-bg/88">
+      <div className="mx-auto flex w-full max-w-[700px] flex-wrap items-center gap-3 px-5 py-4 sm:flex-nowrap sm:px-6 sm:py-5">
+        <Link
+          to="/"
+          reloadDocument
+          className="order-1 group inline-flex min-h-[44px] items-center gap-1.5 font-heading text-base font-medium italic text-text no-underline transition-colors duration-200 hover:text-accent"
+        >
+          <Diamond size={7} className="transition-transform duration-300 group-hover:rotate-45" />
+          <span>Danny Dyer</span>
+        </Link>
 
-      <div className="flex items-center gap-4">
-        {ROOMS.map(({ to, label }) => (
-          <Link
-            key={to}
-            to={to}
-            className="text-[0.8rem] text-text-2 no-underline tracking-wide transition-colors duration-200 hover:text-text [&.active]:text-text"
-            activeProps={{ className: 'active' }}
-          >
-            {label}
-          </Link>
-        ))}
-        <ThemeToggle />
+        <div className="order-3 flex basis-full flex-wrap items-center gap-x-4 gap-y-2 sm:order-2 sm:basis-auto sm:flex-1 sm:justify-end">
+          {ROOMS.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              reloadDocument
+              className="flex min-h-[44px] items-center text-[0.8rem] tracking-wide text-text-2 no-underline transition-colors duration-200 hover:text-text [&.active]:text-text"
+              activeProps={{ className: 'active' }}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="order-2 ml-auto sm:order-3 sm:ml-0">
+          <ThemeToggle />
+        </div>
       </div>
     </nav>
   );
