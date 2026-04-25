@@ -55,28 +55,23 @@ describe('WorkView', () => {
   it('renders no chip row when facets is empty', async () => {
     const { container } = renderWork(makeWork({ facets: [] }));
     await screen.findByRole('heading', { name: 'A Working Title' });
-    // No span with the tag-bg class should exist
-    expect(container.querySelector('.bg-\\[var\\(--tag-bg\\)\\]')).toBeNull();
+    expect(container.querySelector('.facet-chip')).toBeNull();
   });
 
-  it('renders the summary when present, omits it otherwise', async () => {
-    const { rerender } = renderWork(makeWork({ summary: 'A short line for lists.' }));
-    expect(await screen.findByText('A short line for lists.')).toBeInTheDocument();
-
-    const rootRoute = createRootRoute({ component: () => <WorkView work={makeWork()} /> });
-    const router = createRouter({
-      routeTree: rootRoute,
-      history: createMemoryHistory({ initialEntries: ['/'] }),
-    });
-    rerender(<RouterProvider router={router} />);
+  // Per the design (chats/chat1.md), the work page does NOT show the
+  // summary — summary lives in the room listing. The page's job is to be
+  // read; the chrome's job is to get out of the way.
+  it('does not render the summary on the work page', async () => {
+    renderWork(makeWork({ summary: 'A short line for lists.' }));
+    await screen.findByRole('heading', { name: 'A Working Title' });
     expect(screen.queryByText('A short line for lists.')).not.toBeInTheDocument();
   });
 
-  it('links the kicker and the outward invitation back to the work\'s room', async () => {
+  it("links the kicker and the outward invitation back to the work's room", async () => {
     renderWork(makeWork({ room: 'garden' }));
     await screen.findByRole('heading', { name: 'A Working Title' });
     const kicker = screen.getByRole('link', { name: /← The Garden/ });
-    const outward = screen.getByRole('link', { name: /Keep wandering in The Garden/ });
+    const outward = screen.getByRole('link', { name: 'The Garden' });
     expect(kicker).toHaveAttribute('href', '/garden');
     expect(outward).toHaveAttribute('href', '/garden');
   });
@@ -102,12 +97,12 @@ describe('WorkView', () => {
   it('shows a DRAFT indicator in dev when work.draft is true', async () => {
     renderWork(makeWork({ draft: true }));
     await screen.findByRole('heading', { name: 'A Working Title' });
-    expect(screen.getByText('draft')).toBeInTheDocument();
+    expect(screen.getByText(/draft/i)).toBeInTheDocument();
   });
 
   it('does not show the DRAFT indicator when work.draft is false', async () => {
     renderWork(makeWork({ draft: false }));
     await screen.findByRole('heading', { name: 'A Working Title' });
-    expect(screen.queryByText('draft')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^draft\s*$/i)).not.toBeInTheDocument();
   });
 });

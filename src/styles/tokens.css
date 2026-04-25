@@ -11,6 +11,11 @@
 @import '@fontsource-variable/newsreader/opsz.css';
 @import '@fontsource-variable/newsreader/opsz-italic.css';
 
+/* Component classes — design-system semantic class definitions, lifted
+   from the hi-fi design (project/Danny's Site.html). Tokens defined
+   below are referenced by these rules at use-site, so order is fine. */
+@import './components.css';
+
 /* ═══════════════════════════════════════════════════════════════
    Design Tokens — Danny's Site
    Extracted from the Little Museum prototype.

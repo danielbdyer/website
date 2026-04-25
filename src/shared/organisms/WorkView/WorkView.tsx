@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { Work } from '@/shared/content/schema';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
+import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 
 const ROOM_LABELS = {
   foyer: 'The Foyer',
@@ -22,6 +23,12 @@ interface WorkViewProps {
   work: Work;
 }
 
+// Single work, alone. The page's job is to be read; the chrome's job is
+// to get out of the way. Per the design (chats/chat1.md), the work page
+// does NOT carry the summary — that lives in the room listing. The page
+// begins with kicker → title → meta → facets, then the body, then the
+// three-line outward invitation: more facets, mentioned-in (when there
+// are backlinks), and a return-to-room. No work ends at its own last line.
 export function WorkView({ work }: WorkViewProps) {
   const roomLabel = ROOM_LABELS[work.room];
   const roomPath = ROOM_TO[work.room];
@@ -33,53 +40,36 @@ export function WorkView({ work }: WorkViewProps) {
 
   return (
     <article>
-      <Link
-        to={roomPath}
-        className="text-[0.85rem] text-text-2 italic no-underline transition-colors duration-200 hover:text-accent"
-      >
+      <Link to={roomPath} className="kicker">
         ← {roomLabel}
       </Link>
 
-      <h1 className="font-heading text-[1.85rem] font-normal tracking-tight mt-4 mb-3 text-text">
-        {work.title}
-      </h1>
+      <h1 className="work-page-title">{work.title}</h1>
 
-      <div className="text-[0.85rem] text-text-2 italic mb-2">
-        {import.meta.env.DEV && work.draft && (
-          <span className="text-accent-warm tracking-wider text-[0.7rem] mr-2 not-italic uppercase">
-            draft
-          </span>
-        )}
+      <div className="work-page-meta">
+        {import.meta.env.DEV && work.draft && <span className="draft-mark">draft </span>}
         {formattedDate}
       </div>
 
       {work.facets.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6">
-          {work.facets.map((facet) => (
-            <span
-              key={facet}
-              className="text-[0.72rem] px-2 py-0.5 rounded bg-tag-bg text-tag-text"
-            >
-              {facet}
-            </span>
-          ))}
+        <div className="work-page-facets">
+          <div className="facets">
+            {work.facets.map((facet) => (
+              <FacetChip key={facet} facet={facet} />
+            ))}
+          </div>
         </div>
-      )}
-
-      {work.summary && (
-        <p className="text-[0.95rem] text-text-2 italic leading-relaxed mb-8">{work.summary}</p>
       )}
 
       <div className="prose" dangerouslySetInnerHTML={{ __html: work.html }} />
 
       <Ornament />
 
-      <Link
-        to={roomPath}
-        className="text-[0.9rem] text-text-2 italic no-underline transition-colors duration-200 hover:text-accent"
-      >
-        Keep wandering in {roomLabel} →
-      </Link>
+      <div className="outward">
+        <p>
+          Keep wandering in <Link to={roomPath}>{roomLabel}</Link> →
+        </p>
+      </div>
     </article>
   );
 }
