@@ -116,11 +116,86 @@ The site uses hover and focus to indicate interactivity, never to attract attent
 
 ## Page and Route Transitions
 
-Today, navigation between routes is instant — TanStack Router renders the new route immediately, and the new page's `Reveal` components run their own fade-in. There is no page-level transition.
+Navigation between routes runs through the View Transitions API. The site uses `defaultViewTransition: true` on the router, which wraps every route commit in `document.startViewTransition`. Browsers without API support fall through to the instant route change; `prefers-reduced-motion: reduce` disables the animation per the `::view-transition-*` rules in `tokens.css`.
 
-**This is intentional for now.** A custom page transition is an opportunity for the site to perform a movement-through-the-house — but it is also an opportunity to over-perform. The site's restraint is the reason a future room-transition can feel like something. Adding it now would prematurely consume the surprise.
+A view transition is the site's body moving. Different navigations are different *kinds* of movement. The right kind for a navigation is the one that matches the *meaning* of the navigation, not just the URL change. Five kinds are named below.
 
-When a page transition arrives, it likely lives as a fade-of-the-old plus a Reveal-of-the-new, with a slight overlap. The duration would be in the same family as the existing motion (likely the 500ms theme-transition rhythm). The decision is held; the architectural ground is reserved.
+### The kind-table
+
+| Kind | Meaning | Felt sense | Implementation |
+|---|---|---|---|
+| **Open** | This card is opening into its full form | The image grows into the hero, the title slides into place, meta lifts into position. The card *becomes* the work. | Shared `viewTransitionName` on image, title, meta — paired between any listing-card surface (`FacetCard`, `WorkRow`, `WorkEntry`) and `WorkView` |
+| **Close** | The work is folding back into its row | Reverse of Open. Hero shrinks back into card position. | Same name pairs as Open; browser handles in reverse via back/forward, or via explicit `<Link>` to room (the kicker `← The Salon`, the closing line "Keep wandering in The Salon →") |
+| **Rearrange** | The same surface is filtering | Cards stay; positions shift; missing fade out; new fade in | Stable per-card `viewTransitionName` on listing wrapper (`workCardTransitionName`); default-root carries the rest. The visitor's scroll position is preserved (see "Scroll on navigation" below). |
+| **Cross** | A room → another room is a different atmosphere | Subtle default-root crossfade (320ms) | No `viewTransitionName` pairs; default-root only. Room-jump links in `Nav`, the wordmark, the adjacent-room hint in `RoomOutwardInvitation`, the "Back home →" links on NotFound and ErrorBoundary. **On trial**: the choice is between subtle and instant; if room jumps start feeling like the chrome performing, switch to `viewTransition={false}` and reconsider. |
+| **Step** | A prose link points elsewhere | Default-root crossfade — the eye moves from one paragraph to a new article | `[[wikilinks]]` in prose, backlinks in the outward invitation, facet chips on work pages, `RoomOutwardInvitation` thread links. The visitor stepped through prose-as-pointer; a fade is the gesture for turning the page. |
+
+A sixth state, **Fall through**, is "the visitor arrived fresh" — direct URL, hard reload, first paint. No transition; browser default.
+
+### Every navigation, mapped
+
+| From | To | Triggered by | Kind |
+|---|---|---|---|
+| Foyer / any | room | `Nav` link | Cross |
+| any | Foyer | wordmark | Cross |
+| Studio/Garden/Study | a work in same room | `WorkEntry` link | Open |
+| Salon | a Salon work | `WorkRow` link | Open |
+| `/facet/X` | a work | `FacetCard` link | Open |
+| any room | adjacent room | `RoomOutwardInvitation` toward link | Cross |
+| any room | a facet page | `RoomOutwardInvitation` thread link | Step |
+| `/facet/X` | `/facet/X,Y` | `FacetToggleBar` chip toggle | Rearrange |
+| `/facet/X,Y` | `/facet/X` | `FacetToggleBar` chip toggle | Rearrange |
+| `/facet/X` | `/` (last chip dropped) | `FacetToggleBar` chip toggle to root | Cross |
+| Salon | Salon (posture filter) | posture button | Rearrange (search-param; pathname unchanged) |
+| Work page | its room | kicker `← The Room` | Close |
+| Work page | its room | "Keep wandering in The Room →" | Close |
+| Work page | a facet page | top chip | Step |
+| Work page | a facet page | outward-invitation thread | Step |
+| Work page | another work | `[[wikilink]]` | Step |
+| Work page | another work | backlink in outward invitation | Step |
+| 404 / ErrorBoundary | Foyer | "Back home →" | Cross |
+| any | any | browser back/forward | matches the forward gesture, reversed (browser-native) |
+| any | any | direct URL / reload | Fall through |
+
+### The naming discipline
+
+All `viewTransitionName` values are produced by generators in `src/shared/utils/view-transition-names.ts`. Inline name strings are forbidden. The four canonical generators:
+
+- `workHeroTransitionName(room, slug)` — image (Open / Close)
+- `workTitleTransitionName(room, slug)` — title (Open / Close)
+- `workMetaTransitionName(room, slug)` — meta band (Open / Close)
+- `workCardTransitionName(room, slug)` — article wrapper on listing surfaces (Rearrange)
+
+Names must be globally unique within a snapshot. Adding a new pairing means: choose a generator name, declare the pair, document where it appears, ship.
+
+### Held questions, resolved
+
+A handful of questions surfaced during the kind-table's writing. Each is resolved below; revisiting any of them is a real spec change, not a small tweak.
+
+- **Should facet chips on work pages fire Step or Open?** Step. The chip is inline text inside prose-shaped chrome; morphing inline text into a block H1 reads as a magic trick rather than a gesture. Crossfade preserves the prose-pointer feel.
+- **Should `facet-title-{facet}` be shared between `FacetChip` and the facet page H1?** No. The vt-name uniqueness rule forbids it: the same facet appears as a chip on potentially many surfaces simultaneously (every `FacetCard`'s chip row, the toggle bar, the threads line), so any shared `facet-title-X` would collide on a single page snapshot. The chip is a Step pointer, not a morphing entity.
+- **The "drop the only facet" → `/` case.** Cross. The visitor is leaving the facet space entirely; subtle crossfade is the right gesture.
+- **Salon posture filter scroll.** Verified preserved by accident-of-architecture: posture is a search param, pathname doesn't change, the pathname-watching scroll-to-top effect doesn't fire.
+
+### Adding a new participant
+
+When a new surface introduces a navigation, its kind is decided first; the wiring follows.
+
+1. Identify the kind from the table above.
+2. **Open / Close**: pair `viewTransitionName` on shared elements between source and destination using the canonical generators.
+3. **Rearrange**: stable per-card name on the listing wrapper using `workCardTransitionName`. Skip the first-visit scroll-to-top via the `isRearrange` heuristic in `__root.tsx`.
+4. **Cross**: nothing — default-root carries it.
+5. **Step**: nothing — default-root carries it.
+6. **Opt out** when a surface should NOT transition: `viewTransition={false}` on the `<Link>`. Today this isn't used anywhere; it would mean *instant* navigation (browser default). Reserved for surfaces where any transition would mislead.
+
+### Scroll on navigation
+
+Scroll restoration is on (`scrollRestoration: true` on the router). On top of that, the root layout adds two rules:
+
+- **First visit to a URL → scroll to top** (instant `behavior: 'auto'`). Without this, navigating from a long room landing into a fresh article lands the visitor mid-page; the article's title is already off-screen. Subsequent visits to the same URL fall through to the router's saved-position restoration.
+- **Rearrange exception** — when both the previous and current pathnames live under `/facet/`, the first-visit scroll is skipped. Filter changes preserve scroll; the visitor was mid-grid and stays there.
+
+A Salon posture toggle preserves scroll naturally because its pathname is unchanged (only the search param moves).
 
 ---
 
