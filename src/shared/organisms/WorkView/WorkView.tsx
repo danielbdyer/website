@@ -1,93 +1,30 @@
 import { Link } from '@tanstack/react-router';
 import type { DisplayWork } from '@/shared/content/preview';
 import { isPreviewWork } from '@/shared/content/preview';
-import type { Work, WorkImage } from '@/shared/content/schema';
-import { Ornament } from '@/shared/molecules/Ornament/Ornament';
+import type { Room } from '@/shared/types/common';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
-import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
+import { WorkHero } from '@/shared/molecules/WorkHero/WorkHero';
+import { WorkOutwardInvitation } from '@/shared/molecules/WorkOutwardInvitation/WorkOutwardInvitation';
 import {
-  workHeroTransitionName,
   workMetaTransitionName,
   workTitleTransitionName,
 } from '@/shared/utils/view-transition-names';
 
-// The hero figure at the top of a work page. Three states, mirroring
-// ImgSlot's contract:
-// - **filled**: a real authored image. Renders the photo full-width
-//   with a caption + credit beneath.
-// - **standin**: the work has no authored image but the preview is
-//   naming what would arrive (e.g., "hopper · cape cod morning"). The
-//   labeled gray field gives the morph from a FacetCard thumbnail a
-//   destination — without this, clicking a card on the facet page
-//   would flash to a hero-less work page and the View Transition would
-//   have nothing to morph into.
-// - **absent**: the work neither has an image nor names one. The hero
-//   slot is omitted entirely; the work begins with its title.
-//
-// Every visible state carries the canonical view-transition name so
-// FacetCard / SalonCard thumbnails morph into this element on click.
-function WorkHero({
-  work,
-  image,
-  thumbLabel,
-}: {
-  work: Work;
-  image: WorkImage | undefined;
-  thumbLabel: string | undefined;
-}) {
-  if (!image && !thumbLabel) return null;
-  return (
-    <figure
-      className="mb-8 overflow-hidden rounded-[2px] bg-bg-warm shadow-sm"
-      style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
-    >
-      {image ? (
-        <>
-          <img
-            src={image.src}
-            alt={image.alt}
-            className="block h-auto w-full"
-            loading="eager"
-            decoding="async"
-          />
-          {(image.caption || image.credit) && (
-            <figcaption className="px-4 py-3 font-body text-meta italic tracking-meta text-text-3">
-              {image.caption}
-              {image.caption && image.credit ? ' · ' : ''}
-              {image.credit && <span className="not-italic text-text-3">{image.credit}</span>}
-            </figcaption>
-          )}
-        </>
-      ) : (
-        // Stand-in state: the labeled gray field. The aspect mirrors
-        // the hi-fi (16:10) so the slot reads as "hero-shaped" even
-        // when empty. Naming the slot — "image slot · labeled
-        // (preview's honest stand-in)" — sits above the figure as a
-        // small italic eyebrow; that lives in the route, not here, so
-        // a future authored work doesn't carry the eyebrow.
-        <div className="relative aspect-[16/10]">
-          <ImgSlot kind="standin" label={thumbLabel ?? ''} />
-        </div>
-      )}
-    </figure>
-  );
-}
-
-const ROOM_LABELS = {
+const ROOM_LABELS: Readonly<Record<Room, string>> = {
   foyer: 'The Foyer',
   studio: 'The Studio',
   garden: 'The Garden',
   study: 'The Study',
   salon: 'The Salon',
-} as const;
+};
 
-const ROOM_TO = {
+const ROOM_TO: Readonly<Record<Room, '/' | `/${Exclude<Room, 'foyer'>}`>> = {
   foyer: '/',
   studio: '/studio',
   garden: '/garden',
   study: '/study',
   salon: '/salon',
-} as const;
+};
 
 interface WorkViewProps {
   work: DisplayWork;
@@ -96,9 +33,8 @@ interface WorkViewProps {
 // Single work, alone. The page's job is to be read; the chrome's job is
 // to get out of the way. Per the design (chats/chat1.md), the work page
 // does NOT carry the summary — that lives in the room listing. The page
-// begins with kicker → title → meta → facets, then the body, then the
-// three-line outward invitation: more facets, mentioned-in (when there
-// are backlinks), and a return-to-room. No work ends at its own last line.
+// begins with kicker → hero → title → meta → facets, then the body, then
+// the outward invitation. No work ends at its own last line.
 export function WorkView({ work }: WorkViewProps) {
   const roomLabel = ROOM_LABELS[work.room];
   const roomPath = ROOM_TO[work.room];
@@ -107,6 +43,7 @@ export function WorkView({ work }: WorkViewProps) {
     month: 'long',
     day: 'numeric',
   });
+  const thumbLabel = isPreviewWork(work) ? work.preview.thumbLabel : undefined;
 
   return (
     <article>
@@ -117,11 +54,7 @@ export function WorkView({ work }: WorkViewProps) {
         ← {roomLabel}
       </Link>
 
-      <WorkHero
-        work={work}
-        image={work.image}
-        thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
-      />
+      <WorkHero work={work} image={work.image} thumbLabel={thumbLabel} />
 
       <h1
         className="mb-3.5 font-heading text-title leading-title font-normal tracking-display text-text"
@@ -154,35 +87,19 @@ export function WorkView({ work }: WorkViewProps) {
       )}
 
       {work.facets.length > 0 && (
-        <div className="mb-work-break" aria-label="Facets">
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-            {work.facets.map((facet) => (
-              <FacetChip key={facet} facet={facet} />
-            ))}
-          </div>
+        <div
+          className="mb-work-break flex flex-wrap items-center gap-x-2.5 gap-y-2"
+          aria-label="Facets"
+        >
+          {work.facets.map((facet) => (
+            <FacetChip key={facet} facet={facet} />
+          ))}
         </div>
       )}
 
       <div className="prose" dangerouslySetInnerHTML={{ __html: work.html }} />
 
-      {/* Generous gap before the Ornament so the work's last line gets a
-          full breath before the section break arrives. The closing line
-          then sits at a moderate distance below — the gesture feels
-          anchored, not abandoned. */}
-      <Ornament className="mt-work-break sm:mt-work-break-md" />
-
-      <div className="mt-room-rhythm font-body text-list leading-closing italic text-text-2">
-        <p>
-          Keep wandering in{' '}
-          <Link
-            to={roomPath}
-            className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
-          >
-            {roomLabel}
-          </Link>{' '}
-          →
-        </p>
-      </div>
+      <WorkOutwardInvitation room={work.room} roomPath={roomPath} roomLabel={roomLabel} />
     </article>
   );
 }
