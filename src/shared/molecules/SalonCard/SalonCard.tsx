@@ -47,6 +47,41 @@ export interface SalonCardProps {
 // `treatment` prop renders the thumbnail. Each treatment receives the
 // shared `playKey` and re-runs its animation when the key changes by
 // keying on it (React mounts a fresh DOM subtree).
+function CardTextRegion({ work }: { work: Work }) {
+  const formattedDate = work.date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  return (
+    <Link
+      to="/$room/$slug"
+      params={{ room: work.room, slug: work.slug }}
+      className="relative z-10 block min-w-0 pt-1 text-inherit no-underline"
+    >
+      <div className="mb-2 font-body text-meta italic tracking-meta text-text-3">
+        {work.posture && (
+          <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
+            {work.posture}
+          </span>
+        )}
+        {import.meta.env.DEV && work.draft && (
+          <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
+            draft
+          </span>
+        )}
+        <span>{formattedDate}</span>
+      </div>
+      <div className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent">
+        {work.title}
+      </div>
+      {work.summary && (
+        <div className="font-body text-list leading-body text-text-2">{work.summary}</div>
+      )}
+    </Link>
+  );
+}
+
 export function SalonCard({
   work,
   thumbLabel,
@@ -54,11 +89,6 @@ export function SalonCard({
   treatment: Treatment,
 }: SalonCardProps) {
   const { playKey, cardRef, replay } = useCardPlayback();
-  const formattedDate = work.date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 
   return (
     <div className="flex flex-col gap-2">
@@ -102,31 +132,7 @@ export function SalonCard({
           {/* Text region — the only navigation surface on mobile. Sits
               above the overlay link in the stacking order so it receives
               clicks rather than the overlay. */}
-          <Link
-            to="/$room/$slug"
-            params={{ room: work.room, slug: work.slug }}
-            className="relative z-10 block min-w-0 pt-1 text-inherit no-underline"
-          >
-            <div className="mb-2 font-body text-meta italic tracking-meta text-text-3">
-              {work.posture && (
-                <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
-                  {work.posture}
-                </span>
-              )}
-              {import.meta.env.DEV && work.draft && (
-                <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
-                  draft
-                </span>
-              )}
-              <span>{formattedDate}</span>
-            </div>
-            <div className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent">
-              {work.title}
-            </div>
-            {work.summary && (
-              <div className="font-body text-list leading-body text-text-2">{work.summary}</div>
-            )}
-          </Link>
+          <CardTextRegion work={work} />
         </div>
         {work.facets.length > 0 && (
           <div className="relative z-10 flex flex-wrap items-center gap-x-2.5 gap-y-2 sm:ml-40">

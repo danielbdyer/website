@@ -65,9 +65,10 @@ describe('Routable navigation', () => {
     // visitor reads. A change to that line is a voice change, not an
     // accident; locking it in here makes the change visible in review.
     expect(screen.getByText(/How things are made\. The care in the making\./i)).toBeInTheDocument();
-    // At least one room-group heading shows; the preview content seeded
-    // in preview-data carries `craft` across multiple rooms.
-    expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0);
+    // The masonry surfaces a level-3 heading per card. The preview
+    // content seeds multiple craft-bearing works across rooms, so we
+    // expect at least one card to render.
+    expect(screen.getAllByRole('heading', { level: 3 }).length).toBeGreaterThan(0);
   });
 
   it('navigates from a work-page facet chip to the matching facet page', async () => {
