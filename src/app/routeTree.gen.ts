@@ -14,6 +14,7 @@ import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SalonRouteImport } from './routes/salon'
 import { Route as GardenRouteImport } from './routes/garden'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FacetFacetRouteImport } from './routes/facet.$facet'
 import { Route as RoomSlugRouteImport } from './routes/$room.$slug'
 
 const StudyRoute = StudyRouteImport.update({
@@ -41,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FacetFacetRoute = FacetFacetRouteImport.update({
+  id: '/facet/$facet',
+  path: '/facet/$facet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoomSlugRoute = RoomSlugRouteImport.update({
   id: '/$room/$slug',
   path: '/$room/$slug',
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
   '/$room/$slug': typeof RoomSlugRoute
+  '/facet/$facet': typeof FacetFacetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
   '/$room/$slug': typeof RoomSlugRoute
+  '/facet/$facet': typeof FacetFacetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +79,27 @@ export interface FileRoutesById {
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
   '/$room/$slug': typeof RoomSlugRoute
+  '/facet/$facet': typeof FacetFacetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/garden' | '/salon' | '/studio' | '/study' | '/$room/$slug'
+  fullPaths:
+    | '/'
+    | '/garden'
+    | '/salon'
+    | '/studio'
+    | '/study'
+    | '/$room/$slug'
+    | '/facet/$facet'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/garden' | '/salon' | '/studio' | '/study' | '/$room/$slug'
+  to:
+    | '/'
+    | '/garden'
+    | '/salon'
+    | '/studio'
+    | '/study'
+    | '/$room/$slug'
+    | '/facet/$facet'
   id:
     | '__root__'
     | '/'
@@ -85,6 +108,7 @@ export interface FileRouteTypes {
     | '/studio'
     | '/study'
     | '/$room/$slug'
+    | '/facet/$facet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,6 +118,7 @@ export interface RootRouteChildren {
   StudioRoute: typeof StudioRoute
   StudyRoute: typeof StudyRoute
   RoomSlugRoute: typeof RoomSlugRoute
+  FacetFacetRoute: typeof FacetFacetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -133,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/facet/$facet': {
+      id: '/facet/$facet'
+      path: '/facet/$facet'
+      fullPath: '/facet/$facet'
+      preLoaderRoute: typeof FacetFacetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$room/$slug': {
       id: '/$room/$slug'
       path: '/$room/$slug'
@@ -150,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   StudioRoute: StudioRoute,
   StudyRoute: StudyRoute,
   RoomSlugRoute: RoomSlugRoute,
+  FacetFacetRoute: FacetFacetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

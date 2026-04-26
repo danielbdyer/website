@@ -1,8 +1,12 @@
-import type { Room } from '@/shared/types/common';
+import type { Facet, Room } from '@/shared/types/common';
 import type { Work } from './schema';
 import type { DisplayWork } from './preview';
 import { getAllWorksSync, getWorksByRoomSync, getWorkSync } from './loader';
-import { getDisplayWorksByRoomSync, getDisplayWorkSync } from './display';
+import {
+  getDisplayWorksByRoomSync,
+  getDisplayWorkSync,
+  getDisplayWorksByFacetGroupedSync,
+} from './display';
 
 export {
   workFrontmatterSchema,
@@ -62,3 +66,11 @@ export async function getDisplayWorksByRoom(room: Room): Promise<DisplayWork[]> 
 export async function getDisplayWork(room: Room, slug: string): Promise<DisplayWork | undefined> {
   return getDisplayWorkSync(room, slug);
 }
+
+export async function getDisplayWorksByFacetGrouped(
+  facet: Facet,
+): Promise<{ room: Room; works: DisplayWork[] }[]> {
+  return getDisplayWorksByFacetGroupedSync(facet);
+}
+
+export { FACET_META, type FacetMeta } from './facet-meta';

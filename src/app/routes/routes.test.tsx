@@ -58,6 +58,31 @@ describe('Routable navigation', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders the Craft facet page with the description and at least one work', async () => {
+    renderAt('/facet/craft');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Craft' })).toBeInTheDocument();
+    // The description copy comes from FACET_META and is the same line a
+    // visitor reads. A change to that line is a voice change, not an
+    // accident; locking it in here makes the change visible in review.
+    expect(screen.getByText(/How things are made\. The care in the making\./i)).toBeInTheDocument();
+    // At least one room-group heading shows; the preview content seeded
+    // in preview-data carries `craft` across multiple rooms.
+    expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0);
+  });
+
+  it('navigates from a work-page facet chip to the matching facet page', async () => {
+    const user = userEvent.setup();
+    const { router } = renderAt('/studio/containers-not-pipelines');
+    await screen.findByRole('heading', { level: 1, name: /Containers, not pipelines/i });
+
+    await user.click(screen.getByRole('link', { name: 'craft' }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/facet/craft');
+    });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Craft' })).toBeInTheDocument();
+  });
+
   it('opens a Salon work and walks back to the room landing', async () => {
     const user = userEvent.setup();
     const { router } = renderAt('/salon');

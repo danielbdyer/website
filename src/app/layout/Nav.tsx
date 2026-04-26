@@ -12,7 +12,7 @@ const ROOMS = [
 export function Nav() {
   return (
     <nav className="sticky top-0 z-50 border-b border-border/70 bg-bg/95 leading-tight backdrop-blur-sm transition-[background] duration-500 supports-[backdrop-filter]:bg-bg/88">
-      <div className="mx-auto flex w-full max-w-[700px] flex-wrap items-center gap-3 px-5 py-4 sm:flex-nowrap sm:px-6 sm:py-5">
+      <div className="mx-auto flex w-full max-w-[700px] flex-wrap items-center gap-3 py-4 pl-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] sm:flex-nowrap sm:py-5 sm:pl-[max(2rem,env(safe-area-inset-left))] sm:pr-[max(2rem,env(safe-area-inset-right))]">
         <Link
           to="/"
           className="order-1 group inline-flex min-h-[44px] items-center gap-1.5 font-heading text-base font-medium italic text-text no-underline transition-colors duration-200 hover:text-accent"
