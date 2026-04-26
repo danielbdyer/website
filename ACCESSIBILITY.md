@@ -78,10 +78,18 @@ Every page is built from semantic HTML. The visual layer never tells the reader 
 - Dark: `#9c9082` on `#191715` → ratio ~6.5:1 → passes AAA.
 
 **Tertiary text (`--text-3`) — the quietest tone:**
-- Light: `#a69782` on `#f5f1eb` → ratio ~2.8:1 → **below AA for normal text**, passes AA only for large text (18pt+).
-- Dark: `#6a6054` on `#191715` → ratio ~3.1:1 → same status.
+- Light: `#786352` on `#f5f1eb` → ratio ~4.94:1 → passes AA for normal text.
+- Dark: `#978a78` on `#191715` → ratio ~5.30:1 → passes AA for normal text.
 
-**Commitment:** `--text-3` is used only for *genuinely decorative and supplementary* content — the footer byline, the ornament tone, metadata that does not carry meaning beyond its visible position. `--text-3` is never used for content a reader needs to read to understand what the page says. This is honored by convention today; a future lint rule could enforce it.
+**Commitment:** `--text-3` is the quietest of three text tones; it remains visually quieter than `--text-2` while clearing AA contrast on every theme-derived background (bg, bg-warm, bg-card, tag-bg). The earlier value (#a69782 / #6a6054) failed AA at ~2.8:1 — Lighthouse flagged it on every prerendered room landing — and the spec carried a "decorative use only" exemption that the codebase did not honor in practice (work-row dates, footer byline, preview notes were all using text-3 for content). Raising the contrast aligns code with intent.
+
+**`--tag-text` on `--tag-bg`:**
+- Light: `#6e5f50` on `#ede7dd` → ratio ~5.00:1 → passes AA.
+- Dark: `#a39786` on `#302b24` → ratio ~4.90:1 → passes AA.
+
+(Dark `--tag-text` was previously `#9c9082`, which scored 4.49:1 — one hundredth below AA. Lifted to clear the gate with a small margin.)
+
+**Automated guard:** `scripts/check-color-contrast.mjs` parses `tokens.css`, computes contrast for every meaningful text-on-background pairing in both palettes, and fails the build if any pair drops below 4.5:1. Runs in `pnpm test`, in lint-staged (so a token edit can't be committed under-contrast), and in CI.
 
 **Accent colors** all clear AA on both palettes when used for body-sized text. When used for small labels (e.g., facet chips), the chip background tones lift the effective contrast.
 

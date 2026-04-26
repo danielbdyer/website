@@ -12,6 +12,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
+    // The serve step alone (not build-and-serve) — CI builds in a
+    // separate step before invoking Playwright, and `pnpm test` /
+    // `pnpm test:smoke` rely on the build being current. For an
+    // explicit build-then-serve from a clean checkout, use
+    // `pnpm e2e:build-and-serve`.
     command: 'pnpm e2e:serve',
     url: 'http://127.0.0.1:4317',
     reuseExistingServer: !process.env.CI,

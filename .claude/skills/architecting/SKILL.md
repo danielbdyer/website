@@ -104,6 +104,16 @@ Some architectural choices can be revised (component structure, folder conventio
 
 The SSG pivot fits the second: it's a structural choice with real cost. We named it in `PERFORMANCE_BUDGET.md`, committed in writing, and held the execution in the backlog. That combination — decided but held — is the pattern for costly decisions.
 
+## The render-stance question (SSG / SSR / hybrid)
+
+`RENDERING_STRATEGY.md` commits the site to **pure SSG with no production server runtime** and exposes the data layer through an **async barrel** whose implementation is sync today. This is the architectural ground for every data-shape decision.
+
+If you find yourself wanting to introduce server-side anything — `createServerFn`, an API route, middleware, streaming SSR — pause and check the trigger conditions in that spec ("When this stance flips"). The two real triggers are: content that changes between deploys, and per-visitor or per-request behavior in the page. Anything outside those is almost certainly the wrong tool — and adopting it implies provisioning a runtime in front of the site, which the deploy doesn't currently have.
+
+The async barrel is the lock-in that keeps the door open. A future shift to hybrid (one route reads from a CMS, the rest stay static) does not change route-layer code; it changes the implementation behind the barrel and adds a runtime for that one URL. That's the migration path. **Don't preempt it by introducing a runtime before there's a trigger.**
+
+The createServerFn experiment in this project's archaeology (described in `RENDERING_STRATEGY.md` §"The createServerFn archaeology") is the cautionary case: a real bundle saving was traded for a runtime trapdoor that broke client-side navigation site-wide. The savings were paid for in fragility. If a future decision feels analogous — "this optimization requires server runtime in production for a site that doesn't have one" — sit with it longer.
+
 ## The meta-discipline
 
 When making any architectural decision on this site, ask:

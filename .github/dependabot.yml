@@ -1,0 +1,57 @@
+# Dependabot — automated dependency-bump PRs. Built into GitHub, no
+# bot account required.
+#
+# Strategy: weekly batch for npm dependencies, grouped by impact level
+# so a Monday morning brings a small number of well-scoped PRs rather
+# than a flood of one-line bumps. Patches and minors are auto-grouped;
+# majors get their own PR each so the breaking-change risk is visible.
+#
+# Github Actions are bumped weekly and ungrouped — the workflow files
+# are small enough that one PR per action upgrade is fine.
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      tanstack:
+        patterns:
+          - '@tanstack/*'
+      eslint:
+        patterns:
+          - 'eslint*'
+          - '@eslint/*'
+          - 'typescript-eslint'
+      testing:
+        patterns:
+          - '@testing-library/*'
+          - '@playwright/*'
+          - 'vitest'
+          - '@vitest/*'
+          - 'jest-axe'
+          - '@types/jest-axe'
+          - 'happy-dom'
+      types:
+        patterns:
+          - '@types/*'
+      patches-and-minors:
+        update-types:
+          - patch
+          - minor
+        # Anything not picked up by a more specific group.
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: ci

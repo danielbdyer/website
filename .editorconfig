@@ -1,0 +1,16 @@
+# Editor convention defaults for files Prettier doesn't manage.
+# Prettier owns formatting for source/config; this owns line endings,
+# encoding, and whitespace for everything else (markdown, yml, etc).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+# Markdown trailing whitespace can be meaningful (two spaces = <br>).
+trim_trailing_whitespace = false

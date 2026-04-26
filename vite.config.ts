@@ -15,6 +15,10 @@ export default defineConfig({
       router: {
         routesDirectory: 'app/routes',
         generatedRouteTree: 'app/routeTree.gen.ts',
+        // Co-located test files (Foo.test.tsx) live next to the route
+        // files they exercise. Without this they trip a "does not export
+        // a Route" warning on every build pass.
+        routeFileIgnorePattern: '\\.test\\.',
       },
       // SSG: every known route is prerendered to static HTML at build time.
       // crawlLinks follows links from each page to discover paths the static
@@ -56,16 +60,32 @@ export default defineConfig({
     }),
     viteReact(),
     tailwindcss(),
-    visualizer({
-      filename: '.stats/bundle.html',
-      gzipSize: true,
-      brotliSize: true,
-      template: 'treemap',
-    }),
-  ],
+    // Visualizer is gated: it adds noticeable build time and only earns
+    // its keep when a contributor is hunting bundle weight. Run via
+    // `pnpm build:analyze` to enable; CI builds skip it.
+    process.env.ANALYZE === '1' &&
+      visualizer({
+        filename: '.stats/bundle.html',
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap',
+      }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
     },
+  },
+  // Cloudflare Web Analytics token. Inlined as a build-time constant
+  // so the value is identical in the prerender pass and the client
+  // build — using `import.meta.env.VITE_*` here would inline the token
+  // in client chunks but not in the prerender HTML, producing a
+  // hydration mismatch where the beacon script appears post-hydration
+  // but not in the SSG output. PRIVACY.md describes the beacon's
+  // privacy posture; if the env var is unset (local dev, anyone-without-
+  // the-secret), `__CFWA_TOKEN__` is the empty string and no beacon
+  // ships.
+  define: {
+    __CFWA_TOKEN__: JSON.stringify(process.env.VITE_CLOUDFLARE_ANALYTICS_TOKEN ?? ''),
   },
 });

@@ -1,7 +1,20 @@
-import matter from 'gray-matter';
+import yaml from 'js-yaml';
 import { marked } from 'marked';
 import type { Room } from '@/shared/types/common';
 import { isPublished, roomSchema, workFrontmatterSchema, type Work } from '@/shared/content/schema';
+
+// Tiny browser-safe frontmatter splitter. Replaces `gray-matter`, which
+// reaches for Node's `Buffer` internally and crashes the loader as soon
+// as it runs in a browser bundle. The format is well-defined (a leading
+// `---\n…\n---\n` block followed by the body); js-yaml handles the YAML
+// parse and is itself browser-safe.
+function splitFrontmatter(raw: string): { data: unknown; content: string } {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
+  if (!match) return { data: {}, content: raw };
+  const [, frontmatterText, body] = match;
+  const data = yaml.load(frontmatterText!) ?? {};
+  return { data, content: body ?? '' };
+}
 
 /**
  * Parse a raw markdown file into a Work.
@@ -25,7 +38,7 @@ export function parseWork(path: string, raw: string): Work {
     throw new Error(`Content file ${path} is in an unknown room: ${roomCandidate}`);
   }
 
-  const parsed = matter(raw);
+  const parsed = splitFrontmatter(raw);
   const frontmatter = workFrontmatterSchema.safeParse(parsed.data);
   if (!frontmatter.success) {
     throw new Error(`Frontmatter validation failed for ${path}:\n${frontmatter.error.message}`);
@@ -48,13 +61,13 @@ export function parseWork(path: string, raw: string): Work {
   };
 }
 
-// Module-level glob + parse. Runs once per server build. This module is
-// SERVER-ONLY BY CONVENTION — imports `marked` and `gray-matter` at the
-// top level, which would land in any client chunk that transitively
-// imports from here. The client never does: `server-fns.ts` wraps the
-// three public functions in `createServerFn`, and the handler bodies
-// (the only place this file is referenced) are tree-shaken out of the
-// client bundle. Do not import from this file on the client.
+// Module-level glob + parse. Runs once per environment that imports
+// this module — Node during prerender, the browser after hydration when
+// a client-side route loader needs data the SSR cache doesn't have.
+// Both `marked` and `js-yaml` are browser-safe; the parse is fast on
+// the small content set today. Bundle weight is held in BACKLOG ("Move
+// `marked` and `gray-matter` back off the client bundle") for the day
+// it earns the migration to a build-time JSON manifest.
 const rawFiles = import.meta.glob('/src/content/**/*.md', {
   eager: true,
   query: '?raw',

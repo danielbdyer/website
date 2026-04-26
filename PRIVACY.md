@@ -20,22 +20,22 @@ This is a commitment, not a current-state description. The absence of these thin
 
 ## What the Site Collects
 
-**Today: nothing beyond what the hosting provider's access logs capture.** A request to the server generates the standard HTTP request line (IP, user-agent, referer, URL). Retention and access to those logs is `DEPLOYMENT.md`'s concern when it exists.
+**Hosting access logs.** A request to the static-asset host generates the standard HTTP request line (IP, user-agent, referer, URL). Retention and access live with the host (Cloudflare); see Cloudflare's documented log retention.
 
-**Held: Web Vitals.** The `web-vitals` library is wired in `src/shared/seo/web-vitals.ts`. In development, it logs metrics to the console. In production, it would forward metrics to an analytics provider — but no forwarding is wired today. When a provider is chosen (in `DEPLOYMENT.md`), the following commitments apply.
+**Cloudflare Web Analytics.** A small async beacon (`static.cloudflareinsights.com/beacon.min.js`) ships in the production build when `VITE_CLOUDFLARE_ANALYTICS_TOKEN` is set, and reports Core Web Vitals (CLS, INP, LCP, FCP, TTFB) plus pageviews and referrers to Cloudflare's analytics endpoint. The provider was chosen because it satisfies every commitment named below by design — see [Cloudflare Web Analytics privacy policy](https://www.cloudflare.com/web-analytics/) for the upstream attestations. The dev build (`pnpm dev`, any build without the env var) ships no beacon at all; the dev console logs Web Vitals locally for authoring visibility, and nothing leaves the device.
 
-### Web Vitals commitments (when forwarding is enabled)
+### Web Vitals + pageview commitments
 
-- **Aggregate only.** Metrics (CLS, INP, LCP, FCP, TTFB) are forwarded as anonymous numeric values. No visitor identifier accompanies them. The provider sees "here is an LCP reading," not "here is visitor X's LCP reading."
-- **No IP retention.** The provider (when selected) must either not receive the IP or anonymize it at ingest. Providers that retain identifiable IPs are declined.
-- **No cross-site correlation.** The provider is scoped to this site only. No shared pixel, no third-party beacon, no network that correlates this visitor's activity across other properties.
-- **Privacy-respecting providers only.** Candidates that fit: Plausible, Fathom, Umami (self-hosted), Cloudflare Web Analytics. Candidates that do not fit: Google Analytics, Meta Pixel, Mixpanel without strict configuration.
+- **Aggregate only.** Metrics (CLS, INP, LCP, FCP, TTFB) and pageviews arrive as anonymous numeric values. No visitor identifier accompanies them. The provider sees "an LCP reading occurred," not "visitor X's LCP reading occurred."
+- **No cookies, no fingerprinting.** Cloudflare Web Analytics does not set cookies, does not use device fingerprinting, and does not correlate visitors across sessions or across sites.
+- **No IP retention beyond the request.** Cloudflare receives the IP as part of the HTTP request (necessary to deliver the beacon's response), does not store it associated with the metric, and does not expose it in the analytics dashboard.
+- **No cross-site correlation.** The token scopes the data to this site. Cloudflare does not assemble a profile across the other properties they analyze.
 
 ### Consent
 
-Because the data collected is aggregate and non-identifying, consent interfaces (cookie banners, Do-Not-Track modals) are not required under GDPR Recital 46 and similar frameworks that exempt strictly-necessary, privacy-respecting measurement. The site does not intend to display a consent banner for Web Vitals.
+Because the data collected is aggregate and non-identifying, consent interfaces (cookie banners, Do-Not-Track modals) are not required under GDPR Recital 46 and similar frameworks that exempt strictly-necessary, privacy-respecting measurement. The site does not display a consent banner for Web Analytics.
 
-If a future requirement changes this calculus — e.g., a jurisdiction requires consent even for anonymous measurement — the `web-vitals.ts` reporter will gain a consent check before `reportWebVitals()` fires. Until then, the reporter runs unconditionally in production.
+If a future requirement changes this calculus — e.g., a jurisdiction requires consent even for anonymous measurement — the beacon will gain a consent gate before it loads. Until then, the beacon ships unconditionally in production.
 
 ---
 
@@ -77,7 +77,8 @@ Every substantive change to the site's privacy posture lives in git history on t
 
 ## Enforced in Code
 
-- `src/shared/seo/web-vitals.ts` — the reporter. Today: dev-only console logging. When production forwarding wires, this file is where the commitments above get enforced (no identifiers in payload, provider choice gated on spec).
+- `src/shared/seo/web-vitals.ts` — dev-only console logging of Web Vitals. Production telemetry comes from Cloudflare Web Analytics (the beacon shipped by `RootDocument` in `src/app/routes/__root.tsx`), so this file does not double-count.
+- `src/app/routes/__root.tsx` — the Cloudflare beacon `<script>` is gated on `VITE_CLOUDFLARE_ANALYTICS_TOKEN`. If the env var is absent, no beacon ships. The token lives in deploy-time environment configuration; it is not committed to the repo.
 - `src/app/providers/theme-store.ts` — the sole `localStorage` writer. Writes only `theme: 'light' | 'dark'`.
 
 If any future code adds a third-party script, an analytics beacon, or a storage write of any kind, this file must be updated first.

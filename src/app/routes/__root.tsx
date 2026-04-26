@@ -93,7 +93,12 @@ function RootComponent() {
             tabIndex={-1}
             className="mx-auto w-full max-w-[700px] flex-1 px-5 pt-6 pb-20 focus:outline-none sm:px-6 sm:pt-8 sm:pb-24"
           >
-            <ErrorBoundary>
+            {/* Keying the boundary on the pathname means React mounts a
+                fresh one whenever the route changes. Without this, a
+                route that throws once stays in the error state forever
+                — every subsequent navigation lands on the fallback
+                instead of the new page. */}
+            <ErrorBoundary key={pathname}>
               <Outlet />
             </ErrorBoundary>
           </main>
@@ -115,6 +120,18 @@ function RootComponent() {
 // correct class is on <html> at first paint.
 const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.add(d?'dk':'lt')}catch(e){document.documentElement.classList.add('lt')}})()`;
 
+// Cloudflare Web Analytics — privacy-respecting Web Vitals + pageview
+// telemetry, no cookies, no PII, no fingerprinting. Token is per-property,
+// supplied at build time via VITE_CLOUDFLARE_ANALYTICS_TOKEN, inlined as
+// the build-time constant `__CFWA_TOKEN__` (declared in src/vite-env.d.ts,
+// substituted by Vite's `define` config). The inlining via `define` —
+// rather than `import.meta.env` — is deliberate: it guarantees the same
+// value lands in both the prerender pass and the client build, so the
+// SSG HTML and the post-hydration tree agree. If the env var is unset,
+// `__CFWA_TOKEN__` is the empty string and no beacon ships. PRIVACY.md
+// names the commitments this beacon honors.
+const CFWA_TOKEN: string = __CFWA_TOKEN__;
+
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
@@ -127,6 +144,13 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <body>
         {children}
         <Scripts />
+        {CFWA_TOKEN && (
+          <script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={JSON.stringify({ token: CFWA_TOKEN })}
+          />
+        )}
       </body>
     </html>
   );

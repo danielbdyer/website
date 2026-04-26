@@ -5,7 +5,7 @@ import { getDisplayWorksByRoom, isPreviewWork } from '@/shared/content';
 
 export const Route = createFileRoute('/study')({
   loader: async () => {
-    const works = await getDisplayWorksByRoom({ data: { room: 'study' } });
+    const works = await getDisplayWorksByRoom('study');
     return { works };
   },
   head: ({ loaderData }) => ({

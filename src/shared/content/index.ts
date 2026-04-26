@@ -1,3 +1,9 @@
+import type { Room } from '@/shared/types/common';
+import type { Work } from './schema';
+import type { DisplayWork } from './preview';
+import { getAllWorksSync, getWorksByRoomSync, getWorkSync } from './loader';
+import { getDisplayWorksByRoomSync, getDisplayWorkSync } from './display';
+
 export {
   workFrontmatterSchema,
   roomSchema,
@@ -16,16 +22,43 @@ export {
   type PreviewMeta,
 } from './preview';
 
-// Public API is the server-fn wrappers. `loader.ts` is server-only by
-// convention (imports marked + gray-matter at top level); client code
-// never imports from it, and the barrel deliberately does NOT re-export
-// anything from it — re-exporting `parseWork` through here pulled the
-// whole loader module into the client chunk via tree-shake. Tests
-// import `parseWork` from `./loader` directly.
-export {
-  getAllWorks,
-  getWorksByRoom,
-  getWork,
-  getDisplayWorksByRoom,
-  getDisplayWork,
-} from './server-fns';
+// ─── Isomorphic content API ────────────────────────────────────────
+//
+// The site is pure SSG (RENDERING_STRATEGY.md §SSG Stance). There is no
+// server runtime in production, so a previous experiment that wrapped
+// these reads in `createServerFn` broke the moment client-side
+// navigation re-ran a route loader (the client-side stub fetches the
+// handler over HTTP, which 404s with no server). The fix is to drop the
+// server-fn boundary and call the loader directly.
+//
+// **The contract is async even though the implementation is sync.**
+// Route loaders `await` these functions; if the data layer ever moves
+// to fetched JSON manifests (BACKLOG: bundle-weight-aware split) or a
+// selective hybrid where one route reads from a CMS at request time,
+// the route surface does not change. Keep it that way: never expose a
+// sync content function on this barrel, even if today it returns
+// instantly. The async signature is the architectural seam.
+//
+// `parseWork` is intentionally not re-exported — tests import it from
+// `./loader` directly to avoid pulling unrelated callers into the
+// loader module's eager glob.
+
+export async function getAllWorks(): Promise<Work[]> {
+  return getAllWorksSync();
+}
+
+export async function getWorksByRoom(room: Room): Promise<Work[]> {
+  return getWorksByRoomSync(room);
+}
+
+export async function getWork(room: Room, slug: string): Promise<Work | undefined> {
+  return getWorkSync(room, slug);
+}
+
+export async function getDisplayWorksByRoom(room: Room): Promise<DisplayWork[]> {
+  return getDisplayWorksByRoomSync(room);
+}
+
+export async function getDisplayWork(room: Room, slug: string): Promise<DisplayWork | undefined> {
+  return getDisplayWorkSync(room, slug);
+}

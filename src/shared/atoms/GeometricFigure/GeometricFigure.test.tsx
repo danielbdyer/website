@@ -13,7 +13,7 @@ describe('GeometricFigure', () => {
   it('carries the spin animation class by default', () => {
     const { container } = render(<GeometricFigure />);
     const svg = container.querySelector('svg');
-    expect(svg?.className.baseVal).toContain('animate-[geo-spin_60s_linear_infinite]');
+    expect(svg?.getAttribute('class')).toContain('animate-[geo-spin_60s_linear_infinite]');
   });
 
   it('renders the nested rectangles and the central circle', () => {
@@ -26,6 +26,6 @@ describe('GeometricFigure', () => {
 
   it('forwards a custom className', () => {
     const { container } = render(<GeometricFigure className="extra" />);
-    expect(container.querySelector('svg')?.className.baseVal).toContain('extra');
+    expect(container.querySelector('svg')?.getAttribute('class')).toContain('extra');
   });
 });

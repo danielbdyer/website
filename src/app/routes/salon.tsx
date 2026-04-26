@@ -7,7 +7,7 @@ const SALON_POSTURES = ['listening', 'looking'] as const;
 
 export const Route = createFileRoute('/salon')({
   loader: async () => {
-    const works = await getDisplayWorksByRoom({ data: { room: 'salon' } });
+    const works = await getDisplayWorksByRoom('salon');
     return { works };
   },
   head: ({ loaderData }) => ({
@@ -56,7 +56,11 @@ function SalonPage() {
         >
           {previewPostures.map((posture, index) => (
             <span key={posture}>
-              {index > 0 && <span className="text-text-3">·</span>}{' '}
+              {index > 0 && (
+                <span className="text-text-3" aria-hidden="true">
+                  ·
+                </span>
+              )}{' '}
               <span className="text-accent-warm">{posture}</span>
             </span>
           ))}
