@@ -36,11 +36,22 @@ Almost never. `useEffect` decision tree (from `REACT_NORTH_STAR.md`):
 | Derive a value from props | `const` or `useMemo` |
 | Respond to a user event | Event handler |
 | Read from localStorage / URL / external | `useSyncExternalStore` + module-level init (see `theme-store.ts`) |
-| Subscribe to external system (IntersectionObserver) | Legitimate effect, but wrap in a custom hook (see `useReveal`) |
-| Fetch data | Build-time loader via `import.meta.glob` (see `src/shared/content/loader.ts`) |
+| Subscribe to external system (IntersectionObserver) | Legitimate effect; keep the subscription tight and disconnect on unmount (see `Reveal.tsx`, `GeometricFigure.tsx`) |
+| Fetch data | Build-time loader via `import.meta.glob`; consume through the async barrel in `src/shared/content/index.ts` |
 | Initialize on mount | Lazy initializer or module-level |
 
 Effects that fit the two legitimate patterns (subscriptions; analytics) live in custom hooks, never raw in components.
+
+## The data layer is async; the implementation is sync today
+
+`RENDERING_STRATEGY.md` commits to **pure SSG with no production server runtime**, and to an isomorphic data contract: `src/shared/content/index.ts` exposes async functions (`getDisplayWorksByRoom`, `getDisplayWork`, etc.) that today wrap synchronous bundled reads. The async signature is the architectural seam — it means the day the loader changes (to JSON manifests fetched from `/data/*.json`, to a CMS in a hybrid setup, to anything else) **no route file changes**.
+
+Hold the contract:
+
+- **Routes `await` content reads.** They already do; keep it that way even though the wrapped functions resolve instantly.
+- **Never expose a sync content function on the barrel.** Internal `*Sync` helpers stay inside `loader.ts` / `display.ts`. The boundary is async.
+- **Never reach for `createServerFn` for static content reads.** It is the wrong abstraction for an SSG-only deploy — the client-side stub fetches over HTTP, and the static deploy has no handler. This was the bug that produced the `[Something here caught and fell.]` ErrorBoundary regression. The lesson is encoded in `RENDERING_STRATEGY.md` §"The createServerFn archaeology"; the rule is encoded here.
+- `createServerFn` is appropriate only for code that *must* run with a runtime (mutations, secrets, request context). Adopting it implies provisioning a runtime in front of that one URL, scoped to that one feature. The default deploy stays static.
 
 ## Style and design tokens
 
@@ -98,7 +109,7 @@ Every new dependency is a commitment of bundle weight. Every effect, every piece
 - Co-locate `{Name}.test.tsx` with every component.
 - Use `@testing-library/react` + `userEvent.setup()` for interactions.
 - Use `axe(container)` from `@/test/axe` for a11y assertions on any visible surface.
-- For components using `<Reveal>`: the default IntersectionObserver mock in `src/test/setup.ts` suffices. For components that *drive* the reveal: override locally (see `useReveal.test.tsx`).
+- For components using `<Reveal>`: the default IntersectionObserver mock in `src/test/setup.ts` suffices. For components that *drive* the reveal: override locally (see `Reveal.test.tsx`).
 - For components using router hooks: wrap in `createMemoryHistory + createRootRoute + RouterProvider` (see `NotFound.test.tsx`).
 
 Run `pnpm test --run`, `pnpm exec tsc -b`, `pnpm exec eslint src/` before committing. All three must pass. The ESLint boundary rules will flag misplaced imports; fix by moving the file, not by suppressing.

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import * as React from 'react';
 import {
   createMemoryHistory,
   createRootRoute,
@@ -72,5 +73,47 @@ describe('ErrorBoundary', () => {
     await screen.findByText('[Something here caught and fell.]');
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+
+  it('resets when its key changes — a new key remounts a fresh boundary', async () => {
+    // The bug this guards: __root.tsx wraps <Outlet /> with
+    // <ErrorBoundary key={pathname}>. Without the key, a route that
+    // throws once stays in the error state forever — every subsequent
+    // navigation lands on the fallback. The key forces React to mount
+    // a fresh boundary per route, which is exactly the recovery shape
+    // we want.
+    const handles: {
+      setExploding?: (v: boolean) => void;
+      setBoundaryKey?: (v: string) => void;
+    } = {};
+    function Stateful() {
+      const [exploding, setExploding] = React.useState(true);
+      const [k, setK] = React.useState('/a');
+      React.useEffect(() => {
+        handles.setExploding = setExploding;
+        handles.setBoundaryKey = setK;
+      }, []);
+      return <ErrorBoundary key={k}>{exploding ? <Exploder /> : <p>fresh page</p>}</ErrorBoundary>;
+    }
+
+    const rootRoute = createRootRoute({ component: Stateful });
+    const router = createRouter({
+      routeTree: rootRoute,
+      history: createMemoryHistory({ initialEntries: ['/'] }),
+    });
+    render(<RouterProvider router={router} />);
+    expect(await screen.findByText('[Something here caught and fell.]')).toBeInTheDocument();
+
+    // Same key, non-throwing children: the boundary stays in its error
+    // state. (This is the regression behavior — without the key, the
+    // boundary stays poisoned even when the children would render fine.)
+    act(() => handles.setExploding!(false));
+    expect(screen.queryByText('fresh page')).toBeNull();
+    expect(screen.getByText('[Something here caught and fell.]')).toBeInTheDocument();
+
+    // New key: React mounts a fresh boundary. Children render normally.
+    act(() => handles.setBoundaryKey!('/b'));
+    expect(screen.getByText('fresh page')).toBeInTheDocument();
+    expect(screen.queryByText('[Something here caught and fell.]')).toBeNull();
   });
 });

@@ -48,6 +48,10 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** When images arrive (in works and possibly the Salon), they need responsive sources, modern formats (AVIF, WebP), and lazy loading. None of this exists yet.
 **Trigger:** The first image in any work. Owned by `MEDIA_STRATEGY.md` when that file is written.
 
+### Move `marked` and `gray-matter` back off the client bundle
+**Why:** The two markdown parsers ship in the client chunk (≈30KB gzipped) so that route loaders can resolve content during client-side navigation without a server. A previous experiment with `createServerFn` removed them at the cost of breaking client-side nav under SSG (see `RENDERING_STRATEGY.md` §"The createServerFn archaeology"); the savings were paid for in fragility. The async barrel in `src/shared/content/index.ts` is the seam through which a future migration can land — most likely a build step that emits per-room and per-work JSON manifests under `dist/client/data/`, with the loader switching to `fetch()` calls behind the same async signatures. No route file would change.
+**Trigger:** When the bundle weight becomes a felt cost — a Lighthouse regression, a measurable TTI hit on a real device, or the addition of a parser-heavy feature that pushes total weight over the budget in `PERFORMANCE_BUDGET.md`. Today it's noise against more meaningful concerns.
+
 
 ---
 

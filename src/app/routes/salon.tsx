@@ -7,7 +7,7 @@ const SALON_POSTURES = ['listening', 'looking'] as const;
 
 export const Route = createFileRoute('/salon')({
   loader: async () => {
-    const works = await getDisplayWorksByRoom({ data: { room: 'salon' } });
+    const works = await getDisplayWorksByRoom('salon');
     return { works };
   },
   head: ({ loaderData }) => ({

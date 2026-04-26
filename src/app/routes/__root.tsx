@@ -93,7 +93,12 @@ function RootComponent() {
             tabIndex={-1}
             className="mx-auto w-full max-w-[700px] flex-1 px-5 pt-6 pb-20 focus:outline-none sm:px-6 sm:pt-8 sm:pb-24"
           >
-            <ErrorBoundary>
+            {/* Keying the boundary on the pathname means React mounts a
+                fresh one whenever the route changes. Without this, a
+                route that throws once stays in the error state forever
+                — every subsequent navigation lands on the fallback
+                instead of the new page. */}
+            <ErrorBoundary key={pathname}>
               <Outlet />
             </ErrorBoundary>
           </main>

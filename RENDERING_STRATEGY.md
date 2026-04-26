@@ -14,7 +14,7 @@ The site is prerendered to static HTML per route at build time, using TanStack S
 - **Output shape:** `dist/client/index.html` is the prerendered foyer. `dist/client/{room}/index.html` is each room landing. Per-work pages will prerender as `dist/client/{room}/{slug}/index.html` once content exists (crawled via `crawlLinks` from each room landing). A static host serves `dist/client/` as the document root.
 - **Entry:** No `index.html` source file and no `src/main.tsx`. Start owns the HTML shell and the client entry. The site defines `src/router.tsx` (a `getRouter()` factory) and a root route (`src/app/routes/__root.tsx`) that emits the full document — `<html>` with `<HeadContent />` in head and `<Scripts />` at the end of body.
 - **Head:** Per-route meta, title, and link tags are declared in each route's `head` config. The root route sets charset, viewport, site title, description, favicon, theme-color, and the Google Fonts stylesheet — all of which are now present in every prerendered HTML file.
-- **Content:** Markdown is loaded via `import.meta.glob('/src/content/**/*.md', { eager: true, query: '?raw' })` and parsed by `marked` and `gray-matter` in `src/shared/content/loader.ts`. The loader is server-only by convention; the public API (`getAllWorks`, `getWorksByRoom`, `getWork`) lives in `src/shared/content/server-fns.ts` as `createServerFn` wrappers. Start's plugin strips the handler bodies from client chunks, so neither parser ships to the browser. The content barrel (`index.ts`) deliberately does not re-export from `loader.ts` — a re-export is enough to pull the module back into the client chunk.
+- **Content:** Markdown is loaded via `import.meta.glob('/src/content/**/*.md', { eager: true, query: '?raw' })` and parsed by `marked` and `gray-matter` in `src/shared/content/loader.ts` at module init. The public API in `src/shared/content/index.ts` exposes async wrappers — `getAllWorks`, `getWorksByRoom`, `getWork`, `getDisplayWorksByRoom`, `getDisplayWork` — each returning a Promise even though today's implementation resolves synchronously. Route loaders `await` them. Both parsers ship in the client chunk (≈30KB gzipped); see "SSG Stance and the Isomorphic Data Contract" below for why that's the right trade today and where the seam is for changing it. The barrel deliberately does not re-export `parseWork` — tests import it from `./loader` directly.
 - **Theme:** `useSyncExternalStore` with `getServerSnapshot()` still handles the React side. The module-level DOM access in `theme-store.ts` is now guarded with `typeof document !== 'undefined'` so the module can be imported during prerender without a `ReferenceError`. The client-side runs the guard body before React hydrates, so the class on `<html>` corrects from the server's light default to the visitor's actual preference with no visible flash.
 - **State:** Still no server state, no data fetching, no mutations.
 
@@ -26,7 +26,7 @@ The site is prerendered to static HTML per route at build time, using TanStack S
 
 ### What the pivot did not (yet) deliver
 
-- **`marked` and `gray-matter` off the client bundle.** The loader was subsequently moved to `createServerFn` wrappers in `src/shared/content/server-fns.ts`; Start's plugin strips the handler bodies from client chunks, and the barrel no longer re-exports from `loader.ts`. The client bundle dropped from ~188KB gzipped to ~118KB gzipped (≈37% reduction) as a result.
+- **`marked` and `gray-matter` off the client bundle.** A subsequent experiment moved the loader behind `createServerFn` wrappers, and the client bundle dropped from ~188KB gzipped to ~118KB gzipped. The wrappers were removed when client-side navigation re-exposed their cost (see the SSG Stance below); the parsers ship to the browser again. Bringing them back off without breaking client-side nav is a held concern — the seam in `index.ts` makes the change contained when it lands.
 
 ---
 
@@ -80,7 +80,9 @@ The SSG pivot uses the smallest part of Start. These are the capabilities Start 
 
 ### Server functions (`createServerFn`)
 
-Typed, isomorphic RPC endpoints defined alongside the components that call them. `createServerFn({ method: 'POST' }).inputValidator(...).handler(...)`, called from React via `useServerFn`. The route's loader and any component event can invoke them with full type inference.
+Typed RPC endpoints defined alongside the components that call them. `createServerFn({ method: 'POST' }).inputValidator(...).handler(...)`, called from React via `useServerFn`. The handler runs in-process during prerender / SSR, and as an HTTP fetch from the client.
+
+**Important boundary** (see "SSG Stance and the Isomorphic Data Contract" above): server functions are appropriate for work that *must* run with a runtime — mutations, secret-bearing operations, request-context access. They are **not** appropriate for static content reads in this site's deploy model: the client-side stub is an HTTP fetch, and a static-only deploy has no handler to receive it. Adding the first server function therefore also adds the first runtime in front of it, scoped to that one URL.
 
 **What it unlocks**
 
@@ -88,7 +90,7 @@ Typed, isomorphic RPC endpoints defined alongside the components that call them.
 - **Search-as-you-type** across works once the corpus grows. The index stays server-side, the client gets ranked results, no bundle cost.
 - **Salon audio metadata.** When media arrives, server functions can read file headers, extract waveform data, or proxy to a CDN without exposing credentials.
 
-**Trigger:** The first interactive surface the site needs that a static build can't serve. Today there is none.
+**Trigger:** The first surface the site needs that a static build truly cannot serve, paired with the willingness to provision a runtime for it. Today there is none.
 
 ### API routes
 
@@ -143,10 +145,52 @@ A `src/start.ts` where global middleware, default response headers, and framewor
 
 ---
 
+## SSG Stance and the Isomorphic Data Contract
+
+The site is **pure SSG with no production server runtime.** The Cloudflare Workers deploy serves `dist/client/` as static assets; there is no Worker handler, no Node process, no edge function in the request path. Every URL the site can serve is enumerable at build time, every byte the site needs is in the build output, and the runtime cost of a page view is a CDN fetch and the browser's parse-and-paint.
+
+This is the right stance because nothing the site does today is dynamic at request time. Markdown is git-tracked. Theme is `localStorage`. Web Vitals are RUM. There are no accounts, no comments, no per-visitor data. Every dynamic capability the framework offers — server functions, API routes, streaming SSR, middleware — is for problems this site does not have. Adopting any of them prematurely adds: cold starts, deploy complexity, an attack surface, a billing surface, and a class of bugs where the same code behaves differently in build, dev, and prod (the `createServerFn` archaeology below is exactly this).
+
+### The createServerFn archaeology
+
+For a stretch of the project, the content loader was wrapped in `createServerFn` to keep `marked` and `gray-matter` out of the client chunk — a real ≈70KB gzipped saving. The wrappers worked during prerender (the handler ran in-process) and at the initial visit (the data was streamed into the SSR matches cache). They broke the moment a visitor navigated client-side: the wrapper's client stub fetches the handler over HTTP, and there is no HTTP handler to receive it. Every navigation lit up the `ErrorBoundary`. The site only appeared to work because every `<Link>` carried `reloadDocument`, forcing a full document load that bypassed the broken stub.
+
+The lesson is not "server functions are bad." The lesson is **`createServerFn` is for code that must run on the server.** Static content reads must not. When there is no server in production, anything that pretends there is one becomes a runtime trapdoor. Use server functions only for the work named in "The Fuller Horizon" below — mutations, secrets, cross-request side effects — and only when a server actually exists at request time.
+
+### The isomorphic data contract
+
+All content reads on the site are exposed through `src/shared/content/index.ts` with **async signatures**, even though today's implementation resolves synchronously. The barrel's contract is:
+
+```ts
+export async function getDisplayWorksByRoom(room: Room): Promise<DisplayWork[]>;
+export async function getDisplayWork(room: Room, slug: string): Promise<DisplayWork | undefined>;
+// (and the rest)
+```
+
+The internal `display.ts` and `loader.ts` modules expose `*Sync` variants that the barrel wraps. The split is deliberate: **the public boundary holds the architectural seam**, and the internal modules implement whatever is fastest today. This means a future migration — to JSON manifests fetched from `/data/{room}.json`, to a selectively hybrid setup where one route reads from a CMS at request time, to anything that earns its complexity — does not change a single route file. Routes already `await`.
+
+**The rule, for any agent or contributor authoring data-layer code:**
+
+- Public content APIs in the barrel are async. Always.
+- Never expose a sync content function on the barrel, even if it would technically work today. The async signature is the seam.
+- Never reach for `createServerFn` for static content reads. If a future feature needs `createServerFn` (a contact form, an OG-image endpoint), introduce it for *that feature only*, behind its own URL, and accept the dependency on a runtime in front of that one path.
+- The deploy target (Workers static-assets, today) reflects the SSG stance. Changing the stance is a spec change first, a code change second.
+
+### When this stance flips
+
+Two conditions would push the site toward hybrid:
+
+1. **Content that changes between deploys.** A CMS, a draft preview that doesn't want a rebuild, a third-party feed embedded as part of the page. Today, content moves through git, so this isn't real.
+2. **Per-visitor or per-request behavior in the page.** Auth, personalized rooms, comments. Today, every visitor reads the same site.
+
+When one of these arrives, the migration path is well-defined: keep most routes static, lift the dynamic ones into `loader`s that genuinely run at request time, and provision a Worker (or other runtime) that can host them. The async data contract makes that lift mechanical at the route layer; the work is in the runtime, not the shape.
+
+---
+
 ## What's Held Deliberately
 
 - **React Server Components.** Start supports RSC; this site doesn't need it. RSC earns its keep when component-level data fetching benefits from the server/client split. A content site whose data is a folder of markdown files does not benefit.
-- **A Node server in production.** The SSG output is static files. Serving them needs no runtime — a CDN, GitHub Pages, or any static host works. A Node server becomes relevant only if API routes, middleware, or streaming SSR are adopted. `DEPLOYMENT.md` will decide this when it exists.
+- **A Node server in production.** The SSG output is static files. Serving them needs no runtime — a CDN, GitHub Pages, or Cloudflare's static-assets binding works. A Node server becomes relevant only if API routes, middleware, or streaming SSR are adopted. See "When this stance flips" above.
 - **Client-side data fetching.** The site has no client-side data fetching today and doesn't need TanStack Query. If it ever does, Query is already in the stack table of `REACT_NORTH_STAR.md` as the "Yes" choice; adopting it is straightforward.
 
 ---

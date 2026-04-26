@@ -8,7 +8,7 @@ export const Route = createFileRoute('/$room/$slug')({
   loader: async ({ params }) => {
     const roomResult = roomSchema.safeParse(params.room);
     if (!roomResult.success) throw notFound();
-    const work = await getDisplayWork({ data: { room: roomResult.data, slug: params.slug } });
+    const work = await getDisplayWork(roomResult.data, params.slug);
     if (!work) throw notFound();
     return { work };
   },
