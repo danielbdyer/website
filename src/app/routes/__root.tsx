@@ -67,10 +67,17 @@ function RootComponent() {
   // The set is module-state-shaped (a ref) rather than a useState — no
   // re-render is wanted on update; this is purely a side-effect ledger.
   const visited = useRef<Set<string>>(new Set());
+  // Tracks the previous pathname so we can detect Rearrange-shaped
+  // navigations (e.g., `/facet/beauty` → `/facet/beauty,body`) and
+  // skip the first-visit scroll reset for them. INTERACTION_DESIGN.md
+  // §"Page and Route Transitions" names this gesture: filtering
+  // within the same surface, not arriving at a new place.
+  const prevPathname = useRef(pathname);
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       visited.current.add(pathname);
+      prevPathname.current = pathname;
       return;
     }
     // First visit in this session → start the new page at the top.
@@ -79,10 +86,19 @@ function RootComponent() {
     // article opens but the title is already off-screen. Subsequent
     // visits to the same URL fall through to TanStack Router's
     // `scrollRestoration`, which carries the saved position back.
-    if (!visited.current.has(pathname)) {
+    //
+    // Rearrange exception: a navigation that filters within the same
+    // surface (today only `/facet/X` → `/facet/Y`) preserves scroll.
+    // The visitor narrowed a view; they didn't arrive somewhere
+    // new. Scrolling them to the top would feel like a punishment
+    // for filtering.
+    const isRearrange =
+      prevPathname.current.startsWith('/facet/') && pathname.startsWith('/facet/');
+    if (!isRearrange && !visited.current.has(pathname)) {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       visited.current.add(pathname);
     }
+    prevPathname.current = pathname;
     // preventScroll keeps the focus jump from co-opting the scroll
     // position the router has already restored. Without it, the browser
     // scrolls <main> into view at the top of the scrollport — which
