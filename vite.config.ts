@@ -35,6 +35,18 @@ export default defineConfig({
         { path: '/garden' },
         { path: '/study' },
         { path: '/salon' },
+        // The eight facet pages. Listed explicitly so an unused facet
+        // (no work currently carries it) still renders its empty state
+        // — crawlLinks would otherwise miss it because no chip points
+        // there. The set is closed (DOMAIN_MODEL.md §"The eight").
+        { path: '/facet/craft' },
+        { path: '/facet/consciousness' },
+        { path: '/facet/language' },
+        { path: '/facet/leadership' },
+        { path: '/facet/beauty' },
+        { path: '/facet/becoming' },
+        { path: '/facet/relation' },
+        { path: '/facet/body' },
       ],
       prerender: {
         enabled: true,
