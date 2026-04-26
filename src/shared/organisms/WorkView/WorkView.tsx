@@ -5,7 +5,11 @@ import type { Work, WorkImage } from '@/shared/content/schema';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
-import { workHeroTransitionName } from '@/shared/utils/view-transition-names';
+import {
+  workHeroTransitionName,
+  workMetaTransitionName,
+  workTitleTransitionName,
+} from '@/shared/utils/view-transition-names';
 
 // The hero figure at the top of a work page. Three states, mirroring
 // ImgSlot's contract:
@@ -119,11 +123,22 @@ export function WorkView({ work }: WorkViewProps) {
         thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
       />
 
-      <h1 className="mb-3.5 font-heading text-title leading-title font-normal tracking-display text-text">
+      <h1
+        className="mb-3.5 font-heading text-title leading-title font-normal tracking-display text-text"
+        style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
+      >
         {work.title}
       </h1>
 
-      <div className="mb-2 font-body text-meta italic text-text-3">
+      <div
+        className="mb-2 font-body text-meta italic text-text-3"
+        style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
+      >
+        {work.posture && (
+          <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
+            {work.posture}
+          </span>
+        )}
         {import.meta.env.DEV && work.draft && (
           <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
             draft
