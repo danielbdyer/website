@@ -44,6 +44,7 @@ These are non-negotiable. Every directive in this document derives from them.
 |---------|--------|----------------|
 | Language | TypeScript 6+ (strict mode) | Yes |
 | Framework | React 19+ | Yes |
+| Compiler | React Compiler (`babel-plugin-react-compiler`) | Yes |
 | Build | Vite | Yes |
 | Routing | TanStack Router | Yes |
 | Server state | TanStack Query | Yes |
@@ -374,6 +375,40 @@ For each feature, `types.ts` is written **before any implementation** and serves
 A feature's `types.ts` defines: domain entities (`LineItem`), computed aggregates (`OrderTotal`), organism data shapes (`OrderSummaryData`), API response shapes (`ApiOrder`), orchestration hook return types (`OrderWorkflowState`), and validation results (`ValidationResult`).
 
 **Every file in the feature implements something defined here.** Domain functions transform between these types. Hooks produce them. Components receive them as props. The types are the architecture's spine.
+
+---
+
+## React Compiler — Memoize Nothing By Hand
+
+The React Compiler (configured via `babel-plugin-react-compiler` in `vite.config.ts`) auto-memoizes pure components, hooks, and computed values at build time. The cognitive overhead of `useMemo` / `useCallback` / `React.memo` / `forwardRef` is gone — the compiler handles all of it from clean source code.
+
+**The rule of thumb:** write idiomatic React 19 code. Don't reach for memoization primitives. The compiler decides what to memoize based on data-flow analysis; manual memoization is signal that you're either (a) fighting the compiler, (b) working around a case the compiler can't safely handle, or (c) writing pre-React-19 muscle memory.
+
+**Lint enforcement.** Three rules in `eslint.config.js` keep the discipline:
+
+- `react-compiler/react-compiler` (error) — flags components and hooks the compiler bails on (mutations, conditionally-called hooks, side effects in render). Fixing these makes code compiler-eligible.
+- `no-restricted-syntax` (warn) — surfaces `useMemo` and `useCallback` calls with a message pointing here. Warnings (not errors) so a genuine bail-out can be silenced with a `// eslint-disable-next-line` and a one-line reason.
+- `no-restricted-imports` (warn) — surfaces `memo` and `forwardRef` imports. Both are legacy in React 19: `forwardRef` is unnecessary because `ref` is a regular prop, and `memo` is unnecessary because the compiler memoizes components.
+
+Test files are exempt from the import/syntax restrictions; tests sometimes need wildcard React imports for stateful fixtures.
+
+**The escape hatches:** when manual memoization is the right answer (rare — chiefly when integrating with libraries that use referential equality on callbacks), suppress the warning per call site with a comment naming the reason. Don't grep for memoization patterns to "modernize" — they exist because they were necessary.
+
+### What the audit found is unused
+
+The site is on React 19.2 with React Compiler enabled. The features below were considered for adoption and either land naturally or aren't relevant to a pure-SSG content site:
+
+- **`forwardRef`** — already nothing to migrate; the codebase uses no `forwardRef`. The compiler handles ref forwarding implicitly.
+- **`Context.Provider` syntax** — already migrated to React 19's `<Context value=...>` form (no `.Provider` suffix needed) in `ThemeProvider`.
+- **`useSyncExternalStore`** — adopted for the theme store. The canonical pattern for state outside React.
+- **Forms / Actions / `useFormStatus` / `useActionState` / `useOptimistic`** — not applicable. The site has no forms; works are read-only authored content.
+- **`use()` hook for resources** — not applicable. SSG content is sync at runtime; route loaders resolve synchronously.
+- **Server Components / Server Actions** — not applicable. `RENDERING_STRATEGY.md` commits to pure SSG with no production server runtime.
+- **Document metadata in components** — TanStack Start's `head` config in route files is the canonical pattern; it composes correctly with prerender.
+- **Asset-loading APIs** (`preinit`, `preload`, `prefetchDNS`) — Vite's emitted `<link rel="modulepreload">` tags handle this implicitly; explicit calls would duplicate.
+- **Improved hydration / SSR** — automatic; nothing to opt into.
+
+The audit lives here so a future React 20+ adoption pass starts with a known baseline.
 
 ---
 

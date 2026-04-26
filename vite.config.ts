@@ -63,6 +63,16 @@ export default defineConfig({
         // when authored work in 30+ pieces makes 3-facet intersections
         // meaningful and the bundle still has room.
         filter: (page) => {
+          // Skip URLs that carry a query string. Search params are
+          // client-side filters (e.g., the Salon's `?posture=looking`),
+          // not separately prerenderable surfaces. The base path is
+          // already prerendered; the static file serves any
+          // `?posture=*` request because CDNs ignore the query when
+          // resolving to a file.
+          if (page.path.includes('?')) return false;
+          // Cap multi-facet prerender to depth 2. The full power set
+          // of 8 facets generates 255 routes, mostly empty
+          // intersections. Trigger to revisit named in BACKLOG.md.
           const m = /^\/facet\/(.+?)\/?$/.exec(page.path);
           if (!m) return true;
           const facets = decodeURIComponent(m[1]!).split(',').filter(Boolean);
@@ -86,7 +96,18 @@ export default defineConfig({
         host: 'https://danielbdyer.com',
       },
     }),
-    viteReact(),
+    // React Compiler — auto-memoization. Pure components and hooks
+    // are wrapped at build time; manual `useMemo` / `useCallback` /
+    // `memo()` calls become unnecessary in most cases. The compiler
+    // bails on unsafe code (mutations, conditionally-called hooks)
+    // and surfaces violations via `eslint-plugin-react-compiler`,
+    // which is wired into `eslint.config.js`. Adopting React 19's
+    // signature feature; documented in REACT_NORTH_STAR.md.
+    viteReact({
+      babel: {
+        plugins: [['babel-plugin-react-compiler', {}]],
+      },
+    }),
     tailwindcss(),
     // Visualizer is gated: it adds noticeable build time and only earns
     // its keep when a contributor is hunting bundle weight. Run via

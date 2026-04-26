@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { Facet, Room } from '@/shared/types/common';
 import type { BacklinkRef } from '@/shared/content/schema';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
-import { seriesSeparator } from '@/shared/utils/series-separator';
+import { formatSeries } from '@/shared/utils/format-series';
 
 interface WorkOutwardInvitationProps {
   room: Room;
@@ -68,17 +68,14 @@ function BacklinksLine({ backlinks }: { backlinks: readonly BacklinkRef[] }) {
   return (
     <p className="mb-2">
       Mentioned in{' '}
-      {backlinks.map((b, i) => (
-        <span key={`${b.room}/${b.slug}`}>
-          {seriesSeparator(i, backlinks.length)}
-          <Link
-            to="/$room/$slug"
-            params={{ room: b.room, slug: b.slug }}
-            className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
-          >
-            {b.title}
-          </Link>
-        </span>
+      {formatSeries(backlinks, (b) => (
+        <Link
+          to="/$room/$slug"
+          params={{ room: b.room, slug: b.slug }}
+          className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+        >
+          {b.title}
+        </Link>
       ))}
       .
     </p>
@@ -89,17 +86,14 @@ function FacetThreadsLine({ facets }: { facets: readonly Facet[] }) {
   return (
     <p className="mb-2">
       Also threaded through{' '}
-      {facets.map((facet, i) => (
-        <span key={facet}>
-          {seriesSeparator(i, facets.length)}
-          <Link
-            to="/facet/$facet"
-            params={{ facet }}
-            className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
-          >
-            {facet}
-          </Link>
-        </span>
+      {formatSeries(facets, (facet) => (
+        <Link
+          to="/facet/$facet"
+          params={{ facet }}
+          className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+        >
+          {facet}
+        </Link>
       ))}
       .
     </p>

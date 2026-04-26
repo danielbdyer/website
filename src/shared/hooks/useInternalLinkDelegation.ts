@@ -1,5 +1,5 @@
 import { useRouter } from '@tanstack/react-router';
-import { useCallback, type MouseEvent } from 'react';
+import type { MouseEvent } from 'react';
 
 /**
  * Click delegation for any container that renders raw HTML containing
@@ -37,20 +37,22 @@ import { useCallback, type MouseEvent } from 'react';
  */
 export function useInternalLinkDelegation() {
   const router = useRouter();
-  return useCallback(
-    (e: MouseEvent<HTMLElement>) => {
-      const anchor = (e.target as HTMLElement | null)?.closest?.('a');
-      if (!anchor) return;
-      const href = anchor.getAttribute('href');
-      if (!href || !href.startsWith('/')) return;
-      if (e.button !== 0) return;
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const target = anchor.getAttribute('target');
-      if (target && target !== '_self') return;
-      e.preventDefault();
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      void router.navigate({ to: href });
-    },
-    [router],
-  );
+  // No `useCallback` wrap — the React Compiler (configured in
+  // vite.config.ts) auto-memoizes hooks and handlers at build time.
+  // Manual memoization is kept only when the compiler's eslint plugin
+  // surfaces a case it can't safely handle. See REACT_NORTH_STAR.md
+  // §"React Compiler".
+  return (e: MouseEvent<HTMLElement>) => {
+    const anchor = (e.target as HTMLElement | null)?.closest?.('a');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href || !href.startsWith('/')) return;
+    if (e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const target = anchor.getAttribute('target');
+    if (target && target !== '_self') return;
+    e.preventDefault();
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    void router.navigate({ to: href });
+  };
 }
