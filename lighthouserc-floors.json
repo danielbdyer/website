@@ -1,0 +1,22 @@
+[
+  {
+    "label": "foyer",
+    "matchingUrlPattern": "^http://localhost/$",
+    "scores": {
+      "performance": 0.95,
+      "accessibility": 1.0,
+      "best-practices": 0.95,
+      "seo": 1.0
+    }
+  },
+  {
+    "label": "rooms",
+    "matchingUrlPattern": "^http://localhost/(studio|garden|study|salon)/?$",
+    "scores": {
+      "performance": 0.95,
+      "accessibility": 0.95,
+      "best-practices": 0.95,
+      "seo": 0.6
+    }
+  }
+]

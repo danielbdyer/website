@@ -13,10 +13,9 @@
 
 import { existsSync, readdirSync, readFileSync, appendFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createRequire } from 'node:module';
 
 const LHCI_DIR = resolve('.lighthouseci');
-const RC_PATH = resolve('lighthouserc.cjs');
+const FLOORS_PATH = resolve('lighthouserc-floors.json');
 
 if (!existsSync(LHCI_DIR)) {
   console.error(`No .lighthouseci/ directory found at ${LHCI_DIR}.`);
@@ -24,28 +23,21 @@ if (!existsSync(LHCI_DIR)) {
   process.exit(1);
 }
 
-const requireCjs = createRequire(import.meta.url);
-const lhciConfig = requireCjs(RC_PATH);
-const assertMatrix = lhciConfig?.ci?.assert?.assertMatrix ?? [];
+const floors = JSON.parse(readFileSync(FLOORS_PATH, 'utf8'));
 
-// Find which assertMatrix entry matches a given URL — the first match wins,
-// matching lhci's behavior. Entries without a pattern apply globally.
-function findFloors(url) {
-  for (const entry of assertMatrix) {
-    const pattern = entry.matchingUrlPattern;
-    if (!pattern || new RegExp(pattern).test(url)) {
-      return entry.assertions ?? {};
+// Find the floors entry whose pattern matches a given URL — first match
+// wins (matching lhci's assertMatrix behavior).
+function floorsFor(url) {
+  for (const entry of floors) {
+    if (new RegExp(entry.matchingUrlPattern).test(url)) {
+      return entry.scores ?? {};
     }
   }
   return {};
 }
 
-function floorFor(assertions, category) {
-  const key = `categories:${category}`;
-  const entry = assertions[key];
-  if (!Array.isArray(entry)) return null;
-  const opts = entry[1];
-  return typeof opts?.minScore === 'number' ? opts.minScore : null;
+function floorFor(scores, category) {
+  return typeof scores[category] === 'number' ? scores[category] : null;
 }
 
 const lhrFiles = readdirSync(LHCI_DIR)
@@ -90,11 +82,11 @@ function annotate(score, floor) {
 
 const lines = ['', 'Lighthouse scores', '─────────────────', ''];
 for (const { url, categories } of reports) {
-  const floors = findFloors(url);
+  const scores = floorsFor(url);
   lines.push(url);
   for (const key of CATEGORY_KEYS) {
     const score = categories?.[key]?.score ?? null;
-    const floor = floorFor(floors, key);
+    const floor = floorFor(scores, key);
     const label = CATEGORY_LABELS[key].padEnd(15);
     lines.push(`  ${label} ${fmtScore(score)}  ${annotate(score, floor)}`);
   }
@@ -110,10 +102,10 @@ if (summaryPath) {
   md.push('| URL | Performance | Accessibility | Best Practices | SEO |');
   md.push('| --- | --- | --- | --- | --- |');
   for (const { url, categories } of reports) {
-    const floors = findFloors(url);
+    const scores = floorsFor(url);
     const cells = CATEGORY_KEYS.map((key) => {
       const score = categories?.[key]?.score ?? null;
-      const floor = floorFor(floors, key);
+      const floor = floorFor(scores, key);
       const text = score == null ? '—' : score.toFixed(2);
       const note = annotate(score, floor);
       return `${text} <sub>${note}</sub>`;
