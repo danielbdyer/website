@@ -1,14 +1,32 @@
+import { useEffect, useRef } from 'react';
 import { cn } from '@/shared/utils/cn';
 
 interface GeometricFigureProps {
   className?: string;
 }
 
+// 60-second rotation per INTERACTION_DESIGN.md — meant to teach that
+// this is a room you can sit in. The animation pauses when the figure
+// is off-screen so a long study session doesn't keep an unseen GPU
+// composition alive on every paint frame.
 export function GeometricFigure({ className }: GeometricFigureProps) {
+  const ref = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      el.style.animationPlayState = entry?.isIntersecting ? 'running' : 'paused';
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <svg
+      ref={ref}
       viewBox="0 0 120 120"
-      className={cn('w-full h-full animate-[geo-spin_60s_linear_infinite]', className)}
+      className={cn('h-full w-full animate-[geo-spin_60s_linear_infinite]', className)}
       aria-hidden="true"
     >
       <rect

@@ -31,7 +31,6 @@ export function WorkRow({ work, kicker, thumbLabel }: WorkRowProps) {
     <Link
       to="/$room/$slug"
       params={{ room: work.room, slug: work.slug }}
-      reloadDocument
       className="group grid gap-4 border-b border-border-lt py-6 text-inherit no-underline transition-colors duration-300 first:border-t hover:border-border sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-7 sm:py-7"
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-[2px] bg-bg-warm shadow-sm sm:h-[132px] sm:w-[132px] sm:aspect-square">

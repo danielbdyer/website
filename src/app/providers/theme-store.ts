@@ -45,10 +45,11 @@ function applyToDOM(dark: boolean) {
 
 // Module-level side effects guarded for SSR: under prerender the module
 // loads on Node, where `document` and `window` are undefined. The theme
-// class on <html> comes from the initial server render (which uses
-// getServerSnapshot's light default); on the client, this block runs
-// before React hydrates and corrects the class to match the real
-// preference — still no flash.
+// class on <html> is applied pre-paint by the inline init script in
+// __root.tsx's <head>; this module reapplies on hydration to keep the
+// class authoritative once React owns the page, then subscribes to
+// system + storage events so the site stays coherent across tabs and
+// macOS sunset mode without a refresh.
 if (typeof document !== 'undefined') {
   applyToDOM(isDark());
 
@@ -100,7 +101,25 @@ export const themeStore = {
     } catch {
       // Storage full or unavailable — toggle still works in-memory for this session
     }
+    // Open a brief transition window so every theme-derived color
+    // crossfades along with the body. Without this, the body fades over
+    // 500ms but text/borders/chips snap instantly — INTERACTION_DESIGN.md
+    // says other surfaces should "shift naturally" with the body, which
+    // CSS variables alone can't deliver. The class is removed after the
+    // transition so hover/focus stay snappy. A guard prevents stacking
+    // timers if the visitor toggles twice in quick succession.
+    const root = document.documentElement;
+    root.classList.add('theme-transitioning');
+    if (transitionTimer !== null) {
+      window.clearTimeout(transitionTimer);
+    }
+    transitionTimer = window.setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+      transitionTimer = null;
+    }, 550);
     applyToDOM(next);
     emitChange();
   },
 };
+
+let transitionTimer: number | null = null;

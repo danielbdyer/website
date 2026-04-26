@@ -133,31 +133,54 @@ html {
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-family: 'Literata Variable', Georgia, serif;
   line-height: 1.8;
+  /* `isolation: isolate` makes <body> its own stacking context so the
+     grain pseudo-element below can sit at z-index 0 without negative
+     values risking falling behind the body's painted background. */
+  isolation: isolate;
   transition:
     background 0.5s ease,
     color 0.5s ease;
 }
 
+/* ─── Theme toggle transition window ────────────────────────── */
+/* INTERACTION_DESIGN.md commits to a 500ms theme transition where the
+   body and header fade and "other surfaces inherit color through
+   var(--text) and shift naturally" — which CSS variables alone do not
+   deliver (consuming properties recompute instantly). The theme-store
+   adds .theme-transitioning to <html> for the duration of the toggle
+   so every theme-derived color crossfades alongside the body, then
+   removes it so hover and focus stay at their honest 200ms. */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition:
+    background-color 0.5s ease,
+    color 0.5s ease,
+    border-color 0.5s ease,
+    fill 0.5s ease,
+    stroke 0.5s ease !important;
+}
+
 /* ─── Paper grain texture ───────────────────────────────────── */
+/* A fixed pseudo-element pinned behind the body's normal flow. Sits
+   inside <body>'s isolated stacking context so it always paints above
+   the body background and below content, regardless of whether children
+   declare their own z-index. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
   opacity: var(--grain);
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 180px;
-}
-
-body > #root {
-  position: relative;
-  z-index: 2;
 }
 
 /* ─── Typography ────────────────────────────────────────────── */

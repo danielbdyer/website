@@ -43,7 +43,6 @@ export function WorkView({ work }: WorkViewProps) {
     <article>
       <Link
         to={roomPath}
-        reloadDocument
         className="mt-4 mb-8 inline-block font-body text-[14px] italic text-text-2 no-underline transition-colors duration-200 hover:text-text"
       >
         ← {roomLabel}
@@ -87,7 +86,6 @@ export function WorkView({ work }: WorkViewProps) {
           Keep wandering in{' '}
           <Link
             to={roomPath}
-            reloadDocument
             className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
           >
             {roomLabel}
