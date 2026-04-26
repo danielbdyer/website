@@ -64,7 +64,14 @@
   --bg-card: #fdfbf8;
   --text: #2b2219;
   --text-2: #6e5f50;
-  --text-3: #a69782;
+  /* --text-3 is the quietest tone in the hierarchy. It must clear AA
+     contrast (≥4.5:1) on every theme-derived background — the previous
+     #a69782 was 2.53:1 on bg, which Lighthouse flagged. The new tone
+     keeps text-3 visually quieter than text-2 (slightly lighter L)
+     while clearing AA across bg, bg-warm, and bg-card. ACCESSIBILITY.md
+     lists the contrast measurements; scripts/check-color-contrast.mjs
+     guards against regressions. */
+  --text-3: #786352;
   --accent: #4a7c6a;
   --accent-hover: #3b6857;
   --accent-warm: #c8764d;
@@ -94,7 +101,11 @@
   --bg-card: #242119;
   --text: #e2dcd2;
   --text-2: #9c9082;
-  --text-3: #6a6054;
+  /* See the light palette's --text-3 note. The dark equivalent must
+     clear AA on the dark backgrounds; the previous #6a6054 was 2.91:1
+     on bg. The new tone stays quieter than text-2 (slightly darker L)
+     while clearing AA. */
+  --text-3: #978a78;
   --accent: #6aae92;
   --accent-hover: #7cc4a5;
   --accent-warm: #e0906a;
@@ -110,7 +121,9 @@
   --pop-bg: #2a2620;
   --hl-bg: rgba(224, 144, 106, 0.08);
   --tag-bg: #302b24;
-  --tag-text: #9c9082;
+  /* tag-text on tag-bg in dark mode was 4.49:1 — one hundredth below
+     AA. Lifted to clear the gate with margin. */
+  --tag-text: #a39786;
   --grain: 0.035;
   --slot-stripe: rgba(255, 255, 255, 0.025);
   --geo-color: rgba(106, 174, 146, 0.1);

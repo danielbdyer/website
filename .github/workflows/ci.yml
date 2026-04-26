@@ -52,6 +52,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Color contrast (tokens.css)
+        run: pnpm lint:contrast
+
       - name: Test (vitest)
         run: pnpm exec vitest run
 
