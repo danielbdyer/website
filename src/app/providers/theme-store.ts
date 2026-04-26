@@ -101,7 +101,25 @@ export const themeStore = {
     } catch {
       // Storage full or unavailable — toggle still works in-memory for this session
     }
+    // Open a brief transition window so every theme-derived color
+    // crossfades along with the body. Without this, the body fades over
+    // 500ms but text/borders/chips snap instantly — INTERACTION_DESIGN.md
+    // says other surfaces should "shift naturally" with the body, which
+    // CSS variables alone can't deliver. The class is removed after the
+    // transition so hover/focus stay snappy. A guard prevents stacking
+    // timers if the visitor toggles twice in quick succession.
+    const root = document.documentElement;
+    root.classList.add('theme-transitioning');
+    if (transitionTimer !== null) {
+      window.clearTimeout(transitionTimer);
+    }
+    transitionTimer = window.setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+      transitionTimer = null;
+    }, 550);
     applyToDOM(next);
     emitChange();
   },
 };
+
+let transitionTimer: number | null = null;

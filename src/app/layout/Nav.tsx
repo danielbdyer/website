@@ -11,7 +11,7 @@ const ROOMS = [
 
 export function Nav() {
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/70 bg-bg/95 backdrop-blur-sm transition-[background] duration-500 supports-[backdrop-filter]:bg-bg/88">
+    <nav className="sticky top-0 z-50 border-b border-border/70 bg-bg/95 leading-tight backdrop-blur-sm transition-[background] duration-500 supports-[backdrop-filter]:bg-bg/88">
       <div className="mx-auto flex w-full max-w-[700px] flex-wrap items-center gap-3 px-5 py-4 sm:flex-nowrap sm:px-6 sm:py-5">
         <Link
           to="/"

@@ -31,6 +31,32 @@ class MockIntersectionObserver {
 let observers: MockIntersectionObserver[] = [];
 const originalIO = globalThis.IntersectionObserver;
 
+// Reveal calls getBoundingClientRect on the wrapper div to decide whether
+// to start hidden or stay visible. jsdom returns zeros for every rect, so
+// to exercise the below-the-fold path we monkey-patch the prototype for
+// the duration of one test and restore it after.
+function withBelowFoldRects<T>(fn: () => T): T {
+  const original = HTMLDivElement.prototype.getBoundingClientRect;
+  HTMLDivElement.prototype.getBoundingClientRect = function () {
+    return {
+      top: window.innerHeight + 100,
+      left: 0,
+      right: 0,
+      bottom: window.innerHeight + 200,
+      width: 0,
+      height: 100,
+      x: 0,
+      y: window.innerHeight + 100,
+      toJSON: () => ({}),
+    };
+  };
+  try {
+    return fn();
+  } finally {
+    HTMLDivElement.prototype.getBoundingClientRect = original;
+  }
+}
+
 describe('Reveal', () => {
   beforeEach(() => {
     observers = [];
@@ -43,27 +69,42 @@ describe('Reveal', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders children in the pre-reveal state', () => {
+  it('renders children visible by default — SSR/no-JS sees content immediately', () => {
     const { container, getByText } = render(
       <Reveal>
         <span>hello</span>
       </Reveal>,
     );
     expect(getByText('hello')).toBeInTheDocument();
-    expect(container.firstChild).toHaveClass('opacity-0');
-    expect(container.firstChild).toHaveClass('translate-y-[14px]');
-    expect(container.firstChild).not.toHaveClass('opacity-100');
+    expect(container.firstChild).toHaveClass('opacity-100');
+    expect(container.firstChild).toHaveClass('translate-y-0');
+    expect(container.firstChild).not.toHaveClass('opacity-0');
   });
 
-  it('adds the revealed class once the child intersects', () => {
+  it('above-the-fold content stays visible after mount and never observes', () => {
     const { container } = render(
       <Reveal>
         <span>hello</span>
       </Reveal>,
     );
-    observers[0]!.fire(true);
+    expect(observers).toHaveLength(0);
     expect(container.firstChild).toHaveClass('opacity-100');
-    expect(container.firstChild).toHaveClass('translate-y-0');
+  });
+
+  it('below-the-fold content hides on mount and reveals on intersection', () => {
+    withBelowFoldRects(() => {
+      const { container } = render(
+        <Reveal>
+          <span>hi</span>
+        </Reveal>,
+      );
+      expect(container.firstChild).toHaveClass('opacity-0');
+      expect(observers).toHaveLength(1);
+      observers[0]!.fire(true);
+      expect(container.firstChild).toHaveClass('opacity-100');
+      expect(container.firstChild).toHaveClass('translate-y-0');
+      expect(observers[0]!.disconnect).toHaveBeenCalled();
+    });
   });
 
   it('applies delay as a CSS transition-delay', () => {
