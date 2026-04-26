@@ -1,6 +1,11 @@
 import { Link } from '@tanstack/react-router';
 import type { Work } from '@/shared/content/schema';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import {
+  workCardTransitionName,
+  workMetaTransitionName,
+  workTitleTransitionName,
+} from '@/shared/utils/view-transition-names';
 
 interface WorkEntryProps {
   work: Work;
@@ -14,6 +19,14 @@ interface WorkEntryProps {
 // a chip is its own thread, not a hint about the work it sits beneath.
 // Studio essays carry summaries; Garden poems do not. The DRAFT
 // indicator is dev-only — see CONTENT_AUTHORING.md.
+//
+// View-transition names: the article wrapper carries the card name (so
+// future filtering on text-led rooms can use **Rearrange**); title and
+// meta carry their canonical names so click → work page morphs the
+// title and meta in place. There's no image in WorkEntry, so no hero
+// name. The morph degrades correctly — the WorkView's Open gesture
+// just runs without a hero participant for these rooms; the title and
+// meta still travel.
 export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
   const formattedDate = work.date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -21,13 +34,16 @@ export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
     day: 'numeric',
   });
   return (
-    <article>
+    <article style={{ viewTransitionName: workCardTransitionName(work.room, work.slug) }}>
       <Link
         to="/$room/$slug"
         params={{ room: work.room, slug: work.slug }}
         className="group block text-inherit no-underline"
       >
-        <div className="mb-2 font-body text-meta italic tracking-meta text-text-3">
+        <div
+          className="mb-2 font-body text-meta italic tracking-meta text-text-3"
+          style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
+        >
           {import.meta.env.DEV && work.draft && (
             <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
               draft
@@ -35,7 +51,10 @@ export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
           )}
           {formattedDate}
         </div>
-        <div className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent">
+        <div
+          className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent"
+          style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
+        >
           {work.title}
         </div>
         {variant !== 'poem' && work.summary && (
