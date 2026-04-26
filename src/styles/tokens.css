@@ -87,10 +87,12 @@
      and md are real design events, named in pairs. */
 
   /* Page edge — the lateral breath of every layout shell.
-     32px mobile, 40px sm+. Safe-area max() preserves notch /
-     home-indicator behavior on iOS. */
-  --spacing-edge: max(2rem, env(safe-area-inset-left));
-  --spacing-edge-md: max(2.5rem, env(safe-area-inset-left));
+     40px mobile, 48px sm+. The gutter is what makes the column
+     feel held by the room rather than dropped against the screen
+     edge. Safe-area max() preserves notch / home-indicator
+     behavior on iOS. */
+  --spacing-edge: max(2.5rem, env(safe-area-inset-left));
+  --spacing-edge-md: max(3rem, env(safe-area-inset-left));
   --spacing-edge-bottom: max(2rem, calc(env(safe-area-inset-bottom) + 1.5rem));
 
   /* Page chrome floor — vertical breathing of the main element. */
