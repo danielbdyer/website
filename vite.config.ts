@@ -72,4 +72,16 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  // Cloudflare Web Analytics token. Inlined as a build-time constant
+  // so the value is identical in the prerender pass and the client
+  // build — using `import.meta.env.VITE_*` here would inline the token
+  // in client chunks but not in the prerender HTML, producing a
+  // hydration mismatch where the beacon script appears post-hydration
+  // but not in the SSG output. PRIVACY.md describes the beacon's
+  // privacy posture; if the env var is unset (local dev, anyone-without-
+  // the-secret), `__CFWA_TOKEN__` is the empty string and no beacon
+  // ships.
+  define: {
+    __CFWA_TOKEN__: JSON.stringify(process.env.VITE_CLOUDFLARE_ANALYTICS_TOKEN ?? ''),
+  },
 });

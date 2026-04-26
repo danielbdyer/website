@@ -40,6 +40,14 @@ pnpm setup     # Playwright browsers — only needed once per Playwright bump
 
 Node version is pinned in [`.nvmrc`](./.nvmrc) and [`engines`](./package.json). If you use `nvm`, `nvm use` does the right thing. Playwright is pinned to an exact version so the bundled browser binary stays reproducible across machines and CI.
 
+## Production env
+
+| Variable | Purpose |
+|---|---|
+| `VITE_CLOUDFLARE_ANALYTICS_TOKEN` | Cloudflare Web Analytics property token. When set at build time, the analytics beacon ships with the prerendered HTML; when unset, no beacon ships. See [`PRIVACY.md`](./PRIVACY.md) for the privacy posture. |
+
+Local dev never needs this. Production deploys read it from Cloudflare's environment-variable storage.
+
 ## Stack
 
 - TanStack Start (SSG) on Vite + React 19
