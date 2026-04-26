@@ -17,9 +17,11 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **State:** Implemented as of the accessibility pass. Defined in `tokens.css`.
 
 ### Focus management on route transitions
-**Why:** When a visitor clicks a nav link, focus should move to the new page's main content heading rather than remaining on the clicked link. Screen-reader and keyboard users currently have to re-traverse the nav on every navigation.
-**Trigger:** When work pages exist and a visitor's path across the site is long enough for this to matter, or sooner if a user reports it.
-**Note:** Likely a small `useRouterState` effect in `RootLayout` that focuses `#main-content` on path changes that are not the initial load.
+**State:** Implemented in `__root.tsx`. `RootComponent` subscribes to `useRouterState({ select: (s) => s.location.pathname })` and focuses `<main id="main-content">` on each pathname change after the initial mount.
+
+### Investigate the room-landing accessibility 0.95
+**Why:** Lighthouse scores the four room landings (`/studio`, `/garden`, `/study`, `/salon`) at a11y 0.95 — one violation each — while the foyer hits 1.0. The blocker for graduating the room floor back to 1.0 is identifying and fixing whatever the violation is. Most likely candidates: contrast on `text-text-3` preview-note copy, the `noindex, nofollow` meta surfacing as an a11y signal in some audits, or a heading-order finding from the preview content.
+**Trigger:** Next time the audit skill runs, or when a contributor opens the rooms in Lighthouse and reads the actual finding.
 
 ### `prefers-contrast: more` handling
 **Why:** `ACCESSIBILITY.md` commits to honoring this preference. Border and text tones should strengthen toward `--text` and solid borders when requested.

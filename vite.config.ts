@@ -15,6 +15,10 @@ export default defineConfig({
       router: {
         routesDirectory: 'app/routes',
         generatedRouteTree: 'app/routeTree.gen.ts',
+        // Co-located test files (Foo.test.tsx) live next to the route
+        // files they exercise. Without this they trip a "does not export
+        // a Route" warning on every build pass.
+        routeFileIgnorePattern: '\\.test\\.',
       },
       // SSG: every known route is prerendered to static HTML at build time.
       // crawlLinks follows links from each page to discover paths the static

@@ -8,6 +8,11 @@
 #   - lighthouse   (perf/a11y/bp/seo floors per lighthouserc.cjs)
 # Visual regression is part of `playwright`; the first PR after the spec
 # is added must update snapshots, after which baseline drift is flagged.
+#
+# Build runs once in `check` and the dist/ output is shared with the
+# downstream jobs via artifacts. This avoids running the prerender three
+# times and sidesteps an issue where the prerender's internal fetch was
+# failing inside the Playwright Docker container.
 
 name: CI
 
@@ -56,6 +61,16 @@ jobs:
       - name: Bundle size budget
         run: pnpm exec size-limit
 
+      # Share dist/ with the playwright and lighthouse jobs so neither
+      # rebuilds. dist/server is excluded — only the static deploy
+      # artifact needs to ship downstream.
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-client
+          path: dist/client/
+          retention-days: 1
+
   playwright:
     name: Playwright (smoke + comprehensive)
     runs-on: ubuntu-latest
@@ -81,18 +96,17 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
+      # Pull the prebuilt static output from the `check` job rather than
+      # rebuilding inside the container.
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-client
+          path: dist/client/
 
-      # Full suite (smoke + comprehensive). The smoke tier is what `pnpm
-      # test` runs locally; CI runs everything including the visual-
-      # regression baselines.
       - name: Playwright tests
         run: pnpm exec playwright test
         env:
-          # Browsers are baked into the container image; this disables
-          # download-on-install for any transitive playwright-core
-          # invocation.
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
       - name: Upload Playwright report
@@ -129,8 +143,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-client
+          path: dist/client/
 
       - name: Lighthouse
         run: pnpm exec lhci autorun --config=./lighthouserc.cjs
