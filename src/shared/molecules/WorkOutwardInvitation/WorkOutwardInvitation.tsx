@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { Facet, Room } from '@/shared/types/common';
 import type { BacklinkRef } from '@/shared/content/schema';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
+import { seriesSeparator } from '@/shared/utils/series-separator';
 
 interface WorkOutwardInvitationProps {
   room: Room;
@@ -69,7 +70,7 @@ function BacklinksLine({ backlinks }: { backlinks: readonly BacklinkRef[] }) {
       Mentioned in{' '}
       {backlinks.map((b, i) => (
         <span key={`${b.room}/${b.slug}`}>
-          {i > 0 && (i === backlinks.length - 1 ? ' and ' : ', ')}
+          {seriesSeparator(i, backlinks.length)}
           <Link
             to="/$room/$slug"
             params={{ room: b.room, slug: b.slug }}
@@ -90,7 +91,7 @@ function FacetThreadsLine({ facets }: { facets: readonly Facet[] }) {
       Also threaded through{' '}
       {facets.map((facet, i) => (
         <span key={facet}>
-          {i > 0 && (i === facets.length - 1 ? ' and ' : ', ')}
+          {seriesSeparator(i, facets.length)}
           <Link
             to="/facet/$facet"
             params={{ facet }}

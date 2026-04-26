@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { Facet, Room } from '@/shared/types/common';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
+import { seriesSeparator } from '@/shared/utils/series-separator';
 
 interface RoomOutwardInvitationProps {
   /** Two or three facet threads this room threads through — surfaces as
@@ -54,7 +55,7 @@ function ThreadsLine({ facets }: { facets: readonly Facet[] }) {
       Threaded through{' '}
       {facets.map((facet, i) => (
         <span key={facet}>
-          {i > 0 && (i === facets.length - 1 ? ' and ' : ', ')}
+          {seriesSeparator(i, facets.length)}
           <Link
             to="/facet/$facet"
             params={{ facet }}

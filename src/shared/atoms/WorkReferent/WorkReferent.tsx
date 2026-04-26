@@ -35,6 +35,19 @@ export function WorkReferent({ referent }: WorkReferentProps) {
     creator?.name
   );
 
+  const nameNode = referent.url ? (
+    <a
+      href={referent.url}
+      target="_blank"
+      rel="noreferrer noopener"
+      className="border-b border-transparent not-italic no-underline transition-colors duration-200 hover:border-text-3 hover:text-text-2"
+    >
+      {name}
+    </a>
+  ) : (
+    <span className="not-italic">{name}</span>
+  );
+
   return (
     <p className="mb-6 font-body text-meta leading-meta italic text-text-3">
       {creatorNode && (
@@ -42,7 +55,7 @@ export function WorkReferent({ referent }: WorkReferentProps) {
           {creatorNode} <span aria-hidden="true">—</span>{' '}
         </>
       )}
-      <span className="not-italic">{name}</span>
+      {nameNode}
       {year !== undefined && <>, {year}</>}
     </p>
   );
