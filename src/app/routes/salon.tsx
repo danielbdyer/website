@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
-import { WorkRow } from '@/shared/molecules/WorkRow/WorkRow';
+import { SalonCard } from '@/shared/molecules/SalonCard/SalonCard';
+import { TREATMENTS } from '@/shared/molecules/SalonCard/treatment-list';
 import { getDisplayWorksByRoom, isPreviewWork } from '@/shared/content';
 import type { Posture } from '@/shared/types/common';
 
@@ -26,10 +27,10 @@ export const Route = createFileRoute('/salon')({
   component: SalonPage,
 });
 
-// The Salon defaults to image-rows — a 132px square per row, with the room
-// glyph filling in when a work has no attached image. The two-posture
-// reading/looking line is held back until there are enough works to make
-// both registers honest. Empty room state: title + description + silence.
+// Salon — currently a prototype gallery for thumbnail treatments. Each
+// card uses a different gesture so the six can be felt side-by-side.
+// Once a treatment is chosen, this route collapses back to a single
+// shared SalonCard treatment and the prototype labels disappear.
 function SalonPage() {
   const { works } = Route.useLoaderData();
   const previewNote = works.find(isPreviewWork)?.preview.roomNote;
@@ -69,13 +70,18 @@ function SalonPage() {
       )}
       {works.length > 0 && (
         <div className="flex flex-col">
-          {works.map((work) => (
-            <WorkRow
-              key={work.slug}
-              work={work}
-              thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
-            />
-          ))}
+          {works.map((work, i) => {
+            const treatment = TREATMENTS[i % TREATMENTS.length]!;
+            return (
+              <SalonCard
+                key={work.slug}
+                work={work}
+                thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
+                treatmentLabel={`treatment ${(i % TREATMENTS.length) + 1} · ${treatment.name}`}
+                treatment={treatment.component}
+              />
+            );
+          })}
         </div>
       )}
     </Reveal>
