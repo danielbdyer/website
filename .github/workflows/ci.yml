@@ -49,11 +49,10 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # `pnpm lint` runs eslint + the color-contrast checker (token-level
+      # WCAG AA gate; see scripts/check-color-contrast.mjs).
       - name: Lint
         run: pnpm lint
-
-      - name: Color contrast (tokens.css)
-        run: pnpm lint:contrast
 
       - name: Test (vitest)
         run: pnpm exec vitest run
@@ -159,6 +158,12 @@ jobs:
 
       - name: Lighthouse
         run: pnpm exec lhci autorun --config=./lighthouserc.cjs
+
+      # Print scores even on assertion failure — headroom over the floor
+      # is the signal you need to decide whether to tighten.
+      - name: Print Lighthouse scores
+        if: always()
+        run: pnpm lighthouse:report
 
       - name: Upload Lighthouse report
         if: always()
