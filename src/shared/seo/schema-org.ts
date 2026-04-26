@@ -109,42 +109,41 @@ export function websiteSchema(): SchemaOrgNode {
 
 function imageObjectNode(work: Work, image: WorkImage): SchemaOrgNode {
   const url = image.src.startsWith('http') ? image.src : `${SITE_URL}${image.src}`;
-  const node: SchemaOrgNode = {
+  return {
     '@type': 'ImageObject',
     '@id': imageId(work),
     url,
     contentUrl: url,
     name: image.alt,
+    ...(image.caption ? { caption: image.caption } : {}),
+    ...(image.credit ? { creditText: image.credit } : {}),
   };
-  if (image.caption) node.caption = image.caption;
-  if (image.credit) node.creditText = image.credit;
-  return node;
+}
+
+function creatorNode(creator: { name: string; url?: string }): SchemaOrgNode {
+  return {
+    '@type': 'Person',
+    name: creator.name,
+    ...(creator.url ? { url: creator.url } : {}),
+  };
 }
 
 function referentNode(work: Work, referent: WorkReferent): SchemaOrgNode {
-  const node: SchemaOrgNode = {
+  const property = referent.creator ? creatorPropertyFor(referent.type) : undefined;
+  return {
     '@type': REFERENT_TYPE_TO_SCHEMA[referent.type],
     '@id': referentId(work),
     name: referent.name,
+    ...(referent.year !== undefined ? { dateCreated: String(referent.year) } : {}),
+    ...(referent.url ? { url: referent.url } : {}),
+    ...(referent.creator && property ? { [property]: creatorNode(referent.creator) } : {}),
   };
-  if (referent.year !== undefined) node.dateCreated = String(referent.year);
-  if (referent.url) node.url = referent.url;
-  if (referent.creator) {
-    const property = creatorPropertyFor(referent.type);
-    const creatorNode: SchemaOrgNode = {
-      '@type': 'Person',
-      name: referent.creator.name,
-    };
-    if (referent.creator.url) creatorNode.url = referent.creator.url;
-    node[property] = creatorNode;
-  }
-  return node;
 }
 
 export function workSchema(work: Work): SchemaOrgNode {
   const url = `${SITE_URL}/${work.room}/${work.slug}`;
   const schemaType = work.type ? WORK_TYPE_TO_SCHEMA[work.type] : 'CreativeWork';
-  const node: SchemaOrgNode & Record<string, unknown> = {
+  return {
     '@context': 'https://schema.org',
     '@type': schemaType,
     '@id': workId(work),
@@ -155,18 +154,21 @@ export function workSchema(work: Work): SchemaOrgNode {
     url,
     inLanguage: 'en',
     isPartOf: { '@id': roomId(work.room) },
+    ...(work.summary ? { description: work.summary } : {}),
+    ...(work.facets.length > 0 ? { keywords: work.facets.join(', ') } : {}),
+    ...(work.image
+      ? {
+          image: imageObjectNode(work, work.image),
+          primaryImageOfPage: { '@id': imageId(work) },
+        }
+      : {}),
+    ...(work.referent
+      ? {
+          about: referentNode(work, work.referent),
+          mentions: { '@id': referentId(work) },
+        }
+      : {}),
   };
-  if (work.summary) node.description = work.summary;
-  if (work.facets.length > 0) node.keywords = work.facets.join(', ');
-  if (work.image) {
-    node.image = imageObjectNode(work, work.image);
-    node.primaryImageOfPage = { '@id': imageId(work) };
-  }
-  if (work.referent) {
-    node.about = referentNode(work, work.referent);
-    node.mentions = { '@id': referentId(work) };
-  }
-  return node;
 }
 
 export function breadcrumbSchema(work: Work): SchemaOrgNode {

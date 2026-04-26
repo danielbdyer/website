@@ -1,8 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
-import { SalonCard } from '@/shared/molecules/SalonCard/SalonCard';
-import { TREATMENTS } from '@/shared/molecules/SalonCard/treatment-list';
+import { WorkRow } from '@/shared/molecules/WorkRow/WorkRow';
 import { getDisplayWorksByRoom, isPreviewWork, postureSchema } from '@/shared/content';
 import type { Posture } from '@/shared/types/common';
 import { cn } from '@/shared/utils/cn';
@@ -35,13 +34,11 @@ export const Route = createFileRoute('/salon')({
   component: SalonPage,
 });
 
-// Salon — currently a prototype gallery for thumbnail treatments. Each
-// card uses a different gesture so the six can be felt side-by-side.
-// The posture row is a single-select filter (listening | looking |
-// reading); clicking a posture filters the list, clicking the active
-// posture clears the filter. Filter changes route through the View
-// Transitions wrapper so surviving cards morph to their new positions
-// while removed cards fade out and restored cards fade in.
+// The Salon defaults to image-rows — a 132px square per row, with the
+// room glyph filling in when a work has no attached image. The posture
+// row above the list is a single-select filter (listening | looking |
+// reading); clicking the active posture clears it. Empty room state:
+// title + description + silence.
 function SalonPage() {
   const { works } = Route.useLoaderData();
   const { posture: activePosture } = Route.useSearch();
@@ -71,18 +68,13 @@ function SalonPage() {
       )}
       {visibleWorks.length > 0 && (
         <div className="flex flex-col">
-          {visibleWorks.map((work, i) => {
-            const treatment = TREATMENTS[i % TREATMENTS.length]!;
-            return (
-              <SalonCard
-                key={work.slug}
-                work={work}
-                thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
-                treatmentLabel={`treatment ${(i % TREATMENTS.length) + 1} · ${treatment.name}`}
-                treatment={treatment.component}
-              />
-            );
-          })}
+          {visibleWorks.map((work) => (
+            <WorkRow
+              key={work.slug}
+              work={work}
+              thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
+            />
+          ))}
         </div>
       )}
     </Reveal>
@@ -99,14 +91,8 @@ interface PostureFilterBarProps {
 // than anchors because the search-param URL form ("?posture=looking")
 // is a client-side filter, not a separately prerendered page — emitting
 // real anchors would invite the prerender crawler to walk every
-// posture combination as a distinct route. The View Transition still
-// fires; the URL is updated via useNavigate so the back button works
-// and a copy/paste of the current URL preserves the filter.
+// posture variant as a distinct route.
 function PostureFilterBar({ postures, active }: PostureFilterBarProps) {
-  // The router's `defaultViewTransition: true` wraps the route commit
-  // in document.startViewTransition automatically — no manual wrap
-  // needed. The buttons (rather than anchors) keep the search-param
-  // URLs out of the prerender crawler's path discovery.
   const navigate = Route.useNavigate();
   return (
     <nav

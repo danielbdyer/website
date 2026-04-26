@@ -15,6 +15,7 @@ export function Nav() {
       <div className="mx-auto flex w-full max-w-column flex-wrap items-center gap-3 py-4 pl-edge pr-edge sm:flex-nowrap sm:py-5 sm:pl-edge-md sm:pr-edge-md">
         <Link
           to="/"
+          viewTransition={false}
           className="order-1 group inline-flex min-h-touch items-center gap-1.5 font-heading text-base font-medium italic text-text no-underline transition-colors duration-200 hover:text-accent"
         >
           <Diamond size={7} className="transition-transform duration-300 group-hover:rotate-45" />
@@ -26,6 +27,7 @@ export function Nav() {
             <Link
               key={to}
               to={to}
+              viewTransition={false}
               className="flex min-h-touch items-center text-nav tracking-nav text-text-2 no-underline transition-colors duration-200 hover:text-text [&.active]:text-text"
               activeProps={{ className: 'active' }}
             >
