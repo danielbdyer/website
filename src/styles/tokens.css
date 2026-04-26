@@ -219,13 +219,14 @@
 }
 
 /* ─── Base ──────────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* Tailwind v4's preflight already applies `box-sizing: border-box;
+   border: 0 solid; margin: 0; padding: 0` to *, ::before, ::after,
+   ::backdrop in @layer base. Re-asserting it here unlayered would
+   defeat every layered Tailwind utility (unlayered rules win over
+   layered ones in CSS Cascade Layers) — so the `pl-edge`,
+   `pt-page-top`, etc. utilities silently resolve to 0. The
+   archaeology is preserved here as a warning: the reset belongs to
+   the framework, not to this file. */
 
 html {
   font-size: 16px;
