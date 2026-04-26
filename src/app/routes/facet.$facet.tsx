@@ -45,10 +45,10 @@ function FacetPage() {
   const meta = FACET_META[facet];
   return (
     <Reveal>
-      <h1 className="mt-6 mb-4 font-heading text-display leading-[1.05] font-normal tracking-[-0.01em] text-text">
+      <h1 className="mt-6 mb-4 font-heading text-display leading-display font-normal tracking-display text-text">
         {meta.label}
       </h1>
-      <p className="mb-12 max-w-[540px] font-body text-body leading-[1.7] italic text-text-2 sm:mb-14">
+      <p className="mb-12 max-w-deck font-body text-body leading-body italic text-text-2 sm:mb-14">
         {meta.description}
       </p>
       {groups.length === 0 ? (
@@ -58,7 +58,7 @@ function FacetPage() {
           No works currently carry this thread.
         </p>
       ) : (
-        <div className="flex flex-col gap-12 sm:gap-16">
+        <div className="flex flex-col gap-work-break sm:gap-work-break-md">
           {groups.map(({ room, works }) => (
             <section key={room} aria-labelledby={`facet-room-${room}`}>
               <h2
@@ -67,7 +67,7 @@ function FacetPage() {
               >
                 {ROOM_LABELS[room]}
               </h2>
-              <div className="flex flex-col gap-9">
+              <div className="flex flex-col gap-room-rhythm">
                 {works.map((work) => (
                   <WorkEntry
                     key={`${work.room}-${work.slug}`}

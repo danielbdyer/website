@@ -12,10 +12,10 @@ const ROOMS = [
 export function Nav() {
   return (
     <nav className="sticky top-0 z-50 border-b border-border/70 bg-bg/95 leading-tight backdrop-blur-sm transition-[background] duration-500 supports-[backdrop-filter]:bg-bg/88">
-      <div className="mx-auto flex w-full max-w-[700px] flex-wrap items-center gap-3 py-4 pl-[max(2rem,env(safe-area-inset-left))] pr-[max(2rem,env(safe-area-inset-right))] sm:flex-nowrap sm:py-5 sm:pl-[max(2.5rem,env(safe-area-inset-left))] sm:pr-[max(2.5rem,env(safe-area-inset-right))]">
+      <div className="mx-auto flex w-full max-w-column flex-wrap items-center gap-3 py-4 pl-edge pr-edge sm:flex-nowrap sm:py-5 sm:pl-edge-md sm:pr-edge-md">
         <Link
           to="/"
-          className="order-1 group inline-flex min-h-[44px] items-center gap-1.5 font-heading text-base font-medium italic text-text no-underline transition-colors duration-200 hover:text-accent"
+          className="order-1 group inline-flex min-h-touch items-center gap-1.5 font-heading text-base font-medium italic text-text no-underline transition-colors duration-200 hover:text-accent"
         >
           <Diamond size={7} className="transition-transform duration-300 group-hover:rotate-45" />
           <span>Danny Dyer</span>
@@ -26,7 +26,7 @@ export function Nav() {
             <Link
               key={to}
               to={to}
-              className="flex min-h-[44px] items-center text-nav tracking-wide text-text-2 no-underline transition-colors duration-200 hover:text-text [&.active]:text-text"
+              className="flex min-h-touch items-center text-nav tracking-nav text-text-2 no-underline transition-colors duration-200 hover:text-text [&.active]:text-text"
               activeProps={{ className: 'active' }}
             >
               {label}

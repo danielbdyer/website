@@ -124,13 +124,93 @@ Line-heights are not bound to size tokens. The same `text-prose` paragraph at 16
 
 ## Space and Rhythm
 
-**The column is narrow.** The main content column is capped at 700px and centered, with 24px horizontal padding on smaller viewports. This is the width of a short-story page, not a website. It is the width the typography wants. A wider column would demand a different line height and a different type size; the narrow column is what allows `1.8` leading at 16px to feel like a page rather than a wall.
+**The column is narrow.** The main content column is capped at 700px (the `--container-column` token) and centered. Horizontal padding starts at 32px on phones and steps to 40px from the `sm` breakpoint up — the `--spacing-edge` and `--spacing-edge-md` tokens, both wrapped in `max(…, env(safe-area-inset-*))` so notched and home-indicator devices get more when they need it. This is the width of a short-story page, not a website. A wider column would demand a different line height and a different type size; the narrow column is what allows `1.8` leading at 16px to feel like a page rather than a wall.
 
-**Vertical rhythm is unhurried.** The header is 20px tall; the main's top padding is 32px; its bottom padding is 96px. The footer breathes at the end with 32px below. Nothing in the rhythm announces itself. The page should read as if there's more room below than the visitor needs.
+**Vertical rhythm is unhurried.** The main's top padding is 24px on mobile and 32px from `sm` up; its bottom padding is 80px on mobile and 96px from `sm` up. The footer breathes at the end with 32px below (plus iOS safe-area inset where present). The mobile/`sm` step is intentional — the header is proportionally heavier on a small viewport, and 96px of bottom margin against a 700px-tall mobile screen would over-weight the foot of the page. Nothing in the rhythm announces itself. The page should read as if there's more room below than the visitor needs.
 
 **The ornament marks the edges of concern.** The `Ornament` molecule — a hairline with a Diamond centered between two line segments — is the site's section break. It appears at the top of the footer and should appear wherever a concern ends. It is the typographic equivalent of a space between poems: the reader rests, then reads on.
 
 **No dense grids.** The site does not use a grid system of columns. The layout is a single narrow column with a header above and a footer below. When two things want to sit side by side (the geometric figure and the foyer text, on the index page), they do so via an ad-hoc flex with generous gap. The decision to introduce a repeated grid pattern belongs to a future design-system moment, not now.
+
+### The spacing ladder
+
+The site uses Tailwind's 4px base as substrate, but commits to a curated subset — eleven rungs, each with a felt purpose. Anything off the ladder is a smell that earns a defense in writing.
+
+| Rung (4px units) | Pixels | Where it lives |
+|---:|---:|---|
+| `2` | 8 | Within-card seams (meta→title, title→summary), chip↔chip vertical when wrapped. |
+| `2.5` | 10 | Chip↔chip horizontal. |
+| `3` | 12 | Inline label gaps (kicker↔date, DRAFT↔date, content→chips). |
+| `4` | 16 | The room-title→deck `mb-4` half. |
+| `6` | 24 | Page top on mobile, room-title `mt-6`. |
+| `8` | 32 | Page top from `sm` up. |
+| `10` | 40 | Room deck→list (`mb-10`), the canonical room-list rhythm, the WorkView closing line. |
+| `12` | 48 | Within-work major break (chips→body, body→Ornament on mobile). |
+| `14` | 56 | Room deck→list at `sm` and up. |
+| `16` | 64 | Within-work major break at `sm` and up; facet-page room-group gap. |
+| `24` | 96 | Main bottom from `sm` up — the "more room than you need." |
+
+**Inline arbitrary spacing (`pl-[…]`, `mb-[…]`) is a smell** outside two specific cases: the negative-pull pattern (`-mt-4`, `sm:-mt-6`) used once on room-landing preview notes, and the three single-use leadings called out below. Both are held as backlog items with triggers; if either pattern repeats, it earns a token.
+
+### Chrome tokens
+
+Some values aren't ladder positions — they're *places*. Each earns a `@theme` token because it's load-bearing and site-specific.
+
+| Token | Value | Where it lives |
+|---|---|---|
+| `--spacing-edge` | `max(2rem, env(safe-area-inset-left))` | Layout-shell horizontal padding (mobile). The page edge. |
+| `--spacing-edge-md` | `max(2.5rem, env(safe-area-inset-left))` | Layout-shell horizontal padding (`sm`+). |
+| `--spacing-edge-bottom` | `max(2rem, calc(env(safe-area-inset-bottom) + 1.5rem))` | Footer bottom — honors iOS home-indicator. |
+| `--spacing-page-top` / `-md` | `1.5rem` / `2rem` | Main top padding (24/32). |
+| `--spacing-page-bottom` / `-md` | `5rem` / `6rem` | Main bottom padding (80/96). |
+| `--spacing-touch` | `44px` | WCAG 2.1 AAA touch-target floor. |
+| `--container-column` | `700px` | The reading column — a typographic measure, not a layout one. |
+| `--container-deck` | `540px` | The italic deck on landings, narrower so its measure matches its register. |
+| `--container-preview` | `620px` | Preview-note paragraphs. Mid-width. |
+
+### Semantic aliases (capped at three)
+
+Three names for site-specific *gestures* the ladder cannot encode and that multiple components reference. The cap is deliberate — semantic aliases proliferate easily, and "section" is too vague to carry the difference between a room landing's deck-end and a work view's chip-end. A new alias earns its place only when a gesture is named in the spec and used by 2+ components.
+
+| Token | Value | Gesture |
+|---|---|---|
+| `--spacing-room-rhythm` | `2.5rem` (40px) | Between work entries in a room list; the WorkView closing-line gap. |
+| `--spacing-work-break` | `3rem` (48px) | Within a work, between major beats (chips→body, body→Ornament on mobile). |
+| `--spacing-work-break-md` | `4rem` (64px) | Same gesture from `sm` up (Ornament arrival, facet-page between-room-group gap). |
+
+The tokens are named for what the eye does (`rhythm`, `break`) rather than the CSS property (`gap`, `spacing`). The site's whole register is rhythmic; the names align with the voice.
+
+### Leading palette
+
+Line-heights are named by register, not by number, so a future tuning ("prose-breath 1.8 → 1.85") is one edit and not a refactor of every `leading-[1.8]`.
+
+| Token | Value | Surface |
+|---|---|---|
+| `leading-display` | 1.05 | Room-landing h1. |
+| `leading-title` | 1.12 | Work-page h1. |
+| `leading-heading` | 1.25 | Work-entry titles in lists. |
+| `leading-meta` | 1.65 | Preview notes, italic meta paragraphs. |
+| `leading-body` | 1.7 | Summaries, italic decks, the running register. |
+| `leading-prose` | 1.8 | `.prose` paragraphs (body element default). |
+| `leading-closing` | 1.9 | The outward-invitation exhale — the slowest reading register. |
+
+Three single-use leadings (`leading-[1.4]` on image-slot captions, `leading-[1.55]` on the Foyer welcome lines, `leading-[1.6]` on Salon postures) stay inline by design. Tokenizing now is anticipation; a second use of any of them graduates the value into the palette.
+
+### Tracking palette
+
+| Token | Value | Surface |
+|---|---|---|
+| `tracking-display` | -0.01em | Display + title h1. Tightens wide headings. |
+| `tracking-meta` | 0.02em | Dates, secondary metadata, facet chips. |
+| `tracking-posture` | 0.04em | Salon postures inline list. |
+| `tracking-nav` | 0.05em | Nav labels. |
+| `tracking-eyebrow` | 0.08em | DRAFT, kicker uppercase eyebrows. The loudest tracking on the site. |
+
+The body default (0) is not named — it's Tailwind's default and naming it would over-disambiguate.
+
+### The discipline
+
+Spacing stays fixed; type stays fluid (`clamp()`). Five paired `sm:` values for spacing exist (`pt-page-top sm:pt-page-top-md`, etc.) and stay paired by design — a register change between phone and tablet is a design event, not a smooth curve. The `clamp()` discipline belongs to typography, where the column wants to flex inside one width.
 
 ---
 

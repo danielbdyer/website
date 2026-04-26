@@ -15,7 +15,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="group flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center border-none bg-transparent"
+      className="group flex min-h-touch min-w-touch cursor-pointer items-center justify-center border-none bg-transparent"
       aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       <span className="flex items-center rounded p-[5px] text-text-3 transition-colors duration-200 group-hover:bg-tag-bg group-hover:text-text">
