@@ -1,0 +1,77 @@
+# Generate Playwright visual-regression baseline PNGs and commit them
+# back to the triggering branch. Visual regression compares against
+# committed baselines; baselines must be generated in the same
+# environment they'll be compared against (the Playwright Docker image
+# CI uses), which is why this isn't a manual "run locally" affair.
+#
+# Workflow:
+#   1. A contributor triggers this workflow manually from the Actions
+#      tab (workflow_dispatch) on the branch they want to update.
+#   2. The job runs `playwright test --grep @visual --update-snapshots`
+#      to generate or refresh baselines.
+#   3. Any changes to the snapshot directory get committed back to
+#      the branch with a `chore(visual): …` message.
+#   4. CI on the next push picks up the new baselines and the visual-
+#      regression gate goes green.
+#
+# Run this:
+#   - Once after adding a new visual-regression test (to seed its
+#     baselines).
+#   - Whenever a deliberate visual change lands, in the same PR that
+#     explains the change. Trigger this workflow on the PR branch
+#     before requesting review.
+#
+# Don't run this:
+#   - On main directly. Always run on a feature branch and let the PR
+#     review surface the snapshot diff.
+
+name: Update Playwright Snapshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update:
+    name: Generate and commit visual-regression baselines
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      options: --user 1001
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Fetch full history + token that can push back to the branch.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Generate / refresh baselines
+        run: pnpm exec playwright test --grep @visual --update-snapshots
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Commit and push if baselines changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- e2e/visual-regression.spec.ts-snapshots; then
+            echo "No baseline changes — nothing to commit."
+            exit 0
+          fi
+          git add e2e/visual-regression.spec.ts-snapshots
+          git commit -m "chore(visual): refresh Playwright baselines"
+          git push origin HEAD:${GITHUB_REF_NAME}

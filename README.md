@@ -40,6 +40,19 @@ pnpm setup     # Playwright browsers — only needed once per Playwright bump
 
 Node version is pinned in [`.nvmrc`](./.nvmrc) and [`engines`](./package.json). If you use `nvm`, `nvm use` does the right thing. Playwright is pinned to an exact version so the bundled browser binary stays reproducible across machines and CI.
 
+## Visual regression baselines
+
+Visual regression compares the prerendered rooms (light + dark, desktop + mobile) against baseline PNGs committed to `e2e/visual-regression.spec.ts-snapshots/`. Baselines must be generated in the same environment they're compared against — the official Playwright Docker image — so they're regenerated via a CI workflow rather than locally.
+
+When you need to seed or refresh baselines (after a new visual-regression test, or after a deliberate visual change):
+
+1. Push your branch.
+2. Trigger the **Update Playwright Snapshots** workflow from the Actions tab on that branch.
+3. The workflow runs `playwright test --grep @visual --update-snapshots`, commits the new PNGs back to your branch with `chore(visual): …`, and pushes.
+4. The next CI run on the branch picks up the new baselines and the visual gate goes green.
+
+Don't trigger this workflow on `main` directly — always on the branch where the visual change is being reviewed. The PR diff surfaces the snapshot change for review.
+
 ## Production env
 
 | Variable | Purpose |

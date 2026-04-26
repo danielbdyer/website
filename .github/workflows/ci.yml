@@ -107,8 +107,13 @@ jobs:
           name: dist-client
           path: dist/client/
 
+      # `--grep-invert @visual` skips the visual-regression spec until
+      # baseline PNGs are committed (see .github/workflows/update-snapshots.yml).
+      # Once the user has triggered that workflow once and the baselines
+      # are committed back to the branch, drop the `--grep-invert` flag in
+      # a follow-up PR to fold visual regression into the main gate.
       - name: Playwright tests
-        run: pnpm exec playwright test
+        run: pnpm exec playwright test --grep-invert @visual
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 

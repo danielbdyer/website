@@ -38,7 +38,14 @@ async function freezeMotionAndAwaitStillness(page: import('@playwright/test').Pa
   });
 }
 
-test.describe('Visual regression', { tag: '@smoke' }, () => {
+// Tag: @visual. Excluded from the @smoke tier and from the default
+// Playwright run in CI's `playwright` job because it requires committed
+// baseline PNGs to compare against. The dedicated `update-snapshots.yml`
+// workflow runs `playwright test --grep @visual --update-snapshots` to
+// generate baselines in the same Docker image CI uses, and commits them
+// back to the branch. Once baselines exist, this tag is folded back
+// into the regular @smoke set in a follow-up PR.
+test.describe('Visual regression', { tag: '@visual' }, () => {
   for (const theme of THEMES) {
     for (const room of ROOMS) {
       const label = room === '/' ? 'foyer' : room.slice(1);
