@@ -10,7 +10,9 @@ interface WorkRowProps {
    * Honest stand-in label for an attached image, used only while the live
    * image isn't yet on the page. When the work has a real `image` we
    * render that instead. When neither is present, the room's glyph fills
-   * in. The preview never fakes art — see chats/chat1.md.
+   * in. The preview never fakes art — TRANSPARENCY.md commits the site
+   * to publishing its own making, and a faked image would be the loudest
+   * possible violation.
    */
   thumbLabel?: string;
 }

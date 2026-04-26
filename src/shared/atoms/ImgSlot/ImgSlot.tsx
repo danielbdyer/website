@@ -5,7 +5,9 @@ import type { WorkImage } from '@/shared/content/schema';
 // `standin`: live image hasn't arrived yet. Renders a labeled gray field
 //   naming what would arrive ("Hopper · Cape Cod Morning"). Reads as
 //   annotation, not attempt. The umber wall holds the slot the way it
-//   would hold the real thing. See VOICE_AND_COPY.md and chats/chat1.md.
+//   would hold the real thing. TRANSPARENCY.md commits the site to
+//   publishing its own making — a faked stand-in would be the loudest
+//   possible violation.
 //
 // `filled`: a real image is attached to the work. Renders the image,
 //   cropped to fit, with caption text exposed only via the `alt` attribute

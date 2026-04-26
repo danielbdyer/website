@@ -155,12 +155,19 @@ Both signals together tell a reader (visitor or agent) that this text is not fin
 
 Currently bracketed:
 
-- The 404 lines and link label in `src/app/layout/NotFound.tsx`
-- The four room descriptions in `src/app/routes/{studio,garden,study,salon}.tsx`
+- *(none today)*
 
 When voice settles for a surface, the brackets are removed and the color returns to `--text-2`. The removal of brackets is how a draft surface graduates.
 
 The Foyer's two lines (`The door is open. / The rooms are waiting.`) are intentionally *not* bracketed — they have not been flagged as draft. If they come to feel provisional, they earn brackets at that moment.
+
+### Graduation log
+
+The file grows each time a surface settles. The record:
+
+- **Four room descriptions** (`src/app/routes/{studio,garden,study,salon}.tsx`) — graduated when each room's italic deck found its register: *"Where craft is the practice and the practice is devotion. Engineering, leadership, the long form of attention."* (Studio); *"Poetry — living, growing, seasonal."* (Garden); *"Personal essays. The quiet room with good light."* (Study); *"Music, aesthetics, beauty circulating between people. The cellist's son's room."* (Salon).
+- **The 404 surface** (`src/app/layout/NotFound.tsx`) — graduated with: *"This door doesn't open. The rest of the house is still here."* and the link *"Back home →"*. The two lines acknowledge the miss, the Ornament marks the break, the link is the door.
+- **The error boundary surface** (`src/app/layout/ErrorBoundary.tsx`) — same gesture as the 404, with the first line tuned to runtime failure: *"Something here caught and fell."* The shared pattern says: failures of any kind happen inside the house, not outside it.
 
 ---
 

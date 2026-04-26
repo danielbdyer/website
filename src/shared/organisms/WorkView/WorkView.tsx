@@ -31,10 +31,11 @@ interface WorkViewProps {
 }
 
 // Single work, alone. The page's job is to be read; the chrome's job is
-// to get out of the way. Per the design (chats/chat1.md), the work page
-// does NOT carry the summary — that lives in the room listing. The page
-// begins with kicker → hero → title → meta → facets, then the body, then
-// the outward invitation. No work ends at its own last line.
+// to get out of the way. The work page does NOT carry the summary — that
+// lives in the room listing (per INFORMATION_ARCHITECTURE.md §"Anatomy"
+// and §"What work pages do not carry"). The page begins with kicker →
+// hero → title → meta → facets, then the body, then the outward
+// invitation. No work ends at its own last line.
 export function WorkView({ work }: WorkViewProps) {
   const roomLabel = ROOM_LABELS[work.room];
   const roomPath = ROOM_TO[work.room];

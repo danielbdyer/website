@@ -50,8 +50,8 @@ describe('ErrorBoundary', () => {
         <Exploder />
       </ErrorBoundary>,
     );
-    expect(await screen.findByText('[Something here caught and fell.]')).toBeInTheDocument();
-    expect(screen.getByText('[The rest of the house is still here.]')).toBeInTheDocument();
+    expect(await screen.findByText('Something here caught and fell.')).toBeInTheDocument();
+    expect(screen.getByText('The rest of the house is still here.')).toBeInTheDocument();
   });
 
   it('offers a link home in the recovery surface', async () => {
@@ -70,7 +70,7 @@ describe('ErrorBoundary', () => {
         <Exploder />
       </ErrorBoundary>,
     );
-    await screen.findByText('[Something here caught and fell.]');
+    await screen.findByText('Something here caught and fell.');
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
@@ -102,18 +102,18 @@ describe('ErrorBoundary', () => {
       history: createMemoryHistory({ initialEntries: ['/'] }),
     });
     render(<RouterProvider router={router} />);
-    expect(await screen.findByText('[Something here caught and fell.]')).toBeInTheDocument();
+    expect(await screen.findByText('Something here caught and fell.')).toBeInTheDocument();
 
     // Same key, non-throwing children: the boundary stays in its error
     // state. (This is the regression behavior — without the key, the
     // boundary stays poisoned even when the children would render fine.)
     act(() => handles.setExploding!(false));
     expect(screen.queryByText('fresh page')).toBeNull();
-    expect(screen.getByText('[Something here caught and fell.]')).toBeInTheDocument();
+    expect(screen.getByText('Something here caught and fell.')).toBeInTheDocument();
 
     // New key: React mounts a fresh boundary. Children render normally.
     act(() => handles.setBoundaryKey!('/b'));
     expect(screen.getByText('fresh page')).toBeInTheDocument();
-    expect(screen.queryByText('[Something here caught and fell.]')).toBeNull();
+    expect(screen.queryByText('Something here caught and fell.')).toBeNull();
   });
 });

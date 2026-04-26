@@ -59,9 +59,10 @@ describe('WorkView', () => {
     expect(screen.queryByLabelText('Facets')).not.toBeInTheDocument();
   });
 
-  // Per the design (chats/chat1.md), the work page does NOT show the
-  // summary — summary lives in the room listing. The page's job is to be
-  // read; the chrome's job is to get out of the way.
+  // Per INFORMATION_ARCHITECTURE.md §"Anatomy" and §"What work pages do
+  // not carry", the work page does NOT show the summary — summary lives
+  // in the room listing. The page's job is to be read; the chrome's job
+  // is to get out of the way.
   it('does not render the summary on the work page', async () => {
     renderWork(makeWork({ summary: 'A short line for lists.' }));
     await screen.findByRole('heading', { name: 'A Working Title' });
