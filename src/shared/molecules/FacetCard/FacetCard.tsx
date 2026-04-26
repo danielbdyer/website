@@ -3,7 +3,7 @@ import { isPreviewWork } from '@/shared/content/preview';
 import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
 import { RoomGlyph } from '@/shared/atoms/RoomGlyph/RoomGlyph';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
-import { TransitionLink } from '@/shared/atoms/TransitionLink/TransitionLink';
+import { Link } from '@tanstack/react-router';
 import { workHeroTransitionName } from '@/shared/utils/view-transition-names';
 import { cn } from '@/shared/utils/cn';
 
@@ -47,7 +47,7 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
       data-size={size}
       className="group flex h-full flex-col gap-3 rounded-[2px] bg-bg-card p-4 shadow-sm transition-shadow duration-300 hover:shadow-default"
     >
-      <TransitionLink
+      <Link
         to="/$room/$slug"
         params={{ room: work.room, slug: work.slug }}
         className="flex flex-1 flex-col gap-3 text-inherit no-underline"
@@ -100,7 +100,7 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
         )}
 
         <div className="mt-auto font-body text-meta italic text-text-3">{formattedDate}</div>
-      </TransitionLink>
+      </Link>
 
       {visibleFacets.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">

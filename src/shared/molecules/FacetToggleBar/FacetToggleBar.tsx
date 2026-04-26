@@ -1,5 +1,5 @@
 import type { Facet } from '@/shared/types/common';
-import { TransitionLink } from '@/shared/atoms/TransitionLink/TransitionLink';
+import { Link } from '@tanstack/react-router';
 import { cn } from '@/shared/utils/cn';
 
 interface FacetToggleBarProps {
@@ -42,13 +42,13 @@ export function FacetToggleBar({ facets, selected }: FacetToggleBarProps) {
         );
         if (next.length === 0) {
           return (
-            <TransitionLink key={facet} to="/" aria-pressed={isOn} className={className}>
+            <Link key={facet} to="/" aria-pressed={isOn} className={className}>
               {facet}
-            </TransitionLink>
+            </Link>
           );
         }
         return (
-          <TransitionLink
+          <Link
             key={facet}
             to="/facet/$facet"
             params={{ facet: next.join(',') }}
@@ -56,7 +56,7 @@ export function FacetToggleBar({ facets, selected }: FacetToggleBarProps) {
             className={className}
           >
             {facet}
-          </TransitionLink>
+          </Link>
         );
       })}
     </nav>
