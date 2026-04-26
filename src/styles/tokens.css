@@ -169,6 +169,36 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── Layout spacing model ("spanda box") ─────────────────────
+   Shared page-shell math for nav, main, and footer. The model keeps
+   a fixed reading measure while giving the outer air a small fluid
+   "puff" through a multiplier-driven gutter. Components can override
+   block spacing by setting --spanda-pad-top/--spanda-pad-bottom. */
+:root {
+  --space-unit: 0.5rem;
+  --spanda-measure: 700px;
+  --spanda-gutter-multiplier: 4;
+  --spanda-gutter-inline: calc(var(--space-unit) * var(--spanda-gutter-multiplier));
+  --spanda-gutter-left: max(var(--spanda-gutter-inline), env(safe-area-inset-left));
+  --spanda-gutter-right: max(var(--spanda-gutter-inline), env(safe-area-inset-right));
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --spanda-gutter-multiplier: 5;
+  }
+}
+
+.spanda-box {
+  width: 100%;
+  max-width: var(--spanda-measure);
+  margin-inline: auto;
+  padding-left: var(--spanda-gutter-left);
+  padding-right: var(--spanda-gutter-right);
+  padding-top: var(--spanda-pad-top, 0);
+  padding-bottom: var(--spanda-pad-bottom, 0);
+}
+
 body {
   min-height: 100dvh;
   background: var(--bg);
