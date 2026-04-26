@@ -37,24 +37,24 @@ export function WorkRow({ work, kicker, thumbLabel }: WorkRowProps) {
         {thumbLabel ? <ImgSlot label={thumbLabel} /> : <RoomGlyph room={work.room} />}
       </div>
       <div className="min-w-0 pt-1">
-        <div className="mb-1.5 font-body text-[13px] italic tracking-[0.02em] text-text-3">
+        <div className="mb-1.5 font-body text-meta italic tracking-[0.02em] text-text-3">
           {kicker && (
-            <span className="mr-2.5 inline-block font-body text-[11px] not-italic tracking-[0.08em] text-accent-warm uppercase">
+            <span className="mr-2.5 inline-block font-body text-micro not-italic tracking-[0.08em] text-accent-warm uppercase">
               {kicker}
             </span>
           )}
           {import.meta.env.DEV && work.draft && (
-            <span className="mr-2 inline-block font-body text-[11px] not-italic tracking-[0.08em] text-accent-warm uppercase">
+            <span className="mr-2 inline-block font-body text-micro not-italic tracking-[0.08em] text-accent-warm uppercase">
               draft
             </span>
           )}
           <span>{formattedDate}</span>
         </div>
-        <div className="mb-2 font-heading text-[22px] leading-[1.25] text-text transition-colors duration-200 group-hover:text-accent">
+        <div className="mb-2 font-heading text-heading leading-[1.25] text-text transition-colors duration-200 group-hover:text-accent">
           {work.title}
         </div>
         {work.summary && (
-          <div className="mb-3 font-body text-[15px] leading-[1.7] text-text-2">{work.summary}</div>
+          <div className="mb-3 font-body text-list leading-[1.7] text-text-2">{work.summary}</div>
         )}
         {work.facets.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

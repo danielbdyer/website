@@ -26,7 +26,7 @@ export function Nav() {
             <Link
               key={to}
               to={to}
-              className="flex min-h-[44px] items-center text-[0.8rem] tracking-wide text-text-2 no-underline transition-colors duration-200 hover:text-text [&.active]:text-text"
+              className="flex min-h-[44px] items-center text-nav tracking-wide text-text-2 no-underline transition-colors duration-200 hover:text-text [&.active]:text-text"
               activeProps={{ className: 'active' }}
             >
               {label}

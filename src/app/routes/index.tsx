@@ -13,7 +13,7 @@ function FoyerPage() {
         <div className="h-24 w-24 shrink-0 sm:h-[110px] sm:w-[110px]">
           <GeometricFigure />
         </div>
-        <div className="font-heading text-lg leading-[1.55] font-light italic text-text-2 sm:text-[19px]">
+        <div className="font-heading text-deck leading-[1.55] font-light italic text-text-2">
           <p>The door is open.</p>
           <p>The rooms are waiting.</p>
         </div>
