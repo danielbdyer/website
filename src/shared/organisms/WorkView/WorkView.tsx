@@ -3,6 +3,7 @@ import type { DisplayWork } from '@/shared/content/preview';
 import { isPreviewWork } from '@/shared/content/preview';
 import type { Room } from '@/shared/types/common';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import { WorkReferent } from '@/shared/atoms/WorkReferent/WorkReferent';
 import { WorkHero } from '@/shared/molecules/WorkHero/WorkHero';
 import { WorkOutwardInvitation } from '@/shared/molecules/WorkOutwardInvitation/WorkOutwardInvitation';
 import {
@@ -81,6 +82,8 @@ export function WorkView({ work }: WorkViewProps) {
         )}
         {formattedDate}
       </div>
+
+      {work.referent && <WorkReferent referent={work.referent} />}
 
       {isPreviewWork(work) && (
         <p className="mb-6 max-w-preview font-body text-meta leading-meta italic text-text-3">
