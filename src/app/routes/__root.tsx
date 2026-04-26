@@ -61,10 +61,27 @@ function RootComponent() {
   // restores the orienting jump that a full document load gave for free.
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isInitialMount = useRef(true);
+  // Pathnames the visitor has already seen in this session. First visit
+  // to a URL resets scroll to the top; return visits let the router's
+  // `scrollRestoration` carry the visitor back to where they left off.
+  // The set is module-state-shaped (a ref) rather than a useState — no
+  // re-render is wanted on update; this is purely a side-effect ledger.
+  const visited = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      visited.current.add(pathname);
       return;
+    }
+    // First visit in this session → start the new page at the top.
+    // Without this, navigating from a long room landing (or a long
+    // article) into a fresh article lands the visitor mid-page; the
+    // article opens but the title is already off-screen. Subsequent
+    // visits to the same URL fall through to TanStack Router's
+    // `scrollRestoration`, which carries the saved position back.
+    if (!visited.current.has(pathname)) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      visited.current.add(pathname);
     }
     // preventScroll keeps the focus jump from co-opting the scroll
     // position the router has already restored. Without it, the browser
