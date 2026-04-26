@@ -94,6 +94,14 @@ export type WorkFrontmatter = z.infer<typeof workFrontmatterSchema>;
 export type WorkImage = z.infer<typeof imageSchema>;
 export type WorkReferent = z.infer<typeof referentSchema>;
 
+/** Reference to another work — the shape used by the wikilink resolver
+ * and by the backlink index. Computed at build time, not authored. */
+export interface BacklinkRef {
+  room: Room;
+  slug: string;
+  title: string;
+}
+
 export interface Work extends WorkFrontmatter {
   room: Room;
   slug: string;
@@ -101,6 +109,9 @@ export interface Work extends WorkFrontmatter {
   body: string;
   /** Pre-rendered HTML, computed at load time so WorkView does not re-parse per render. */
   html: string;
+  /** Computed at build time: published works that link to this one via
+   * `[[wikilinks]]`. Sorted newest-first per GRAPH_AND_LINKING.md. */
+  backlinks: readonly BacklinkRef[];
 }
 
 export function isPublished(work: Work, now: Date = new Date()): boolean {

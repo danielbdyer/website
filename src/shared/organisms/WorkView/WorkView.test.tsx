@@ -20,6 +20,7 @@ function makeWork(overrides: Partial<DisplayWork> = {}): DisplayWork {
     facets: [],
     feature: false,
     draft: false,
+    backlinks: [],
     room: 'garden',
     slug: 'a-working-title',
     ...overrides,
@@ -49,8 +50,12 @@ describe('WorkView', () => {
   it('renders facet chips when facets are present', async () => {
     renderWork(makeWork({ facets: ['craft', 'language'] }));
     await screen.findByRole('heading', { name: 'A Working Title' });
-    expect(screen.getByText('craft')).toBeInTheDocument();
-    expect(screen.getByText('language')).toBeInTheDocument();
+    // The chip row at the top — scoped to the facets region. The bottom
+    // outward invitation also renders the facet names as inline links;
+    // those are the *threads* line, not chips.
+    const chipRow = screen.getByLabelText('Facets');
+    expect(chipRow).toContainElement(screen.getAllByText('craft')[0]!);
+    expect(chipRow).toContainElement(screen.getAllByText('language')[0]!);
   });
 
   it('renders no chip row when facets is empty', async () => {
@@ -59,13 +64,38 @@ describe('WorkView', () => {
     expect(screen.queryByLabelText('Facets')).not.toBeInTheDocument();
   });
 
-  // Per the design (chats/chat1.md), the work page does NOT show the
-  // summary — summary lives in the room listing. The page's job is to be
-  // read; the chrome's job is to get out of the way.
+  // Per INFORMATION_ARCHITECTURE.md §"Anatomy" and §"What work pages do
+  // not carry", the work page does NOT show the summary — summary lives
+  // in the room listing. The page's job is to be read; the chrome's job
+  // is to get out of the way.
   it('does not render the summary on the work page', async () => {
     renderWork(makeWork({ summary: 'A short line for lists.' }));
     await screen.findByRole('heading', { name: 'A Working Title' });
     expect(screen.queryByText('A short line for lists.')).not.toBeInTheDocument();
+  });
+
+  // Per CONTENT_SCHEMA.md §"Content types": poems render with a
+  // narrower measure and serif-forward treatment. The `.prose-poem`
+  // variant carries that; non-poem types stay with the base `.prose`
+  // register. The class's presence is what surfaces the variant; the
+  // typography decisions live in tokens.css.
+  it('applies the prose-poem variant when the work is a poem', async () => {
+    const { container } = renderWork(makeWork({ type: 'poem' }));
+    await screen.findByRole('heading', { name: 'A Working Title' });
+    const body = container.querySelector('.prose');
+    expect(body).not.toBeNull();
+    expect(body?.classList.contains('prose-poem')).toBe(true);
+  });
+
+  it('does not apply prose-poem to essays, case studies, or notes', async () => {
+    for (const type of ['essay', 'case-study', 'note'] as const) {
+      const { container, unmount } = renderWork(makeWork({ type }));
+      await screen.findByRole('heading', { name: 'A Working Title' });
+      const body = container.querySelector('.prose');
+      expect(body).not.toBeNull();
+      expect(body?.classList.contains('prose-poem')).toBe(false);
+      unmount();
+    }
   });
 
   it("links the kicker and the outward invitation back to the work's room", async () => {

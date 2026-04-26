@@ -36,17 +36,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return (
       <Reveal>
         <div className="py-16">
-          <div className="font-heading text-deck font-light italic text-text-3 leading-relaxed">
-            <p>[Something here caught and fell.]</p>
-            <p>[The rest of the house is still here.]</p>
+          <div className="font-heading text-deck font-light italic text-text-2 leading-relaxed">
+            <p>Something here caught and fell.</p>
+            <p>The rest of the house is still here.</p>
           </div>
           <Ornament />
           <Link
             to="/"
             viewTransition={false}
-            className="inline-block border-b border-transparent text-list italic text-text-3 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+            className="inline-block border-b border-transparent text-list italic text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
           >
-            [Back home →]
+            Back home →
           </Link>
         </div>
       </Reveal>

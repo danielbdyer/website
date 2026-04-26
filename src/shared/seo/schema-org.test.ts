@@ -9,6 +9,7 @@ function makeWork(overrides: Partial<Work> = {}): Work {
     facets: [],
     feature: false,
     draft: false,
+    backlinks: [],
     room: 'garden',
     slug: 'a-poem',
     body: 'Line one.\nLine two.',

@@ -3,12 +3,14 @@ import type { DisplayWork } from '@/shared/content/preview';
 import { isPreviewWork } from '@/shared/content/preview';
 import type { Room } from '@/shared/types/common';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import { WorkReferent } from '@/shared/atoms/WorkReferent/WorkReferent';
 import { WorkHero } from '@/shared/molecules/WorkHero/WorkHero';
 import { WorkOutwardInvitation } from '@/shared/molecules/WorkOutwardInvitation/WorkOutwardInvitation';
 import {
   workMetaTransitionName,
   workTitleTransitionName,
 } from '@/shared/utils/view-transition-names';
+import { cn } from '@/shared/utils/cn';
 
 const ROOM_LABELS: Readonly<Record<Room, string>> = {
   foyer: 'The Foyer',
@@ -31,10 +33,11 @@ interface WorkViewProps {
 }
 
 // Single work, alone. The page's job is to be read; the chrome's job is
-// to get out of the way. Per the design (chats/chat1.md), the work page
-// does NOT carry the summary — that lives in the room listing. The page
-// begins with kicker → hero → title → meta → facets, then the body, then
-// the outward invitation. No work ends at its own last line.
+// to get out of the way. The work page does NOT carry the summary — that
+// lives in the room listing (per INFORMATION_ARCHITECTURE.md §"Anatomy"
+// and §"What work pages do not carry"). The page begins with kicker →
+// hero → title → meta → facets, then the body, then the outward
+// invitation. No work ends at its own last line.
 export function WorkView({ work }: WorkViewProps) {
   const roomLabel = ROOM_LABELS[work.room];
   const roomPath = ROOM_TO[work.room];
@@ -80,6 +83,8 @@ export function WorkView({ work }: WorkViewProps) {
         {formattedDate}
       </div>
 
+      {work.referent && <WorkReferent referent={work.referent} />}
+
       {isPreviewWork(work) && (
         <p className="mb-6 max-w-preview font-body text-meta leading-meta italic text-text-3">
           {work.preview.workNote}
@@ -97,9 +102,18 @@ export function WorkView({ work }: WorkViewProps) {
         </div>
       )}
 
-      <div className="prose" dangerouslySetInnerHTML={{ __html: work.html }} />
+      <div
+        className={cn('prose', work.type === 'poem' && 'prose-poem')}
+        dangerouslySetInnerHTML={{ __html: work.html }}
+      />
 
-      <WorkOutwardInvitation room={work.room} roomPath={roomPath} roomLabel={roomLabel} />
+      <WorkOutwardInvitation
+        room={work.room}
+        roomPath={roomPath}
+        roomLabel={roomLabel}
+        facets={work.facets}
+        backlinks={work.backlinks}
+      />
     </article>
   );
 }

@@ -1,7 +1,23 @@
 import yaml from 'js-yaml';
-import { marked } from 'marked';
+import { Marked } from 'marked';
 import type { Room } from '@/shared/types/common';
-import { isPublished, roomSchema, workFrontmatterSchema, type Work } from '@/shared/content/schema';
+import {
+  isPublished,
+  roomSchema,
+  workFrontmatterSchema,
+  type BacklinkRef,
+  type Work,
+  type WorkFrontmatter,
+} from '@/shared/content/schema';
+import {
+  invertOutboundGraph,
+  resolveWikilink,
+  scanWikilinks,
+  slugIndexKey,
+  type SlugIndex,
+  type WikilinkTarget,
+} from '@/shared/content/wikilinks';
+import { wikilinkExtension } from '@/shared/content/wikilink-marked';
 
 // Tiny browser-safe frontmatter splitter. Replaces `gray-matter`, which
 // reaches for Node's `Buffer` internally and crashes the loader as soon
@@ -16,48 +32,136 @@ function splitFrontmatter(raw: string): { data: unknown; content: string } {
   return { data, content: body ?? '' };
 }
 
-/**
- * Parse a raw markdown file into a Work.
- *
- * Pure function — given a path and the raw file contents, returns a validated
- * Work or throws a descriptive error. Exported primarily so the parsing logic
- * is directly testable with fixture strings, without needing a Vite context.
- *
- * See CONTENT_SCHEMA.md for the trust stance on markdown rendering:
- * the source is the trusted repo, so marked output is not sanitized.
- */
-export function parseWork(path: string, raw: string): Work {
+interface RawWork {
+  path: string;
+  frontmatter: WorkFrontmatter;
+  room: Room;
+  slug: string;
+  body: string;
+}
+
+// Parse a raw markdown file into the staged shape (no HTML, no
+// backlinks). Pure: given a path and raw contents, returns the
+// frontmatter + body or throws a descriptive error.
+function parseRaw(path: string, raw: string): RawWork {
   const match = /\/src\/content\/([^/]+)\/([^/]+)\.mdx?$/.exec(path);
   if (!match) {
     throw new Error(`Content file at unexpected path: ${path}`);
   }
   const [, roomCandidate, slug] = match;
-
   const room = roomSchema.safeParse(roomCandidate);
   if (!room.success) {
     throw new Error(`Content file ${path} is in an unknown room: ${roomCandidate}`);
   }
-
   const parsed = splitFrontmatter(raw);
   const frontmatter = workFrontmatterSchema.safeParse(parsed.data);
   if (!frontmatter.success) {
     throw new Error(`Frontmatter validation failed for ${path}:\n${frontmatter.error.message}`);
   }
-
-  const body = parsed.content;
-  // Poems are carried by their line breaks. Default markdown collapses single
-  // newlines into spaces; for poems, every newline is a `<br>`. Other types
-  // keep CommonMark's default paragraph behavior, where line breaks within a
-  // paragraph are soft wraps and a blank line begins a new paragraph.
-  const breaks = frontmatter.data.type === 'poem';
-  const html = marked.parse(body, { async: false, breaks });
-
   return {
-    ...frontmatter.data,
+    path,
+    frontmatter: frontmatter.data,
     room: room.data,
     slug: slug!,
-    body,
-    html,
+    body: parsed.content,
+  };
+}
+
+// Build a slug index from staged works. Each work registers under
+// `${room}/${slug}` with its title, the shape wikilink resolution
+// expects.
+function buildSlugIndex(staged: readonly RawWork[]): SlugIndex {
+  const index = new Map<string, WikilinkTarget>();
+  for (const w of staged) {
+    index.set(slugIndexKey(w.room, w.slug), {
+      room: w.room,
+      slug: w.slug,
+      title: w.frontmatter.title,
+    });
+  }
+  return index;
+}
+
+// Render a work's body to HTML, resolving wikilinks against the index.
+// Throws on unresolved wikilinks — `GRAPH_AND_LINKING.md` §"Link
+// Resolution" commits to loud-fail at build time.
+function renderHtml(staged: RawWork, slugIndex: SlugIndex): string {
+  const breaks = staged.frontmatter.type === 'poem';
+  const m = new Marked();
+  m.use(
+    wikilinkExtension({
+      currentRoom: staged.room,
+      resolve: (token) => resolveWikilink(token, staged.room, slugIndex),
+      sourceLabel: `${staged.room}/${staged.slug}`,
+    }),
+  );
+  return m.parse(staged.body, { async: false, breaks }) as string;
+}
+
+// Compute backlinks for the staged corpus. For each source work, scan
+// its body for resolved wikilinks; record the outbound graph; invert
+// it. Returns a map keyed by `${room}/${slug}`. Drafts are excluded
+// from the inversion in production builds — a draft cannot produce a
+// published backlink.
+function computeBacklinks(
+  staged: readonly RawWork[],
+  slugIndex: SlugIndex,
+  isProd: boolean,
+): ReadonlyMap<string, readonly BacklinkRef[]> {
+  const outbound = new Map<string, WikilinkTarget[]>();
+  for (const w of staged) {
+    if (isProd && w.frontmatter.draft) continue;
+    const tokens = scanWikilinks(w.body);
+    const resolvedTargets: WikilinkTarget[] = [];
+    for (const token of tokens) {
+      const resolved = resolveWikilink(token, w.room, slugIndex);
+      if (resolved) resolvedTargets.push(resolved.target);
+    }
+    if (resolvedTargets.length > 0) {
+      outbound.set(slugIndexKey(w.room, w.slug), resolvedTargets);
+    }
+  }
+  const dateLookup = (key: string): Date => {
+    const parts = key.split('/');
+    const w = staged.find((s) => s.room === parts[0] && s.slug === parts[1]);
+    return w?.frontmatter.date ?? new Date(0);
+  };
+  return invertOutboundGraph(outbound, slugIndex, dateLookup);
+}
+
+// The full pipeline: stage all files, build the slug index, render
+// HTML, compute backlinks, and assemble the Work[]. Pure given the
+// input map. Used both by the eager glob and by tests that want to
+// exercise the full pipeline.
+export function parseWorks(files: Record<string, string>, isProd = false): Work[] {
+  const staged = Object.entries(files).map(([path, raw]) => parseRaw(path, raw));
+  const slugIndex = buildSlugIndex(staged);
+  const backlinkMap = computeBacklinks(staged, slugIndex, isProd);
+  return staged.map((w) => ({
+    ...w.frontmatter,
+    room: w.room,
+    slug: w.slug,
+    body: w.body,
+    html: renderHtml(w, slugIndex),
+    backlinks: backlinkMap.get(slugIndexKey(w.room, w.slug)) ?? [],
+  }));
+}
+
+// Single-work parse for tests and ad-hoc use. Wikilinks fail-soft when
+// no slug index is provided — the link renders as plain text fallback
+// so a unit test of frontmatter doesn't have to construct a full
+// corpus. Production loader uses `parseWorks` instead, which has the
+// real strictness.
+export function parseWork(path: string, raw: string): Work {
+  const staged = parseRaw(path, raw);
+  const slugIndex = buildSlugIndex([staged]);
+  return {
+    ...staged.frontmatter,
+    room: staged.room,
+    slug: staged.slug,
+    body: staged.body,
+    html: renderHtml(staged, slugIndex),
+    backlinks: [],
   };
 }
 
@@ -74,9 +178,8 @@ const rawFiles = import.meta.glob('/src/content/**/*.md', {
   import: 'default',
 }) as Record<string, string>;
 
-const allWorks: Work[] = Object.entries(rawFiles).map(([path, raw]) => parseWork(path, raw));
-
 const isProduction = import.meta.env.PROD;
+const allWorks: Work[] = parseWorks(rawFiles, isProduction);
 
 export function getAllWorksSync(): Work[] {
   if (isProduction) return allWorks.filter((w) => isPublished(w));
