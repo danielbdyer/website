@@ -5,6 +5,7 @@ import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
 import { RoomGlyph } from '@/shared/atoms/RoomGlyph/RoomGlyph';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 import {
+  workCardTransitionName,
   workHeroTransitionName,
   workMetaTransitionName,
   workTitleTransitionName,
@@ -83,6 +84,7 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
     <article
       data-size={size}
       className="group flex h-full flex-col gap-3 rounded-[2px] bg-bg-card p-4 shadow-sm transition-shadow duration-300 hover:shadow-default"
+      style={{ viewTransitionName: workCardTransitionName(work.room, work.slug) }}
     >
       <Link
         to="/$room/$slug"

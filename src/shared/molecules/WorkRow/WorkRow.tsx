@@ -3,6 +3,12 @@ import type { Work } from '@/shared/content/schema';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
 import { RoomGlyph } from '@/shared/atoms/RoomGlyph/RoomGlyph';
+import {
+  workCardTransitionName,
+  workHeroTransitionName,
+  workMetaTransitionName,
+  workTitleTransitionName,
+} from '@/shared/utils/view-transition-names';
 
 interface WorkRowProps {
   work: Work;
@@ -24,6 +30,13 @@ interface WorkRowProps {
 // square stays still, the hairline darkens, the title shifts to the warm
 // accent. Facet chips sit underneath as their own /facet/{facet} links —
 // they live outside the row's wrapping Link so anchor nesting stays valid.
+//
+// View-transition names: the article wrapper carries the card name (for
+// **Rearrange** when the Salon's posture filter rearranges rows); the
+// inner image/title/meta carry their canonical names (for **Open** when
+// the visitor clicks into a work and the row morphs into the work
+// page's hero/title/meta). See INTERACTION_DESIGN.md §"Page and Route
+// Transitions" for the kind-table.
 export function WorkRow({ work, thumbLabel }: WorkRowProps) {
   const formattedDate = work.date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -31,13 +44,19 @@ export function WorkRow({ work, thumbLabel }: WorkRowProps) {
     day: 'numeric',
   });
   return (
-    <article className="group flex flex-col gap-3 border-b border-border-lt py-6 transition-colors duration-300 first:border-t hover:border-border sm:py-7">
+    <article
+      className="group flex flex-col gap-3 border-b border-border-lt py-6 transition-colors duration-300 first:border-t hover:border-border sm:py-7"
+      style={{ viewTransitionName: workCardTransitionName(work.room, work.slug) }}
+    >
       <Link
         to="/$room/$slug"
         params={{ room: work.room, slug: work.slug }}
         className="grid gap-4 text-inherit no-underline sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-7"
       >
-        <div className="relative aspect-[16/10] overflow-hidden rounded-[2px] bg-bg-warm shadow-sm sm:aspect-square sm:h-[132px] sm:w-[132px]">
+        <div
+          className="relative aspect-[16/10] overflow-hidden rounded-[2px] bg-bg-warm shadow-sm sm:aspect-square sm:h-[132px] sm:w-[132px]"
+          style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
+        >
           {work.image ? (
             <ImgSlot kind="filled" image={work.image} />
           ) : thumbLabel ? (
@@ -47,7 +66,10 @@ export function WorkRow({ work, thumbLabel }: WorkRowProps) {
           )}
         </div>
         <div className="min-w-0 pt-1">
-          <div className="mb-2 font-body text-meta italic tracking-meta text-text-3">
+          <div
+            className="mb-2 font-body text-meta italic tracking-meta text-text-3"
+            style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
+          >
             {work.posture && (
               <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
                 {work.posture}
@@ -60,7 +82,10 @@ export function WorkRow({ work, thumbLabel }: WorkRowProps) {
             )}
             <span>{formattedDate}</span>
           </div>
-          <div className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent">
+          <div
+            className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent"
+            style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
+          >
             {work.title}
           </div>
           {work.summary && (

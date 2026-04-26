@@ -43,7 +43,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <Ornament />
           <Link
             to="/"
-            viewTransition={false}
             className="inline-block border-b border-transparent text-list italic text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
           >
             Back home →

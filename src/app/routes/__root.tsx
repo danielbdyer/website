@@ -61,11 +61,44 @@ function RootComponent() {
   // restores the orienting jump that a full document load gave for free.
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isInitialMount = useRef(true);
+  // Pathnames the visitor has already seen in this session. First visit
+  // to a URL resets scroll to the top; return visits let the router's
+  // `scrollRestoration` carry the visitor back to where they left off.
+  // The set is module-state-shaped (a ref) rather than a useState — no
+  // re-render is wanted on update; this is purely a side-effect ledger.
+  const visited = useRef<Set<string>>(new Set());
+  // Tracks the previous pathname so we can detect Rearrange-shaped
+  // navigations (e.g., `/facet/beauty` → `/facet/beauty,body`) and
+  // skip the first-visit scroll reset for them. INTERACTION_DESIGN.md
+  // §"Page and Route Transitions" names this gesture: filtering
+  // within the same surface, not arriving at a new place.
+  const prevPathname = useRef(pathname);
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      visited.current.add(pathname);
+      prevPathname.current = pathname;
       return;
     }
+    // First visit in this session → start the new page at the top.
+    // Without this, navigating from a long room landing (or a long
+    // article) into a fresh article lands the visitor mid-page; the
+    // article opens but the title is already off-screen. Subsequent
+    // visits to the same URL fall through to TanStack Router's
+    // `scrollRestoration`, which carries the saved position back.
+    //
+    // Rearrange exception: a navigation that filters within the same
+    // surface (today only `/facet/X` → `/facet/Y`) preserves scroll.
+    // The visitor narrowed a view; they didn't arrive somewhere
+    // new. Scrolling them to the top would feel like a punishment
+    // for filtering.
+    const isRearrange =
+      prevPathname.current.startsWith('/facet/') && pathname.startsWith('/facet/');
+    if (!isRearrange && !visited.current.has(pathname)) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      visited.current.add(pathname);
+    }
+    prevPathname.current = pathname;
     // preventScroll keeps the focus jump from co-opting the scroll
     // position the router has already restored. Without it, the browser
     // scrolls <main> into view at the top of the scrollport — which
