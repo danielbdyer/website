@@ -1,6 +1,6 @@
 import { marked } from 'marked';
-import type { Room, Facet } from '@/shared/types/common';
-import type { WorkType } from '@/shared/content/schema';
+import type { Room, Facet, Posture } from '@/shared/types/common';
+import type { WorkImage, WorkReferent, WorkType } from '@/shared/content/schema';
 import {
   SAMPLE_ROOM_NOTE,
   SAMPLE_WORK_NOTE,
@@ -18,9 +18,12 @@ interface PreviewSeed {
   summary?: string;
   facets?: Facet[];
   type?: WorkType;
+  posture?: Posture;
+  image?: WorkImage;
+  referent?: WorkReferent;
+  feature?: boolean;
   body: string;
   thumbLabel?: string;
-  kicker?: string;
 }
 
 function makePreviewMeta(seed: PreviewSeed): PreviewMeta {
@@ -29,7 +32,6 @@ function makePreviewMeta(seed: PreviewSeed): PreviewMeta {
     roomNote: SAMPLE_ROOM_NOTE,
     workNote: SAMPLE_WORK_NOTE,
     thumbLabel: seed.thumbLabel,
-    kicker: seed.kicker,
   };
 }
 
@@ -41,6 +43,10 @@ function makePreviewWork(seed: PreviewSeed): DisplayWork {
     summary: seed.summary,
     facets: seed.facets ?? [],
     type: seed.type,
+    posture: seed.posture,
+    image: seed.image,
+    referent: seed.referent,
+    feature: seed.feature ?? false,
     draft: false,
     room: seed.room,
     slug: seed.slug,
@@ -61,6 +67,7 @@ const previewWorksByRoom: Record<PreviewRoom, DisplayWork[]> = {
         "A platform team is a place where other people's work lands. The metaphor matters: pipelines push, containers hold.",
       facets: ['craft', 'leadership', 'relation'],
       type: 'essay',
+      feature: true,
       body: `A platform team becomes legible when it stops mistaking motion for care. Pipelines optimize for throughput; containers optimize for arrival. One tells work where to go next. The other makes a place where work can settle long enough to become coherent.
 
 The distinction changes how a team writes documentation, reviews interfaces, and responds when another team arrives with half-shaped needs. A container is not passive. It has edges, expectations, and a held temperature. But its first gesture is hospitality rather than acceleration.
@@ -121,6 +128,7 @@ The shape matters because the day inherits it. If the first hour is porous in th
       date: '2026-03-14',
       facets: ['language', 'becoming', 'body'],
       type: 'poem',
+      feature: true,
       body: `I.
 
 My mother's left hand,
@@ -308,8 +316,14 @@ I trust what arrives there differently. Not because it is always better, but bec
         "What it sounds like when a phrase is allowed to take a full breath. A father's recording from the kitchen, recovered.",
       facets: ['beauty', 'body'],
       type: 'note',
+      posture: 'listening',
       thumbLabel: 'bach · suite no. 1',
-      kicker: 'listening',
+      referent: {
+        type: 'music-composition',
+        name: 'Cello Suite No. 1 in G major, BWV 1007',
+        creator: { name: 'Johann Sebastian Bach' },
+        year: 1717,
+      },
       body: `The recording is not high fidelity. A chair scrapes somewhere in the kitchen. Someone clears a throat between movements. And still the slowness changes everything.
 
 When the phrase is allowed to take a full breath, ornament stops functioning as decoration and starts behaving like mercy. The line has time to reveal why it turns when it turns.
@@ -325,8 +339,14 @@ I keep thinking about what else in a life could be restored by being played that
         'Color that does not represent light, but holds it. The surface says: what if the world were allowed to glow from within?',
       facets: ['beauty'],
       type: 'note',
+      posture: 'looking',
       thumbLabel: 'klimt · gold ground',
-      kicker: 'looking',
+      referent: {
+        type: 'visual-artwork',
+        name: 'Stoclet Frieze (gold ground, detail)',
+        creator: { name: 'Gustav Klimt' },
+        year: 1911,
+      },
       body: `Gold in Klimt is less a color than a weather system. It changes the contract between figure and field; the body does not simply stand in space but begins radiating into it.
 
 That matters to me because it refuses the ordinary realism of explanation. Sometimes beauty is not the accurate depiction of light. Sometimes it is the discovery that a surface can become a source.
@@ -342,8 +362,14 @@ What I leave with is not symbolism so much as permission: the world does not alw
         'Tintinnabuli is a small theology of restraint. The bell, and the air the bell hangs in.',
       facets: ['beauty', 'consciousness'],
       type: 'note',
+      posture: 'listening',
       thumbLabel: 'part · tintinnabuli',
-      kicker: 'listening',
+      referent: {
+        type: 'music-composition',
+        name: 'Spiegel im Spiegel',
+        creator: { name: 'Arvo Pärt' },
+        year: 1978,
+      },
       body: `Pärt's music makes me aware of the room around the sound as much as the sound itself. The note does not finish at its own edge. It keeps happening in the listener.
 
 Restraint is often misunderstood as deprivation. Here it feels like concentration. Fewer materials, more consequence. Nothing is present that does not deepen the stillness.
@@ -359,8 +385,14 @@ The lesson is aesthetic and moral at once: enough form to ring, enough space to 
         "A footnote, written on a Sunday. No image because there's nothing to look at — only a sound the page is trying to point at.",
       facets: ['beauty'],
       type: 'note',
+      posture: 'reading',
       thumbLabel: 'score detail · tintinnabuli',
-      kicker: 'listening',
+      referent: {
+        type: 'book',
+        name: 'Arvo Pärt: Out of Silence',
+        creator: { name: 'Peter C. Bouteneff' },
+        year: 2015,
+      },
       body: `A page about music is always slightly embarrassed by its own insufficiency. Language can describe a pattern, a lineage, a reaction. It cannot ring.
 
 That is part of the charm here. The note becomes an arrow more than a container. It points toward the thing it cannot house and trusts the reader to complete the journey in their own ears.
@@ -376,8 +408,14 @@ Sometimes criticism is at its best when it knows it is only a threshold.`,
         'A scale held in a pale hand. The most truthful thing in the painting: a roomed stillness.',
       facets: ['beauty', 'consciousness'],
       type: 'note',
+      posture: 'looking',
       thumbLabel: 'vermeer · small balance',
-      kicker: 'looking',
+      referent: {
+        type: 'visual-artwork',
+        name: 'Woman Holding a Balance',
+        creator: { name: 'Johannes Vermeer' },
+        year: 1664,
+      },
       body: `Vermeer understands that attention can be dramatic without becoming loud. Nothing seems to happen, and yet everything in the frame is participating in the exactness of a held moment.
 
 The balance matters because it is almost too small to notice. It asks for a finer grade of seeing than spectacle permits. The painting becomes a training ground for proportionality.
@@ -392,8 +430,14 @@ I leave wanting to make rooms where that kind of attention is possible, not only
       summary: 'Looking cuts a figure. The page is close enough to feel like a handheld gallery.',
       facets: ['beauty'],
       type: 'note',
-      thumbLabel: 'hockney · studio wall',
-      kicker: 'looking',
+      posture: 'reading',
+      thumbLabel: 'hockney · a bigger book',
+      referent: {
+        type: 'book',
+        name: 'A Bigger Book',
+        creator: { name: 'David Hockney' },
+        year: 2016,
+      },
       body: `Reproductions shrink paintings into a domestic scale, but sometimes that shrinkage reveals a different intimacy. The book makes Hockney less mural and more conversation.
 
 You notice sequence, recurrence, the way one chromatic decision answers another three pages later. The encounter becomes paced by turning rather than by crossing a room.
@@ -409,8 +453,14 @@ I like the reminder that scale changes genre. A small book can teach a painting 
         'What color does a building stop being a building? The painted version of a thing becoming weather.',
       facets: ['beauty', 'craft'],
       type: 'note',
+      posture: 'looking',
       thumbLabel: 'turner · parliament burning',
-      kicker: 'looking',
+      referent: {
+        type: 'visual-artwork',
+        name: 'The Burning of the Houses of Lords and Commons',
+        creator: { name: 'J. M. W. Turner' },
+        year: 1835,
+      },
       body: `Turner turns architecture back into atmosphere. Fire eats contour, smoke eats category, and the building begins behaving like light with memory.
 
 I am interested in the precise moment where representation yields to event. Not because depiction has failed, but because another truth has taken over: some things are more honestly rendered as force than as object.

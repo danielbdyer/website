@@ -6,23 +6,23 @@ import { RoomGlyph } from '@/shared/atoms/RoomGlyph/RoomGlyph';
 
 interface WorkRowProps {
   work: Work;
-  /** Optional kicker — Salon's "listening · " / "looking · " register. */
-  kicker?: string;
   /**
    * Honest stand-in label for an attached image, used only while the live
-   * image isn't yet on the page. When omitted, the room's glyph fills in.
-   * The preview never fakes art — see chats/chat1.md.
+   * image isn't yet on the page. When the work has a real `image` we
+   * render that instead. When neither is present, the room's glyph fills
+   * in. The preview never fakes art — see chats/chat1.md.
    */
   thumbLabel?: string;
 }
 
 // Image-left work row — the Salon's default landing rhythm. A 132px square
-// glyph or labeled slot on the left, meta/title/summary stacked on the
-// right. Hover is mega-tasteful: the square stays still, the hairline
-// darkens, the title shifts to the warm accent. Facet chips sit
-// underneath as their own /facet/{facet} links — they live outside the
-// row's wrapping Link so anchor nesting stays valid HTML.
-export function WorkRow({ work, kicker, thumbLabel }: WorkRowProps) {
+// image, labeled stand-in, or room glyph on the left; meta/title/summary
+// stacked on the right. The kicker is the work's `posture`
+// (listening/looking/reading) when present. Hover is mega-tasteful: the
+// square stays still, the hairline darkens, the title shifts to the warm
+// accent. Facet chips sit underneath as their own /facet/{facet} links —
+// they live outside the row's wrapping Link so anchor nesting stays valid.
+export function WorkRow({ work, thumbLabel }: WorkRowProps) {
   const formattedDate = work.date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -36,13 +36,19 @@ export function WorkRow({ work, kicker, thumbLabel }: WorkRowProps) {
         className="grid gap-4 text-inherit no-underline sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-7"
       >
         <div className="relative aspect-[16/10] overflow-hidden rounded-[2px] bg-bg-warm shadow-sm sm:aspect-square sm:h-[132px] sm:w-[132px]">
-          {thumbLabel ? <ImgSlot label={thumbLabel} /> : <RoomGlyph room={work.room} />}
+          {work.image ? (
+            <ImgSlot kind="filled" image={work.image} />
+          ) : thumbLabel ? (
+            <ImgSlot kind="standin" label={thumbLabel} />
+          ) : (
+            <RoomGlyph room={work.room} />
+          )}
         </div>
         <div className="min-w-0 pt-1">
           <div className="mb-2 font-body text-meta italic tracking-meta text-text-3">
-            {kicker && (
+            {work.posture && (
               <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
-                {kicker}
+                {work.posture}
               </span>
             )}
             {import.meta.env.DEV && work.draft && (

@@ -359,6 +359,141 @@ body::before {
   }
 }
 
+/* ─── Salon thumbnail treatments ────────────────────────────────
+   Six prototype gestures for Salon cards. Each plays once on initial
+   reveal and replays on hover (desktop) or tap (mobile). Treatments
+   reach a settled rest state — no perpetual motion. The prototype
+   gallery in src/app/routes/salon.tsx maps one treatment per card so
+   the gestures can be felt side-by-side. ───────────────────────── */
+
+@keyframes salon-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Caption rises from below, holds, settles back beneath the edge. */
+@keyframes salon-caption-rise {
+  0% {
+    transform: translateY(100%);
+  }
+  25% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* Card flips around its Y axis, holds the back face for a beat, flips back. */
+@keyframes salon-flip {
+  0% {
+    transform: rotateY(0);
+  }
+  35% {
+    transform: rotateY(180deg);
+  }
+  65% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+/* Sleeve slides right, holds, slides home. */
+@keyframes salon-jacket {
+  0% {
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(28%);
+  }
+  70% {
+    transform: translateX(28%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* Cover hinges open from the left spine, holds, closes. */
+@keyframes salon-book-cover {
+  0% {
+    transform: rotateY(0);
+  }
+  30% {
+    transform: rotateY(-110deg);
+  }
+  70% {
+    transform: rotateY(-110deg);
+  }
+  100% {
+    transform: rotateY(0);
+  }
+}
+
+/* Hero morph preview — image lifts toward viewer, then settles. The full
+   thumbnail-to-hero View Transition lands in a later phase; this preview
+   hints at the gesture by scaling and easing. */
+@keyframes salon-hero-morph {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ─── View Transitions ──────────────────────────────────────────
+   The View Transitions API gives the site cross-page morphs:
+   thumbnail → hero on a work-page click, card rearrangement on a
+   facet-toggle click. Browsers without support fall back to the
+   instant route change with no animation — the site is always
+   functional first. The site's signature easing
+   (cubic-bezier(0.23, 1, 0.32, 1)) gives transitions the same
+   "arrives, then settles" feel as the Reveal molecule.
+   See INTERACTION_DESIGN.md §"Page and Route Transitions". */
+
+::view-transition-group(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Per-element transitions (work-hero-*) get a slightly longer easing
+   so the thumbnail-to-hero morph feels like a deliberate gesture
+   rather than a snap. Named via attribute selector so the rule applies
+   to every work-hero participant without per-slug declarations. */
+::view-transition-group(*):where([class*='work-hero']),
+::view-transition-old(*):where([class*='work-hero']),
+::view-transition-new(*):where([class*='work-hero']) {
+  animation-duration: 480ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 /* ─── Prose (work body rendering) ───────────────────────────── */
 /* Minimal typography for markdown-rendered work bodies. The CSS reset
    zeros margins globally; .prose restores the rhythm needed for reading

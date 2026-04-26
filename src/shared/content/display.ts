@@ -33,3 +33,17 @@ export function getDisplayWorksByFacetGroupedSync(
     works: getDisplayWorksByRoomSync(room).filter((work) => work.facets.includes(facet)),
   })).filter((group) => group.works.length > 0);
 }
+
+// Multi-facet view: every display work that carries *all* of the given
+// facets (intersection), flattened across rooms and sorted newest-first.
+// The masonry layout on the facet page consumes this — vertical
+// descending by timestamp, interspersed with `feature: true` heroes.
+// An empty `facets` argument returns no works (the empty intersection
+// is the empty set, not the whole site).
+export function getDisplayWorksByFacetsSync(facets: readonly Facet[]): DisplayWork[] {
+  if (facets.length === 0) return [];
+  const all = FACET_ROOM_ORDER.flatMap((room) => getDisplayWorksByRoomSync(room));
+  return all
+    .filter((work) => facets.every((facet) => work.facets.includes(facet)))
+    .sort((a, b) => b.date.getTime() - a.date.getTime());
+}

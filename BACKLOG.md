@@ -42,6 +42,10 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Performance
 
+### Multi-facet prerender combinatorics
+**Why:** The facet route supports multi-select via comma-separated paths (`/facet/beauty,body`). The toggle bar emits links to every reachable selection, so `crawlLinks: true` walks the full power set of 8 facets — 255 prerendered pages, most of which are empty-intersection states. Today the cost is small (each page is tiny, build finishes in seconds), but the count grows superlinearly with the facet vocabulary. A ninth facet doubles it to 511.
+**Trigger:** Either the build time crosses a felt cost (≥30s), the deploy bundle approaches the Cloudflare Pages limit, or a ninth facet is proposed. Any of those graduates this to a real decision: cap depth (prerender only 1- and 2-facet combinations), `noindex` empty intersections, or shift multi-facet routes to client-side via a `_redirects` SPA fallback.
+
 ### Route-level code splitting
 **Why:** Every route currently loads in the initial bundle. A visitor arriving at `/garden` downloads the code for `/salon` too.
 **Trigger:** When the bundle has enough per-route weight to justify the cost of lazy loading (new components, per-route data, etc.). Today, each route is <50 lines; splitting is not worth it.

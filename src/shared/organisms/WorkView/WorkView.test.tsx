@@ -18,6 +18,7 @@ function makeWork(overrides: Partial<DisplayWork> = {}): DisplayWork {
     title: 'A Working Title',
     date: new Date('2026-03-14T12:00:00Z'),
     facets: [],
+    feature: false,
     draft: false,
     room: 'garden',
     slug: 'a-working-title',

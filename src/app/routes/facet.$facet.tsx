@@ -1,34 +1,51 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
-import {
-  FACET_META,
-  facetSchema,
-  getDisplayWorksByFacetGrouped,
-  isPreviewWork,
-} from '@/shared/content';
-import type { Room } from '@/shared/types/common';
+import { FACET_META, facetSchema, getDisplayWorksByFacets, isPreviewWork } from '@/shared/content';
+import type { Facet } from '@/shared/types/common';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
-import { WorkEntry } from '@/shared/molecules/WorkEntry/WorkEntry';
+import { FacetMasonry } from '@/shared/molecules/FacetMasonry/FacetMasonry';
+import { FacetToggleBar } from '@/shared/molecules/FacetToggleBar/FacetToggleBar';
 
-const ROOM_LABELS: Readonly<Record<Room, string>> = {
-  foyer: 'The Foyer',
-  studio: 'The Studio',
-  garden: 'The Garden',
-  study: 'The Study',
-  salon: 'The Salon',
-};
+// Canonical facet order — the toggle bar always emits selected facets in
+// this order so two URLs ("/facet/beauty,body" and "/facet/body,beauty")
+// don't both reach the same view.
+const FACET_ORDER: readonly Facet[] = [
+  'craft',
+  'consciousness',
+  'language',
+  'leadership',
+  'beauty',
+  'becoming',
+  'relation',
+  'body',
+];
+
+function parseFacetParam(raw: string): Facet[] {
+  // Comma-separated multi-facet, deduplicated and ordered canonically so
+  // the URL is the source of truth and the order in it doesn't matter.
+  const tokens = raw
+    .split(',')
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+  const valid = tokens
+    .map((t) => facetSchema.safeParse(t))
+    .filter((r): r is { success: true; data: Facet } => r.success)
+    .map((r) => r.data);
+  const unique = Array.from(new Set(valid));
+  return FACET_ORDER.filter((f) => unique.includes(f));
+}
 
 export const Route = createFileRoute('/facet/$facet')({
   loader: async ({ params }) => {
-    const result = facetSchema.safeParse(params.facet);
-    if (!result.success) throw notFound();
-    const groups = await getDisplayWorksByFacetGrouped(result.data);
-    return { facet: result.data, groups };
+    const selected = parseFacetParam(params.facet);
+    if (selected.length === 0) throw notFound();
+    const works = await getDisplayWorksByFacets(selected);
+    return { selected, works };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
-    const { facet, groups } = loaderData;
-    const meta = FACET_META[facet];
-    const hasPreview = groups.some((group) => group.works.some(isPreviewWork));
+    const { selected, works } = loaderData;
+    const meta = headFor(selected);
+    const hasPreview = works.some(isPreviewWork);
     return {
       meta: [
         { title: `${meta.label} — Danny Dyer` },
@@ -40,45 +57,38 @@ export const Route = createFileRoute('/facet/$facet')({
   component: FacetPage,
 });
 
+function headFor(selected: readonly Facet[]) {
+  if (selected.length === 1) return FACET_META[selected[0]!];
+  return {
+    label: selected.map((f) => FACET_META[f].label).join(' · '),
+    description: `Works carrying every thread: ${selected.map((f) => FACET_META[f].label.toLowerCase()).join(', ')}.`,
+  };
+}
+
 function FacetPage() {
-  const { facet, groups } = Route.useLoaderData();
-  const meta = FACET_META[facet];
+  const { selected, works } = Route.useLoaderData();
+  const meta = headFor(selected);
+
   return (
     <Reveal>
       <h1 className="mt-6 mb-4 font-heading text-display leading-display font-normal tracking-display text-text">
         {meta.label}
       </h1>
-      <p className="mb-12 max-w-deck font-body text-body leading-body italic text-text-2 sm:mb-14">
+      <p className="mb-10 max-w-deck font-body text-body leading-body italic text-text-2 sm:mb-14">
         {meta.description}
       </p>
-      {groups.length === 0 ? (
+      <FacetToggleBar facets={FACET_ORDER} selected={selected} />
+      {works.length === 0 ? (
         // Per VOICE_AND_COPY.md §"Empty facet pages" — name the absence
-        // quietly. The thread exists; no work currently carries it.
+        // quietly. The thread (or intersection of threads) exists; no
+        // work currently carries it.
         <p className="font-body text-list italic text-text-3">
-          No works currently carry this thread.
+          {selected.length === 1
+            ? 'No works currently carry this thread.'
+            : 'No works currently carry every selected thread.'}
         </p>
       ) : (
-        <div className="flex flex-col gap-work-break sm:gap-work-break-md">
-          {groups.map(({ room, works }) => (
-            <section key={room} aria-labelledby={`facet-room-${room}`}>
-              <h2
-                id={`facet-room-${room}`}
-                className="mb-6 font-heading text-heading font-normal italic text-text-2"
-              >
-                {ROOM_LABELS[room]}
-              </h2>
-              <div className="flex flex-col gap-room-rhythm">
-                {works.map((work) => (
-                  <WorkEntry
-                    key={`${work.room}-${work.slug}`}
-                    work={work}
-                    variant={work.room === 'garden' ? 'poem' : 'default'}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+        <FacetMasonry works={works} scopedFacets={selected} />
       )}
     </Reveal>
   );

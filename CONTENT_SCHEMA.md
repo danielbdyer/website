@@ -51,6 +51,30 @@ draft: false
 ---
 ```
 
+A Salon entry adds posture and (optionally) a structured referent and image:
+
+```yaml
+---
+title: Klimt, the gold ground, what it knows
+date: 2026-01-12
+summary: Color that does not represent light, but holds it.
+facets: [beauty]
+type: note
+posture: looking
+image:
+  src: /images/salon/klimt-gold-ground.jpg
+  alt: Detail of Gustav Klimt's Stoclet Frieze in gold leaf
+  caption: Klimt — Stoclet Frieze (detail)
+  credit: Gustav Klimt, 1911
+referent:
+  type: visual-artwork
+  name: Stoclet Frieze (gold ground, detail)
+  creator:
+    name: Gustav Klimt
+  year: 1911
+---
+```
+
 ### The Zod schema
 
 Zod is the validation boundary. The schema is the contract every work on disk must satisfy; works that don't parse fail the build with a loud, specific error. This schema will live as code in `src/shared/content/schema.ts` (or similar) when the content loader is built.
@@ -64,13 +88,24 @@ export const workFrontmatterSchema = z.object({
   summary: z.string().optional(),
   facets: z.array(facetSchema).default([]),
   type: z.enum(['poem', 'essay', 'case-study', 'note']).optional(),
+  posture: z.enum(['listening', 'looking', 'reading']).optional(),
+  image: imageSchema.optional(),
+  referent: referentSchema.optional(),
+  feature: z.boolean().default(false),
   draft: z.boolean().default(false),
 });
 
 export type WorkFrontmatter = z.infer<typeof workFrontmatterSchema>;
 ```
 
-`facetSchema` derives from `Facet` in `src/shared/types/common.ts` — the Zod schema and the TypeScript union stay in sync, with the schema as the runtime guardian.
+`facetSchema`, `postureSchema`, and `referentTypeSchema` derive from the corresponding TypeScript unions in `src/shared/types/common.ts` — the Zod schemas and the unions stay in sync, with the schemas as the runtime guardians.
+
+### Posture, image, referent, feature
+
+- **`posture`** — `listening | looking | reading`. The Salon's stance-of-attention axis. Optional; only meaningful on Salon works. See `DOMAIN_MODEL.md` §"Postures (Salon)".
+- **`image`** — single optional attached image: `{ src, alt, caption?, credit? }`. The `alt` is required (accessibility); `caption` carries human-visible attribution (rendered in the UI); `credit` carries machine-visible attribution (Schema.org `creditText`). One image per work — multi-attachment is held until a work demands it.
+- **`referent`** — the external creative work this work is *about*: `{ type, name, creator?, year?, url? }` where `type` is one of `visual-artwork | music-composition | music-album | music-recording | book | article | movie`. Feeds Schema.org `about` with role-aware creator properties (`composer` for compositions, `author` for books, etc.).
+- **`feature: true`** — a curatorial flag. The facet-page masonry treats featured works as hero interjections that break the descending-by-timestamp rhythm. Default `false`. Curate, don't infer.
 
 ### Required vs. optional
 

@@ -6,6 +6,7 @@ import {
   getDisplayWorksByRoomSync,
   getDisplayWorkSync,
   getDisplayWorksByFacetGroupedSync,
+  getDisplayWorksByFacetsSync,
 } from './display';
 
 export {
@@ -13,9 +14,13 @@ export {
   roomSchema,
   facetSchema,
   workTypeSchema,
+  postureSchema,
+  referentTypeSchema,
   isPublished,
   type Work,
   type WorkFrontmatter,
+  type WorkImage,
+  type WorkReferent,
   type WorkType,
 } from './schema';
 export {
@@ -71,6 +76,10 @@ export async function getDisplayWorksByFacetGrouped(
   facet: Facet,
 ): Promise<{ room: Room; works: DisplayWork[] }[]> {
   return getDisplayWorksByFacetGroupedSync(facet);
+}
+
+export async function getDisplayWorksByFacets(facets: readonly Facet[]): Promise<DisplayWork[]> {
+  return getDisplayWorksByFacetsSync(facets);
 }
 
 export { FACET_META, type FacetMeta } from './facet-meta';
