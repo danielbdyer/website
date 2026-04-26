@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { Work } from '@/shared/content/schema';
 import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
 import { RoomGlyph } from '@/shared/atoms/RoomGlyph/RoomGlyph';
+import { workHeroTransitionName } from '@/shared/utils/view-transition-names';
 import { cn } from '@/shared/utils/cn';
 
 // Each treatment is a thumbnail variant. They share the same surface
@@ -191,7 +192,7 @@ export function HeroMorph({ work, thumbLabel, playKey }: TreatmentProps): ReactN
           'absolute inset-0',
           'motion-safe:[animation:salon-hero-morph_1800ms_cubic-bezier(0.23,1,0.32,1)_both]',
         )}
-        style={{ viewTransitionName: `salon-thumb-${work.slug}` }}
+        style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
       >
         <ThumbFace work={work} thumbLabel={thumbLabel} />
       </div>

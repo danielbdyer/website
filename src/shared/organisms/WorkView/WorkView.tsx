@@ -1,8 +1,34 @@
 import { Link } from '@tanstack/react-router';
 import type { DisplayWork } from '@/shared/content/preview';
 import { isPreviewWork } from '@/shared/content/preview';
+import type { Work, WorkImage } from '@/shared/content/schema';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import { workHeroTransitionName } from '@/shared/utils/view-transition-names';
+
+function WorkHero({ work, image }: { work: Work; image: WorkImage }) {
+  return (
+    <figure
+      className="mb-8 -mx-4 overflow-hidden rounded-[2px] bg-bg-warm shadow-sm sm:-mx-0"
+      style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
+    >
+      <img
+        src={image.src}
+        alt={image.alt}
+        className="block h-auto w-full"
+        loading="eager"
+        decoding="async"
+      />
+      {(image.caption || image.credit) && (
+        <figcaption className="px-4 py-3 font-body text-meta italic tracking-meta text-text-3">
+          {image.caption}
+          {image.caption && image.credit ? ' · ' : ''}
+          {image.credit && <span className="not-italic text-text-3">{image.credit}</span>}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
 
 const ROOM_LABELS = {
   foyer: 'The Foyer',
@@ -47,6 +73,8 @@ export function WorkView({ work }: WorkViewProps) {
       >
         ← {roomLabel}
       </Link>
+
+      {work.image && <WorkHero work={work} image={work.image} />}
 
       <h1 className="mb-3.5 font-heading text-title leading-title font-normal tracking-display text-text">
         {work.title}

@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router';
 import type { Facet } from '@/shared/types/common';
+import { TransitionLink } from '@/shared/atoms/TransitionLink/TransitionLink';
 import { cn } from '@/shared/utils/cn';
 
 interface FacetToggleBarProps {
@@ -34,22 +34,29 @@ export function FacetToggleBar({ facets, selected }: FacetToggleBarProps) {
         const next = isOn
           ? facets.filter((f) => f !== facet && selectedSet.has(f))
           : facets.filter((f) => f === facet || selectedSet.has(f));
-        const path = next.length > 0 ? `/facet/${next.join(',')}` : '/';
-
+        const className = cn(
+          'inline-block rounded-[2px] px-2.5 py-1 font-body text-chip tracking-meta no-underline transition-colors duration-200',
+          isOn
+            ? 'bg-accent-warm/15 text-text ring-1 ring-accent-warm/40 hover:bg-accent-warm/20'
+            : 'bg-tag-bg text-tag-text hover:bg-border-lt hover:text-text',
+        );
+        if (next.length === 0) {
+          return (
+            <TransitionLink key={facet} to="/" aria-pressed={isOn} className={className}>
+              {facet}
+            </TransitionLink>
+          );
+        }
         return (
-          <Link
+          <TransitionLink
             key={facet}
-            to={path}
+            to="/facet/$facet"
+            params={{ facet: next.join(',') }}
             aria-pressed={isOn}
-            className={cn(
-              'inline-block rounded-[2px] px-2.5 py-1 font-body text-chip tracking-meta no-underline transition-colors duration-200',
-              isOn
-                ? 'bg-accent-warm/15 text-text ring-1 ring-accent-warm/40 hover:bg-accent-warm/20'
-                : 'bg-tag-bg text-tag-text hover:bg-border-lt hover:text-text',
-            )}
+            className={className}
           >
             {facet}
-          </Link>
+          </TransitionLink>
         );
       })}
     </nav>

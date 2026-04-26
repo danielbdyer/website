@@ -454,6 +454,46 @@ body::before {
   }
 }
 
+/* ─── View Transitions ──────────────────────────────────────────
+   The View Transitions API gives the site cross-page morphs:
+   thumbnail → hero on a work-page click, card rearrangement on a
+   facet-toggle click. Browsers without support fall back to the
+   instant route change with no animation — the site is always
+   functional first. The site's signature easing
+   (cubic-bezier(0.23, 1, 0.32, 1)) gives transitions the same
+   "arrives, then settles" feel as the Reveal molecule.
+   See INTERACTION_DESIGN.md §"Page and Route Transitions". */
+
+::view-transition-group(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Per-element transitions (work-hero-*) get a slightly longer easing
+   so the thumbnail-to-hero morph feels like a deliberate gesture
+   rather than a snap. Named via attribute selector so the rule applies
+   to every work-hero participant without per-slug declarations. */
+::view-transition-group(*):where([class*='work-hero']),
+::view-transition-old(*):where([class*='work-hero']),
+::view-transition-new(*):where([class*='work-hero']) {
+  animation-duration: 480ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 /* ─── Prose (work body rendering) ───────────────────────────── */
 /* Minimal typography for markdown-rendered work bodies. The CSS reset
    zeros margins globally; .prose restores the rhythm needed for reading

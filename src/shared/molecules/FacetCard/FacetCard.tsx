@@ -1,9 +1,10 @@
-import { Link } from '@tanstack/react-router';
 import type { DisplayWork } from '@/shared/content/preview';
 import { isPreviewWork } from '@/shared/content/preview';
 import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
 import { RoomGlyph } from '@/shared/atoms/RoomGlyph/RoomGlyph';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import { TransitionLink } from '@/shared/atoms/TransitionLink/TransitionLink';
+import { workHeroTransitionName } from '@/shared/utils/view-transition-names';
 import { cn } from '@/shared/utils/cn';
 
 const ROOM_LABELS = {
@@ -45,22 +46,24 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
     <article
       data-size={size}
       className="group flex h-full flex-col gap-3 rounded-[2px] bg-bg-card p-4 shadow-sm transition-shadow duration-300 hover:shadow-default"
-      style={{ viewTransitionName: `facet-card-${work.room}-${work.slug}` }}
     >
-      <Link
+      <TransitionLink
         to="/$room/$slug"
         params={{ room: work.room, slug: work.slug }}
         className="flex flex-1 flex-col gap-3 text-inherit no-underline"
       >
         {/* Image region — present on tall and feature; standard cards are
             text-led and skip it. The aspect adjusts per size so the card
-            silhouette differs visibly across the grid. */}
+            silhouette differs visibly across the grid. The image carries
+            the canonical hero view-transition name so click → work page
+            morphs the thumbnail into the hero. */}
         {size !== 'standard' && (
           <div
             className={cn(
               'relative overflow-hidden rounded-[2px] bg-bg-warm',
               size === 'feature' ? 'aspect-[16/10]' : 'aspect-[4/5]',
             )}
+            style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
           >
             {work.image ? (
               <ImgSlot kind="filled" image={work.image} />
@@ -97,7 +100,7 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
         )}
 
         <div className="mt-auto font-body text-meta italic text-text-3">{formattedDate}</div>
-      </Link>
+      </TransitionLink>
 
       {visibleFacets.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">

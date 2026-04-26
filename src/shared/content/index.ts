@@ -14,9 +14,13 @@ export {
   roomSchema,
   facetSchema,
   workTypeSchema,
+  postureSchema,
+  referentTypeSchema,
   isPublished,
   type Work,
   type WorkFrontmatter,
+  type WorkImage,
+  type WorkReferent,
   type WorkType,
 } from './schema';
 export {

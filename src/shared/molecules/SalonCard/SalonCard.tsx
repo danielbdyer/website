@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { Link } from '@tanstack/react-router';
 import type { Work } from '@/shared/content/schema';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import { TransitionLink } from '@/shared/atoms/TransitionLink/TransitionLink';
 import { cn } from '@/shared/utils/cn';
 import { useCardPlayback } from './useCardPlayback';
 
@@ -54,7 +54,7 @@ function CardTextRegion({ work }: { work: Work }) {
     day: 'numeric',
   });
   return (
-    <Link
+    <TransitionLink
       to="/$room/$slug"
       params={{ room: work.room, slug: work.slug }}
       className="relative z-10 block min-w-0 pt-1 text-inherit no-underline"
@@ -78,7 +78,7 @@ function CardTextRegion({ work }: { work: Work }) {
       {work.summary && (
         <div className="font-body text-list leading-body text-text-2">{work.summary}</div>
       )}
-    </Link>
+    </TransitionLink>
   );
 }
 
@@ -100,13 +100,14 @@ export function SalonCard({
       <article
         ref={cardRef as React.RefObject<HTMLElement>}
         className="group relative flex flex-col gap-3 border-b border-border-lt py-6 transition-colors duration-300 first:border-t hover:border-border sm:py-7"
+        style={{ viewTransitionName: `salon-card-${work.room}-${work.slug}` }}
         onMouseEnter={replay}
         onTouchStart={replay}
       >
         {/* Desktop overlay link — covers the whole card. Disabled on
             touch devices via pointer-events so taps fall through to
             the inner text link only. */}
-        <Link
+        <TransitionLink
           to="/$room/$slug"
           params={{ room: work.room, slug: work.slug }}
           aria-hidden="true"
@@ -120,7 +121,7 @@ export function SalonCard({
           )}
         >
           <span className="sr-only">{work.title}</span>
-        </Link>
+        </TransitionLink>
         <div className="grid gap-4 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-7">
           {/* Thumbnail region — visual only. Pointer-events disabled so
               the desktop overlay link receives clicks; on mobile the
