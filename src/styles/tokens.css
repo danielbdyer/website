@@ -53,6 +53,30 @@
   --font-heading: 'Newsreader Variable', Georgia, serif;
   --font-body: 'Literata Variable', Georgia, serif;
 
+  /* Typographic scale — fluid sizes that flow between a narrow phone and
+     a tablet without a discrete breakpoint jump. Each token names a
+     surface role rather than a pixel value, so a redesign of the scale
+     is one edit. The ranges below preserve the pre-token sizing that
+     already lived inline; clamp() is the only behavioral change. The
+     companion philosophy lives in DESIGN_SYSTEM.md §"The Type Scale".
+     Line-heights stay separate (use leading-* utilities) because the
+     same size carries different leadings depending on register —
+     a 16px body wants 1.7, a 16px italic deck wants 1.7, a 16px prose
+     paragraph wants 1.8. */
+  --text-display: clamp(2.15rem, 1.93rem + 1.08vw, 2.625rem);
+  --text-title: clamp(2.2rem, 2.12rem + 0.4vw, 2.375rem);
+  --text-heading: clamp(22px, 21.55px + 0.14vw, 23px);
+  --text-deck: clamp(18px, 17.55px + 0.14vw, 19px);
+  --text-body: clamp(15.5px, 15.05px + 0.14vw, 16.5px);
+  --text-prose: 1rem;
+  --text-list: clamp(15px, 14.77px + 0.07vw, 15.5px);
+  --text-kicker: 14px;
+  --text-meta: clamp(13px, 12.77px + 0.07vw, 13.5px);
+  --text-nav: 0.8rem;
+  --text-chip: 12px;
+  --text-footer: 0.72rem;
+  --text-micro: clamp(10.5px, 10.27px + 0.07vw, 11px);
+
   --animate-geo-spin: geo-spin 60s linear infinite;
 }
 

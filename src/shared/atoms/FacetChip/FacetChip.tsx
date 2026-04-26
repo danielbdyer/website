@@ -9,7 +9,7 @@ interface FacetChipProps {
 // warning.
 export function FacetChip({ facet }: FacetChipProps) {
   return (
-    <span className="rounded-[2px] bg-tag-bg px-[9px] py-[2px] font-body text-[12px] tracking-[0.02em] text-tag-text">
+    <span className="rounded-[2px] bg-tag-bg px-[9px] py-[2px] font-body text-chip tracking-[0.02em] text-tag-text">
       {facet}
     </span>
   );

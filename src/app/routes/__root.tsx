@@ -82,7 +82,7 @@ function RootComponent() {
           <JsonLd data={[websiteSchema(), personSchema()]} />
           <a
             href="#main-content"
-            className="font-body absolute top-0 left-0 z-[100] -translate-y-[200%] rounded-[3px] border border-border bg-bg-card px-3 py-2 text-[0.9rem] text-text no-underline transition-transform duration-200 focus:translate-x-2 focus:translate-y-2"
+            className="font-body absolute top-0 left-0 z-[100] -translate-y-[200%] rounded-[3px] border border-border bg-bg-card px-3 py-2 text-list text-text no-underline transition-transform duration-200 focus:translate-x-2 focus:translate-y-2"
           >
             Skip to main content
           </a>

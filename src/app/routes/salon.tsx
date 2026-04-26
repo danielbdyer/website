@@ -38,20 +38,20 @@ function SalonPage() {
 
   return (
     <Reveal>
-      <h1 className="mt-6 mb-4 font-heading text-[2.15rem] leading-[1.05] font-normal tracking-[-0.01em] text-text sm:text-[42px]">
+      <h1 className="mt-6 mb-4 font-heading text-display leading-[1.05] font-normal tracking-[-0.01em] text-text">
         The Salon
       </h1>
-      <p className="mb-10 max-w-[540px] font-body text-[15.5px] leading-[1.7] italic text-text-2 sm:mb-14 sm:text-[16.5px]">
+      <p className="mb-10 max-w-[540px] font-body text-body leading-[1.7] italic text-text-2 sm:mb-14">
         Music, aesthetics, beauty circulating between people. The cellist&rsquo;s son&rsquo;s room.
       </p>
       {previewNote && (
-        <p className="-mt-4 mb-8 max-w-[620px] font-body text-[13px] leading-[1.65] italic text-text-3 sm:-mt-6 sm:text-[13.5px]">
+        <p className="-mt-4 mb-8 max-w-[620px] font-body text-meta leading-[1.65] italic text-text-3 sm:-mt-6">
           {previewNote}
         </p>
       )}
       {previewPostures.length > 0 && (
         <div
-          className="mb-8 flex flex-wrap items-baseline gap-x-2 gap-y-1 font-body text-[13px] leading-[1.6] italic tracking-[0.04em] text-text-3 sm:text-[13.5px]"
+          className="mb-8 flex flex-wrap items-baseline gap-x-2 gap-y-1 font-body text-meta leading-[1.6] italic tracking-[0.04em] text-text-3"
           aria-label="Salon preview registers"
         >
           {previewPostures.map((posture, index) => (

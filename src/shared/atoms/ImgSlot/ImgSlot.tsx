@@ -13,7 +13,7 @@ interface ImgSlotProps {
 export function ImgSlot({ label }: ImgSlotProps) {
   return (
     <div className="absolute inset-0 flex items-center justify-center border border-border-lt bg-bg-warm bg-[repeating-linear-gradient(135deg,transparent_0,transparent_8px,var(--slot-stripe)_8px,var(--slot-stripe)_9px)] p-3.5">
-      <span className="max-w-full text-center font-body text-[10.5px] leading-[1.4] tracking-[0.08em] text-text-3 lowercase sm:text-[11px]">
+      <span className="max-w-full text-center font-body text-micro leading-[1.4] tracking-[0.08em] text-text-3 lowercase">
         {label}
       </span>
     </div>

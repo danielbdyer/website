@@ -96,6 +96,30 @@ The site reads as paper. The typography is how that reading happens. Two serif f
 
 **No sans-serif fallback layer.** Both serifs are self-hosted via `@fontsource-variable/literata` and `@fontsource-variable/newsreader`, loaded from `src/styles/tokens.css` with `font-display: swap`. If a font fails to load, the browser uses the generic serif fallback (Georgia). There is no system sans-serif in the hierarchy. A sans-serif surface would read as a different medium — and the site is not trying to be two media. `PERFORMANCE_BUDGET.md` owns the tradeoff between font weight and load time; this file owns the commitment that the fallback stays serif.
 
+### The type scale
+
+The site's surfaces speak at distinct typographic registers. Each register has a name and a fluid size, so a redesign of the scale is a single edit to `tokens.css` and component code reads as intent (`text-display`, `text-meta`) rather than magic numbers. Sizes use `clamp()` so the page scales smoothly between phone and tablet without a discrete breakpoint jump — the column is the column, but the type inside it can flex within a small range.
+
+| Token | Range | Surface |
+|---|---|---|
+| `text-display` | ~34 → 42px | Room landing titles (`The Studio`, `The Garden`). The room announcing itself. |
+| `text-title` | ~35 → 38px | Work page titles. Slightly smaller than display because a single work is held inside a room, not above it. |
+| `text-heading` | 22 → 23px | Work-entry titles inside a room's list. Headings that compose, not headings that announce. |
+| `text-deck` | 18 → 19px | Italic heading-voice for short evocative lines — the Foyer welcome, the 404 message, the ErrorBoundary fallback. |
+| `text-body` | 15.5 → 16.5px | Italic room descriptions on landings — the room's secondary voice. |
+| `text-prose` | 16px (1rem) | Paragraph base size for `.prose`-rendered work bodies. Pinned to the `html` root so 1em math holds. |
+| `text-list` | 15 → 15.5px | Summaries in work lists, the outward invitation, the skip link. |
+| `text-kicker` | 14px | Directional navigational chrome (`← The Garden`). Quieter than body, deliberately. |
+| `text-meta` | 13 → 13.5px | Dates, preview notes, salon postures — the metadata register. |
+| `text-nav` | 12.8px (0.8rem) | Top-nav labels. |
+| `text-chip` | 12px | Facet chips. |
+| `text-footer` | ~11.5px (0.72rem) | Footer identity. |
+| `text-micro` | 10.5 → 11px | Uppercase eyebrow labels (`DRAFT`), image-slot captions. |
+
+Line-heights are not bound to size tokens. The same `text-prose` paragraph at 16px wants `leading-1.8`; an italic deck at 18px wants `leading-1.55`; a heading at 22px wants `leading-1.25`. Components apply leading via `leading-*` utilities at the use site. This separation is deliberate — leading is a function of register, not size, and a one-to-one binding would over-couple the system.
+
+**Inline `text-[…]` sizing is a smell.** If a component reaches for an arbitrary value, the scale is incomplete. The fix is to name the new register, add it to `tokens.css`, and document it in this section — not to ship a magic number.
+
 ---
 
 ## Space and Rhythm

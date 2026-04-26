@@ -43,18 +43,18 @@ export function WorkView({ work }: WorkViewProps) {
     <article>
       <Link
         to={roomPath}
-        className="mt-4 mb-8 inline-block font-body text-[14px] italic text-text-2 no-underline transition-colors duration-200 hover:text-text"
+        className="mt-4 mb-10 inline-block font-body text-kicker italic text-text-2 no-underline transition-colors duration-200 hover:text-text"
       >
         ← {roomLabel}
       </Link>
 
-      <h1 className="mb-3.5 font-heading text-[2.2rem] leading-[1.12] font-normal tracking-[-0.01em] text-text sm:text-[38px]">
+      <h1 className="mb-3.5 font-heading text-title leading-[1.12] font-normal tracking-[-0.01em] text-text">
         {work.title}
       </h1>
 
-      <div className="mb-2 font-body text-[13.5px] italic text-text-3">
+      <div className="mb-2 font-body text-meta italic text-text-3">
         {import.meta.env.DEV && work.draft && (
-          <span className="mr-2 inline-block font-body text-[11px] not-italic tracking-[0.08em] text-accent-warm uppercase">
+          <span className="mr-2 inline-block font-body text-micro not-italic tracking-[0.08em] text-accent-warm uppercase">
             draft
           </span>
         )}
@@ -62,13 +62,13 @@ export function WorkView({ work }: WorkViewProps) {
       </div>
 
       {isPreviewWork(work) && (
-        <p className="mb-6 max-w-[620px] font-body text-[13px] leading-[1.65] italic text-text-3 sm:text-[13.5px]">
+        <p className="mb-6 max-w-[620px] font-body text-meta leading-[1.65] italic text-text-3">
           {work.preview.workNote}
         </p>
       )}
 
       {work.facets.length > 0 && (
-        <div className="mb-10" aria-label="Facets">
+        <div className="mb-12" aria-label="Facets">
           <div className="flex flex-wrap items-center gap-1.5">
             {work.facets.map((facet) => (
               <FacetChip key={facet} facet={facet} />
@@ -79,9 +79,13 @@ export function WorkView({ work }: WorkViewProps) {
 
       <div className="prose" dangerouslySetInnerHTML={{ __html: work.html }} />
 
-      <Ornament />
+      {/* Generous gap before the Ornament so the work's last line gets a
+          full breath before the section break arrives. The closing line
+          then sits at a moderate distance below — the gesture feels
+          anchored, not abandoned. */}
+      <Ornament className="mt-12 sm:mt-16" />
 
-      <div className="mt-16 font-body text-[15px] leading-[1.9] italic text-text-2">
+      <div className="mt-10 font-body text-list leading-[1.9] italic text-text-2">
         <p>
           Keep wandering in{' '}
           <Link
