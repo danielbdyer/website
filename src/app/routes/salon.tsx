@@ -38,20 +38,20 @@ function SalonPage() {
 
   return (
     <Reveal>
-      <h1 className="mt-6 mb-4 font-heading text-display leading-[1.05] font-normal tracking-[-0.01em] text-text">
+      <h1 className="mt-6 mb-4 font-heading text-display leading-display font-normal tracking-display text-text">
         The Salon
       </h1>
-      <p className="mb-10 max-w-[540px] font-body text-body leading-[1.7] italic text-text-2 sm:mb-14">
+      <p className="mb-10 max-w-deck font-body text-body leading-body italic text-text-2 sm:mb-14">
         Music, aesthetics, beauty circulating between people. The cellist&rsquo;s son&rsquo;s room.
       </p>
       {previewNote && (
-        <p className="-mt-4 mb-8 max-w-[620px] font-body text-meta leading-[1.65] italic text-text-3 sm:-mt-6">
+        <p className="-mt-4 mb-8 max-w-preview font-body text-meta leading-meta italic text-text-3 sm:-mt-6">
           {previewNote}
         </p>
       )}
       {previewPostures.length > 0 && (
         <div
-          className="mb-8 flex flex-wrap items-baseline gap-x-2 gap-y-1 font-body text-meta leading-[1.6] italic tracking-[0.04em] text-text-3"
+          className="mb-8 flex flex-wrap items-baseline gap-x-2 gap-y-1 font-body text-meta leading-[1.6] italic tracking-posture text-text-3"
           aria-label="Salon preview registers"
         >
           {previewPostures.map((posture, index) => (

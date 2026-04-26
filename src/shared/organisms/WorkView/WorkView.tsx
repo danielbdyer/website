@@ -48,13 +48,13 @@ export function WorkView({ work }: WorkViewProps) {
         ← {roomLabel}
       </Link>
 
-      <h1 className="mb-3.5 font-heading text-title leading-[1.12] font-normal tracking-[-0.01em] text-text">
+      <h1 className="mb-3.5 font-heading text-title leading-title font-normal tracking-display text-text">
         {work.title}
       </h1>
 
       <div className="mb-2 font-body text-meta italic text-text-3">
         {import.meta.env.DEV && work.draft && (
-          <span className="mr-3 inline-block font-body text-micro not-italic tracking-[0.08em] text-accent-warm uppercase">
+          <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
             draft
           </span>
         )}
@@ -62,13 +62,13 @@ export function WorkView({ work }: WorkViewProps) {
       </div>
 
       {isPreviewWork(work) && (
-        <p className="mb-6 max-w-[620px] font-body text-meta leading-[1.65] italic text-text-3">
+        <p className="mb-6 max-w-preview font-body text-meta leading-meta italic text-text-3">
           {work.preview.workNote}
         </p>
       )}
 
       {work.facets.length > 0 && (
-        <div className="mb-12" aria-label="Facets">
+        <div className="mb-work-break" aria-label="Facets">
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
             {work.facets.map((facet) => (
               <FacetChip key={facet} facet={facet} />
@@ -83,9 +83,9 @@ export function WorkView({ work }: WorkViewProps) {
           full breath before the section break arrives. The closing line
           then sits at a moderate distance below — the gesture feels
           anchored, not abandoned. */}
-      <Ornament className="mt-12 sm:mt-16" />
+      <Ornament className="mt-work-break sm:mt-work-break-md" />
 
-      <div className="mt-10 font-body text-list leading-[1.9] italic text-text-2">
+      <div className="mt-room-rhythm font-body text-list leading-closing italic text-text-2">
         <p>
           Keep wandering in{' '}
           <Link

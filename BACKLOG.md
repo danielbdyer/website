@@ -111,6 +111,30 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** `TRANSPARENCY.md` holds the time slider; `INFORMATION_ARCHITECTURE.md` holds its location (nav top-right, native drawer).
 **Trigger:** When the site has enough temporal depth (years of specification changes, a meaningful content history) to make movement through time feel like something rather than a sparse slider with few stops.
 
+### Negative-pull spacing token (`--spacing-pull`)
+**Why:** Room landings use `-mt-4 sm:-mt-6` to pull preview notes up under the deck — a deliberate overlap gesture. Today the pattern appears once, so a token would be over-naming. The pattern is real, but premature.
+**Trigger:** A second use of the gesture (e.g. a deck-with-attribution, a kicker-pulled-under-title, a salon work-page meta tucked under the title). At that point name `--spacing-pull` and `--spacing-pull-md`.
+
+### Single-use leading graduation (`leading-[1.4]`, `[1.55]`, `[1.6]`)
+**Why:** Three leading values currently live inline because each has only one site (image-slot caption, Foyer welcome lines, Salon postures). Tokenizing now is anticipation; the leading palette should grow only when use repeats.
+**Trigger:** A second use of any of these values in a different surface graduates that value into a named `--leading-*` token.
+
+### Empty-state spacing (`--spacing-empty-breathe`)
+**Why:** `INFORMATION_ARCHITECTURE.md` commits that empty rooms acknowledge their emptiness "by their quiet, not papered over with chrome." Today empty rooms are simply the absence of a works list — there is no named vertical breathing room around the silence.
+**Trigger:** The first empty surface that visibly needs vertical breathing — likely a facet page with zero matching works once authored content fills the rooms enough to make the empty state read as deliberate. Likely value 80–96px (ladder rungs `20`/`24`).
+
+### Fluid `--spacing-edge` with safe-area composition
+**Why:** Edge padding currently steps from 32px to 40px at the `sm` breakpoint, with `max(…, env(safe-area-inset-*))` wrapping. The step pair works for mobile and tablet. A foldable or rotating-class device might benefit from a clamp-based smooth transition.
+**Trigger:** A foldable-class viewport (or three+ visitor reports) that produces a visible mid-orbit step as the device moves between viewport classes.
+
+### Print-mode space overrides
+**Why:** Print is a backlog item per `RESPONSIVE_STRATEGY.md:64–82`. When the print stylesheet is written, every spacing token may want a `@media print` override — paper has different breath rules than screen.
+**Trigger:** Coupled to the print stylesheet item above. Adopted as part of that pass.
+
+### Page-transition spatial token (`--spacing-transition-rise`)
+**Why:** Page transitions are deferred per `INTERACTION_DESIGN.md:117–123`. When implemented, the new page may want a small vertical offset (e.g. 14px, matching the Reveal token) for entering from below.
+**Trigger:** Page transitions implemented. Adopted as part of that pass.
+
 ---
 
 ## Infrastructure

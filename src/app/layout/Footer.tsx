@@ -2,7 +2,7 @@ import { Ornament } from '@/shared/molecules/Ornament/Ornament';
 
 export function Footer() {
   return (
-    <footer className="mx-auto w-full max-w-[700px] pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.5rem))] leading-tight pl-[max(2rem,env(safe-area-inset-left))] pr-[max(2rem,env(safe-area-inset-right))] sm:pl-[max(2.5rem,env(safe-area-inset-left))] sm:pr-[max(2.5rem,env(safe-area-inset-right))]">
+    <footer className="mx-auto w-full max-w-column pb-edge-bottom leading-tight pl-edge pr-edge sm:pl-edge-md sm:pr-edge-md">
       <Ornament />
       <div className="flex items-center justify-between text-footer text-text-3">
         <span>Danny Dyer</span>

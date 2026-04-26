@@ -77,6 +77,68 @@
   --text-footer: 0.72rem;
   --text-micro: clamp(10.5px, 10.27px + 0.07vw, 11px);
 
+  /* Spacing aliases — chrome and semantic spaces that aren't ladder
+     positions. Each names a *place* in the room, not a CSS property.
+     The 4px Tailwind base remains the substrate; these are the
+     load-bearing values that appear across the layout shell or
+     describe a gesture the spec already names. The companion
+     philosophy lives in DESIGN_SYSTEM.md §"The Spacing Ladder".
+     Spacing stays fixed (no clamp); register changes between mobile
+     and md are real design events, named in pairs. */
+
+  /* Page edge — the lateral breath of every layout shell.
+     32px mobile, 40px sm+. Safe-area max() preserves notch /
+     home-indicator behavior on iOS. */
+  --spacing-edge: max(2rem, env(safe-area-inset-left));
+  --spacing-edge-md: max(2.5rem, env(safe-area-inset-left));
+  --spacing-edge-bottom: max(2rem, calc(env(safe-area-inset-bottom) + 1.5rem));
+
+  /* Page chrome floor — vertical breathing of the main element. */
+  --spacing-page-top: 1.5rem;
+  --spacing-page-top-md: 2rem;
+  --spacing-page-bottom: 5rem;
+  --spacing-page-bottom-md: 6rem;
+
+  /* Touch target floor (WCAG 2.1 AAA). */
+  --spacing-touch: 44px;
+
+  /* Three semantic aliases — gestures the ladder cannot encode
+     and that multiple components reference. Capped at three by
+     design discipline; new aliases earn their place only when a
+     gesture is named in the spec and used by 2+ components. */
+  --spacing-room-rhythm: 2.5rem; /* 40px — between work entries */
+  --spacing-work-break: 3rem; /* 48px — within-work major break */
+  --spacing-work-break-md: 4rem; /* 64px — same gesture sm+ */
+
+  /* Typographic measure — the column is a reading decision before
+     it is a layout one. Literata at 16/1.8 wants 50–75 chars per
+     line; 700px is that measure. */
+  --container-column: 700px;
+  --container-deck: 540px;
+  --container-preview: 620px;
+
+  /* Leading palette — line-heights named by register, not number,
+     so a future tuning ("prose-breath 1.8 → 1.85") is one edit and
+     not a refactor of every leading-[1.8]. Single-use leadings
+     (1.4, 1.55, 1.6) stay inline until they repeat. */
+  --leading-display: 1.05;
+  --leading-title: 1.12;
+  --leading-heading: 1.25;
+  --leading-meta: 1.65;
+  --leading-body: 1.7;
+  --leading-prose: 1.8;
+  --leading-closing: 1.9;
+
+  /* Tracking palette — letter-spacing values used across the site.
+     Body default (0) stays unnamed (Tailwind's default). The
+     eyebrow rung (0.08em) earns a name because misuse is the
+     loudest possible smell on this site. */
+  --tracking-display: -0.01em;
+  --tracking-meta: 0.02em;
+  --tracking-posture: 0.04em;
+  --tracking-nav: 0.05em;
+  --tracking-eyebrow: 0.08em;
+
   --animate-geo-spin: geo-spin 60s linear infinite;
 }
 

@@ -27,19 +27,19 @@ export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
         params={{ room: work.room, slug: work.slug }}
         className="group block text-inherit no-underline"
       >
-        <div className="mb-2 font-body text-meta italic tracking-[0.02em] text-text-3">
+        <div className="mb-2 font-body text-meta italic tracking-meta text-text-3">
           {import.meta.env.DEV && work.draft && (
-            <span className="mr-3 inline-block font-body text-micro not-italic tracking-[0.08em] text-accent-warm uppercase">
+            <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
               draft
             </span>
           )}
           {formattedDate}
         </div>
-        <div className="mb-2 font-heading text-heading leading-[1.25] text-text transition-colors duration-200 group-hover:text-accent">
+        <div className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent">
           {work.title}
         </div>
         {variant !== 'poem' && work.summary && (
-          <div className="font-body text-list leading-[1.7] text-text-2">{work.summary}</div>
+          <div className="font-body text-list leading-body text-text-2">{work.summary}</div>
         )}
       </Link>
       {work.facets.length > 0 && (
