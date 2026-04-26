@@ -2,6 +2,8 @@ import type { Facet } from '@/shared/types/common';
 import { Link } from '@tanstack/react-router';
 import { cn } from '@/shared/utils/cn';
 
+const MAX_DEPTH = 2;
+
 interface FacetToggleBarProps {
   /** All facets to render as toggles. */
   facets: readonly Facet[];
@@ -21,8 +23,16 @@ interface FacetToggleBarProps {
 // selection independent of click order: `/facet/beauty,body` and
 // `/facet/body,beauty` aren't both reachable — the bar always emits
 // the schema-ordered tuple.
+//
+// **Depth cap.** When `MAX_DEPTH` (2) facets are already selected,
+// off-chips are disabled rather than linking to a depth-3 URL. The
+// prerender filter (vite.config.ts) skips depth-3+ paths; emitting
+// links to those paths from the UI would invite 404s in production.
+// Active chips remain clickable (clicking them removes that facet,
+// which is always a downward move in depth).
 export function FacetToggleBar({ facets, selected }: FacetToggleBarProps) {
   const selectedSet = new Set(selected);
+  const atMaxDepth = selected.length >= MAX_DEPTH;
 
   return (
     <nav
@@ -34,12 +44,29 @@ export function FacetToggleBar({ facets, selected }: FacetToggleBarProps) {
         const next = isOn
           ? facets.filter((f) => f !== facet && selectedSet.has(f))
           : facets.filter((f) => f === facet || selectedSet.has(f));
+        const isDisabled = !isOn && atMaxDepth;
         const className = cn(
           'inline-block rounded-[2px] px-2.5 py-1 font-body text-chip tracking-meta no-underline transition-colors duration-200',
           isOn
             ? 'bg-accent-warm/15 text-text ring-1 ring-accent-warm/40 hover:bg-accent-warm/20'
-            : 'bg-tag-bg text-tag-text hover:bg-border-lt hover:text-text',
+            : isDisabled
+              ? 'bg-tag-bg/50 text-text-3 cursor-not-allowed'
+              : 'bg-tag-bg text-tag-text hover:bg-border-lt hover:text-text',
         );
+
+        if (isDisabled) {
+          return (
+            <span
+              key={facet}
+              aria-disabled="true"
+              title="Two threads at a time — remove one to add another."
+              className={className}
+            >
+              {facet}
+            </span>
+          );
+        }
+
         if (next.length === 0) {
           return (
             <Link key={facet} to="/" aria-pressed={isOn} className={className}>
@@ -47,6 +74,7 @@ export function FacetToggleBar({ facets, selected }: FacetToggleBarProps) {
             </Link>
           );
         }
+
         return (
           <Link
             key={facet}

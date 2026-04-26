@@ -52,6 +52,22 @@ export default defineConfig({
         enabled: true,
         crawlLinks: true,
         failOnError: true,
+        // Cap multi-facet prerender to depth 2. The full power set of
+        // 8 facets (255 combinations) was 65% of the dist with most of
+        // it empty-intersection pages. Single (8) + pairs (28) = 36
+        // facet routes, all reachable, all carrying real intersections
+        // when works exist. Three-or-more-facet selections aren't
+        // generated; FacetToggleBar disables the off-chips at depth 2
+        // so those URLs aren't reachable from the UI in the first place.
+        // Trigger to revisit (cap to depth 3, or back to powerset):
+        // when authored work in 30+ pieces makes 3-facet intersections
+        // meaningful and the bundle still has room.
+        filter: (page) => {
+          const m = /^\/facet\/(.+?)\/?$/.exec(page.path);
+          if (!m) return true;
+          const facets = decodeURIComponent(m[1]!).split(',').filter(Boolean);
+          return facets.length <= 2;
+        },
         onSuccess: ({ page, html }) => {
           if (html.includes('content="noindex, nofollow"')) {
             return {
