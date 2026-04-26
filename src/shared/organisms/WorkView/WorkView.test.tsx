@@ -49,8 +49,12 @@ describe('WorkView', () => {
   it('renders facet chips when facets are present', async () => {
     renderWork(makeWork({ facets: ['craft', 'language'] }));
     await screen.findByRole('heading', { name: 'A Working Title' });
-    expect(screen.getByText('craft')).toBeInTheDocument();
-    expect(screen.getByText('language')).toBeInTheDocument();
+    // The chip row at the top — scoped to the facets region. The bottom
+    // outward invitation also renders the facet names as inline links;
+    // those are the *threads* line, not chips.
+    const chipRow = screen.getByLabelText('Facets');
+    expect(chipRow).toContainElement(screen.getAllByText('craft')[0]!);
+    expect(chipRow).toContainElement(screen.getAllByText('language')[0]!);
   });
 
   it('renders no chip row when facets is empty', async () => {

@@ -104,7 +104,12 @@ export function WorkView({ work }: WorkViewProps) {
         dangerouslySetInnerHTML={{ __html: work.html }}
       />
 
-      <WorkOutwardInvitation room={work.room} roomPath={roomPath} roomLabel={roomLabel} />
+      <WorkOutwardInvitation
+        room={work.room}
+        roomPath={roomPath}
+        roomLabel={roomLabel}
+        facets={work.facets}
+      />
     </article>
   );
 }

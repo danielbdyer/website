@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { WorkRow } from '@/shared/molecules/WorkRow/WorkRow';
+import { RoomOutwardInvitation } from '@/shared/molecules/RoomOutwardInvitation/RoomOutwardInvitation';
 import { getDisplayWorksByRoom, isPreviewWork, postureSchema } from '@/shared/content';
 import type { Posture } from '@/shared/types/common';
 import { cn } from '@/shared/utils/cn';
@@ -77,6 +78,10 @@ function SalonPage() {
           ))}
         </div>
       )}
+      <RoomOutwardInvitation
+        threads={['beauty', 'consciousness']}
+        toward={{ path: '/garden', label: 'The Garden' }}
+      />
     </Reveal>
   );
 }

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { WorkEntry } from '@/shared/molecules/WorkEntry/WorkEntry';
+import { RoomOutwardInvitation } from '@/shared/molecules/RoomOutwardInvitation/RoomOutwardInvitation';
 import { getDisplayWorksByRoom, isPreviewWork } from '@/shared/content';
 
 export const Route = createFileRoute('/study')({
@@ -48,6 +49,10 @@ function StudyPage() {
           ))}
         </div>
       )}
+      <RoomOutwardInvitation
+        threads={['consciousness', 'relation']}
+        toward={{ path: '/garden', label: 'The Garden' }}
+      />
     </Reveal>
   );
 }

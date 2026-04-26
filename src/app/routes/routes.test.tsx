@@ -76,7 +76,13 @@ describe('Routable navigation', () => {
     const { router } = renderAt('/studio/containers-not-pipelines');
     await screen.findByRole('heading', { level: 1, name: /Containers, not pipelines/i });
 
-    await user.click(screen.getByRole('link', { name: 'craft' }));
+    // The chip row at the top of the work page — disambiguated from the
+    // outward-invitation threads line at the bottom (which also links
+    // facet names to /facet/{facet}). Both are valid navigation surfaces;
+    // we test the chip explicitly here.
+    const chipRow = screen.getByLabelText('Facets');
+    const chip = chipRow.querySelector('a[href="/facet/craft"]')!;
+    await user.click(chip);
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/facet/craft');
