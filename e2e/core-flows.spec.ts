@@ -1,11 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-const roomLandings = [
-  { path: '/studio', heading: 'The Studio', navLabel: 'Studio' },
-  { path: '/garden', heading: 'The Garden', navLabel: 'Garden' },
-  { path: '/study', heading: 'The Study', navLabel: 'Study' },
-  { path: '/salon', heading: 'The Salon', navLabel: 'Salon' },
-] as const;
+// Routable nav coverage moved to vitest (src/app/routes/routes.test.tsx)
+// where it runs ~25× faster (1.2s for 7 cases vs ~30s in Playwright).
+// What remains here is what genuinely needs a real browser engine:
+// viewport-overflow assertions that depend on real CSS layout.
 
 const mobileCriticalPages = [
   '/',
@@ -16,39 +14,14 @@ const mobileCriticalPages = [
   '/salon/arvo-part-and-the-room-between-notes',
 ] as const;
 
-test('home navigation reaches each room landing', async ({ page }) => {
-  for (const room of roomLandings) {
-    await page.goto('/');
-    await page.getByRole('link', { name: room.navLabel }).click();
-    await expect(page).toHaveURL(new RegExp(`${room.path}/?$`));
-    await expect(page.getByRole('heading', { name: room.heading })).toBeVisible();
-  }
-});
-
-test('salon sample rows open detail pages and return to the room', async ({ page }) => {
-  await page.goto('/salon');
-
-  await page.locator('a[href="/salon/arvo-part-and-the-room-between-notes"]').click();
-  await expect(page).toHaveURL(/\/salon\/arvo-part-and-the-room-between-notes\/?$/);
-  await expect(
-    page.getByRole('heading', { name: /Arvo Pärt and the room between notes/i }),
-  ).toBeVisible();
-
-  await page.getByRole('link', { name: /← The Salon/i }).click();
-  await expect(page).toHaveURL(/\/salon\/?$/);
-  await expect(page.getByRole('heading', { name: 'The Salon' })).toBeVisible();
-});
-
-// Smoke tag: viewport overflow is a real-browser-only assertion (jsdom
-// has no layout engine), so this test must run in Playwright. The bug
-// it guards against — content escaping the viewport — is the kind of
-// CSS regression that changes shape silently and only shows up to a
-// visitor on a real device.
+// Smoke tag: viewport overflow is a real-browser-only assertion (happy-dom
+// and jsdom have no layout engine). The bug class it guards against —
+// content escaping the viewport — is exactly the kind of CSS regression
+// that changes shape silently and only shows up to a visitor on a real
+// device.
 test(
   'critical pages stay within the viewport without horizontal overflow',
-  {
-    tag: '@smoke',
-  },
+  { tag: '@smoke' },
   async ({ page }) => {
     for (const path of mobileCriticalPages) {
       await page.goto(path);
