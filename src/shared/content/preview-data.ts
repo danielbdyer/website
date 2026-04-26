@@ -68,6 +68,7 @@ const previewWorksByRoom: Record<PreviewRoom, DisplayWork[]> = {
       facets: ['craft', 'leadership', 'relation'],
       type: 'essay',
       feature: true,
+      thumbLabel: 'hopper · cape cod morning',
       body: `A platform team becomes legible when it stops mistaking motion for care. Pipelines optimize for throughput; containers optimize for arrival. One tells work where to go next. The other makes a place where work can settle long enough to become coherent.
 
 The distinction changes how a team writes documentation, reviews interfaces, and responds when another team arrives with half-shaped needs. A container is not passive. It has edges, expectations, and a held temperature. But its first gesture is hospitality rather than acceleration.

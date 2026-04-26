@@ -4,27 +4,66 @@ import { isPreviewWork } from '@/shared/content/preview';
 import type { Work, WorkImage } from '@/shared/content/schema';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
 import { workHeroTransitionName } from '@/shared/utils/view-transition-names';
 
-function WorkHero({ work, image }: { work: Work; image: WorkImage }) {
+// The hero figure at the top of a work page. Three states, mirroring
+// ImgSlot's contract:
+// - **filled**: a real authored image. Renders the photo full-width
+//   with a caption + credit beneath.
+// - **standin**: the work has no authored image but the preview is
+//   naming what would arrive (e.g., "hopper · cape cod morning"). The
+//   labeled gray field gives the morph from a FacetCard thumbnail a
+//   destination — without this, clicking a card on the facet page
+//   would flash to a hero-less work page and the View Transition would
+//   have nothing to morph into.
+// - **absent**: the work neither has an image nor names one. The hero
+//   slot is omitted entirely; the work begins with its title.
+//
+// Every visible state carries the canonical view-transition name so
+// FacetCard / SalonCard thumbnails morph into this element on click.
+function WorkHero({
+  work,
+  image,
+  thumbLabel,
+}: {
+  work: Work;
+  image: WorkImage | undefined;
+  thumbLabel: string | undefined;
+}) {
+  if (!image && !thumbLabel) return null;
   return (
     <figure
-      className="mb-8 -mx-4 overflow-hidden rounded-[2px] bg-bg-warm shadow-sm sm:-mx-0"
+      className="mb-8 overflow-hidden rounded-[2px] bg-bg-warm shadow-sm"
       style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
     >
-      <img
-        src={image.src}
-        alt={image.alt}
-        className="block h-auto w-full"
-        loading="eager"
-        decoding="async"
-      />
-      {(image.caption || image.credit) && (
-        <figcaption className="px-4 py-3 font-body text-meta italic tracking-meta text-text-3">
-          {image.caption}
-          {image.caption && image.credit ? ' · ' : ''}
-          {image.credit && <span className="not-italic text-text-3">{image.credit}</span>}
-        </figcaption>
+      {image ? (
+        <>
+          <img
+            src={image.src}
+            alt={image.alt}
+            className="block h-auto w-full"
+            loading="eager"
+            decoding="async"
+          />
+          {(image.caption || image.credit) && (
+            <figcaption className="px-4 py-3 font-body text-meta italic tracking-meta text-text-3">
+              {image.caption}
+              {image.caption && image.credit ? ' · ' : ''}
+              {image.credit && <span className="not-italic text-text-3">{image.credit}</span>}
+            </figcaption>
+          )}
+        </>
+      ) : (
+        // Stand-in state: the labeled gray field. The aspect mirrors
+        // the hi-fi (16:10) so the slot reads as "hero-shaped" even
+        // when empty. Naming the slot — "image slot · labeled
+        // (preview's honest stand-in)" — sits above the figure as a
+        // small italic eyebrow; that lives in the route, not here, so
+        // a future authored work doesn't carry the eyebrow.
+        <div className="relative aspect-[16/10]">
+          <ImgSlot kind="standin" label={thumbLabel ?? ''} />
+        </div>
       )}
     </figure>
   );
@@ -74,7 +113,11 @@ export function WorkView({ work }: WorkViewProps) {
         ← {roomLabel}
       </Link>
 
-      {work.image && <WorkHero work={work} image={work.image} />}
+      <WorkHero
+        work={work}
+        image={work.image}
+        thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
+      />
 
       <h1 className="mb-3.5 font-heading text-title leading-title font-normal tracking-display text-text">
         {work.title}

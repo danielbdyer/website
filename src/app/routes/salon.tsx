@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { SalonCard } from '@/shared/molecules/SalonCard/SalonCard';
 import { TREATMENTS } from '@/shared/molecules/SalonCard/treatment-list';
-import { withTransition } from '@/shared/hooks/useTransitionNavigate';
 import { getDisplayWorksByRoom, isPreviewWork, postureSchema } from '@/shared/content';
 import type { Posture } from '@/shared/types/common';
 import { cn } from '@/shared/utils/cn';
@@ -104,7 +103,11 @@ interface PostureFilterBarProps {
 // fires; the URL is updated via useNavigate so the back button works
 // and a copy/paste of the current URL preserves the filter.
 function PostureFilterBar({ postures, active }: PostureFilterBarProps) {
-  const navigate = withTransition(Route.useNavigate());
+  // The router's `defaultViewTransition: true` wraps the route commit
+  // in document.startViewTransition automatically — no manual wrap
+  // needed. The buttons (rather than anchors) keep the search-param
+  // URLs out of the prerender crawler's path discovery.
+  const navigate = Route.useNavigate();
   return (
     <nav
       aria-label="Salon posture filter"
