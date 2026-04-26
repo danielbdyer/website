@@ -4,7 +4,11 @@ import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
 import { RoomGlyph } from '@/shared/atoms/RoomGlyph/RoomGlyph';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 import { Link } from '@tanstack/react-router';
-import { workHeroTransitionName } from '@/shared/utils/view-transition-names';
+import {
+  workHeroTransitionName,
+  workMetaTransitionName,
+  workTitleTransitionName,
+} from '@/shared/utils/view-transition-names';
 import { cn } from '@/shared/utils/cn';
 
 const ROOM_LABELS = {
@@ -84,6 +88,7 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
             'font-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent',
             size === 'feature' ? 'text-deck' : 'text-heading',
           )}
+          style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
         >
           {work.title}
         </h3>
@@ -99,7 +104,12 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
           </p>
         )}
 
-        <div className="mt-auto font-body text-meta italic text-text-3">{formattedDate}</div>
+        <div
+          className="mt-auto font-body text-meta italic text-text-3"
+          style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
+        >
+          {formattedDate}
+        </div>
       </Link>
 
       {visibleFacets.length > 0 && (

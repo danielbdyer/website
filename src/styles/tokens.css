@@ -464,26 +464,26 @@ body::before {
    "arrives, then settles" feel as the Reveal molecule.
    See INTERACTION_DESIGN.md §"Page and Route Transitions". */
 
-::view-transition-group(root) {
-  animation-duration: 320ms;
+/* Universal default for every view-transition pseudo (named or root).
+   600ms feels like a held gesture — long enough for the eye to track
+   the morph from card-shape to hero-shape rather than reading it as a
+   snap. Easing matches the site's signature curve so the transition
+   has the same "arrives and settles" rhythm as the Reveal molecule. */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 600ms;
   animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* Root override — content not individually named cross-fades faster
+   so the navigation feels snappy where nothing in particular is
+   morphing. The root is the everything-else snapshot; bringing it
+   down to 320ms keeps simple navigations from dragging. */
+::view-transition-group(root),
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 320ms;
-  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-/* Per-element transitions (work-hero-*) get a slightly longer easing
-   so the thumbnail-to-hero morph feels like a deliberate gesture
-   rather than a snap. Named via attribute selector so the rule applies
-   to every work-hero participant without per-slug declarations. */
-::view-transition-group(*):where([class*='work-hero']),
-::view-transition-old(*):where([class*='work-hero']),
-::view-transition-new(*):where([class*='work-hero']) {
-  animation-duration: 480ms;
-  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {

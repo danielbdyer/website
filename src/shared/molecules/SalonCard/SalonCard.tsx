@@ -2,6 +2,10 @@ import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { Work } from '@/shared/content/schema';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import {
+  workMetaTransitionName,
+  workTitleTransitionName,
+} from '@/shared/utils/view-transition-names';
 import { cn } from '@/shared/utils/cn';
 import { useCardPlayback } from './useCardPlayback';
 
@@ -59,7 +63,10 @@ function CardTextRegion({ work }: { work: Work }) {
       params={{ room: work.room, slug: work.slug }}
       className="relative z-10 block min-w-0 pt-1 text-inherit no-underline"
     >
-      <div className="mb-2 font-body text-meta italic tracking-meta text-text-3">
+      <div
+        className="mb-2 font-body text-meta italic tracking-meta text-text-3"
+        style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
+      >
         {work.posture && (
           <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
             {work.posture}
@@ -72,7 +79,10 @@ function CardTextRegion({ work }: { work: Work }) {
         )}
         <span>{formattedDate}</span>
       </div>
-      <div className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent">
+      <div
+        className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent"
+        style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
+      >
         {work.title}
       </div>
       {work.summary && (
@@ -100,7 +110,6 @@ export function SalonCard({
       <article
         ref={cardRef as React.RefObject<HTMLElement>}
         className="group relative flex flex-col gap-3 border-b border-border-lt py-6 transition-colors duration-300 first:border-t hover:border-border sm:py-7"
-        style={{ viewTransitionName: `salon-card-${work.room}-${work.slug}` }}
         onMouseEnter={replay}
         onTouchStart={replay}
       >

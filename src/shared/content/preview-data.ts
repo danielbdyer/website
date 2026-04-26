@@ -69,6 +69,12 @@ const previewWorksByRoom: Record<PreviewRoom, DisplayWork[]> = {
       type: 'essay',
       feature: true,
       thumbLabel: 'hopper · cape cod morning',
+      image: {
+        src: '/images/studio/hopper-cape-cod-morning.svg',
+        alt: 'A sunlit umber field — placeholder for a Hopper reference',
+        caption: 'Hopper — Cape Cod Morning (placeholder)',
+        credit: 'Edward Hopper, 1950',
+      },
       body: `A platform team becomes legible when it stops mistaking motion for care. Pipelines optimize for throughput; containers optimize for arrival. One tells work where to go next. The other makes a place where work can settle long enough to become coherent.
 
 The distinction changes how a team writes documentation, reviews interfaces, and responds when another team arrives with half-shaped needs. A container is not passive. It has edges, expectations, and a held temperature. But its first gesture is hospitality rather than acceleration.
@@ -319,6 +325,12 @@ I trust what arrives there differently. Not because it is always better, but bec
       type: 'note',
       posture: 'listening',
       thumbLabel: 'bach · suite no. 1',
+      image: {
+        src: '/images/salon/bach-suite-no-1.svg',
+        alt: 'A near-black field — placeholder for a Bach Suite no. 1 recording',
+        caption: 'Bach — Cello Suite No. 1, BWV 1007',
+        credit: 'Johann Sebastian Bach, 1717',
+      },
       referent: {
         type: 'music-composition',
         name: 'Cello Suite No. 1 in G major, BWV 1007',
@@ -342,6 +354,12 @@ I keep thinking about what else in a life could be restored by being played that
       type: 'note',
       posture: 'looking',
       thumbLabel: 'klimt · gold ground',
+      image: {
+        src: '/images/salon/klimt-gold-ground.svg',
+        alt: 'A gold field — placeholder for the Stoclet Frieze',
+        caption: 'Klimt — Stoclet Frieze (gold ground, detail)',
+        credit: 'Gustav Klimt, 1911',
+      },
       referent: {
         type: 'visual-artwork',
         name: 'Stoclet Frieze (gold ground, detail)',
@@ -365,6 +383,12 @@ What I leave with is not symbolism so much as permission: the world does not alw
       type: 'note',
       posture: 'listening',
       thumbLabel: 'part · tintinnabuli',
+      image: {
+        src: '/images/salon/part-tintinnabuli.svg',
+        alt: 'A pale stone field — placeholder for a Pärt score detail',
+        caption: 'Pärt — Spiegel im Spiegel (score detail)',
+        credit: 'Arvo Pärt, 1978',
+      },
       referent: {
         type: 'music-composition',
         name: 'Spiegel im Spiegel',
@@ -388,6 +412,12 @@ The lesson is aesthetic and moral at once: enough form to ring, enough space to 
       type: 'note',
       posture: 'reading',
       thumbLabel: 'score detail · tintinnabuli',
+      image: {
+        src: '/images/salon/bouteneff-out-of-silence.svg',
+        alt: 'A muted brown field — placeholder for a book on Pärt',
+        caption: 'Bouteneff — Out of Silence (book cover)',
+        credit: 'Peter C. Bouteneff, 2015',
+      },
       referent: {
         type: 'book',
         name: 'Arvo Pärt: Out of Silence',
@@ -411,6 +441,12 @@ Sometimes criticism is at its best when it knows it is only a threshold.`,
       type: 'note',
       posture: 'looking',
       thumbLabel: 'vermeer · small balance',
+      image: {
+        src: '/images/salon/vermeer-small-balance.svg',
+        alt: 'A slate-blue field — placeholder for the Vermeer Woman Holding a Balance',
+        caption: 'Vermeer — Woman Holding a Balance',
+        credit: 'Johannes Vermeer, 1664',
+      },
       referent: {
         type: 'visual-artwork',
         name: 'Woman Holding a Balance',
@@ -433,6 +469,12 @@ I leave wanting to make rooms where that kind of attention is possible, not only
       type: 'note',
       posture: 'reading',
       thumbLabel: 'hockney · a bigger book',
+      image: {
+        src: '/images/salon/hockney-a-bigger-book.svg',
+        alt: 'A green field — placeholder for the Hockney book',
+        caption: 'Hockney — A Bigger Book',
+        credit: 'David Hockney, 2016',
+      },
       referent: {
         type: 'book',
         name: 'A Bigger Book',
@@ -456,6 +498,12 @@ I like the reminder that scale changes genre. A small book can teach a painting 
       type: 'note',
       posture: 'looking',
       thumbLabel: 'turner · parliament burning',
+      image: {
+        src: '/images/salon/turner-parliament-burning.svg',
+        alt: 'A burnt-orange field — placeholder for the Turner painting',
+        caption: 'Turner — The Burning of the Houses of Lords and Commons',
+        credit: 'J. M. W. Turner, 1835',
+      },
       referent: {
         type: 'visual-artwork',
         name: 'The Burning of the Houses of Lords and Commons',
