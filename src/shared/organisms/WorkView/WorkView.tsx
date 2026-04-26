@@ -4,6 +4,7 @@ import { isPreviewWork } from '@/shared/content/preview';
 import type { Room } from '@/shared/types/common';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 import { WorkReferent } from '@/shared/atoms/WorkReferent/WorkReferent';
+import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
 import { WorkHero } from '@/shared/molecules/WorkHero/WorkHero';
 import { WorkOutwardInvitation } from '@/shared/molecules/WorkOutwardInvitation/WorkOutwardInvitation';
 import {
@@ -47,6 +48,12 @@ export function WorkView({ work }: WorkViewProps) {
     day: 'numeric',
   });
   const thumbLabel = isPreviewWork(work) ? work.preview.thumbLabel : undefined;
+  // Wikilinks render via dangerouslySetInnerHTML as raw `<a>` elements;
+  // without delegation, a click triggers a full document reload (the
+  // router only intercepts clicks on its own <Link>). The hook routes
+  // internal hrefs through the router so wikilinks share the SPA's
+  // view-transition + scroll-restoration lifecycle.
+  const onProseClick = useInternalLinkDelegation();
 
   return (
     <article>
@@ -102,8 +109,15 @@ export function WorkView({ work }: WorkViewProps) {
         </div>
       )}
 
+      {/* The onClick handler is event-delegation only — the
+          interactive elements are the `<a>` anchors inside the prose.
+          Keyboard activation of an anchor (Enter on focus) fires a
+          click event that bubbles to this handler, so keyboard access
+          is preserved without a separate keyDown listener. */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         className={cn('prose', work.type === 'poem' && 'prose-poem')}
+        onClick={onProseClick}
         dangerouslySetInnerHTML={{ __html: work.html }}
       />
 
