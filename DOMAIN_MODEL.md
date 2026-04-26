@@ -26,7 +26,9 @@ At the center of the model is the **work**. Every other concept exists to give w
 
 A work is the unit of content. It lives in exactly one room. It carries zero or more facets — threads that cut across rooms, letting a visitor follow a dimension of Danny's life from one room into another.
 
-**Modes** — a separate register for *how* a work expresses itself rather than *what* it's about — are held conceptually but not yet modeled. They are named below and left architecturally absent until they are needed.
+**Postures** — `listening`, `looking`, `reading` — are a Salon-room axis describing the stance of attention from which a Salon work was made. They are modeled below, distinct from facets and from the held modes.
+
+**Modes** — a separate register for *how* a work expresses itself rather than *what* it's about — are held conceptually but not yet modeled. They are named below and left architecturally absent until they are needed. Postures are not modes; postures answer *from-where* (what kind of attention), modes answer *in-what-register* (devotion, play). The two are at different layers and can compose.
 
 ---
 
@@ -105,6 +107,40 @@ The facet set is **closed** in the sense that a work can only carry facets from 
 
 ---
 
+## Postures (Salon)
+
+A **posture** is the stance of attention from which a Salon work was made — the encounter that the writing documents. Postures are Salon-specific; they do not appear in the Studio, Garden, or Study.
+
+Three postures, closed set:
+
+| Posture | What it names |
+|---|---|
+| **listening** | Attention oriented around sound. A Salon work that came out of music — a recording, a live performance, a remembered phrase. |
+| **looking** | Attention oriented around sight. A Salon work that came out of an artwork, a painting, a frieze, a photograph, a film still. |
+| **reading** | Reading-about-listening-and-looking. A Salon work whose encounter was with a book or article *about* music or visual art rather than with the music or art directly. The Salon's reflexive register. |
+
+### What a posture is not
+
+- **Not a facet.** Facets cross rooms; postures are bound to the Salon. A poem in the Garden does not carry a posture.
+- **Not a mode.** Modes (held) are how a work expresses itself; postures are what kind of attention the work documents. They occupy different layers and can both apply.
+- **Not exhaustive.** A salon work need not carry a posture (the field is optional). A reflective piece that doesn't fit listening / looking / reading does not need to be forced into one.
+- **Not the same as the referent.** A `looking` work is usually about a `visual-artwork`; a `reading` work is usually about a `book` — but the mapping is editorial, not enforced. A `looking` work could point at a `book` (looking at art reproductions in a Hockney book) and that's a real, intentional crossing.
+
+### Invariants
+
+- A work carries **zero or one** posture. Postures are mutually exclusive — an entry is in one posture at a time.
+- Postures appear only on Salon works. The schema does not enforce per-room constraints today (a posture set on a Studio work would still parse), but it is a content error and `CONTENT_SCHEMA.md` notes the convention.
+
+### Referents
+
+A **referent** is the external creative work a Salon entry is *about* — the artwork, composition, book, or article whose encounter the entry documents. Referents are an authorial structure that feeds the JSON-LD relational graph (Schema.org `about`) so that "Klimt — Stoclet Frieze" is published as a `VisualArtwork` with a `creator` Person, not as a string in a caption.
+
+Seven referent types are recognized: `visual-artwork`, `music-composition`, `music-album`, `music-recording`, `book`, `article`, `movie`. Each maps to a Schema.org class in `src/shared/seo/schema-org.ts`; each picks the role-aware creator property (`composer` for compositions, `author` for books, `byArtist` for recordings, `director` for films, `creator` as the canonical fallback).
+
+Referents are optional; a Salon work without a referent (e.g., a personal note about listening practices in general) is valid.
+
+---
+
 ## Modes
 
 A **mode** is a register — a way in which a work expresses itself, rather than a dimension of what it's about. Facets answer *what*. Modes answer *how*. A poem about leadership is in the `leadership` facet; whether it reads as devotional practice or as play is a mode.
@@ -169,6 +205,17 @@ export type Facet =
   | 'becoming'
   | 'relation'
   | 'body';
+
+export type Posture = 'listening' | 'looking' | 'reading';
+
+export type ReferentType =
+  | 'visual-artwork'
+  | 'music-composition'
+  | 'music-album'
+  | 'music-recording'
+  | 'book'
+  | 'article'
+  | 'movie';
 ```
 
 This is the machine-readable slice of the model. The types mirror this document; if the two disagree, this document is authoritative and the types should be updated. `Mode` is intentionally absent — see above.

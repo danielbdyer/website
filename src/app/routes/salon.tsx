@@ -2,8 +2,9 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { WorkRow } from '@/shared/molecules/WorkRow/WorkRow';
 import { getDisplayWorksByRoom, isPreviewWork } from '@/shared/content';
+import type { Posture } from '@/shared/types/common';
 
-const SALON_POSTURES = ['listening', 'looking'] as const;
+const SALON_POSTURES = ['listening', 'looking', 'reading'] as const satisfies readonly Posture[];
 
 export const Route = createFileRoute('/salon')({
   loader: async () => {
@@ -33,7 +34,7 @@ function SalonPage() {
   const { works } = Route.useLoaderData();
   const previewNote = works.find(isPreviewWork)?.preview.roomNote;
   const previewPostures = SALON_POSTURES.filter((posture) =>
-    works.some((work) => isPreviewWork(work) && work.preview.kicker === posture),
+    works.some((work) => work.posture === posture),
   );
 
   return (
@@ -72,7 +73,6 @@ function SalonPage() {
             <WorkRow
               key={work.slug}
               work={work}
-              kicker={isPreviewWork(work) ? work.preview.kicker : undefined}
               thumbLabel={isPreviewWork(work) ? work.preview.thumbLabel : undefined}
             />
           ))}

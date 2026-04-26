@@ -10,8 +10,12 @@ export interface PreviewMeta {
   kind: 'sample';
   roomNote: string;
   workNote: string;
+  /**
+   * Honest stand-in label for an attached image while the live image
+   * isn't on the page yet. Lowercase — reads as annotation, not attempt.
+   * Independent of `Work.image` (which is the real image when authored).
+   */
   thumbLabel?: string;
-  kicker?: string;
 }
 
 export type DisplayWork = Work & {
