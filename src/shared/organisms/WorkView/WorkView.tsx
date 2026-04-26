@@ -112,6 +112,7 @@ export function WorkView({ work }: WorkViewProps) {
         roomPath={roomPath}
         roomLabel={roomLabel}
         facets={work.facets}
+        backlinks={work.backlinks}
       />
     </article>
   );

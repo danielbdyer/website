@@ -1,12 +1,21 @@
-import { marked } from 'marked';
+import { Marked } from 'marked';
 import type { Room, Facet, Posture } from '@/shared/types/common';
-import type { WorkImage, WorkReferent, WorkType } from '@/shared/content/schema';
+import type { BacklinkRef, WorkImage, WorkReferent, WorkType } from '@/shared/content/schema';
 import {
   SAMPLE_ROOM_NOTE,
   SAMPLE_WORK_NOTE,
   type DisplayWork,
   type PreviewMeta,
 } from '@/shared/content/preview';
+import {
+  invertOutboundGraph,
+  resolveWikilink,
+  scanWikilinks,
+  slugIndexKey,
+  type SlugIndex,
+  type WikilinkTarget,
+} from '@/shared/content/wikilinks';
+import { wikilinkExtension } from '@/shared/content/wikilink-marked';
 
 type PreviewRoom = Exclude<Room, 'foyer'>;
 
@@ -35,8 +44,11 @@ function makePreviewMeta(seed: PreviewSeed): PreviewMeta {
   };
 }
 
+// First-pass shape: a DisplayWork without resolved html or backlinks.
+// The two-pass finalizer (`finalizePreviewWorks` at the bottom of this
+// file) takes a list of these and produces the real DisplayWorks with
+// wikilink-resolved html and computed backlinks.
 function makePreviewWork(seed: PreviewSeed): DisplayWork {
-  const breaks = seed.type === 'poem';
   return {
     title: seed.title,
     date: new Date(seed.date),
@@ -51,12 +63,76 @@ function makePreviewWork(seed: PreviewSeed): DisplayWork {
     room: seed.room,
     slug: seed.slug,
     body: seed.body,
-    html: marked.parse(seed.body, { async: false, breaks }),
+    html: '', // filled in finalize pass below
+    backlinks: [], // filled in finalize pass below
     preview: makePreviewMeta(seed),
   };
 }
 
-const previewWorksByRoom: Record<PreviewRoom, DisplayWork[]> = {
+function renderPreviewHtml(work: DisplayWork, slugIndex: SlugIndex): string {
+  const breaks = work.type === 'poem';
+  const m = new Marked();
+  m.use(
+    wikilinkExtension({
+      currentRoom: work.room,
+      resolve: (token) => resolveWikilink(token, work.room, slugIndex),
+      sourceLabel: `${work.room}/${work.slug}`,
+    }),
+  );
+  return m.parse(work.body, { async: false, breaks }) as string;
+}
+
+function finalizePreviewWorks(
+  worksByRoom: Record<PreviewRoom, DisplayWork[]>,
+): Record<PreviewRoom, DisplayWork[]> {
+  const all = Object.values(worksByRoom).flat();
+
+  // Build the slug index: key on `${room}/${slug}` so cross-room
+  // wikilinks work alongside same-room ones.
+  const slugIndex = new Map<string, WikilinkTarget>();
+  for (const w of all) {
+    slugIndex.set(slugIndexKey(w.room, w.slug), {
+      room: w.room,
+      slug: w.slug,
+      title: w.title,
+    });
+  }
+
+  // First pass — render html with the wikilink extension. Also record
+  // outbound edges per work so we can invert into backlinks.
+  const outbound = new Map<string, WikilinkTarget[]>();
+  const withHtml = all.map((w) => {
+    const html = renderPreviewHtml(w, slugIndex);
+    const tokens = scanWikilinks(w.body);
+    const targets: WikilinkTarget[] = [];
+    for (const t of tokens) {
+      const resolved = resolveWikilink(t, w.room, slugIndex);
+      if (resolved) targets.push(resolved.target);
+    }
+    if (targets.length > 0) outbound.set(slugIndexKey(w.room, w.slug), targets);
+    return { ...w, html };
+  });
+
+  // Second pass — invert outbound to backlinks, attach.
+  const dateLookup = (key: string) => {
+    const found = withHtml.find((w) => slugIndexKey(w.room, w.slug) === key);
+    return found?.date ?? new Date(0);
+  };
+  const backlinkMap = invertOutboundGraph(outbound, slugIndex, dateLookup);
+  const finalized = withHtml.map((w) => ({
+    ...w,
+    backlinks: (backlinkMap.get(slugIndexKey(w.room, w.slug)) ?? []) as BacklinkRef[],
+  }));
+
+  return {
+    studio: finalized.filter((w) => w.room === 'studio'),
+    garden: finalized.filter((w) => w.room === 'garden'),
+    study: finalized.filter((w) => w.room === 'study'),
+    salon: finalized.filter((w) => w.room === 'salon'),
+  };
+}
+
+const previewWorksByRoomRaw: Record<PreviewRoom, DisplayWork[]> = {
   studio: [
     makePreviewWork({
       room: 'studio',
@@ -265,7 +341,7 @@ its own kind of poem.`,
 
 As a child, I mistook that consistency for personality. Only later did I understand it as devotion: not dramatic, not announced, not even especially expressive. Just the willingness to make the same faithful gesture again before mood had granted permission.
 
-I keep circling the question of what a devotion rests on when no visible floor appears beneath it. Sometimes the answer is belief. Sometimes it is lineage. Sometimes it is only that the hands have learned more quickly than the mind and are already kneeling where the mind still stands.`,
+I keep circling the question of what a devotion rests on when no visible floor appears beneath it. Sometimes the answer is belief. Sometimes it is lineage. Sometimes it is only that the hands have learned more quickly than the mind and are already kneeling where the mind still stands. The same waiting is named in [[spanda-waiting-for-the-tremor]] — the tremor that precedes movement, the floor that is never seen but is felt to be there.`,
     }),
     makePreviewWork({
       room: 'study',
@@ -518,6 +594,10 @@ A painting can record that crossing without pinning it down. That may be one of 
     }),
   ],
 };
+
+// Final pass: render html with wikilink resolution and attach backlinks.
+// Done once at module load; results cached in `previewWorksByRoom`.
+const previewWorksByRoom = finalizePreviewWorks(previewWorksByRoomRaw);
 
 export function getPreviewWorksByRoom(room: Room): DisplayWork[] {
   if (room === 'foyer') return [];

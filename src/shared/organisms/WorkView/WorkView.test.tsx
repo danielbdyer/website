@@ -20,6 +20,7 @@ function makeWork(overrides: Partial<DisplayWork> = {}): DisplayWork {
     facets: [],
     feature: false,
     draft: false,
+    backlinks: [],
     room: 'garden',
     slug: 'a-working-title',
     ...overrides,
