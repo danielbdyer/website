@@ -56,13 +56,17 @@ export default defineConfig({
     }),
     viteReact(),
     tailwindcss(),
-    visualizer({
-      filename: '.stats/bundle.html',
-      gzipSize: true,
-      brotliSize: true,
-      template: 'treemap',
-    }),
-  ],
+    // Visualizer is gated: it adds noticeable build time and only earns
+    // its keep when a contributor is hunting bundle weight. Run via
+    // `pnpm build:analyze` to enable; CI builds skip it.
+    process.env.ANALYZE === '1' &&
+      visualizer({
+        filename: '.stats/bundle.html',
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap',
+      }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

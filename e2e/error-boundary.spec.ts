@@ -40,9 +40,13 @@ function expectNoFailureSurface(content: string, where: string) {
   }
 }
 
+// Smoke tag: every direct-load case is part of the core smoke tier that
+// runs on every `pnpm test`. The class of bug these guard against
+// (loader failures during hydration, like the createServerFn break
+// that broke client-side nav) only reproduces in a real browser.
 test.describe('Error boundary fallback never renders', () => {
   for (const path of PRERENDERED_PATHS) {
-    test(`direct load: ${path}`, async ({ page }) => {
+    test(`direct load: ${path}`, { tag: '@smoke' }, async ({ page }) => {
       const consoleErrors: string[] = [];
       page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
       page.on('console', (msg) => {
@@ -55,46 +59,50 @@ test.describe('Error boundary fallback never renders', () => {
     });
   }
 
-  test('walking the nav between every room never lands on the failure surface', async ({
-    page,
-  }) => {
-    // The original bug: every client-side navigation between rooms hit
-    // the failure surface because the route loader called a server fn
-    // that 404'd in the SSG-only deploy. That bug was masked by
-    // `reloadDocument` everywhere, then re-exposed when client-side nav
-    // was re-enabled. This walk is the exact scenario that reproduced
-    // it; if any surface here regresses, that whole class of bug is
-    // back.
-    const consoleErrors: string[] = [];
-    page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') consoleErrors.push(`console.error: ${msg.text()}`);
-    });
+  test(
+    'walking the nav between every room never lands on the failure surface',
+    {
+      tag: '@smoke',
+    },
+    async ({ page }) => {
+      // The original bug: every client-side navigation between rooms hit
+      // the failure surface because the route loader called a server fn
+      // that 404'd in the SSG-only deploy. That bug was masked by
+      // `reloadDocument` everywhere, then re-exposed when client-side nav
+      // was re-enabled. This walk is the exact scenario that reproduced
+      // it; if any surface here regresses, that whole class of bug is
+      // back.
+      const consoleErrors: string[] = [];
+      page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') consoleErrors.push(`console.error: ${msg.text()}`);
+      });
 
-    await page.goto('/');
-    expectNoFailureSurface(await page.content(), 'foyer (initial)');
+      await page.goto('/');
+      expectNoFailureSurface(await page.content(), 'foyer (initial)');
 
-    // Walk every room twice in a different order to catch any "first
-    // navigation works, second one breaks" or "boundary stays poisoned"
-    // regressions.
-    const sequence = [
-      'Studio',
-      'Garden',
-      'Study',
-      'Salon',
-      'Studio',
-      'Salon',
-      'Garden',
-      'Study',
-    ] as const;
-    for (const room of sequence) {
-      await page.getByRole('link', { name: room, exact: true }).click();
-      await page.waitForLoadState('networkidle');
-      expectNoFailureSurface(await page.content(), `room ${room} via nav`);
-    }
+      // Walk every room twice in a different order to catch any "first
+      // navigation works, second one breaks" or "boundary stays poisoned"
+      // regressions.
+      const sequence = [
+        'Studio',
+        'Garden',
+        'Study',
+        'Salon',
+        'Studio',
+        'Salon',
+        'Garden',
+        'Study',
+      ] as const;
+      for (const room of sequence) {
+        await page.getByRole('link', { name: room, exact: true }).click();
+        await page.waitForLoadState('networkidle');
+        expectNoFailureSurface(await page.content(), `room ${room} via nav`);
+      }
 
-    expect.soft(consoleErrors, 'console errors during nav').toEqual([]);
-  });
+      expect.soft(consoleErrors, 'console errors during nav').toEqual([]);
+    },
+  );
 
   test('opening a work and returning to its room never lands on the failure surface', async ({
     page,

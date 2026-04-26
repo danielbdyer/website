@@ -39,30 +39,41 @@ test('salon sample rows open detail pages and return to the room', async ({ page
   await expect(page.getByRole('heading', { name: 'The Salon' })).toBeVisible();
 });
 
-test('critical pages stay within the viewport without horizontal overflow', async ({ page }) => {
-  for (const path of mobileCriticalPages) {
-    await page.goto(path);
+// Smoke tag: viewport overflow is a real-browser-only assertion (jsdom
+// has no layout engine), so this test must run in Playwright. The bug
+// it guards against — content escaping the viewport — is the kind of
+// CSS regression that changes shape silently and only shows up to a
+// visitor on a real device.
+test(
+  'critical pages stay within the viewport without horizontal overflow',
+  {
+    tag: '@smoke',
+  },
+  async ({ page }) => {
+    for (const path of mobileCriticalPages) {
+      await page.goto(path);
 
-    const metrics = await page.evaluate(() => {
-      const nav = document.querySelector('nav');
-      const main = document.querySelector('main');
-      const navBox = nav?.getBoundingClientRect();
-      const mainBox = main?.getBoundingClientRect();
+      const metrics = await page.evaluate(() => {
+        const nav = document.querySelector('nav');
+        const main = document.querySelector('main');
+        const navBox = nav?.getBoundingClientRect();
+        const mainBox = main?.getBoundingClientRect();
 
-      return {
-        innerWidth: window.innerWidth,
-        scrollWidth: document.documentElement.scrollWidth,
-        navLeft: navBox?.left ?? 0,
-        navRight: navBox?.right ?? 0,
-        mainLeft: mainBox?.left ?? 0,
-        mainRight: mainBox?.right ?? 0,
-      };
-    });
+        return {
+          innerWidth: window.innerWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          navLeft: navBox?.left ?? 0,
+          navRight: navBox?.right ?? 0,
+          mainLeft: mainBox?.left ?? 0,
+          mainRight: mainBox?.right ?? 0,
+        };
+      });
 
-    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.innerWidth + 1);
-    expect(metrics.navLeft).toBeGreaterThanOrEqual(-1);
-    expect(metrics.mainLeft).toBeGreaterThanOrEqual(-1);
-    expect(metrics.navRight).toBeLessThanOrEqual(metrics.innerWidth + 1);
-    expect(metrics.mainRight).toBeLessThanOrEqual(metrics.innerWidth + 1);
-  }
-});
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.innerWidth + 1);
+      expect(metrics.navLeft).toBeGreaterThanOrEqual(-1);
+      expect(metrics.mainLeft).toBeGreaterThanOrEqual(-1);
+      expect(metrics.navRight).toBeLessThanOrEqual(metrics.innerWidth + 1);
+      expect(metrics.mainRight).toBeLessThanOrEqual(metrics.innerWidth + 1);
+    }
+  },
+);
