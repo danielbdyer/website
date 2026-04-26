@@ -1,0 +1,88 @@
+# Ratchet Lighthouse floors upward when scores have sustained
+# improvements. Runs lhci with multi-run sampling to absorb jitter,
+# computes confident new floors via scripts/ratchet-lighthouse-floors.mjs,
+# and opens a PR if any floor would raise. The PR body shows the data
+# (current → proposed, observed minimum, run count) so the human review
+# is informed.
+#
+# Floors only ratchet UPWARD — see the script for the buffer + min-delta
+# rules that prevent jittery raises. A score regression doesn't drop the
+# floor here; that's still the job of the assertions in lighthouserc.cjs,
+# which block PR merges when scores fall below the floor.
+#
+# Run cadence: weekly on Monday morning (UTC), plus workflow_dispatch
+# for manual triggers when you want to ratchet in a specific PR's branch.
+
+name: Ratchet Lighthouse Floors
+
+on:
+  schedule:
+    # Monday 13:00 UTC — early enough that any resulting PR can be
+    # reviewed during the Monday/Tuesday work window.
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+
+jobs:
+  ratchet:
+    name: Sample scores and propose raises
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # `lhci collect` (not autorun) skips assertions — we want raw
+      # samples even if current floors are already met. numberOfRuns=5
+      # gives the ratchet script enough samples to take a confident min.
+      - name: Lighthouse — 5 runs per URL
+        run: pnpm exec lhci collect --config=./lighthouserc.cjs --numberOfRuns=5
+
+      - name: Compute proposed floor raises
+        id: ratchet
+        run: pnpm exec node ./scripts/ratchet-lighthouse-floors.mjs
+
+      # Only opens a PR when the ratchet script actually changed
+      # lighthouserc-floors.json. peter-evans/create-pull-request is
+      # idempotent: if a PR with the same branch already exists, it
+      # updates that PR instead of creating a new one.
+      - name: Open or update PR with raised floors
+        if: steps.ratchet.outputs.changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: 'chore(lighthouse): raise floors after sustained improvements'
+          branch: chore/ratchet-lighthouse-floors
+          delete-branch: true
+          title: 'chore(lighthouse): raise floors after sustained improvements'
+          body: |
+            Automated proposal from `.github/workflows/ratchet-lighthouse.yml`.
+
+            ${{ steps.ratchet.outputs.summary }}
+
+            ---
+
+            Floors are computed from the minimum across 5 Lighthouse runs per URL with a small jitter buffer. The script never lowers a floor. Review the changes and merge if the proposal looks right; close the PR to ignore until the next ratchet run.
+          add-paths: |
+            lighthouserc-floors.json
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-ratchet-report
+          path: .lighthouseci/
+          retention-days: 30

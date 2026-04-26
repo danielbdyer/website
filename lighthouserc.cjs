@@ -7,29 +7,20 @@
 // Runs in CI via .github/workflows/ci.yml (the `lighthouse` job).
 //
 // High-water-mark policy: every assertion is `error` (blocking). Floors
-// are calibrated to the current measured baseline — when CI consistently
-// scores above a floor, raise the floor in the same PR that explains
-// why. Raises are intentional, not automatic. Drops below a floor block
-// the merge and the regression is investigated.
+// live in `lighthouserc-floors.json` (separated so the ratchet workflow
+// can mutate them programmatically without parsing this CJS file).
+// `pnpm lighthouse:report` after every run prints actual scores plus
+// headroom over the floor.
 //
-// Why per-URL assertions:
-//
-// The foyer (/) is the canonical SEO + a11y surface — no preview content,
-// indexable, the page that meets visitors first. It hits 1.0 across the
-// board today and the spec commits to keeping it there.
-//
-// Room landings (/studio, /garden, /study, /salon) are preview-content
-// pages that emit `noindex, nofollow` to keep sample text out of search
-// indexes. Lighthouse penalises that meta heavily (SEO ~0.63). They also
-// scored a single accessibility violation (a11y ~0.95) — the contrast
-// fix in the previous commit should graduate them back to 1.0; the
-// 0.95 floor here gives a one-PR transition window before tightening.
-// As real content lands and `noindex` lifts, both floors graduate back
-// to 1.0 in the same PR that publishes the work.
-//
-// The lhci CLI rejects mixing top-level `assertions` with `assertMatrix`,
-// so the foyer ruleset is expressed as its own matchingUrlPattern entry
-// rather than a default + override.
+// Floors only ratchet upward:
+//   - Drops below floor block PR merge (this file's `error` assertions).
+//   - Sustained improvements raise floors via the scheduled workflow at
+//     `.github/workflows/ratchet-lighthouse.yml`, which opens a PR with
+//     the proposed raises after multi-run sampling.
+// Manual edits to lighthouserc-floors.json are also welcome — the
+// ratchet is for automation, not exclusivity.
+
+const floors = require('./lighthouserc-floors.json');
 
 /** @type {import('@lhci/cli').Config} */
 module.exports = {
@@ -49,32 +40,15 @@ module.exports = {
       },
     },
     assert: {
-      assertMatrix: [
-        // Foyer — the high-water mark. Indexable, no preview content,
-        // the page the site commits to keeping at 1.0 a11y/SEO.
-        {
-          matchingUrlPattern: '^http://localhost/$',
-          assertions: {
-            'categories:performance': ['error', { minScore: 0.95 }],
-            'categories:accessibility': ['error', { minScore: 1.0 }],
-            'categories:best-practices': ['error', { minScore: 0.95 }],
-            'categories:seo': ['error', { minScore: 1.0 }],
-          },
-        },
-        // Room landings — preview-content pages with `noindex, nofollow`.
-        // SEO floor of 0.6 reflects the noindex penalty; a11y floor of
-        // 0.95 was the pre-contrast-fix baseline and can tighten to 1.0
-        // after the next CI run confirms the violation is resolved.
-        {
-          matchingUrlPattern: '^http://localhost/(studio|garden|study|salon)/?$',
-          assertions: {
-            'categories:performance': ['error', { minScore: 0.95 }],
-            'categories:accessibility': ['error', { minScore: 0.95 }],
-            'categories:best-practices': ['error', { minScore: 0.95 }],
-            'categories:seo': ['error', { minScore: 0.6 }],
-          },
-        },
-      ],
+      assertMatrix: floors.map(({ matchingUrlPattern, scores }) => ({
+        matchingUrlPattern,
+        assertions: Object.fromEntries(
+          Object.entries(scores).map(([category, minScore]) => [
+            `categories:${category}`,
+            ['error', { minScore }],
+          ]),
+        ),
+      })),
     },
     upload: {
       target: 'filesystem',
