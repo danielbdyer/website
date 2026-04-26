@@ -127,7 +127,7 @@ A view transition is the site's body moving. Different navigations are different
 | **Open** | This card is opening into its full form | The image grows into the hero, the title slides into place, meta lifts into position. The card *becomes* the work. | Shared `viewTransitionName` on image, title, meta — paired between any listing-card surface (`FacetCard`, `WorkRow`, `WorkEntry`) and `WorkView` |
 | **Close** | The work is folding back into its row | Reverse of Open. Hero shrinks back into card position. | Same name pairs as Open; browser handles in reverse via back/forward, or via explicit `<Link>` to room (the kicker `← The Salon`, the closing line "Keep wandering in The Salon →") |
 | **Rearrange** | The same surface is filtering | Cards stay; positions shift; missing fade out; new fade in | Stable per-card `viewTransitionName` on listing wrapper (`workCardTransitionName`); default-root carries the rest. The visitor's scroll position is preserved (see "Scroll on navigation" below). |
-| **Cross** | A room → another room is a different atmosphere | Subtle default-root crossfade (320ms) | No `viewTransitionName` pairs; default-root only. Room-jump links in `Nav`, the wordmark, the adjacent-room hint in `RoomOutwardInvitation`, the "Back home →" links on NotFound and ErrorBoundary. **On trial**: the choice is between subtle and instant; if room jumps start feeling like the chrome performing, switch to `viewTransition={false}` and reconsider. |
+| **Cross** | A room → another room is a different atmosphere | Instant. The rooms aren't continuous; pretending they are is dishonest. | `viewTransition={false}` on the `<Link>`. Room-jump links in `Nav`, the wordmark, the "Back home →" links on NotFound and ErrorBoundary. The adjacent-room hint in `RoomOutwardInvitation` is *not* yet opted out — see "Held question on RoomOutwardInvitation" below. |
 | **Step** | A prose link points elsewhere | Default-root crossfade — the eye moves from one paragraph to a new article | `[[wikilinks]]` in prose, backlinks in the outward invitation, facet chips on work pages, `RoomOutwardInvitation` thread links. The visitor stepped through prose-as-pointer; a fade is the gesture for turning the page. |
 
 A sixth state, **Fall through**, is "the visitor arrived fresh" — direct URL, hard reload, first paint. No transition; browser default.
@@ -172,10 +172,15 @@ Names must be globally unique within a snapshot. Adding a new pairing means: cho
 
 A handful of questions surfaced during the kind-table's writing. Each is resolved below; revisiting any of them is a real spec change, not a small tweak.
 
+- **Cross is instant, not subtle.** The kind-table briefly experimented with subtle crossfades on Cross surfaces. It read as the chrome performing; the rooms are different atmospheres and pretending they're continuous is dishonest. Reverted. The `viewTransition={false}` on Nav, wordmark, and "Back home →" surfaces is the durable choice.
 - **Should facet chips on work pages fire Step or Open?** Step. The chip is inline text inside prose-shaped chrome; morphing inline text into a block H1 reads as a magic trick rather than a gesture. Crossfade preserves the prose-pointer feel.
 - **Should `facet-title-{facet}` be shared between `FacetChip` and the facet page H1?** No. The vt-name uniqueness rule forbids it: the same facet appears as a chip on potentially many surfaces simultaneously (every `FacetCard`'s chip row, the toggle bar, the threads line), so any shared `facet-title-X` would collide on a single page snapshot. The chip is a Step pointer, not a morphing entity.
-- **The "drop the only facet" → `/` case.** Cross. The visitor is leaving the facet space entirely; subtle crossfade is the right gesture.
+- **The "drop the only facet" → `/` case.** Cross. The visitor is leaving the facet space entirely; instant is the right gesture.
 - **Salon posture filter scroll.** Verified preserved by accident-of-architecture: posture is a search param, pathname doesn't change, the pathname-watching scroll-to-top effect doesn't fire.
+
+### Held question on RoomOutwardInvitation
+
+The adjacent-room hint at the bottom of every room landing (*"Or wander into The Garden →"*) is a Cross navigation by kind. Today it transitions through the default path (no `viewTransition={false}`) because the molecule wraps a generic `<Link>` and the opt-out hasn't been threaded through. **Open question**: should the adjacent-room hint be opted out for consistency with Nav, or does the contextual nature of an outward invitation (mid-page, voice-italic, in-prose) warrant a transition where the chrome doesn't? Holding the question; the felt-sense answer wants a few real visits before being decided.
 
 ### Adding a new participant
 
