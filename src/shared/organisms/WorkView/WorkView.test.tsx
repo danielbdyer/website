@@ -69,6 +69,30 @@ describe('WorkView', () => {
     expect(screen.queryByText('A short line for lists.')).not.toBeInTheDocument();
   });
 
+  // Per CONTENT_SCHEMA.md §"Content types": poems render with a
+  // narrower measure and serif-forward treatment. The `.prose-poem`
+  // variant carries that; non-poem types stay with the base `.prose`
+  // register. The class's presence is what surfaces the variant; the
+  // typography decisions live in tokens.css.
+  it('applies the prose-poem variant when the work is a poem', async () => {
+    const { container } = renderWork(makeWork({ type: 'poem' }));
+    await screen.findByRole('heading', { name: 'A Working Title' });
+    const body = container.querySelector('.prose');
+    expect(body).not.toBeNull();
+    expect(body?.classList.contains('prose-poem')).toBe(true);
+  });
+
+  it('does not apply prose-poem to essays, case studies, or notes', async () => {
+    for (const type of ['essay', 'case-study', 'note'] as const) {
+      const { container, unmount } = renderWork(makeWork({ type }));
+      await screen.findByRole('heading', { name: 'A Working Title' });
+      const body = container.querySelector('.prose');
+      expect(body).not.toBeNull();
+      expect(body?.classList.contains('prose-poem')).toBe(false);
+      unmount();
+    }
+  });
+
   it("links the kicker and the outward invitation back to the work's room", async () => {
     renderWork(makeWork({ room: 'garden' }));
     await screen.findByRole('heading', { name: 'A Working Title' });

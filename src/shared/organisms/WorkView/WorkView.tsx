@@ -9,6 +9,7 @@ import {
   workMetaTransitionName,
   workTitleTransitionName,
 } from '@/shared/utils/view-transition-names';
+import { cn } from '@/shared/utils/cn';
 
 const ROOM_LABELS: Readonly<Record<Room, string>> = {
   foyer: 'The Foyer',
@@ -98,7 +99,10 @@ export function WorkView({ work }: WorkViewProps) {
         </div>
       )}
 
-      <div className="prose" dangerouslySetInnerHTML={{ __html: work.html }} />
+      <div
+        className={cn('prose', work.type === 'poem' && 'prose-poem')}
+        dangerouslySetInnerHTML={{ __html: work.html }}
+      />
 
       <WorkOutwardInvitation room={work.room} roomPath={roomPath} roomLabel={roomLabel} />
     </article>

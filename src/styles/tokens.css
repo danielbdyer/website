@@ -402,10 +402,40 @@ body::before {
 /* ─── Prose (work body rendering) ───────────────────────────── */
 /* Minimal typography for markdown-rendered work bodies. The CSS reset
    zeros margins globally; .prose restores the rhythm needed for reading
-   prose, headings, lists, and quotes. Kept narrow for skeleton — this
-   will deepen as DESIGN_SYSTEM articulates per-content-type rendering. */
+   prose, headings, lists, and quotes.
+
+   Per-content-type variants extend `.prose` with a sibling class added
+   alongside it. CONTENT_SCHEMA.md commits to four types
+   (poem/essay/case-study/note); only `prose-poem` is articulated today.
+   The other three still read in the base `.prose` register, which is
+   essay-shaped — appropriate for essay/case-study/note. As they
+   accumulate works that don't read comfortably in the base, each earns
+   its own variant in the same shape as `.prose-poem`. */
 .prose p {
   margin-bottom: 1.4em;
+}
+
+/* The poem variant. CONTENT_SCHEMA.md §"Content types": *"Preserve
+   line breaks. Render in a narrower measure. Italic or serif-forward
+   treatment."* The loader already enables `breaks: true` for poems so
+   single newlines render as `<br>` (within-stanza preservation); blank
+   lines remain stanza breaks. This variant adds the narrower measure
+   and the serif-forward register: Newsreader (the heading face) at the
+   body, in primary ink, with looser leading so each line gets its own
+   breath. Italic is reserved for emphasis the poem itself elects, not
+   imposed on the whole body. */
+.prose-poem {
+  font-family: 'Newsreader Variable', Georgia, serif;
+  font-size: 1.0625rem;
+  line-height: var(--leading-prose);
+  color: var(--text);
+  max-width: var(--container-deck);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.prose-poem p {
+  margin-bottom: 1.7em;
 }
 
 .prose h2 {
