@@ -98,7 +98,7 @@ function RootComponent() {
             ref={mainRef}
             id="main-content"
             tabIndex={-1}
-            className="mx-auto w-full max-w-[700px] flex-1 pt-6 pb-20 pl-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] focus:outline-none sm:pt-8 sm:pb-24 sm:pl-[max(2rem,env(safe-area-inset-left))] sm:pr-[max(2rem,env(safe-area-inset-right))]"
+            className="mx-auto w-full max-w-[700px] flex-1 pt-6 pb-20 pl-[max(2rem,env(safe-area-inset-left))] pr-[max(2rem,env(safe-area-inset-right))] focus:outline-none sm:pt-8 sm:pb-24 sm:pl-[max(2.5rem,env(safe-area-inset-left))] sm:pr-[max(2.5rem,env(safe-area-inset-right))]"
           >
             {/* Keying the boundary on the pathname means React mounts a
                 fresh one whenever the route changes. Without this, a

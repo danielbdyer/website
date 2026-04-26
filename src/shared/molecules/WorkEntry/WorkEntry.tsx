@@ -27,9 +27,9 @@ export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
         params={{ room: work.room, slug: work.slug }}
         className="group block text-inherit no-underline"
       >
-        <div className="mb-1.5 font-body text-meta italic tracking-[0.02em] text-text-3">
+        <div className="mb-2 font-body text-meta italic tracking-[0.02em] text-text-3">
           {import.meta.env.DEV && work.draft && (
-            <span className="mr-2 inline-block font-body text-micro not-italic tracking-[0.08em] text-accent-warm uppercase">
+            <span className="mr-3 inline-block font-body text-micro not-italic tracking-[0.08em] text-accent-warm uppercase">
               draft
             </span>
           )}
@@ -43,7 +43,7 @@ export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
         )}
       </Link>
       {work.facets.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+        <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-2">
           {work.facets.map((facet) => (
             <FacetChip key={facet} facet={facet} />
           ))}
