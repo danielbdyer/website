@@ -1,6 +1,13 @@
 # Shared defense-in-depth. Pre-commit hooks catch what a contributor runs
 # on their machine; CI catches what they skipped. Keep the local and CI
 # checks in sync: when the hook grows a step, so does this workflow.
+#
+# Quality gates are blocking. PR merges require:
+#   - check        (typecheck, lint, vitest, build, size-limit)
+#   - playwright   (smoke + comprehensive Playwright suite)
+#   - lighthouse   (perf/a11y/bp/seo floors per lighthouserc.cjs)
+# Visual regression is part of `playwright`; the first PR after the spec
+# is added must update snapshots, after which baseline drift is flagged.
 
 name: CI
 
@@ -12,7 +19,7 @@ on:
 
 jobs:
   check:
-    name: Typecheck, lint, test, build
+    name: Typecheck, lint, test, build, size
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +30,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -35,16 +42,74 @@ jobs:
         run: pnpm audit --audit-level high
 
       - name: Typecheck
-        run: pnpm exec tsc -b
+        run: pnpm typecheck
 
       - name: Lint
-        run: pnpm exec eslint src/
+        run: pnpm lint
 
-      - name: Test
+      - name: Test (vitest)
         run: pnpm exec vitest run
 
       - name: Build
         run: pnpm build
+
+      - name: Bundle size budget
+        run: pnpm exec size-limit
+
+  playwright:
+    name: Playwright (smoke + comprehensive)
+    runs-on: ubuntu-latest
+    needs: check
+    # Pin the container to the exact Playwright version pinned in
+    # package.json. When @playwright/test bumps, bump the image tag in
+    # the same PR so the bundled browser binary stays in lockstep with
+    # the test runner.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # Full suite (smoke + comprehensive). The smoke tier is what `pnpm
+      # test` runs locally; CI runs everything including the visual-
+      # regression baselines.
+      - name: Playwright tests
+        run: pnpm exec playwright test
+        env:
+          # Browsers are baked into the container image; this disables
+          # download-on-install for any transitive playwright-core
+          # invocation.
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload Playwright test results (failures)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 14
 
   lighthouse:
     name: Lighthouse CI
@@ -59,7 +124,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile

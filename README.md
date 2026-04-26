@@ -15,10 +15,10 @@ For task-specific orientation, the [`.claude/skills/`](./.claude/skills/) direct
 | Command | What it does |
 |---|---|
 | `pnpm dev` | Vite dev server with HMR |
-| `pnpm test` | Vitest + Playwright `@smoke` (real-browser tests for the bug class jsdom can't catch) |
-| `pnpm test:fast` | Vitest only — tight TDD loop |
-| `pnpm test:e2e` | Full Playwright suite (smoke + comprehensive) |
-| `pnpm test:smoke` | Just the Playwright `@smoke` tier |
+| `pnpm test` | Build, then vitest, then Playwright `@smoke`. The full local pre-commit gate. |
+| `pnpm test:fast` | Vitest only — tight TDD loop, no build. |
+| `pnpm test:e2e` | Full Playwright suite. Assumes `dist/client/` is current — run `pnpm build` first if not. |
+| `pnpm test:smoke` | Just the Playwright `@smoke` tier. Assumes a current build. |
 | `pnpm typecheck` | `tsc -b` — full project typecheck |
 | `pnpm lint` | ESLint over `src/` |
 | `pnpm build` | Vite build + filter the prerender manifest |
@@ -28,6 +28,7 @@ For task-specific orientation, the [`.claude/skills/`](./.claude/skills/) direct
 | `pnpm preview:deploy` | Build and serve via `wrangler dev` (closer to prod runtime) |
 | `pnpm deploy:workers` | Build and deploy to Cloudflare Workers |
 | `pnpm lighthouse` | Build and run Lighthouse CI against the result |
+| `pnpm size` | Build and check the bundle-size budget |
 | `pnpm setup` | Install matching Playwright browsers (run once after clone or after a Playwright version bump) |
 
 ## First-run setup
