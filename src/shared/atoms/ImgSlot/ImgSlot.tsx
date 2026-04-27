@@ -29,8 +29,8 @@ export function ImgSlot(props: ImgSlotProps) {
   }
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center border border-border-lt bg-bg-warm bg-[repeating-linear-gradient(135deg,transparent_0,transparent_8px,var(--slot-stripe)_8px,var(--slot-stripe)_9px)] p-3.5">
-      <span className="max-w-full text-center font-body text-micro leading-[1.4] tracking-eyebrow text-text-3 lowercase">
+    <div className="border-border-lt bg-bg-warm absolute inset-0 flex items-center justify-center border bg-[repeating-linear-gradient(135deg,transparent_0,transparent_8px,var(--slot-stripe)_8px,var(--slot-stripe)_9px)] p-3.5">
+      <span className="font-body text-micro tracking-eyebrow text-text-3 max-w-full text-center leading-[1.4] lowercase">
         {props.label}
       </span>
     </div>

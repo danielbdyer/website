@@ -30,19 +30,19 @@ function StudioPage() {
   const previewNote = works.find(isPreviewWork)?.preview.roomNote;
   return (
     <Reveal>
-      <h1 className="mt-6 mb-4 font-heading text-display leading-display font-normal tracking-display text-text">
+      <h1 className="font-heading text-display leading-display tracking-display text-text mt-6 mb-4 font-normal">
         The Studio
       </h1>
-      <p className="mb-10 max-w-deck font-body text-body leading-body italic text-text-2 sm:mb-14">
+      <p className="max-w-deck font-body text-body leading-body text-text-2 mb-10 italic sm:mb-14">
         Engineering, leadership, and the architecture of teams. Craft as devotion, rendered legibly.
       </p>
       {previewNote && (
-        <p className="-mt-4 mb-8 max-w-preview font-body text-meta leading-meta italic text-text-3 sm:-mt-6">
+        <p className="max-w-preview font-body text-meta leading-meta text-text-3 -mt-4 mb-8 italic sm:-mt-6">
           {previewNote}
         </p>
       )}
       {works.length > 0 && (
-        <div className="flex flex-col gap-room-rhythm">
+        <div className="gap-room-rhythm flex flex-col">
           {works.map((work) => (
             <WorkEntry key={work.slug} work={work} />
           ))}

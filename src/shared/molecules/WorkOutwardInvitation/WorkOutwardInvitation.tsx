@@ -46,14 +46,14 @@ export function WorkOutwardInvitation({
   return (
     <>
       <Ornament className="mt-work-break sm:mt-work-break-md" />
-      <div className="mt-room-rhythm font-body text-list leading-closing italic text-text-2">
+      <div className="mt-room-rhythm font-body text-list leading-closing text-text-2 italic">
         {facets.length > 0 && <FacetThreadsLine facets={facets} />}
         {backlinks.length > 0 && <BacklinksLine backlinks={backlinks} />}
         <p>
           Keep wandering in{' '}
           <Link
             to={roomPath}
-            className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+            className="text-text-2 hover:border-text-3 hover:text-text border-b border-transparent no-underline transition-colors duration-200"
           >
             {roomLabel}
           </Link>{' '}
@@ -72,7 +72,7 @@ function BacklinksLine({ backlinks }: { backlinks: readonly BacklinkRef[] }) {
         <Link
           to="/$room/$slug"
           params={{ room: b.room, slug: b.slug }}
-          className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+          className="text-text-2 hover:border-text-3 hover:text-text border-b border-transparent no-underline transition-colors duration-200"
         >
           {b.title}
         </Link>
@@ -90,7 +90,7 @@ function FacetThreadsLine({ facets }: { facets: readonly Facet[] }) {
         <Link
           to="/facet/$facet"
           params={{ facet }}
-          className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+          className="text-text-2 hover:border-text-3 hover:text-text border-b border-transparent no-underline transition-colors duration-200"
         >
           {facet}
         </Link>

@@ -33,7 +33,7 @@ interface FacetMasonryProps {
 // taller than standard ones without depending on content height.
 export function FacetMasonry({ works, scopedFacets }: FacetMasonryProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 [grid-auto-flow:dense] [grid-auto-rows:minmax(120px,auto)]">
+    <div className="grid [grid-auto-flow:dense] [grid-auto-rows:minmax(120px,auto)] grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
       {works.map((work) => {
         const size = sizeFor(work);
         return (
