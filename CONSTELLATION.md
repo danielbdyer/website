@@ -54,7 +54,14 @@ The constellation respects the room's hour. When the site is in light mode, the 
 
 In daylight the sky reads as a *sea-painted dome* — not a literal blue sky, not photographic clouds. A washed, granular, paper-grain expanse, in the same umber family as the Foyer ground but lifted lighter, hazier, suspended. The works appear as **watercolor points** — soft circular bleeds of pigment, edges feathered, each one a small bloom of color sitting on the textured field. *Calm. Floating in the ocean.*
 
-The pigment of each point reads from its primary facet: the four held accents (`--accent-warm`, `--accent-rose`, `--accent-violet`, `--accent-gold`) plus the primary `--accent` give a vocabulary of five hues, distributed across the eight facets — the held accents *graduate from vocabulary to semantics* in this surface, and only in this surface, for now. (The mapping is editorial; the held question of which facet wears which hue belongs to a later moment in this file.)
+The pigment of each point reads from its primary facet. The four held accents (`--accent-warm`, `--accent-rose`, `--accent-violet`, `--accent-gold`) graduate from vocabulary to semantics in this surface, and only in this surface. The editorial pairing, now in code at `src/shared/content/constellation.ts` (`FACET_HUE`):
+
+- **`--accent-warm`** — `craft`, `body` *(the hand, the workshop, clay; the ground beneath consciousness)*
+- **`--accent-rose`** — `beauty`, `language` *(living growth, bloom; words as music, meaning-making)*
+- **`--accent-violet`** — `consciousness`, `becoming` *(the quiet hour, contemplation; the autotelic unfolding of personhood)*
+- **`--accent-gold`** — `leadership`, `relation` *(music, warmth seen rather than felt; the space between)*
+
+Two facets share each hue. The difference between a `craft` work and a `body` work is legible in the *position* of the star (Studio sector vs. wherever-the-work-lives) and in the *label* surfaced on hover, not in an exhaustive eight-color palette. *The constellation is small and precise.*
 
 Threads between points are nearly invisible at rest — *wisps*, faint as shadows of brush-strokes. Hovering reveals them. *Aesthetic resonance of semantic intent.*
 
