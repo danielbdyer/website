@@ -1,0 +1,54 @@
+import { render } from '@testing-library/react';
+import { describe, expect, test } from 'vitest';
+import { Thread } from './Thread';
+
+function withSvg(node: React.ReactNode) {
+  return <svg viewBox="0 0 100 100">{node}</svg>;
+}
+
+describe('Thread atom', () => {
+  test('renders a line between two endpoints', () => {
+    const { container } = render(
+      withSvg(
+        <Thread
+          id="garden/small-weather|study/note|relation"
+          x1={10}
+          y1={20}
+          x2={80}
+          y2={70}
+          hue="gold"
+        />,
+      ),
+    );
+    const line = container.querySelector('line');
+    expect(line).not.toBeNull();
+    expect(line?.getAttribute('x1')).toBe('10');
+    expect(line?.getAttribute('y1')).toBe('20');
+    expect(line?.getAttribute('x2')).toBe('80');
+    expect(line?.getAttribute('y2')).toBe('70');
+  });
+
+  test('exposes its id and hue as data attributes for the molecule to hook', () => {
+    const { container } = render(
+      withSvg(<Thread id="a|b|relation" x1={0} y1={0} x2={50} y2={50} hue="violet" />),
+    );
+    const line = container.querySelector('line');
+    expect(line?.getAttribute('data-thread-id')).toBe('a|b|relation');
+    expect(line?.getAttribute('data-hue')).toBe('violet');
+  });
+
+  test('is aria-hidden — threads carry information, not navigation', () => {
+    const { container } = render(
+      withSvg(<Thread id="x|y|z" x1={0} y1={0} x2={1} y2={1} hue="rose" />),
+    );
+    expect(container.querySelector('line')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  test('is not pointer-clickable (only stars are addressable)', () => {
+    const { container } = render(
+      withSvg(<Thread id="x|y|z" x1={0} y1={0} x2={1} y2={1} hue="warm" />),
+    );
+    const line = container.querySelector('line');
+    expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/pointer-events-none/);
+  });
+});
