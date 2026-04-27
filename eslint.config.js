@@ -5,6 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
+import unicorn from 'eslint-plugin-unicorn';
 import boundaries from 'eslint-plugin-boundaries';
 
 export default tseslint.config(
@@ -88,6 +89,43 @@ export default tseslint.config(
     files: ['**/src/app/routes/**'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+
+  // ── Unicorn — modern JS antipattern catcher ─────────────────
+  // Recommended config minus a few rules that fight our voice or our
+  // file-naming convention (PascalCase atoms vs unicorn's kebab-case
+  // preference, abbreviation rules vs `props`/`ref`).
+  {
+    plugins: { unicorn },
+    rules: {
+      ...unicorn.configs.recommended.rules,
+      // Filenames: we use PascalCase for atom/molecule/organism files
+      // per REACT_NORTH_STAR.md — `Diamond.tsx`, `WorkRow.tsx`, etc.
+      'unicorn/filename-case': 'off',
+      // Abbreviations: `props`, `ref`, `prev`, `i` are React idioms;
+      // forcing `properties`/`reference`/`previous` is over-pedantic.
+      'unicorn/prevent-abbreviations': 'off',
+      // null vs undefined: TanStack Router and many DOM APIs return
+      // null; the convention isn't worth fighting.
+      'unicorn/no-null': 'off',
+      // Reduce: legitimately the right tool for some site flows.
+      'unicorn/no-array-reduce': 'off',
+      // ForEach: same — readable in many cases.
+      'unicorn/no-array-for-each': 'off',
+      // Negation: false positives on `if (!x)` patterns.
+      'unicorn/no-negated-condition': 'off',
+      // Top-level await: not relevant to our SSG runtime.
+      'unicorn/prefer-top-level-await': 'off',
+      // Module export naming: we co-locate components and types,
+      // which trips this rule.
+      'unicorn/no-anonymous-default-export': 'off',
+      // Callback-reference: `.some(isPreviewWork)` is idiomatic; the
+      // wrapper-arrow rewrite reads as ceremony, not safety.
+      'unicorn/no-array-callback-reference': 'off',
+      // Function-scoping: surfaces inside-fixture arrows that read
+      // perfectly clearly inline; declined to keep tests cohesive.
+      'unicorn/consistent-function-scoping': 'off',
     },
   },
 

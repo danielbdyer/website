@@ -122,7 +122,7 @@ export function invertOutboundGraph(
   }
   // Sort each list newest-first.
   for (const [key, list] of acc) {
-    const sorted = [...list].sort((a, b) => {
+    const sorted = list.toSorted((a, b) => {
       const da = dateLookup(slugIndexKey(a.room, a.slug)).getTime();
       const db = dateLookup(slugIndexKey(b.room, b.slug)).getTime();
       return db - da;

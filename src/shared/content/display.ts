@@ -45,5 +45,5 @@ export function getDisplayWorksByFacetsSync(facets: readonly Facet[]): DisplayWo
   const all = FACET_ROOM_ORDER.flatMap((room) => getDisplayWorksByRoomSync(room));
   return all
     .filter((work) => facets.every((facet) => work.facets.includes(facet)))
-    .sort((a, b) => b.date.getTime() - a.date.getTime());
+    .toSorted((a, b) => b.date.getTime() - a.date.getTime());
 }

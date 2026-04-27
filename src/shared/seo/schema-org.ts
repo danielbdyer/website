@@ -52,17 +52,22 @@ const REFERENT_TYPE_TO_SCHEMA: Record<ReferentType, string> = {
 function creatorPropertyFor(type: ReferentType): string {
   switch (type) {
     case 'book':
-    case 'article':
+    case 'article': {
       return 'author';
-    case 'music-composition':
+    }
+    case 'music-composition': {
       return 'composer';
+    }
     case 'music-album':
-    case 'music-recording':
+    case 'music-recording': {
       return 'byArtist';
-    case 'movie':
+    }
+    case 'movie': {
       return 'director';
-    case 'visual-artwork':
+    }
+    case 'visual-artwork': {
       return 'creator';
+    }
   }
 }
 

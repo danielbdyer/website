@@ -81,7 +81,7 @@ describe('themeStore', () => {
 
     // Simulate another tab toggling to dark.
     localStorage.setItem('theme', 'dark');
-    window.dispatchEvent(new StorageEvent('storage', { key: 'theme' }));
+    globalThis.dispatchEvent(new StorageEvent('storage', { key: 'theme' }));
 
     expect(calls).toBe(1);
     expect(themeStore.getSnapshot()).toBe(true);
@@ -96,7 +96,7 @@ describe('themeStore', () => {
       calls++;
     });
 
-    window.dispatchEvent(new StorageEvent('storage', { key: 'something-else' }));
+    globalThis.dispatchEvent(new StorageEvent('storage', { key: 'something-else' }));
 
     expect(calls).toBe(0);
     unsubscribe();

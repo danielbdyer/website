@@ -192,7 +192,7 @@ export function getAllWorksSync(): Work[] {
 export function getWorksByRoomSync(room: Room): Work[] {
   return getAllWorksSync()
     .filter((w) => w.room === room)
-    .sort((a, b) => b.date.getTime() - a.date.getTime());
+    .toSorted((a, b) => b.date.getTime() - a.date.getTime());
 }
 
 export function getWorkSync(room: Room, slug: string): Work | undefined {

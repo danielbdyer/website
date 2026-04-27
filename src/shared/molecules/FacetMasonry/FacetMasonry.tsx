@@ -60,14 +60,17 @@ function hasThumbLabel(work: DisplayWork): boolean {
 // span rules only kick in at sm: (2-col) and lg: (4-col).
 function spanClassFor(size: FacetCardSize): string {
   switch (size) {
-    case 'feature':
+    case 'feature': {
       // Wider AND taller than the rest — the hero interjection.
       return 'sm:col-span-2 sm:row-span-3 lg:col-span-2 lg:row-span-3';
-    case 'tall':
+    }
+    case 'tall': {
       // Image-led — takes a single column but reads taller.
       return 'sm:row-span-2 lg:row-span-2';
-    case 'standard':
+    }
+    case 'standard': {
       // Text-only workhorse cell.
       return '';
+    }
   }
 }
