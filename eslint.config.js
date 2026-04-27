@@ -185,6 +185,53 @@ export default tseslint.config(
     },
   },
 
+  // Atom tier — REACT_NORTH_STAR.md commits atoms to "zero internal
+  // state, zero side effects, zero domain knowledge." The rules below
+  // enforce that contract at lint time. New atoms inheriting these
+  // rules can't accidentally absorb the responsibilities of a
+  // molecule/organism without the lint catching it.
+  {
+    files: ['src/shared/atoms/**/*.{ts,tsx}'],
+    ignores: ['src/shared/atoms/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react',
+              importNames: ['useState', 'useEffect', 'useReducer', 'useContext', 'useRef'],
+              message:
+                "Atoms are stateless and side-effect-free per REACT_NORTH_STAR.md §'Atoms'. If state or effects are needed, the component is a molecule (or higher) and lives one tier up. Exceptions: `useId` and refs forwarded for accessibility — request a per-line disable with a one-line reason.",
+            },
+            {
+              name: 'react',
+              importNames: ['memo', 'forwardRef'],
+              message:
+                "React 19: `forwardRef` is unnecessary (`ref` is a regular prop) and `memo` is unnecessary (React Compiler auto-memoizes). See REACT_NORTH_STAR.md §'React Compiler'.",
+            },
+          ],
+          patterns: [
+            {
+              // Atoms may consume *types* from the domain (their props
+              // can be domain-shaped) but must not import runtime
+              // domain logic (loader, preview-data, display).
+              group: [
+                '@/shared/content/loader',
+                '@/shared/content/display',
+                '@/shared/content/preview-data',
+                '@/shared/content/wikilinks',
+                '@/shared/content/wikilink-marked',
+              ],
+              message:
+                "Atoms have zero domain knowledge per REACT_NORTH_STAR.md §'Atoms'. Type imports from `@/shared/content/schema` are allowed (types are the architectural seam); runtime logic belongs to a higher tier.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Route files use TanStack Router's `throw notFound()` and
   // `throw redirect()` idioms; these throw control-flow tokens that
   // aren't `Error` subclasses, which the `only-throw-error` rule
