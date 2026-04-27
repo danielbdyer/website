@@ -30,14 +30,14 @@ export function RoomOutwardInvitation({ threads, toward }: RoomOutwardInvitation
   return (
     <>
       <Ornament className="mt-work-break sm:mt-work-break-md" />
-      <div className="mt-room-rhythm font-body text-list leading-closing italic text-text-2">
+      <div className="mt-room-rhythm font-body text-list leading-closing text-text-2 italic">
         {threads.length > 0 && <ThreadsLine facets={threads} />}
         {toward && (
           <p className="mb-2">
             Or wander into{' '}
             <Link
               to={toward.path}
-              className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+              className="text-text-2 hover:border-text-3 hover:text-text border-b border-transparent no-underline transition-colors duration-200"
             >
               {toward.label}
             </Link>{' '}
@@ -57,7 +57,7 @@ function ThreadsLine({ facets }: { facets: readonly Facet[] }) {
         <Link
           to="/facet/$facet"
           params={{ facet }}
-          className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+          className="text-text-2 hover:border-text-3 hover:text-text border-b border-transparent no-underline transition-colors duration-200"
         >
           {facet}
         </Link>

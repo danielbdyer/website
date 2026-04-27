@@ -59,7 +59,7 @@ export function WorkView({ work }: WorkViewProps) {
     <article>
       <Link
         to={roomPath}
-        className="mt-4 mb-10 inline-block font-body text-kicker italic text-text-2 no-underline transition-colors duration-200 hover:text-text"
+        className="font-body text-kicker text-text-2 hover:text-text mt-4 mb-10 inline-block italic no-underline transition-colors duration-200"
       >
         ← {roomLabel}
       </Link>
@@ -67,27 +67,27 @@ export function WorkView({ work }: WorkViewProps) {
       <WorkHero work={work} image={work.image} thumbLabel={thumbLabel} />
 
       <h1
-        className="mb-3.5 font-heading text-title leading-title font-normal tracking-display text-text"
+        className="font-heading text-title leading-title tracking-display text-text mb-3.5 font-normal"
         style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
       >
         {work.title}
       </h1>
 
       <div
-        className="mb-2 font-body text-meta italic text-text-3"
+        className="font-body text-meta text-text-3 mb-2 italic"
         style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
       >
         {work.posture && (
           <Link
             to="/salon"
             search={{ posture: work.posture }}
-            className="mr-3 inline-block border-b border-transparent font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase no-underline transition-colors duration-200 hover:border-accent-warm/40"
+            className="font-body text-micro tracking-eyebrow text-accent-warm hover:border-accent-warm/40 mr-3 inline-block border-b border-transparent uppercase not-italic no-underline transition-colors duration-200"
           >
             {work.posture}
           </Link>
         )}
         {import.meta.env.DEV && work.draft && (
-          <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
+          <span className="font-body text-micro tracking-eyebrow text-accent-warm mr-3 inline-block uppercase not-italic">
             draft
           </span>
         )}
@@ -97,7 +97,7 @@ export function WorkView({ work }: WorkViewProps) {
       {work.referent && <WorkReferent referent={work.referent} />}
 
       {isPreviewWork(work) && (
-        <p className="mb-6 max-w-preview font-body text-meta leading-meta italic text-text-3">
+        <p className="max-w-preview font-body text-meta leading-meta text-text-3 mb-6 italic">
           {work.preview.workNote}
         </p>
       )}

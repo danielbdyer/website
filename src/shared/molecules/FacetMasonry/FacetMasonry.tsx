@@ -33,7 +33,7 @@ interface FacetMasonryProps {
 // taller than standard ones without depending on content height.
 export function FacetMasonry({ works, scopedFacets }: FacetMasonryProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 [grid-auto-flow:dense] [grid-auto-rows:minmax(120px,auto)]">
+    <div className="grid [grid-auto-flow:dense] [grid-auto-rows:minmax(120px,auto)] grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
       {works.map((work) => {
         const size = sizeFor(work);
         return (
@@ -60,14 +60,17 @@ function hasThumbLabel(work: DisplayWork): boolean {
 // span rules only kick in at sm: (2-col) and lg: (4-col).
 function spanClassFor(size: FacetCardSize): string {
   switch (size) {
-    case 'feature':
+    case 'feature': {
       // Wider AND taller than the rest — the hero interjection.
       return 'sm:col-span-2 sm:row-span-3 lg:col-span-2 lg:row-span-3';
-    case 'tall':
+    }
+    case 'tall': {
       // Image-led — takes a single column but reads taller.
       return 'sm:row-span-2 lg:row-span-2';
-    case 'standard':
+    }
+    case 'standard': {
       // Text-only workhorse cell.
       return '';
+    }
   }
 }

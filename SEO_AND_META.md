@@ -164,12 +164,14 @@ No disallowed paths. The site has nothing to hide from crawlers; the published s
 ## Enforced in Code
 
 Today:
+
 - `src/shared/seo/schema-org.ts` — type-safe JSON-LD builders for `WebSite`, `Person`, work schemas, and `BreadcrumbList`.
 - `src/shared/seo/JsonLd.tsx` — a component that renders a `<script type="application/ld+json">` tag.
 - `__root.tsx` emits `WebSite` and `Person` schemas on every page.
 - Work pages emit a work-specific `CreativeWork`-family schema and a `BreadcrumbList`.
 
 Held in backlog:
+
 - Per-page title and meta descriptions
 - Open Graph image generation
 - Sitemap generation

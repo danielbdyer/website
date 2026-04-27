@@ -46,7 +46,7 @@ export function useInternalLinkDelegation() {
     const anchor = (e.target as HTMLElement | null)?.closest?.('a');
     if (!anchor) return;
     const href = anchor.getAttribute('href');
-    if (!href || !href.startsWith('/')) return;
+    if (!href?.startsWith('/')) return;
     if (e.button !== 0) return;
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     const target = anchor.getAttribute('target');

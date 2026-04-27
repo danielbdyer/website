@@ -15,7 +15,7 @@ export interface PreviewMeta {
    * isn't on the page yet. Lowercase — reads as annotation, not attempt.
    * Independent of `Work.image` (which is the real image when authored).
    */
-  thumbLabel?: string;
+  thumbLabel?: string | undefined;
 }
 
 export type DisplayWork = Work & {

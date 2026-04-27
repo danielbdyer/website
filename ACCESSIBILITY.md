@@ -70,20 +70,24 @@ Every page is built from semantic HTML. The visual layer never tells the reader 
 ## Color Contrast
 
 **Body text (`--text` on `--bg`):**
+
 - Light palette: `#2b2219` on `#f5f1eb` → ratio ~10.7:1 → passes AAA.
 - Dark palette: `#e2dcd2` on `#191715` → ratio ~12.1:1 → passes AAA.
 
 **Secondary text (`--text-2`):**
+
 - Light: `#6e5f50` on `#f5f1eb` → ratio ~4.8:1 → passes AA for normal text, AAA for large text.
 - Dark: `#9c9082` on `#191715` → ratio ~6.5:1 → passes AAA.
 
 **Tertiary text (`--text-3`) — the quietest tone:**
+
 - Light: `#786352` on `#f5f1eb` → ratio ~4.94:1 → passes AA for normal text.
 - Dark: `#978a78` on `#191715` → ratio ~5.30:1 → passes AA for normal text.
 
 **Commitment:** `--text-3` is the quietest of three text tones; it remains visually quieter than `--text-2` while clearing AA contrast on every theme-derived background (bg, bg-warm, bg-card, tag-bg). The earlier value (#a69782 / #6a6054) failed AA at ~2.8:1 — Lighthouse flagged it on every prerendered room landing — and the spec carried a "decorative use only" exemption that the codebase did not honor in practice (work-row dates, footer byline, preview notes were all using text-3 for content). Raising the contrast aligns code with intent.
 
 **`--tag-text` on `--tag-bg`:**
+
 - Light: `#6e5f50` on `#ede7dd` → ratio ~5.00:1 → passes AA.
 - Dark: `#a39786` on `#302b24` → ratio ~4.90:1 → passes AA.
 
@@ -154,16 +158,19 @@ Automated checks catch the floor, not the ceiling. The ceiling is the feel of a 
 ## Enforced in Code
 
 Implemented today:
+
 - `aria-hidden="true"` on decorative SVGs
 - Dynamic `aria-label` on the theme toggle
 - `eslint-plugin-jsx-a11y` in CI
 - Semantic HTML: `<nav>`, `<main>`, `<footer>`, `<article>` in WorkView, `<h1>` on room landings
 
 Implemented in this file's first pass:
+
 - `prefers-reduced-motion: reduce` CSS handling (all transitions instant, geo-spin paused)
 - `prefers-color-scheme` as the initial theme when no explicit toggle has been stored
 
 Held in backlog:
+
 - Skip-to-main-content link
 - Custom `:focus-visible` ring using `--accent`
 - Focus management on route transitions

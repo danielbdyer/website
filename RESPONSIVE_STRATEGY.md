@@ -111,6 +111,7 @@ SVGs (Diamond, Ornament, GeometricFigure, icons) scale perfectly. Raster images,
 ## Enforced in Code
 
 Implemented today:
+
 - `<meta name="viewport" content="width=device-width, initial-scale=1.0">` in `index.html`
 - 700px max column with 24px horizontal padding in `src/app/routes/__root.tsx`
 - Flex-based layouts that collapse naturally without breakpoints
@@ -118,5 +119,6 @@ Implemented today:
 - SVG ornaments and icons
 
 Known gaps (held in backlog):
+
 - Print stylesheet
 - `@media (hover: hover)` guard for future hover-only interactions

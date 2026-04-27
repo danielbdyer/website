@@ -27,7 +27,7 @@ export function WorkHero({ work, image, thumbLabel }: WorkHeroProps) {
   if (!image && !thumbLabel) return null;
   return (
     <figure
-      className="mb-8 overflow-hidden rounded-[2px] bg-bg-warm shadow-sm"
+      className="bg-bg-warm mb-8 overflow-hidden rounded-[2px] shadow-sm"
       style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
     >
       {image ? (
@@ -39,11 +39,11 @@ export function WorkHero({ work, image, thumbLabel }: WorkHeroProps) {
             loading="eager"
             decoding="async"
           />
-          {(image.caption || image.credit) && (
-            <figcaption className="px-4 py-3 font-body text-meta italic tracking-meta text-text-3">
+          {(image.caption ?? image.credit) && (
+            <figcaption className="font-body text-meta tracking-meta text-text-3 px-4 py-3 italic">
               {image.caption}
               {image.caption && image.credit ? ' · ' : ''}
-              {image.credit && <span className="not-italic text-text-3">{image.credit}</span>}
+              {image.credit && <span className="text-text-3 not-italic">{image.credit}</span>}
             </figcaption>
           )}
         </>

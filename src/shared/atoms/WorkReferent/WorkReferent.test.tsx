@@ -16,7 +16,7 @@ describe('WorkReferent', () => {
     );
     // The text is split across child nodes; assert against the element's
     // collapsed textContent, which is what a screen reader announces.
-    const collapsed = container.textContent?.replace(/\s+/g, ' ').trim();
+    const collapsed = container.textContent?.replaceAll(/\s+/g, ' ').trim();
     expect(collapsed).toBe('Gustav Klimt — Stoclet Frieze, 1911');
   });
 

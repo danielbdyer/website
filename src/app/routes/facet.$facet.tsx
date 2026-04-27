@@ -30,8 +30,8 @@ function parseFacetParam(raw: string): Facet[] {
     .map((t) => facetSchema.safeParse(t))
     .filter((r): r is { success: true; data: Facet } => r.success)
     .map((r) => r.data);
-  const unique = Array.from(new Set(valid));
-  return FACET_ORDER.filter((f) => unique.includes(f));
+  const unique = new Set(valid);
+  return FACET_ORDER.filter((f) => unique.has(f));
 }
 
 export const Route = createFileRoute('/facet/$facet')({
@@ -71,10 +71,10 @@ function FacetPage() {
 
   return (
     <Reveal>
-      <h1 className="mt-6 mb-4 font-heading text-display leading-display font-normal tracking-display text-text">
+      <h1 className="font-heading text-display leading-display tracking-display text-text mt-6 mb-4 font-normal">
         {meta.label}
       </h1>
-      <p className="mb-10 max-w-deck font-body text-body leading-body italic text-text-2 sm:mb-14">
+      <p className="max-w-deck font-body text-body leading-body text-text-2 mb-10 italic sm:mb-14">
         {meta.description}
       </p>
       <FacetToggleBar facets={FACET_ORDER} selected={selected} />
@@ -82,7 +82,7 @@ function FacetPage() {
         // Per VOICE_AND_COPY.md §"Empty facet pages" — name the absence
         // quietly. The thread (or intersection of threads) exists; no
         // work currently carries it.
-        <p className="font-body text-list italic text-text-3">
+        <p className="font-body text-list text-text-3 italic">
           {selected.length === 1
             ? 'No works currently carry this thread.'
             : 'No works currently carry every selected thread.'}

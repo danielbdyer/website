@@ -32,7 +32,7 @@ const DESCRIPTION =
 export const Route = createRootRoute({
   head: () => ({
     meta: [
-      { charSet: 'utf-8' },
+      { charSet: 'utf8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
       { title: 'Danny Dyer' },
       { name: 'description', content: DESCRIPTION },
@@ -122,7 +122,7 @@ function RootComponent() {
           <JsonLd data={[websiteSchema(), personSchema()]} />
           <a
             href="#main-content"
-            className="font-body absolute top-0 left-0 z-[100] -translate-y-[200%] rounded-[3px] border border-border bg-bg-card px-3 py-2 text-list text-text no-underline transition-transform duration-200 focus:translate-x-2 focus:translate-y-2"
+            className="font-body border-border bg-bg-card text-list text-text absolute top-0 left-0 z-[100] -translate-y-[200%] rounded-[3px] border px-3 py-2 no-underline transition-transform duration-200 focus:translate-x-2 focus:translate-y-2"
           >
             Skip to main content
           </a>
@@ -131,7 +131,7 @@ function RootComponent() {
             ref={mainRef}
             id="main-content"
             tabIndex={-1}
-            className="mx-auto w-full max-w-column flex-1 pt-page-top pb-page-bottom pl-edge pr-edge focus:outline-none sm:pt-page-top-md sm:pb-page-bottom-md sm:pl-edge-md sm:pr-edge-md"
+            className="max-w-column pt-page-top pb-page-bottom pl-edge pr-edge sm:pt-page-top-md sm:pb-page-bottom-md sm:pl-edge-md sm:pr-edge-md mx-auto w-full flex-1 focus:outline-none"
           >
             {/* Keying the boundary on the pathname means React mounts a
                 fresh one whenever the route changes. Without this, a

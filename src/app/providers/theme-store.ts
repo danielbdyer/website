@@ -32,7 +32,7 @@ function isDark(): boolean {
     // No explicit preference stored — honor the system preference.
     // ACCESSIBILITY.md commits to prefers-color-scheme as the default
     // until the visitor makes an explicit choice via the toggle.
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+    return globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
   } catch {
     return false;
   }
@@ -55,7 +55,7 @@ if (typeof document !== 'undefined') {
 
   // Reactivity to the system preference, when no explicit choice is stored.
   // Uses optional chaining because jsdom (tests) may not implement matchMedia.
-  const systemPreference = window.matchMedia?.('(prefers-color-scheme: dark)');
+  const systemPreference = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
   systemPreference?.addEventListener?.('change', () => {
     const stored = (() => {
       try {
@@ -71,7 +71,7 @@ if (typeof document !== 'undefined') {
   });
 
   // Reactivity across tabs. Another tab writes to localStorage; this one picks it up.
-  window.addEventListener?.('storage', (e) => {
+  globalThis.addEventListener?.('storage', (e) => {
     if (e.key !== 'theme') return;
     applyToDOM(isDark());
     emitChange();
@@ -111,9 +111,9 @@ export const themeStore = {
     const root = document.documentElement;
     root.classList.add('theme-transitioning');
     if (transitionTimer !== null) {
-      window.clearTimeout(transitionTimer);
+      globalThis.clearTimeout(transitionTimer);
     }
-    transitionTimer = window.setTimeout(() => {
+    transitionTimer = globalThis.setTimeout(() => {
       root.classList.remove('theme-transitioning');
       transitionTimer = null;
     }, 550);

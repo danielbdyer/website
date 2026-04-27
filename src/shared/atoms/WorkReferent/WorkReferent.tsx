@@ -27,7 +27,7 @@ export function WorkReferent({ referent }: WorkReferentProps) {
       href={creator.url}
       target="_blank"
       rel="noreferrer noopener"
-      className="border-b border-transparent text-text-3 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text-2"
+      className="text-text-3 hover:border-text-3 hover:text-text-2 border-b border-transparent no-underline transition-colors duration-200"
     >
       {creator.name}
     </a>
@@ -40,7 +40,7 @@ export function WorkReferent({ referent }: WorkReferentProps) {
       href={referent.url}
       target="_blank"
       rel="noreferrer noopener"
-      className="border-b border-transparent not-italic no-underline transition-colors duration-200 hover:border-text-3 hover:text-text-2"
+      className="hover:border-text-3 hover:text-text-2 border-b border-transparent not-italic no-underline transition-colors duration-200"
     >
       {name}
     </a>
@@ -49,7 +49,7 @@ export function WorkReferent({ referent }: WorkReferentProps) {
   );
 
   return (
-    <p className="mb-6 font-body text-meta leading-meta italic text-text-3">
+    <p className="font-body text-meta leading-meta text-text-3 mb-6 italic">
       {creatorNode && (
         <>
           {creatorNode} <span aria-hidden="true">—</span>{' '}

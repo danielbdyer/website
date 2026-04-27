@@ -47,18 +47,18 @@ function FacetCardImage({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-[2px] bg-bg-warm',
+        'bg-bg-warm relative overflow-hidden rounded-[2px]',
         size === 'feature' ? 'aspect-[16/10]' : 'aspect-[4/5]',
       )}
       style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
     >
       {work.image ? (
         <ImgSlot kind="filled" image={work.image} />
-      ) : thumbLabel ? (
+      ) : (thumbLabel ? (
         <ImgSlot kind="standin" label={thumbLabel} />
       ) : (
         <RoomGlyph room={work.room} />
-      )}
+      ))}
     </div>
   );
 }
@@ -83,7 +83,7 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
   return (
     <article
       data-size={size}
-      className="group flex h-full flex-col gap-3 rounded-[2px] bg-bg-card p-4 shadow-sm transition-shadow duration-300 hover:shadow-default"
+      className="group bg-bg-card hover:shadow-default flex h-full flex-col gap-3 rounded-[2px] p-4 shadow-sm transition-shadow duration-300"
       style={{ viewTransitionName: workCardTransitionName(work.room, work.slug) }}
     >
       <Link
@@ -92,12 +92,12 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
         className="flex flex-1 flex-col gap-3 text-inherit no-underline"
       >
         {size !== 'standard' && <FacetCardImage work={work} size={size} thumbLabel={thumbLabel} />}
-        <div className="font-body text-micro tracking-eyebrow text-accent-warm italic lowercase">
+        <div className="font-body text-micro tracking-eyebrow text-accent-warm lowercase italic">
           {ROOM_LABELS[work.room]}
         </div>
         <h3
           className={cn(
-            'font-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent',
+            'font-heading leading-heading text-text group-hover:text-accent transition-colors duration-200',
             size === 'feature' ? 'text-deck' : 'text-heading',
           )}
           style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
@@ -115,7 +115,7 @@ export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
           </p>
         )}
         <div
-          className="mt-auto font-body text-meta italic text-text-3"
+          className="font-body text-meta text-text-3 mt-auto italic"
           style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
         >
           {formattedDate}

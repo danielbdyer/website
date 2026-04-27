@@ -49,9 +49,9 @@ export function FacetToggleBar({ facets, selected }: FacetToggleBarProps) {
           'inline-block rounded-[2px] px-2.5 py-1 font-body text-chip tracking-meta no-underline transition-colors duration-200',
           isOn
             ? 'bg-accent-warm/15 text-text ring-1 ring-accent-warm/40 hover:bg-accent-warm/20'
-            : isDisabled
+            : (isDisabled
               ? 'bg-tag-bg/50 text-text-3 cursor-not-allowed'
-              : 'bg-tag-bg text-tag-text hover:bg-border-lt hover:text-text',
+              : 'bg-tag-bg text-tag-text hover:bg-border-lt hover:text-text'),
         );
 
         if (isDisabled) {

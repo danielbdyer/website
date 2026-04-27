@@ -65,6 +65,7 @@ The specifications change over time. `DESIGN_SYSTEM.md` will be written, revised
 Git preserves these shifts. Every commit to a specification file is a dated record of what the site believed about itself at that moment. This is already true of any repository — but this site makes that record *navigable*.
 
 **The archaeological layer.** The site publishes not just the current state of its specifications but their history. A visitor can move through time and see:
+
 - When a specification was first written (the moment a concern became explicit)
 - How it changed (the evolution of intent)
 - What was added, removed, reconsidered (the practice of attention over time)
@@ -97,6 +98,7 @@ What makes this interesting structurally (regardless of whether it's ever render
 **The site as organism.** If you scrub the slider slowly, you'd see something like growth — specifications appearing, content accumulating, rooms filling, the design system thickening, the graph of links densifying. The site would look like a living thing developing. Not because it's animated to look that way, but because it actually grew that way, and the slider is just showing you the record.
 
 **What this requires architecturally (if ever built):**
+
 - Build-time computation of file-level timelines from git history
 - A temporal index: for any given date, which files existed and in what state
 - Content-anchored navigation: the ability to fix one piece of content and recompute the surrounding site state for a historical moment
@@ -104,6 +106,7 @@ What makes this interesting structurally (regardless of whether it's ever render
 - A clear decision about whether the historical view is read-only (a snapshot) or navigable (can you follow links within the historical state?)
 
 **What it doesn't require:**
+
 - Rebuilding the site at every historical state. The strata and content are data; only the current rendering engine is needed.
 - Perfection. Some historical states will be rough, incomplete, broken. That's the point — you're seeing the site in its becoming, not a curated retrospective.
 
