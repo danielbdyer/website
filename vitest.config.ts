@@ -25,5 +25,29 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    coverage: {
+      // Soft floor — scoped to pure logic (domain + utils + seo
+      // builders), where strict coverage matches the cost of writing
+      // tests. Components and routes are exercised by integration
+      // tests; their branch coverage is intentionally not gated.
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html'],
+      include: [
+        'src/shared/content/**/*.ts',
+        'src/shared/seo/**/*.ts',
+        'src/shared/utils/**/*.{ts,tsx}',
+      ],
+      exclude: [
+        '**/*.test.{ts,tsx}',
+        '**/index.ts',
+        'src/shared/utils/view-transition-names.ts',
+      ],
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70,
+      },
+    },
   },
 });

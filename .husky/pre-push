@@ -1,0 +1,8 @@
+# Pre-push gate — typecheck + tests must pass before push. The
+# pre-commit hook handles per-file lint+format+related-tests; this
+# hook is the broader gate that catches "I forgot to run tests" or
+# "the type system is unhappy somewhere I didn't touch."
+#
+# `pnpm doctor` composes typecheck + lint + test:fast --run. Tweak in
+# package.json if the gate ever needs to broaden.
+pnpm doctor

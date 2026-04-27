@@ -30,7 +30,7 @@ function parseFacetParam(raw: string): Facet[] {
     .map((t) => facetSchema.safeParse(t))
     .filter((r): r is { success: true; data: Facet } => r.success)
     .map((r) => r.data);
-  const unique = new Set(new Set(valid));
+  const unique = new Set(valid);
   return FACET_ORDER.filter((f) => unique.has(f));
 }
 

@@ -59,11 +59,11 @@ export function WorkRow({ work, thumbLabel }: WorkRowProps) {
         >
           {work.image ? (
             <ImgSlot kind="filled" image={work.image} />
-          ) : thumbLabel ? (
+          ) : (thumbLabel ? (
             <ImgSlot kind="standin" label={thumbLabel} />
           ) : (
             <RoomGlyph room={work.room} />
-          )}
+          ))}
         </div>
         <div className="min-w-0 pt-1">
           <div

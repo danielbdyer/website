@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/IBM/audit-ci/main/docs/schema.json",
+  "high": true,
+  "critical": true,
+  "package-manager": "pnpm",
+  "report-type": "summary",
+  "output-format": "text"
+}
