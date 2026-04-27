@@ -35,15 +35,15 @@ import type { MouseEvent } from 'react';
  * Returns a memoized onClick handler designed to be attached to the
  * outer container; React's event delegation does the rest.
  */
-export function useInternalLinkDelegation() {
+export function useInternalLinkDelegation<T extends Element = HTMLElement>() {
   const router = useRouter();
   // No `useCallback` wrap — the React Compiler (configured in
   // vite.config.ts) auto-memoizes hooks and handlers at build time.
   // Manual memoization is kept only when the compiler's eslint plugin
   // surfaces a case it can't safely handle. See REACT_NORTH_STAR.md
   // §"React Compiler".
-  return (e: MouseEvent<HTMLElement>) => {
-    const anchor = (e.target as HTMLElement | null)?.closest?.('a');
+  return (e: MouseEvent<T>) => {
+    const anchor = (e.target as Element | null)?.closest?.('a');
     if (!anchor) return;
     const href = anchor.getAttribute('href');
     if (!href || !href.startsWith('/')) return;

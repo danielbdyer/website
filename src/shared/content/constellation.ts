@@ -29,14 +29,26 @@ const CONSTELLATION_ROOMS: readonly Exclude<Room, 'foyer'>[] = [
 ];
 
 // Each room occupies a 90° sector of a polar layout, centered around
-// the firmament's center. The order matches the nav rhythm (Studio →
-// Garden → Study → Salon = professional → poetic → reflective →
-// aesthetic) walked clockwise from the upper-left.
+// the firmament's center. Angles follow SVG-direct convention
+// (0° = east, 90° = south, 180° = west, 270° = north — Y grows
+// downward, so sin(angle) maps to vertical-down). The four rooms sit
+// at the four diagonals so each occupies one quadrant of the sky:
+//
+//   Studio (NW) ─── ★ ─── Salon (NE)
+//                        ─
+//   Garden (SW) ─── ★ ─── Study (SE)
+//
+// Studio sits upper-left because it is the daylight-discipline room
+// (dawn-direction). Salon sits upper-right — music high in the sky,
+// the cellist's son's room. Study sits lower-right, the evening side
+// where reflection happens. Garden sits lower-left, the earth-and-
+// growth quadrant. The arrangement is editorial; the data layer
+// commits to it so positions are stable across builds.
 const ROOM_SECTOR_DEG: Record<Exclude<Room, 'foyer'>, number> = {
-  studio: 315, // upper-left of the sky
-  salon: 45, // upper-right
-  study: 135, // lower-right
-  garden: 225, // lower-left
+  studio: 225, // NW — upper-left of the sky
+  salon: 315, // NE — upper-right
+  study: 45, // SE — lower-right
+  garden: 135, // SW — lower-left
 };
 
 // Editorial assignment of the held accent vocabulary to the eight
@@ -76,6 +88,11 @@ export interface ConstellationNode {
    *  the horizon. Position is deterministic in (room, slug). */
   angleDeg: number;
   radius: number;
+  /** Hue of the work's first-listed facet, or 'gold' as a quiet
+   *  default for facetless works. The renderer paints the star in
+   *  this hue; thread blooms toward this star adopt their own
+   *  facet's hue, not the star's. */
+  hue: ConstellationHue;
 }
 
 export interface ConstellationEdge {
@@ -192,16 +209,20 @@ export function getConstellationGraphSync(): ConstellationGraph {
   const allWorks = CONSTELLATION_ROOMS.flatMap((room) =>
     getDisplayWorksByRoomSync(room).map((work) => ({ room, work })),
   );
-  const nodes: ConstellationNode[] = allWorks.map(({ room, work }) => ({
-    room,
-    slug: work.slug,
-    title: work.title,
-    date: work.date,
-    facets: work.facets,
-    posture: work.posture,
-    isPreview: isPreviewWork(work),
-    ...placeNode(room, work.slug),
-  }));
+  const nodes: ConstellationNode[] = allWorks.map(({ room, work }) => {
+    const primaryFacet = work.facets[0];
+    return {
+      room,
+      slug: work.slug,
+      title: work.title,
+      date: work.date,
+      facets: work.facets,
+      posture: work.posture,
+      isPreview: isPreviewWork(work),
+      hue: primaryFacet ? FACET_HUE[primaryFacet] : 'gold',
+      ...placeNode(room, work.slug),
+    };
+  });
   const edges = deriveFacetEdges(nodes);
   return { nodes, edges, facetHues: FACET_HUE };
 }
