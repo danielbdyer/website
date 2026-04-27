@@ -1,10 +1,10 @@
 # The Constellation
 
-*Held vision. A future surface for the site, captured here in the form it arrived in — vividly, before the smallest valid implementation reduces it. This file is not yet a specification. It is the dream we are building toward, named so that the building can recognize it when it pulls.*
+*First form shipped on 2026-04-27 at `/sky`. The structural layer — the firmament, the threads, the stars, the keyboard navigation, the SSG-prerendered route — is real. The atmospheric layer (WebGL parallax, the watercolor weather, the rolling carpet, the daystar's ascent) remains held. This file holds both: the form that exists, and the form it is growing toward. When the lived surface and the held vision disagree, the lived surface is the present moment and this file is what the building is reaching for next.*
 
 The graph view, as held in `BACKLOG.md`, was imagined as a force-directed visualization of nodes and edges — the kind of surface you ship after thirty works exist and the web has thickened. This document names a different shape. The graph view this site wants is **a sky** — a constellation visible from the Foyer, reached by looking up, with the same gentle, generous, thought-through register the Foyer already keeps with its visitor. *An alternative way to perceive the site, not a different site.*
 
-The sky is its own route for now. It may eventually fold back into the Foyer — the way a Skyrim character looks up at the stars without leaving the field they're standing in — but the smallest valid first form is a destination you scroll toward, not a mode of the entry.
+The sky is its own route for now. It may eventually fold back into the Foyer — the way a Skyrim character looks up at the stars without leaving the field they're standing in — but the smallest valid first form is a destination you reach via a small "look up" link, not a mode of the entry.
 
 ---
 
@@ -276,4 +276,31 @@ This is what *the graph becomes a room* means, in full: not a page, not a featur
 
 ---
 
-*Drafted on 2026-04-27 from a conversation with Danny. The vision is captured; the smallest valid first form is the next conversation. If this document and the felt sense of the site disagree, slow down. Listen for which one is more true. That slowness is not inefficiency. It is the practice.*
+## What Shipped (First Form)
+
+The structural layer of the constellation, complete:
+
+- **Route.** `/sky` is prerendered SSG via TanStack Start's pages list. The page reaches via a small italic *"↑ Look up"* link in the Foyer (the held scroll-up gesture is its own conversation). Every navigation between Foyer and Sky is a Cross — `viewTransition={false}` — because the rooms above and below are different atmospheres.
+- **Data.** `src/shared/content/constellation.ts` derives the graph from the existing display works. Each non-Foyer work becomes a node with deterministic polar coordinates within its room's 90° sector (Studio NW, Salon NE, Study SE, Garden SW). Each shared facet between two works becomes an edge. Stable across builds — adding a new work never moves existing stars.
+- **Atoms.** `Star` (a real addressable anchor with halo + body + 24px hit target), `Thread` (a thin pale line, pointer-events:none, aria-hidden), `Firmament` (the radial-gradient background painted in the umber palette).
+- **Organism.** `Constellation` composes the firmament, the threads, and a star for every work. Hover or focus on a star sets `activeKey`; threads connecting that star bloom in opacity. The surface announces as a `<nav aria-labelledby>` with a sr-only heading naming the count honestly — *"0 works"*, *"1 work"*, *"N works"*. SVG anchor clicks delegate to TanStack via `useInternalLinkDelegation` (made element-generic so SVG and HTML anchors share the same plumbing).
+- **Held accents graduate.** The four held accents pair with the eight facets editorially in `FACET_HUE`. Two facets share each hue. The pairing is in TS, not in CSS, so the palette stays general and the surface speaks the vocabulary editorially. `DESIGN_SYSTEM.md` §"The accents — one primary, four held" updated to reflect the graduation.
+- **Tests.** 22 new (constellation data, layout primitives, Star, Thread, Firmament, Constellation organism with axe). All canaries green; the build prerenders `/sky` to a 64KB static HTML carrying `small-weather` as an addressable star.
+
+What is still held — *not as a TODO list, as a list of next conversations:*
+
+- The atmospheric layer (WebGL or canvas-driven parallax, granular paper-grain sky, the watercolor-bleed star halos, the constellation-line afterglow on hover).
+- The scroll-up reveal gesture and the twilight carpet.
+- The theme toggle's ascent into the firmament — the sun and the moon as the daystar.
+- The polestar (the geometric figure ascending into the sky).
+- Spec nodes alongside work nodes (the strata convergence).
+- Editorial constellation patterns (cluster names).
+- Integration with the held time slider.
+- Audio layers in the Salon's region.
+- Per-room sub-skies.
+
+Each of these is named in this file with the form it wants. None of them is half-implemented. The architecture of patience holds: the first form is honest about being the first.
+
+---
+
+*Drafted on 2026-04-27 from a conversation with Danny. First form shipped the same day; the atmospheric and ambient layers remain the next conversations. If this document and the felt sense of the site disagree, slow down. Listen for which one is more true. That slowness is not inefficiency. It is the practice.*

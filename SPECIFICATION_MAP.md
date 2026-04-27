@@ -347,6 +347,9 @@ The five outcomes today:
 | `SEO_AND_META.md` | Exists | Per-page meta patterns and Schema.org JSON-LD, implemented for every route. Sitemap, feeds, OG images, and robots.txt held in backlog. |
 | `PRIVACY.md` | Exists | Privacy posture for a static content site. Declines tracking, cookies, fingerprinting. Web Vitals forwarding held until a privacy-respecting provider is chosen. |
 | `BACKLOG.md` | Exists | Held concerns with trigger conditions. Not a roadmap — a list of work the site knows it owes itself. |
+| `CONSTELLATION.md` | Exists | Surface-specific spec for `/sky` — the graph view as a sky. First form shipped (structural layer: route, firmament, threads, stars, accessible navigation). Atmospheric layer (WebGL, parallax, the carpet roll-out, the daystar's ascent, the polestar) and integrations (time slider, spec nodes, audio) held within the file. Cross-trunk: depends on `DOMAIN_MODEL`, `GRAPH_AND_LINKING`, `DESIGN_SYSTEM`, `INTERACTION_DESIGN`. |
+| `MANIFESTO.md` | Exists | The slingshot — six arrows already in motion, named so the building can lean into them on purpose. Companion: `MANIFESTO_NOTES.md`. |
+| `MANIFESTO_NOTES.md` | Exists | Technical accompaniment to the manifesto: file paths, lint rules, drift inventory. Updated as drift resolves or surfaces. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 
