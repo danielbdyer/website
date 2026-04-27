@@ -78,9 +78,13 @@ export function WorkView({ work }: WorkViewProps) {
         style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
       >
         {work.posture && (
-          <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
+          <Link
+            to="/salon"
+            search={{ posture: work.posture }}
+            className="mr-3 inline-block border-b border-transparent font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase no-underline transition-colors duration-200 hover:border-accent-warm/40"
+          >
             {work.posture}
-          </span>
+          </Link>
         )}
         {import.meta.env.DEV && work.draft && (
           <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">

@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { Facet, Room } from '@/shared/types/common';
 import { Ornament } from '@/shared/molecules/Ornament/Ornament';
+import { formatSeries } from '@/shared/utils/format-series';
 
 interface RoomOutwardInvitationProps {
   /** Two or three facet threads this room threads through — surfaces as
@@ -52,17 +53,14 @@ function ThreadsLine({ facets }: { facets: readonly Facet[] }) {
   return (
     <p className="mb-2">
       Threaded through{' '}
-      {facets.map((facet, i) => (
-        <span key={facet}>
-          {i > 0 && (i === facets.length - 1 ? ' and ' : ', ')}
-          <Link
-            to="/facet/$facet"
-            params={{ facet }}
-            className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
-          >
-            {facet}
-          </Link>
-        </span>
+      {formatSeries(facets, (facet) => (
+        <Link
+          to="/facet/$facet"
+          params={{ facet }}
+          className="border-b border-transparent text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+        >
+          {facet}
+        </Link>
       ))}
       .
     </p>

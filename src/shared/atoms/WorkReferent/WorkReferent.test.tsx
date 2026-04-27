@@ -59,4 +59,21 @@ describe('WorkReferent', () => {
     expect(link).toHaveAttribute('rel', 'noreferrer noopener');
     expect(link).toHaveAttribute('target', '_blank');
   });
+
+  it('renders the referent name as a link when referent.url is set', () => {
+    render(
+      <WorkReferent
+        referent={{
+          type: 'visual-artwork',
+          name: 'Stoclet Frieze',
+          creator: { name: 'Gustav Klimt' },
+          url: 'https://example.com/stoclet',
+        }}
+      />,
+    );
+    const link = screen.getByRole('link', { name: 'Stoclet Frieze' });
+    expect(link).toHaveAttribute('href', 'https://example.com/stoclet');
+    expect(link).toHaveAttribute('rel', 'noreferrer noopener');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
 });

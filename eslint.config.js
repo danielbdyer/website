@@ -1,7 +1,9 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import reactCompiler from 'eslint-plugin-react-compiler';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import boundaries from 'eslint-plugin-boundaries';
 
@@ -14,14 +16,60 @@ export default tseslint.config(
   // ── React ────────────────────────────────────────────────────
   {
     plugins: {
+      react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      'react-compiler': reactCompiler,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // React Compiler surface — flags components/hooks the compiler
+      // can't safely auto-memoize (mutations, conditionally-called
+      // hooks, side effects in render). The babel plugin in
+      // vite.config.ts does the actual memoization at build time;
+      // this rule names violations at lint time so they're caught
+      // before the compiler bails silently. See REACT_NORTH_STAR.md
+      // §"React Compiler" for the adoption note.
+      'react-compiler/react-compiler': 'error',
+      // JSX nesting depth — North Star §"Structural Thresholds"
+      // commits to 2–3 target, 4 hard limit. Matches working memory
+      // stack depth; deeper trees are a refactor signal, not a style
+      // choice. Test files pass through unchanged because they are
+      // already exempt from `max-lines-per-function`.
+      'react/jsx-max-depth': ['error', { max: 4 }],
+      // Manual memoization is unnecessary since React Compiler is
+      // configured (vite.config.ts). The compiler auto-memoizes at
+      // build time; manual `useMemo`/`useCallback`/`memo`/`forwardRef`
+      // calls are warned, not errored, so a future agent who genuinely
+      // needs to escape the compiler can disable per line with a
+      // comment naming the reason. See REACT_NORTH_STAR.md
+      // §"React Compiler" for the rule of thumb.
+      'no-restricted-syntax': [
         'warn',
-        { allowConstantExport: true },
+        {
+          selector: "CallExpression[callee.name='useMemo']",
+          message:
+            'React Compiler auto-memoizes — manual `useMemo` is rarely needed. If the compiler bails on this case, suppress with `// eslint-disable-next-line` and a one-line reason.',
+        },
+        {
+          selector: "CallExpression[callee.name='useCallback']",
+          message:
+            'React Compiler auto-memoizes — manual `useCallback` is rarely needed. If the compiler bails on this case, suppress with `// eslint-disable-next-line` and a one-line reason.',
+        },
+      ],
+      'no-restricted-imports': [
+        'warn',
+        {
+          paths: [
+            {
+              name: 'react',
+              importNames: ['memo', 'forwardRef'],
+              message:
+                "React 19: `forwardRef` is unnecessary (`ref` is a regular prop) and `memo` is unnecessary (React Compiler auto-memoizes). See REACT_NORTH_STAR.md §'React Compiler'.",
+            },
+          ],
+        },
       ],
     },
   },
@@ -31,6 +79,28 @@ export default tseslint.config(
     files: ['**/src/app/routes/**'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+
+  // The root layout file is a structural exception to jsx-max-depth.
+  // RootDocument > ThemeProvider > html/body/main wrapping is inherent
+  // to root layouts; the depth rule is meant to flag over-nested
+  // feature components, not the framework's own scaffolding.
+  {
+    files: ['**/src/app/routes/__root.tsx'],
+    rules: {
+      'react/jsx-max-depth': 'off',
+    },
+  },
+
+  // Test files are exempt from import restrictions — they may need
+  // wildcard React imports for stateful test fixtures, and the
+  // no-manual-memoization warning doesn't apply to test code.
+  {
+    files: ['**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
 
