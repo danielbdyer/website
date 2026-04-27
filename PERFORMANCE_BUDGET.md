@@ -128,11 +128,13 @@ No images exist today. When they arrive (in works and possibly the Salon), the b
 ## Enforced in Code
 
 Today:
+
 - Vite's default build optimizations (tree-shaking, minification).
 - `font-display: swap` via the Google Fonts URL.
 - No per-route code splitting (bundle weight currently small enough not to matter; held in backlog).
 
 Enforcement gaps (all held in backlog):
+
 - Lighthouse CI gate
 - RUM
 - Moving the content loader to `createServerFn` to drop `marked` and `gray-matter` from the client bundle (see `RENDERING_STRATEGY.md`)

@@ -28,6 +28,7 @@ The Foyer has no content directory. This matches the domain model's soft invaria
 **The directory is the room.** A work's room is derived from the directory it lives in, not from a frontmatter field. This removes a source of drift (the frontmatter and the path disagreeing) and makes the filesystem the single source of room assignment. Moving a file between room directories is moving the work between rooms — a real domain change, visible in version control.
 
 **The filename is the slug.** `src/content/garden/a-poem.md` produces a work with slug `a-poem` whose URL is `/garden/a-poem`. The filename:
+
 - Uses lowercase kebab-case. No spaces, no underscores, no capitals.
 - Is stable — renaming a file renames its URL, which breaks any link to it. This is a real cost; rename with care.
 - Is not transformed. What you see on disk is what appears in the URL.
@@ -155,6 +156,7 @@ The type enum lives in the schema; the per-type rendering decisions live in the 
 A `draft: true` frontmatter field marks a work as not-yet-public.
 
 **Draft behavior:**
+
 - Development builds (`pnpm dev`) include drafts. Danny sees his own unfinished work.
 - Production builds (`pnpm build`) exclude drafts. The deployed site never renders them.
 - Drafts do not get URLs in production — not `noindex` pages, not 404s, just genuinely absent.
@@ -180,12 +182,14 @@ The body of a work is the content beneath the frontmatter — the prose itself. 
 **Markdown dialect:** GitHub-Flavored Markdown. Tables, fenced code blocks, strikethrough, task lists all supported. Footnotes and definition lists may be added via plugins as need arises.
 
 **What the body carries:**
+
 - Running prose, poetry, structural headings within a work
 - Inline emphasis, links, and images
 - Block-level elements: paragraphs, lists, code blocks, blockquotes, horizontal rules
 - Footnotes (when needed)
 
 **What the body does not carry:**
+
 - Frontmatter fields repeated as body text. The title in frontmatter is the title; do not restate it as an `<h1>` in the body. The view component renders the title from the frontmatter field; the body starts at the first real paragraph.
 - Metadata. The date, summary, facets, and type belong in frontmatter. Repeating them in prose creates drift.
 

@@ -215,6 +215,7 @@ Danny's site is such a content site. Works are the universal substance; rooms ar
 The irreducible units of UI. A button, input, label, badge, icon, spinner.
 
 **Contract**:
+
 - Zero internal state (except `useId`, `useRef`, or UI-local state like focus)
 - Zero side effects
 - Zero domain knowledge
@@ -239,6 +240,7 @@ Feature-level presentational components (nav bar, comment thread, data table, or
 The wiring layer between domain and presentation. This is where data meets UI.
 
 **Contract**:
+
 - Calls exactly ONE orchestration hook
 - Renders exactly ONE primary organism
 - Handles three states: loading, error, success
@@ -275,6 +277,7 @@ Every organism has a corresponding `{ComponentName}Skeleton.tsx` (colocated, des
 Route-level components. The component that corresponds to a URL.
 
 **Contract**:
+
 - Defined by TanStack Router file-based routing
 - Compose containers and layout components
 - Own Suspense boundary placement

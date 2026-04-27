@@ -1,0 +1,217 @@
+# Cspell — typo guard for code, comments, and spec markdown. The wordlist
+# is seeded from voice-sensitive surfaces; new domain words earn their
+# place by being added here, which is a small ritual that keeps the
+# vocabulary deliberate.
+
+version: '0.2'
+language: en
+ignorePaths:
+  - node_modules/**
+  - dist/**
+  - .stats/**
+  - pnpm-lock.yaml
+  - public/**/*.svg
+  - .claude/**
+  - playwright-report/**
+  - test-results/**
+  - src/app/routeTree.gen.ts
+words:
+  # People + places named in works and content
+  - Bouteneff
+  - Hockney
+  - Klimt
+  - Pärt
+  - Tintinnabuli
+  - Vermeer
+  - Stoclet
+  - Spiegel
+  - Newsreader
+  - Literata
+  - Hopper
+  - Brooklyn
+  - Bach
+  - Turner
+  - Arvo
+
+  # Site vocabulary
+  - autotelic
+  - backlinks
+  - composting
+  - cellist
+  - cellists
+  - devotion
+  - kicker
+  - kickers
+  - posture
+  - postures
+  - referent
+  - referents
+  - rooms
+  - salon
+  - foyer
+  - studio
+  - garden
+  - study
+  - spanda
+  - umber
+  - eyebrow
+  - workpage
+  - wikilink
+  - wikilinks
+  - facet
+  - facets
+
+  # Code + tooling
+  - tanstack
+  - tsr
+  - vitest
+  - happy-dom
+  - happydom
+  - lhci
+  - lighthouserc
+  - prerender
+  - prerendering
+  - subagent
+  - cloudflare
+  - workerd
+  - wrangler
+  - cfwa
+  - shaivism
+  - kashmir
+  - newsreader
+  - opsz
+  - fontsource
+  - rgba
+  - linkable
+  - microcopy
+  - prerendered
+  - prerenders
+  - rerender
+  - rerenders
+  - typecheck
+  - typechecks
+  - dedupe
+  - dedupes
+  - dedupes
+  - debounce
+  - inline-link
+  - linkable
+  - resolveable
+  - subjectof
+  - composable
+  - hexadecimal
+  - radix
+  - hashed
+  - polyfill
+  - signon
+
+  # Inflections
+  - postures
+  - referents
+  - facets
+  - kickers
+  - cellists
+  - cellos
+  - cellist
+  - chains
+  - clamps
+  - inks
+  - rooms
+  - silos
+
+  # Markdown shorthand we use
+  - frontmatter
+  - kebab-case
+
+  # CSS / Tailwind
+  - clsx
+  - twmerge
+  - tailwindcss
+  - postcss
+  - opsz
+
+  # Project-specific terms
+  - autostatic
+  - axe-core
+  - bg-warm
+  - dvh
+  - subpath
+  - viewports
+  - workpages
+  - wordmark
+  - wordmark's
+  - backlink
+  - backlinks
+  - standin
+  - hrefs
+  - TTFB
+  - unlayered
+  - crossfade
+  - crossfades
+  - navigations
+  - thisness
+  - personhood
+  - renderable
+  - prerenderable
+  - powerset
+  - treemap
+  - ANAME
+  - Backlink
+  - Contentful
+  - Crossfade
+  - Editability
+  - Epistemography
+  - FOFT
+  - FOIT
+  - HSTS
+  - Hotjar
+  - Hypertextuality
+  - Unpublishing
+  - WCAG
+  - Wayfinding
+  - antipattern
+  - autorun
+  - blockquotes
+  - callsite
+  - cloudflareinsights
+  - danielbdyer
+  - dedup
+  - destructures
+  - doesn
+  - epistemography
+  - facetime
+  - hypertextual
+  - hypertextuality
+  - interiority
+  - isomorphically
+  - networkidle
+  - operationalized
+  - preconnects
+  - preinit
+  - scrollport
+  - staticwebapp
+  - subheaded
+  - superlinearly
+  - underspecified
+  - unfurlers
+  - unparseable
+  - unprecious
+  - unpublishing
+  - unstub
+  - wayfinding
+  - wordlist
+  - ified
+
+flagWords: []
+
+dictionaries:
+  - en_US
+  - typescript
+  - css
+  - html
+  - softwareTerms
+  - companies
+  - filetypes
+  - npm
+  - node
+  - misc
