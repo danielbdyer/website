@@ -2,6 +2,8 @@
 
 *First form shipped on 2026-04-27 at `/sky`. The structural layer — the firmament, the threads, the stars, the keyboard navigation, the SSG-prerendered route — is real. The atmospheric layer (WebGL parallax, the watercolor weather, the rolling carpet, the daystar's ascent) remains held. This file holds both: the form that exists, and the form it is growing toward. When the lived surface and the held vision disagree, the lived surface is the present moment and this file is what the building is reaching for next.*
 
+*Paired with [`CONSTELLATION_HORIZON.md`](./CONSTELLATION_HORIZON.md) — the technical envisioning of the endpoint (rendering stack, layered composition, data contracts, build-vs-runtime allocation, performance and accessibility invariants, and the migration path working backwards from the finished surface). Where this file holds **the experience**, that file holds **how the experts ship it**.*
+
 The graph view, as held in `BACKLOG.md`, was imagined as a force-directed visualization of nodes and edges — the kind of surface you ship after thirty works exist and the web has thickened. This document names a different shape. The graph view this site wants is **a sky** — a constellation visible from the Foyer, reached by looking up, with the same gentle, generous, thought-through register the Foyer already keeps with its visitor. *An alternative way to perceive the site, not a different site.*
 
 The sky is its own route for now. It may eventually fold back into the Foyer — the way a Skyrim character looks up at the stars without leaving the field they're standing in — but the smallest valid first form is a destination you reach via a small "look up" link, not a mode of the entry.
