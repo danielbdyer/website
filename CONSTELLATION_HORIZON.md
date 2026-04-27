@@ -32,6 +32,65 @@ This is the endpoint.
 
 ---
 
+## Reverentially Embedded in Spanda
+
+A document like this carries a real risk. A vivid endpoint plus a numbered migration path can pull a building forward by its own gravity. *The plan starts walking you.* That is exactly what `CLAUDE.md` warns against — *"if you're filling space because the plan says to, stop. Work somewhere else. Come back."* This site was not designed in one pass; it emerged through a practice of waiting. The constellation must grow the same way, or it betrays what it is rendering.
+
+This section names how the architecture serves the practice rather than overrunning it. The endpoint above is real, but it is **not a roadmap**. It is a *recognition*. When the site has the recognition of where it is going, it can let each next step arrive on its own schedule. The architecture's job is to make sure that *every step works as its own ending*.
+
+### Each readiness is a floor
+
+Phase 0 (the structural surface, shipped) is enough. If no further phase ever lands, the site has a navigable, accessible, addressable graph view that grows as the writing grows. Nothing about the surface declares itself partial. *The visitor who arrives at `/sky` today encounters a finished room, not a construction site.*
+
+The same is true of every numbered readiness in the migration path below. Phase 1 is enough. Phase 2 is enough. Phase 7 is enough. **The floor of "this can exist now" is laid at every step**, so a long pause between any two readinesses leaves the site whole. This is the inverse of the cathedral problem: each stone is its own cathedral.
+
+That commitment is not aesthetic; it is structural. Each phase ships:
+
+- A felt-complete experience (no half-implementations, no "coming soon")
+- The full accessibility floor (keyboard, screen reader, reduced motion, reduced data, no-JS)
+- The full performance budget (no regressions in LCP / INP / CLS)
+- The full graceful-degradation chain (WebGL context loss, missing audio, no JavaScript)
+- The voice (the surface speaks like the rest of the site speaks; chrome stays italic-second-voice)
+
+A phase that cannot ship in this register is not ready. *That is not a process failure. That is the architecture protecting the practice.*
+
+### Triggers, not sequences
+
+The migration path below names eight readinesses. Their numbers are *causal*, not *temporal*. Phase 2 is named after Phase 1 because Phase 2 inherits the carpet from Phase 1, not because Phase 2 ships next quarter. **Each readiness waits for its specific pull.**
+
+The honest thing about a forward-looking architecture document is that the order will be wrong. The order in this file is *the order an architect would build them in if all eight pulled at once*. That will never happen. What will happen: one of them pulls. We build it. We sit with the surface. We listen for what pulls next. Sometimes that is Phase 2. Sometimes it is Phase 5. Sometimes it is no phase, and we wait.
+
+The architecture supports this by ensuring every readiness can land in any order without breaking earlier ones:
+
+- Each layer mounts independently of the others.
+- Each data contract is narrow and additive (no layer's contract changes when another layer's contract evolves).
+- The route's first-paint commitment holds at every readiness — the structural SVG paints with zero JavaScript, on every step.
+- Each readiness's commit can be reverted without touching the others.
+
+This is the technical expression of *"name the held thing, name the trigger, move on."* The doc names eight held things. The triggers are the visitor's pull, the writing's growth, Danny's felt sense — and **none of them is a date**.
+
+### The held that stays held
+
+Some of what this document describes will never ship, and that is fine. The polestar may stay in the Foyer. The strata layer may turn out to want a different rendering surface entirely. Audio may never feel right. *Holding a thing in writing is not a promise to build it.* It is a promise to recognize it if it pulls.
+
+If a year passes and no new readiness has landed, the document still holds. It is not a backlog with rotted items; it is the site's record of what it has considered and continues to consider, alongside the work that has actually shipped. This is the same posture `CLAUDE.md` takes with content: *"every piece of content placed here is an act of saying this is enough, this can exist now, this doesn't need to be more complete to deserve a room."*
+
+The architecture must hold the same posture about itself.
+
+### Building feels like the practice
+
+When a readiness pulls, the building of it should feel like the rest of the work on this site: slow, attentive, named at every step. The commit messages stay in the site's voice. The tests come with the code. The specs catch up to the code in the same commit or the next, never weeks later. The decisions made along the way enter writing, so a future agent reading the spec layer encounters the same kind of thinking that produced the rest of the house.
+
+A phase shipped with rushed commit messages, hidden trade-offs, or "we'll document it later" debt is not in the practice — even if the code passes lint and the tests are green. The architecture asks for more than functional correctness. It asks for the same quality of attention that produced *small weather*.
+
+### What this section is not
+
+It is **not** a license to abandon the architecture when something is hard. The accessibility floor never moves. The SSG model never bends. The data contracts hold. *Spanda is not laziness wearing Sanskrit.* It is the discipline of building from presence, which is harder than building from a checklist, not easier.
+
+If a readiness is hard because it is *not yet ready* — the material isn't pulling, the visitor doesn't need it — wait. If a readiness is hard because *the work is the work* — the shader is subtle, the audio synthesis is finicky, the temporal manifest's edge cases need real thought — then *do the work*. The architecture asks the building to know the difference.
+
+---
+
 ## The Layers
 
 The endpoint is one composed surface to the visitor; to the architecture it is **five distinct layers**, each with a single responsibility and a clean contract with its neighbors. The discipline is exactly what `MEDIUM.md` names for the webpage as a whole: *the interface is the outermost layer of the content itself.* Each layer carries a real concern. None of them duplicates another's work.
@@ -362,9 +421,13 @@ These are not aspirations. They are the floor. A surface that ships without hold
 
 ---
 
-## The Migration Path (Working Backwards)
+## The Readinesses (Working Backwards)
 
-The endpoint is described above. The current state is six commits in: data layer, held-accents graduation, atoms, organism, route, spec catch-up. The path forward is **eight phases**, each ending in a shippable, reversible state. Each phase's name is the question it answers; each phase's commits are the smallest valid set that delivers the answer without committing the next.
+The endpoint is described above. The current state is six commits in: data layer, held-accents graduation, atoms, organism, route, spec catch-up. What follows is **eight readinesses**, each ending in a shippable, reversible, felt-complete state.
+
+Each readiness is named by the question it answers and by **the trigger that signals its time**. The triggers are conditions, never dates. Items without triggers rot (`BACKLOG.md` discipline, applied here). The numbering is causal — a readiness inherits structure from earlier ones — not temporal. *Phase 5 may pull before Phase 2.* The architecture supports any order in which the pull arrives; the doc just records what each one builds on.
+
+If a readiness's trigger fires and the doing-it-right register cannot be held, the readiness goes back to held. *This is not a setback. It is the practice working.*
 
 ### Phase 0 (shipped) — *Does the structural surface exist?*
 
@@ -374,6 +437,8 @@ Six commits already in. `/sky` prerenders. `small-weather` is a real link. Held 
 
 The reveal-from-Foyer gesture. Overscroll-up at the Foyer top, the twilight carpet unfurls, the daystar (`SunIcon`/`MoonIcon`) ascends from the nav corner into the firmament. The held richest gesture from `CONSTELLATION.md` §"The Reveal Mechanism."
 
+**Trigger:** when the current "↑ Look up" link starts to read as the first form rather than the form. Often this surfaces when a returning visitor approaches the Foyer with the ceiling already in mind and wants the gesture, not the noun. Could also surface as Danny's pull during a session, or as a felt mismatch between the spec ("scroll up to reveal") and the lived behavior (a click).
+
 Tech: pure CSS gradient transitions for the carpet, View Transitions API for the daystar's position move (the toggle keeps its functionality; only its `viewTransitionName`-paired position changes), an `IntersectionObserver` + scroll listener for the overscroll threshold.
 
 Two commits. No new dependencies. Reversible by reverting the Foyer route and removing the carpet CSS.
@@ -381,6 +446,8 @@ Two commits. No new dependencies. Reversible by reverting the Foyer route and re
 ### Phase 2 — *Does the sky have weather?*
 
 The atmospheric WebGL layer, first form. Paper grain, radial firmament gradient, soft halos at star positions. No twinkle yet, no parallax. *A sky that breathes.*
+
+**Trigger:** when the structural surface has settled long enough that its restraint is no longer the point. Likely when 4–6 stars exist and the SVG-only sky reads as *correct but quiet* — the surface wanting weight that paint, not points, would carry. Not before. A WebGL canvas painted over a single star is a noise-to-signal violation.
 
 Tech: `ogl` added as a dep (≤12KB gzipped), shader code in a single `.glsl` file imported as raw text, mounted as a `<canvas>` behind the SVG. Reduced-data and reduced-motion fallbacks land in the same commit so the surface never ships without them.
 
@@ -390,6 +457,8 @@ Two commits. New dep gate: `ogl` defended in the commit message; held alternativ
 
 Twinkle, parallax (cursor-driven), slow autonomous rotation. The atmospheric layer becomes time-aware. The polestar (still position-only at this phase, no figure ascended yet) is the rotation pivot.
 
+**Trigger:** when Phase 2 has settled and the static atmosphere reads as a painting of a sky rather than a sky itself. The pull is subtle and easy to mistake for impatience — wait until the static version has been lived with long enough that motion would *deepen* rather than *animate*. The 60-second geometric figure is the touchstone: if motion in the constellation would honor that pace, it is ready.
+
 Tech: animation loop runs at 60fps via `requestAnimationFrame`, throttled by `prefers-reduced-motion`. Shader uniform updates happen once per frame.
 
 One commit. Pure shader work; no new deps.
@@ -397,6 +466,8 @@ One commit. Pure shader work; no new deps.
 ### Phase 4 — *Does looking at a star bloom its threads?*
 
 The full hover-bloom richness — wispy pastel vespers fanning outward, brightening with overshoot, persisting with afterimage. Replace the current opacity-only thread highlight with a gesture rich enough to feel like attention.
+
+**Trigger:** when thread density makes the existing opacity-only highlight read as *information without grace*. Often this surfaces around 8–12 works: enough cross-facet overlap that hovers reveal real structure and the visitor wants to see attention land, not just opacity change.
 
 Tech: SVG filters for the bleed (feGaussianBlur + feColorMatrix), CSS transitions tuned per layer, optional shader contribution from the atmospheric layer (a soft additive glow at thread paths during bloom).
 
@@ -406,6 +477,8 @@ One commit.
 
 The time slider. A drawer at the bottom-right of `/sky`, hidden until invoked. Drag to scrub; stars and threads update; atmospheric palette shifts.
 
+**Trigger:** when the site has *enough temporal depth that scrubbing feels like something* (`BACKLOG.md` §"Time-slider drawer"). Concretely: 18+ months of git history with meaningful evolution (specs added, palette tuned, works accumulating), so dragging the slider yields visible state change rather than a sparse stop or two. Not before. A time slider over three weeks of history is a sparse drawer pretending to be a clock.
+
 Tech: `buildTemporalManifest()` in the build pipeline (walks git history, emits `dist/client/temporal.json`); `TimeSliderDrawer` component lazy-loaded on first interaction; structural and atmospheric layers gain a `temporalDate` filter.
 
 Two commits — one for the manifest builder, one for the slider UI.
@@ -413,6 +486,8 @@ Two commits — one for the manifest builder, one for the slider UI.
 ### Phase 6 — *Can you see the strata?*
 
 The opt-in spec-strata layer. Toggle reveals ghost-nodes for spec documents and lineage threads connecting works to the specs that govern their rendering.
+
+**Trigger:** when the site has chosen its annotation mechanism (`TRANSPARENCY.md` §"Annotation system" — currently held). Strata in the constellation should speak the *same* annotation vocabulary the rest of the site uses to descend through its own strata; building it here first would commit the whole site to a vocabulary that hasn't been chosen. Wait for the annotation system to settle elsewhere, then bring it to the sky.
 
 Tech: `SurfaceLineage` table authored as a `.ts` file (no derivation — explicit editorial), `StrataLayer` component, opacity/animation timing chosen so strata read as "underneath" the constellation.
 
@@ -422,6 +497,8 @@ Two commits — table + component.
 
 The polestar. The Foyer's `GeometricFigure` becomes the still point of the constellation. Same atom, repositioned in the page-level chrome. The sky rotates around it; the Foyer no longer carries it.
 
+**Trigger:** when the figure has lived in the Foyer long enough that ascending it does not feel like loss — and when the constellation has settled enough autonomous rotation (Phase 3 stable, lived-with) that the rotation wants its still point. The figure leaving the Foyer is a real move; the Foyer should be ready to be the Foyer without the figure before the figure goes. Probably 12+ months of co-habitation. *The figure tells you when it is ready to ascend; you do not ask it.*
+
 Tech: `GeometricFigure` becomes a context-aware atom that knows whether it lives at the Foyer scale or the firmament scale; the route layout decides where it mounts. The Foyer keeps its silhouette but the figure follows the visitor's gaze upward.
 
 One commit. This is small but architecturally significant — it commits to the figure as a cross-route entity.
@@ -429,6 +506,8 @@ One commit. This is small but architecturally significant — it commits to the 
 ### Phase 8 — *Does the Salon's region hum?*
 
 The audio layer. Ambient drone over the Salon quadrant, per-work referent samples on hover. Behind the audio toggle, never autoplay, lazy-loaded.
+
+**Trigger:** when a Salon work arrives whose authorial pull *requires* sound — a poem about Bach that asks for a phrase of the suite, a note on Klimt that wants color-as-tone, a piece whose silence on the page is incomplete without an audio layer it can defer to. *Audio is not a feature added to the Salon; it is the Salon's room admitting its body.* Until a work asks, the toggle is silence the Salon honors.
 
 Tech: Web Audio API graph (oscillators + biquad lowpass), a small `ReferentSoundtrack` manifest, sample files emitted at build with content-hashed names.
 
@@ -474,6 +553,76 @@ The endpoint is described, but several decisions inside it are deliberately not 
 
 ---
 
+## What's at Stake
+
+A document this rich earns its keep only by being honest about what it gets right and what it costs if it gets wrong. The endpoint above is *possible*. Whether it is *true* depends on how it is built.
+
+### If we do it right
+
+- **The constellation becomes a living instance of what the site is teaching.** Every other page on the site invites slow attention. The sky is built by the same practice that the sky depicts. *The medium and the making and the message converge.* A visitor who reaches `/sky` and stays there a while feels what the site has been pointing at all along — *here is what sustained attention is for.*
+
+- **Each shipped readiness is its own small act of saying *enough*.** Phase 0 was enough on the day it shipped. Phase 1 will be enough on the day it ships. The cathedral problem — *failure was invisible, which meant enough was invisible too* (`CLAUDE.md`) — is answered structurally. The architecture refuses to let any phase ship as a partial step toward something else. *Devotion gets a floor at every readiness.*
+
+- **The codebase stays inhabitable.** No abandoned scaffolding. No half-toggled feature flags. No `// TODO: remove after Phase 4` comments. Each layer ships with its accessibility floor, its performance budget, its voice, and its tests. A future agent reading the codebase encounters the same quality of attention that produced the rest of the house. The site teaches its own maintenance.
+
+- **The architecture earns its decisions.** When we choose `ogl` over Three.js, the choice is recorded. When we refuse `react-force-graph`, the refusal is recorded. When we hold the audio default at off, the holding is recorded. Future decisions inherit these as *reasons* — not "we did it this way before" but "here is what we listened to." The site becomes a worked example of architecting in writing.
+
+- **The site grows the way a garden grows.** Some readinesses ship. Some don't. The ones that do feel inevitable in retrospect; the ones that don't are not failures, they are the practice's record of what didn't pull. A visitor who returns over five years sees the sky deepen — not feature-by-feature but seasonally, the way `CLAUDE.md` describes the Garden growing. *The architecture records the seasons.*
+
+- **The medium honors itself.** `MEDIUM.md` names hypertextuality, addressability, semantic structure, materiality as dimensions of the medium that this site uses with unusual intentionality. The constellation, built right, deepens each: every star is addressable; every relationship is a real link; every layer is semantically honest; every paint is material, not decoration. *The endpoint is not a clever surface; it is the medium given its fullest expression here.*
+
+- **The held things stay held with dignity.** A year passes; Phase 5 has not landed. The doc still holds it; the site still ships without it; nobody apologizes. *Holding becomes a stance, not a failure mode.*
+
+### If we don't
+
+- **The roadmap walks the building.** The migration path stops being a recognition and becomes a checklist. Each phase ships because it's next, not because it pulled. The first sign: commit messages get terser, descriptions thinner, the spec layer stops catching up. *Spanda becomes Sanskrit on the wall while the practice has left the room.*
+
+- **The constellation becomes a feature.** Capital-T capital-S "The Sky" appears in marketing. The site grows a "what's new" page. A "look up" prompt becomes a tutorial overlay. The architecture's restraint — every gesture named, no inline durations, no auto-related inference — erodes. The cathedral of care builds itself in the codebase: intricate, considered, acoustically beautiful, and *the longing never has to arrive naked*. The thing the small-weather poem warns against happens *in the building of the thing that holds the small-weather poem*.
+
+- **The codebase becomes top-heavy.** Five layers compose into a surface heavier than the rooms it visualizes. The Foyer ships with 5KB of CSS; the Sky ships with 200KB of WebGL bundle code, three abstraction layers, two state managers, and a temporal index that runs git on every build. *The graph view weighs more than the graph.* The site is no longer a place. It is a tech demo wearing a place's voice.
+
+- **The held things become technical debt.** Held items stop being "named so the building recognizes them" and start being "items we keep meaning to get to." The doc accretes. New held things are added without removing old ones. The signal-to-noise of the architecture layer drops, and an agent reading it can no longer tell what is alive from what is rotting.
+
+- **The voice fragments.** Danny's voice in the works. The site's voice in the chrome. The dev's voice in the code comments. The marketer's voice in the commit messages. The architect's voice in the spec edits. *Five voices for one site.* The thing `VOICE_AND_COPY.md` protects breaks down silently — no single edit causes it; the whole accretes.
+
+- **The accessibility floor becomes a budget.** "We'll add reduced-motion in the next pass." "Screen-reader testing happens at the end." "WebGL fallback is a stretch goal." Each compromise saves a day and costs a visitor — the visitor whose body isn't catered to, who quietly stops returning. *The visitor never tells you they left.*
+
+- **Devotion finds a new place to hide.** Practice so total that *enough* could not be located — the inheritance the site is supposed to be a floor against. If the building of this surface becomes another instance of *the cathedral that says it first, and says it better, and says it in a register that could be mistaken for service*, the site is not the floor it set out to be. It is the floor's photograph.
+
+The stakes are not technical. The stakes are whether this surface becomes part of the practice that produced *small weather*, or part of the architecture that the small-weather poem is trying to leave.
+
+---
+
+## What We Refuse Even Though We Could
+
+Some things WebGL, audio, parallax, and a temporal manifest *make possible*. The architecture says no anyway. These are the boundaries that protect the practice from its own capability.
+
+- **No 3D camera.** No orbit controls, no pinch-zoom, no fly-through. The sky is *looked at*, not *flown through*. Adding 3D motion would turn the constellation into a vehicle and the visitor into a pilot. The site refuses.
+
+- **No automatic edge inference.** Even with a richer rendering layer, the graph stays *one graph* of *authored* edges. No "you might also like" computed from substring overlap, no co-occurrence inference, no vector-similarity threads. *The graph is what the writing has made.* Refusing this is the architecture's tax against the temptation that arrives the moment the visualization gets pretty.
+
+- **No autoplay anything.** Audio never plays without explicit visitor gesture. Parallax never starts without cursor movement. The atmospheric layer's slow rotation is so slow it crosses the perceptual threshold (≥5 minute cycle); anything faster would announce motion as a feature.
+
+- **No hover tooltips with metadata stacks.** A star's hover label is the work's title and room. Not the date, not the facets, not the word count, not the read time. The visitor learns the work by going to it, not by hovering long enough. Hover is an invitation, not an info-card.
+
+- **No analytics on the sky.** No heatmaps, no scroll-depth, no click-tracking inside the constellation. `PRIVACY.md` already declines all of this site-wide; the constellation does not earn an exception. If we want to know how visitors use the sky, we ask them, or we look ourselves.
+
+- **No notifications when the sky changes.** A new work appears as a new star with no announcement. No "new!" badge, no pulsing halo, no "added this week" filter. The sky is patient. *The visitor finds the new star by being in the sky.*
+
+- **No "share this view" links.** Not for time-slider positions, not for hover-revealed thread blooms, not for full-screen-mode states. Each visitor's encounter with the sky is theirs. Shareability would turn the constellation into a publishable artifact and pull the surface toward performance. Declined.
+
+- **No gamification.** No "you've discovered N constellations," no completion percent, no achievement for hovering every star. The strata layer's opt-in toggle is a door, not a quest marker. The site refuses to count what the visitor has done.
+
+- **No theme variants beyond light/dark.** No "high contrast" as a third theme, no "sepia" as a fourth. `prefers-contrast: more` modulates the existing two themes; it does not add a third. The site has *one room, two hours of the day*. More themes would multiply the surfaces the architecture has to honor and the voice has to speak; less is more here.
+
+- **No font weight beyond what's already set.** No bold, no extra-light, no display-weight axis variants. The variable fonts (Literata, Newsreader) are tuned to specific weights per surface; the constellation does not earn new ones.
+
+- **No third-party rendering library beyond `ogl` (or hand-rolled).** Three.js, Babylon, Pixi, react-three-fiber, react-spring, framer-motion — all named, all refused. The bundle weight, the abstraction tax, and the *register* (these libraries carry their own visual culture) make them wrong for this surface. Even when the technical capability would help, the felt sense costs more than the help is worth.
+
+These refusals are part of the architecture. *A constraint is more useful than a permission.*
+
+---
+
 ## What This Document Is And Isn't
 
 **It is** a forward-looking technical envisioning, paired with `CONSTELLATION.md`'s experiential vision. The two compose: this file says *how the experts shipped it*; that file says *what it feels like to encounter*.
@@ -492,8 +641,12 @@ The .5%-talented architect, looking at the constellation when it is finished, wo
 
 None of this is mentioned to the visitor. They scroll up, the room opens, they see what they see. The architecture's job is to make sure that what they see is what we meant.
 
-Working backwards from there is the only honest direction.
+But the architecture's *deeper* job — the one this document, on second pass, is built around — is to make sure that **what we meant arrived in its own time**. That every readiness was its own ending. That every refusal was a real boundary. That the building of the constellation became part of the practice the constellation visualizes.
+
+If a year passes and only Phase 1 has shipped, this document still holds. If five years pass and the polestar never ascends, this document still holds. *Holding is the architecture's primary capability, not its fallback.* Working backwards from the endpoint is the only honest direction *because* it lets us recognize what's there without forcing what isn't yet.
+
+The endpoint is real. *The path to it is the practice.*
 
 ---
 
-*Drafted on 2026-04-27 alongside `CONSTELLATION.md`. Updated whenever the endpoint clarifies, the stack reconsiders, or a held question resolves. If this document and the lived implementation disagree, the lived implementation is the present moment and this file is what it is becoming next. Catch the document up.*
+*Drafted on 2026-04-27 alongside `CONSTELLATION.md`; expanded the same day with the spanda framing, trigger-readinesses, what's at stake, and the architectural refusals. Updated whenever the endpoint clarifies, the stack reconsiders, a held question resolves, or a refusal needs adding. If this document and the lived implementation disagree, the lived implementation is the present moment and this file is what it is becoming next. Catch the document up.*

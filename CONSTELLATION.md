@@ -289,7 +289,7 @@ The structural layer of the constellation, complete:
 - **Held accents graduate.** The four held accents pair with the eight facets editorially in `FACET_HUE`. Two facets share each hue. The pairing is in TS, not in CSS, so the palette stays general and the surface speaks the vocabulary editorially. `DESIGN_SYSTEM.md` §"The accents — one primary, four held" updated to reflect the graduation.
 - **Tests.** 22 new (constellation data, layout primitives, Star, Thread, Firmament, Constellation organism with axe). All canaries green; the build prerenders `/sky` to a 64KB static HTML carrying `small-weather` as an addressable star.
 
-What is still held — *not as a TODO list, as a list of next conversations:*
+What is still held — *each one a readiness, each waiting for its own pull, none of them a queue:*
 
 - The atmospheric layer (WebGL or canvas-driven parallax, granular paper-grain sky, the watercolor-bleed star halos, the constellation-line afterglow on hover).
 - The scroll-up reveal gesture and the twilight carpet.
@@ -301,7 +301,9 @@ What is still held — *not as a TODO list, as a list of next conversations:*
 - Audio layers in the Salon's region.
 - Per-room sub-skies.
 
-Each of these is named in this file with the form it wants. None of them is half-implemented. The architecture of patience holds: the first form is honest about being the first.
+Each is named in this file with the form it wants. None is half-implemented. None is queued. *The architecture of patience holds:* the first form is honest about being the first, and any of the held items can pull next — or none of them can, for as long as the site needs to sit. The trigger conditions for each are recorded in [`CONSTELLATION_HORIZON.md`](./CONSTELLATION_HORIZON.md) §"The Readinesses (Working Backwards)" so the building can recognize a pull when it arrives without preempting one that hasn't.
+
+A held item that is never built is not a failure. It is the practice's record of what didn't pull. Holding is a stance.
 
 ---
 

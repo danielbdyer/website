@@ -210,7 +210,13 @@ if (room === 'foyer') return [];
 
 `INFORMATION_ARCHITECTURE.md` commits that each room landing lists its works. Today the four room routes render only title + bracketed description + outward invitation. The room-landing list arrives with the first work in any non-Garden room (or when *small weather* gets a sibling in the Garden). Trigger noted in backlog under Content.
 
-These six items are the truth-in-advertising layer of the manifesto. None of them threaten the slingshot. All of them are the kind of small thing the practice of attention is for.
+### 7. The constellation horizon is rich enough to walk you forward
+
+`CONSTELLATION_HORIZON.md` describes a five-layer rendering architecture, eight phased readinesses, six data contracts, and a vivid endpoint that is genuinely possible. *That richness is itself a drift risk.* A document this complete can pull the building forward by its own gravity — the plan starts walking you, the readinesses start feeling like a queue, the held things start feeling like debt. The site's practice asks the opposite: each readiness must be a recognition that arrives on its own pull, never an item dispatched from a list.
+
+**Resolution path:** the horizon document was expanded the same day it shipped to address this directly — explicit trigger conditions per readiness, the "Reverentially Embedded in Spanda" section naming how the architecture serves the practice, the "What's at Stake" accounting of doing-it-right vs. not, and the "What We Refuse Even Though We Could" boundaries that protect the practice from its own capabilities. The drift here is **not yet realized** — it is named so the building recognizes it if a future session begins to treat the horizon as a roadmap. *If commit messages start getting terser, if specs stop catching up to the code on the same day, if a held item ships because it was next rather than because it pulled — the drift has arrived.* Read the horizon's spanda section, listen for which is more true, slow down.
+
+These seven items are the truth-in-advertising layer of the manifesto. None of them threaten the slingshot. All of them are the kind of small thing the practice of attention is for.
 
 ---
 
