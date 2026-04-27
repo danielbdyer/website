@@ -43,14 +43,22 @@ export function parseWikilinkInner(inner: string): WikilinkToken | null {
   if (!path || path.length === 0) return null;
   const parts = path.split('/');
   if (parts.length === 1) {
-    return { room: undefined, slug: parts[0]!, display: display || undefined };
+    return {
+      room: undefined,
+      slug: parts[0]!,
+      display: display && display.length > 0 ? display : undefined,
+    };
   }
   if (parts.length === 2) {
     const roomCandidate = roomSchema.safeParse(parts[0]);
     if (!roomCandidate.success) return null;
     const slug = parts[1]!.trim();
     if (slug.length === 0) return null;
-    return { room: roomCandidate.data, slug, display: display || undefined };
+    return {
+      room: roomCandidate.data,
+      slug,
+      display: display && display.length > 0 ? display : undefined,
+    };
   }
   return null;
 }

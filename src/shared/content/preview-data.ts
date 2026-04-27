@@ -79,7 +79,7 @@ function renderPreviewHtml(work: DisplayWork, slugIndex: SlugIndex): string {
       sourceLabel: `${work.room}/${work.slug}`,
     }),
   );
-  return m.parse(work.body, { async: false, breaks }) as string;
+  return m.parse(work.body, { async: false, breaks });
 }
 
 function finalizePreviewWorks(

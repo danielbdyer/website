@@ -39,7 +39,7 @@ export function WorkHero({ work, image, thumbLabel }: WorkHeroProps) {
             loading="eager"
             decoding="async"
           />
-          {(image.caption || image.credit) && (
+          {(image.caption ?? image.credit) && (
             <figcaption className="font-body text-meta tracking-meta text-text-3 px-4 py-3 italic">
               {image.caption}
               {image.caption && image.credit ? ' · ' : ''}

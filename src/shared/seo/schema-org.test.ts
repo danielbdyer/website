@@ -189,7 +189,7 @@ describe('schema.org builders', () => {
 
   it('breadcrumbSchema produces a three-item trail with Home, Room, Work', () => {
     const schema = breadcrumbSchema(makeWork());
-    const items = schema.itemListElement as Array<{ position: number; name: string; item: string }>;
+    const items = schema.itemListElement as { position: number; name: string; item: string }[];
     expect(items).toHaveLength(3);
     expect(items[0]!.name).toBe('Home');
     expect(items[0]!.item).toBe(SITE_URL);

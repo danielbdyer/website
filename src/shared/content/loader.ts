@@ -95,7 +95,7 @@ function renderHtml(staged: RawWork, slugIndex: SlugIndex): string {
       sourceLabel: `${staged.room}/${staged.slug}`,
     }),
   );
-  return m.parse(staged.body, { async: false, breaks }) as string;
+  return m.parse(staged.body, { async: false, breaks });
 }
 
 // Compute backlinks for the staged corpus. For each source work, scan
@@ -172,11 +172,14 @@ export function parseWork(path: string, raw: string): Work {
 // the small content set today. Bundle weight is held in BACKLOG ("Move
 // `marked` and `gray-matter` back off the client bundle") for the day
 // it earns the migration to a build-time JSON manifest.
-const rawFiles = import.meta.glob('/src/content/**/*.md', {
+// Vite's `import.meta.glob` returns `Record<string, unknown>` despite the
+// `import: 'default'` option promising `string` content; the explicit
+// type annotation narrows it.
+const rawFiles: Record<string, string> = import.meta.glob('/src/content/**/*.md', {
   eager: true,
   query: '?raw',
   import: 'default',
-}) as Record<string, string>;
+});
 
 const isProduction = import.meta.env.PROD;
 const allWorks: Work[] = parseWorks(rawFiles, isProduction);

@@ -118,7 +118,7 @@ function PostureFilterBar({ postures, active }: PostureFilterBarProps) {
               aria-pressed={isActive}
               onClick={() => {
                 const next: Posture | undefined = isActive ? undefined : posture;
-                navigate({ search: { posture: next } });
+                void navigate({ search: { posture: next } });
               }}
               className={cn(
                 'font-body text-meta tracking-posture cursor-pointer rounded-[2px] bg-transparent px-1 italic transition-colors duration-200',

@@ -11,7 +11,16 @@ export default tseslint.config(
   { ignores: ['dist', 'src/app/routeTree.gen.ts'] },
 
   js.configs.recommended,
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
 
   // ── React ────────────────────────────────────────────────────
   {
@@ -96,11 +105,56 @@ export default tseslint.config(
   // Test files are exempt from import restrictions — they may need
   // wildcard React imports for stateful test fixtures, and the
   // no-manual-memoization warning doesn't apply to test code.
+  // Type-checked rules also relax for tests where mocks intentionally
+  // shape `any`-typed surfaces and empty methods are placeholders.
   {
-    files: ['**/*.test.{ts,tsx}'],
+    files: ['**/*.test.{ts,tsx}', 'src/test/**'],
     rules: {
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/only-throw-error': 'off',
+    },
+  },
+
+  // The async barrel in `src/shared/content/index.ts` and the display
+  // wrappers are intentionally async-without-await per
+  // RENDERING_STRATEGY.md §"The async barrel" — the signature is the
+  // architectural seam for a future hybrid render path. Disable
+  // require-await for those files.
+  {
+    files: ['src/shared/content/index.ts', 'src/shared/content/display.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+
+  // ThemeProvider's default context value is an empty `toggle` —
+  // allowed because a Provider always overrides it. Empty-function
+  // warnings here would force ceremonial busywork. The unbound-method
+  // rule fights `useSyncExternalStore`'s canonical method-as-callback
+  // pattern (subscribe/getSnapshot/getServerSnapshot) — declined here
+  // for the same reason; the React 19 hook is the source of truth.
+  {
+    files: ['src/app/providers/**'],
+    rules: {
+      '@typescript-eslint/no-empty-function': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
+
+  // Route files use TanStack Router's `throw notFound()` and
+  // `throw redirect()` idioms; these throw control-flow tokens that
+  // aren't `Error` subclasses, which the `only-throw-error` rule
+  // flags. The framework owns the convention.
+  {
+    files: ['src/app/routes/**'],
+    rules: {
+      '@typescript-eslint/only-throw-error': 'off',
     },
   },
 
