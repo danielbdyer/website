@@ -20,7 +20,7 @@ interface WorkRowProps {
    * to publishing its own making, and a faked image would be the loudest
    * possible violation.
    */
-  thumbLabel?: string;
+  thumbLabel?: string | undefined;
 }
 
 // Image-left work row — the Salon's default landing rhythm. A 132px square

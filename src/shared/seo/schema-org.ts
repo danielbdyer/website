@@ -120,7 +120,7 @@ function imageObjectNode(work: Work, image: WorkImage): SchemaOrgNode {
   };
 }
 
-function creatorNode(creator: { name: string; url?: string }): SchemaOrgNode {
+function creatorNode(creator: { name: string; url?: string | undefined }): SchemaOrgNode {
   return {
     '@type': 'Person',
     name: creator.name,

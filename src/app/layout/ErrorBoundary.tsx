@@ -19,19 +19,19 @@ interface ErrorBoundaryState {
  * VOICE_AND_COPY.md.
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false };
+  override state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     if (import.meta.env.DEV) {
       console.error('ErrorBoundary caught an error:', error, info);
     }
   }
 
-  render() {
+  override render() {
     if (!this.state.hasError) return this.props.children;
     return (
       <Reveal>
