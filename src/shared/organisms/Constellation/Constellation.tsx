@@ -2,7 +2,9 @@ import { useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
+import { Daystar } from '@/shared/atoms/Daystar/Daystar';
 import { Firmament } from '@/shared/atoms/Firmament/Firmament';
+import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Star } from '@/shared/atoms/Star/Star';
 import { Thread } from '@/shared/atoms/Thread/Thread';
 import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
@@ -71,8 +73,10 @@ export function Constellation({ graph, className }: ConstellationProps) {
         <ConstellationFilters />
         <g className="constellation-parallax--firmament">
           <Firmament size={VIEWBOX} />
+          <Daystar cx={500} cy={240} />
         </g>
         <g className="constellation-parallax--sky">
+          <Polestar cx={500} cy={500} />
           <g className="constellation-rotates">
             <g aria-hidden="true">
               {edges.map((edge) => (

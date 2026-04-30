@@ -449,6 +449,19 @@ body::before {
   transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* Daystar — theme-conditional visibility. Both bodies render in the
+   DOM so the switch is pure CSS, not React-conditional, avoiding the
+   hydration flash a JS-state-driven render would cause under SSG.
+   The .lt / .dk classes on <html> are applied pre-paint by the
+   inline init script in __root.tsx; the daystar is correct from
+   first paint. */
+.lt .constellation-daystar__moon {
+  display: none;
+}
+.dk .constellation-daystar__sun {
+  display: none;
+}
+
 /* ─── View Transitions ──────────────────────────────────────────
    The View Transitions API gives the site cross-page morphs:
    thumbnail → hero on a work-page click, card rearrangement on a

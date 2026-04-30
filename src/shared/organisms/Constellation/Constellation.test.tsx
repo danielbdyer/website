@@ -91,10 +91,10 @@ describe('Constellation organism', () => {
     );
   });
 
-  test('renders one line element per edge', async () => {
+  test('renders one thread element per edge (selecting by data-thread-id)', async () => {
     const { container } = renderConstellation(SAMPLE_GRAPH);
     await screen.findByRole('link', { name: /small weather/i });
-    expect(container.querySelectorAll('line')).toHaveLength(1);
+    expect(container.querySelectorAll('line[data-thread-id]')).toHaveLength(1);
   });
 
   test('honors the empty Foyer — zero nodes is a real empty set', async () => {
