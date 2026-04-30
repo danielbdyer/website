@@ -48,7 +48,18 @@ export function Constellation({ graph, className }: ConstellationProps) {
   const titleId = 'constellation-title';
 
   return (
-    <nav aria-labelledby={titleId} className={cn('constellation-frame relative', className)}>
+    <nav
+      aria-labelledby={titleId}
+      // Containment for the layered surface: `relative` mounts the
+      // absolutely-positioned WebGLFirmament in the nav's coordinate
+      // space; `isolate` creates a stacking context so mix-blend-mode
+      // composites against the nav alone (never leaking up); and
+      // `overflow-hidden` clips SVG filter regions, sub-pixel canvas-
+      // size mismatch, and the parallax translates so no edge can
+      // extend the document's scrollWidth past the viewport on real
+      // devices.
+      className={cn('constellation-frame relative isolate overflow-hidden', className)}
+    >
       <h2 id={titleId} className="sr-only">
         {skyTitle(graph.nodes.length)}
       </h2>

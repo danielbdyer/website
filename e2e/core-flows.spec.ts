@@ -11,6 +11,7 @@ const mobileCriticalPages = [
   '/garden',
   '/study',
   '/salon',
+  '/sky',
   '/salon/arvo-part-and-the-room-between-notes',
 ] as const;
 
