@@ -462,6 +462,34 @@ body::before {
   display: none;
 }
 
+/* The carpet rolls out — the sky page's first-paint gesture. A
+   clip-path animates from a fully-clipped top edge to a fully-
+   revealed page over 900ms, with the site's signature easing. The
+   visitor's experience is the ceiling opening: the firmament, which
+   was always above, now meets the page. Works on any entry path
+   (a Foyer click, a direct /sky URL load, a back-navigation) — the
+   CSS runs on mount of the sky-arrival container, so the gesture
+   IS the arrival. The global prefers-reduced-motion rule kills the
+   animation-duration to ~0, so the carpet simply *is* there for
+   reduced-motion visitors — still honest, still complete, just
+   without the rolling. CONSTELLATION.md §"The Reveal Mechanism"
+   describes the held richer overscroll-up gesture from the Foyer;
+   this is the first form. */
+@keyframes sky-carpet-roll {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.5;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.sky-arrival {
+  animation: sky-carpet-roll 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
 /* ─── View Transitions ──────────────────────────────────────────
    The View Transitions API gives the site cross-page morphs:
    thumbnail → hero on a work-page click, card rearrangement on a
