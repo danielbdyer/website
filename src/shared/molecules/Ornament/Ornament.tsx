@@ -7,10 +7,10 @@ interface OrnamentProps {
 
 export function Ornament({ className }: OrnamentProps) {
   return (
-    <div className={cn('flex items-center gap-2.5 my-6', className)}>
-      <span className="flex-1 h-px bg-border" />
+    <div className={cn('my-6 flex items-center gap-2.5', className)}>
+      <span className="bg-border h-px flex-1" />
       <Diamond size={5} className="text-text-3 opacity-50" />
-      <span className="flex-1 h-px bg-border" />
+      <span className="bg-border h-px flex-1" />
     </div>
   );
 }

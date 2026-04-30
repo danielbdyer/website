@@ -51,7 +51,7 @@ export function buildPositionedMap(graph: ConstellationGraph): Map<string, Posit
 // render. Group by room (so room-clusters paint together), then
 // newest-first within a room.
 export function presentationOrder(nodes: readonly ConstellationNode[]): ConstellationNode[] {
-  return [...nodes].sort((a, b) => {
+  return nodes.toSorted((a, b) => {
     if (a.room !== b.room) return a.room.localeCompare(b.room);
     return b.date.getTime() - a.date.getTime();
   });
@@ -124,4 +124,5 @@ export function buildRenderableNodes(
  *  graph type is re-exported here as a convenience for tests of the
  *  layout module without forcing them to depend on constellation.ts
  *  directly. */
-export type { ConstellationGraph };
+
+export { type ConstellationGraph } from '@/shared/content/constellation';

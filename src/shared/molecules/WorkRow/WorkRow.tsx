@@ -20,7 +20,7 @@ interface WorkRowProps {
    * to publishing its own making, and a faked image would be the loudest
    * possible violation.
    */
-  thumbLabel?: string;
+  thumbLabel?: string | undefined;
 }
 
 // Image-left work row — the Salon's default landing rhythm. A 132px square
@@ -45,7 +45,7 @@ export function WorkRow({ work, thumbLabel }: WorkRowProps) {
   });
   return (
     <article
-      className="group flex flex-col gap-3 border-b border-border-lt py-6 transition-colors duration-300 first:border-t hover:border-border sm:py-7"
+      className="group border-border-lt hover:border-border flex flex-col gap-3 border-b py-6 transition-colors duration-300 first:border-t sm:py-7"
       style={{ viewTransitionName: workCardTransitionName(work.room, work.slug) }}
     >
       <Link
@@ -54,7 +54,7 @@ export function WorkRow({ work, thumbLabel }: WorkRowProps) {
         className="grid gap-4 text-inherit no-underline sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-7"
       >
         <div
-          className="relative aspect-[16/10] overflow-hidden rounded-[2px] bg-bg-warm shadow-sm sm:aspect-square sm:h-[132px] sm:w-[132px]"
+          className="bg-bg-warm relative aspect-[16/10] overflow-hidden rounded-[2px] shadow-sm sm:aspect-square sm:h-[132px] sm:w-[132px]"
           style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
         >
           {work.image ? (
@@ -67,23 +67,23 @@ export function WorkRow({ work, thumbLabel }: WorkRowProps) {
         </div>
         <div className="min-w-0 pt-1">
           <div
-            className="mb-2 font-body text-meta italic tracking-meta text-text-3"
+            className="font-body text-meta tracking-meta text-text-3 mb-2 italic"
             style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
           >
             {work.posture && (
-              <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
+              <span className="font-body text-micro tracking-eyebrow text-accent-warm mr-3 inline-block uppercase not-italic">
                 {work.posture}
               </span>
             )}
             {import.meta.env.DEV && work.draft && (
-              <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
+              <span className="font-body text-micro tracking-eyebrow text-accent-warm mr-3 inline-block uppercase not-italic">
                 draft
               </span>
             )}
             <span>{formattedDate}</span>
           </div>
           <div
-            className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent"
+            className="font-heading text-heading leading-heading text-text group-hover:text-accent mb-2 transition-colors duration-200"
             style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
           >
             {work.title}

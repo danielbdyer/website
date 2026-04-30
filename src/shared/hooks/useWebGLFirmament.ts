@@ -138,10 +138,10 @@ export function useWebGLFirmament(containerRef: React.RefObject<HTMLDivElement |
 }
 
 function shouldRenderWebGL(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (globalThis.window === undefined) return false;
   if (typeof document === 'undefined') return false;
   // Reduced motion: silence the firmament's animation loop entirely.
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
+  if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
   // Save-Data: don't ship the WebGL atmospheric layer when the
   // visitor has signaled bandwidth conservation. The SVG firmament
   // is sufficient.
@@ -167,13 +167,13 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
   const gl = renderer.gl;
   gl.clearColor(0, 0, 0, 0);
 
-  const canvas = gl.canvas as HTMLCanvasElement;
+  const canvas = gl.canvas;
   canvas.style.width = '100%';
   canvas.style.height = '100%';
   canvas.style.position = 'absolute';
   canvas.style.inset = '0';
   canvas.setAttribute('aria-hidden', 'true');
-  container.appendChild(canvas);
+  container.append(canvas);
 
   const geometry = new Triangle(gl);
   const program = new Program(gl, {
@@ -195,20 +195,28 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
   };
   resize();
 
+  // ogl's uniform map is loosely typed. The shader's uniforms are
+  // declared above with known shapes; this typed view makes the
+  // mutations explicit and lint-safe without changing behavior.
+  const uniforms = program.uniforms as Record<
+    'uTime' | 'uCursor' | 'uTheme' | 'uActive',
+    { value: number | readonly number[] }
+  >;
+
   const onPointerMove = (e: PointerEvent) => {
     const rect = container.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
     const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
     const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-    program.uniforms['uCursor']!.value = [x, -y]; // flip Y for shader space
-    program.uniforms['uActive']!.value = 1;
+    uniforms.uCursor.value = [x, -y]; // flip Y for shader space
+    uniforms.uActive.value = 1;
   };
   const onPointerLeave = () => {
-    program.uniforms['uActive']!.value = 0;
+    uniforms.uActive.value = 0;
   };
 
   const themeObserver = new MutationObserver(() => {
-    program.uniforms['uTheme']!.value = document.documentElement.classList.contains('dk') ? 1 : 0;
+    uniforms.uTheme.value = document.documentElement.classList.contains('dk') ? 1 : 0;
   });
   themeObserver.observe(document.documentElement, {
     attributes: true,
@@ -224,7 +232,7 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
   let raf = 0;
   const startTime = performance.now();
   const tick = () => {
-    program.uniforms['uTime']!.value = (performance.now() - startTime) / 1000;
+    uniforms.uTime.value = (performance.now() - startTime) / 1000;
     renderer.render({ scene: mesh });
     raf = requestAnimationFrame(tick);
   };
@@ -236,7 +244,7 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
     resizeObserver.disconnect();
     container.removeEventListener('pointermove', onPointerMove);
     container.removeEventListener('pointerleave', onPointerLeave);
-    if (canvas.parentNode === container) container.removeChild(canvas);
+    if (canvas.parentNode === container) canvas.remove();
   };
 
   return { canvas, dispose };

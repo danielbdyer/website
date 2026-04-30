@@ -43,14 +43,22 @@ export function parseWikilinkInner(inner: string): WikilinkToken | null {
   if (!path || path.length === 0) return null;
   const parts = path.split('/');
   if (parts.length === 1) {
-    return { room: undefined, slug: parts[0]!, display: display || undefined };
+    return {
+      room: undefined,
+      slug: parts[0]!,
+      display: display && display.length > 0 ? display : undefined,
+    };
   }
   if (parts.length === 2) {
     const roomCandidate = roomSchema.safeParse(parts[0]);
     if (!roomCandidate.success) return null;
     const slug = parts[1]!.trim();
     if (slug.length === 0) return null;
-    return { room: roomCandidate.data, slug, display: display || undefined };
+    return {
+      room: roomCandidate.data,
+      slug,
+      display: display && display.length > 0 ? display : undefined,
+    };
   }
   return null;
 }
@@ -114,7 +122,7 @@ export function invertOutboundGraph(
   }
   // Sort each list newest-first.
   for (const [key, list] of acc) {
-    const sorted = [...list].sort((a, b) => {
+    const sorted = list.toSorted((a, b) => {
       const da = dateLookup(slugIndexKey(a.room, a.slug)).getTime();
       const db = dateLookup(slugIndexKey(b.room, b.slug)).getTime();
       return db - da;

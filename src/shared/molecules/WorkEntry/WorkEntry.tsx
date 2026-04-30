@@ -41,18 +41,18 @@ export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
         className="group block text-inherit no-underline"
       >
         <div
-          className="mb-2 font-body text-meta italic tracking-meta text-text-3"
+          className="font-body text-meta tracking-meta text-text-3 mb-2 italic"
           style={{ viewTransitionName: workMetaTransitionName(work.room, work.slug) }}
         >
           {import.meta.env.DEV && work.draft && (
-            <span className="mr-3 inline-block font-body text-micro not-italic tracking-eyebrow text-accent-warm uppercase">
+            <span className="font-body text-micro tracking-eyebrow text-accent-warm mr-3 inline-block uppercase not-italic">
               draft
             </span>
           )}
           {formattedDate}
         </div>
         <div
-          className="mb-2 font-heading text-heading leading-heading text-text transition-colors duration-200 group-hover:text-accent"
+          className="font-heading text-heading leading-heading text-text group-hover:text-accent mb-2 transition-colors duration-200"
           style={{ viewTransitionName: workTitleTransitionName(work.room, work.slug) }}
         >
           {work.title}

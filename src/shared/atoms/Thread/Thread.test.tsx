@@ -33,8 +33,8 @@ describe('Thread atom', () => {
       withSvg(<Thread id="a|b|relation" x1={0} y1={0} x2={50} y2={50} hue="violet" />),
     );
     const line = container.querySelector('line');
-    expect(line?.getAttribute('data-thread-id')).toBe('a|b|relation');
-    expect(line?.getAttribute('data-hue')).toBe('violet');
+    expect(line?.dataset.threadId).toBe('a|b|relation');
+    expect(line?.dataset.hue).toBe('violet');
   });
 
   test('is aria-hidden — threads carry information, not navigation', () => {
@@ -58,7 +58,7 @@ describe('Thread atom', () => {
     );
     const line = container.querySelector('line');
     expect(line?.getAttribute('filter')).toBeNull();
-    expect(line?.getAttribute('data-active')).toBeNull();
+    expect(line?.dataset.active).toBeUndefined();
     expect(line?.getAttribute('stroke-width')).toBe('0.45');
   });
 
@@ -68,7 +68,7 @@ describe('Thread atom', () => {
     );
     const line = container.querySelector('line');
     expect(line?.getAttribute('filter')).toBe('url(#cn-vespers-bloom)');
-    expect(line?.getAttribute('data-active')).toBe('true');
+    expect(line?.dataset.active).toBe('true');
     expect(line?.getAttribute('stroke-width')).toBe('1.1');
   });
 });

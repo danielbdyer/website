@@ -128,17 +128,17 @@ export interface ConstellationGraph {
 // same output across builds and platforms.
 
 function hash(input: string): number {
-  let h = 2166136261;
+  let h = 2_166_136_261;
   for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
+    h ^= input.codePointAt(i) ?? 0;
+    h = Math.imul(h, 16_777_619);
   }
   return h >>> 0;
 }
 
 function unitOffset(seed: string): number {
   // Maps a hash to [0, 1) deterministically.
-  return hash(seed) / 0xffffffff;
+  return hash(seed) / 0xff_ff_ff_ff;
 }
 
 // Within a 90° sector the work spreads across [-35°, +35°] from the
@@ -199,7 +199,7 @@ function deriveFacetEdges(nodes: readonly ConstellationNode[]): ConstellationEdg
     }
   }
   for (const [facet, group] of facetGroups) {
-    const sorted = [...group].sort((a, b) => nodeKey(a).localeCompare(nodeKey(b)));
+    const sorted = group.toSorted((a, b) => nodeKey(a).localeCompare(nodeKey(b)));
     for (let i = 0; i < sorted.length; i++) {
       for (let j = i + 1; j < sorted.length; j++) {
         const a = sorted[i]!;
@@ -245,6 +245,6 @@ export function getConstellationGraphSync(): ConstellationGraph {
 // (see src/shared/content/index.ts §"Isomorphic content API"). Route
 // loaders await this; if the implementation ever moves behind a
 // fetched JSON manifest, the route surface does not change.
-export async function getConstellationGraph(): Promise<ConstellationGraph> {
-  return getConstellationGraphSync();
+export function getConstellationGraph(): Promise<ConstellationGraph> {
+  return Promise.resolve(getConstellationGraphSync());
 }

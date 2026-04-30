@@ -1,3 +1,10 @@
+// Subscribes to `prefers-reduced-motion` to pause the 60s rotation.
+// A legitimate effect per REACT_NORTH_STAR.md §"Effects — The Only
+// Legitimate Effects" (subscriptions). The figure is leaf-level UI;
+// promoting it to a molecule for one media-query subscription would
+// be ceremony, not architecture. Per-line disable below honors the
+// atom-tier rule's stated exception path.
+// eslint-disable-next-line no-restricted-imports
 import { useEffect, useRef } from 'react';
 import { cn } from '@/shared/utils/cn';
 

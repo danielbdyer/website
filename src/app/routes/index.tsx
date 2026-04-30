@@ -13,7 +13,7 @@ function FoyerPage() {
         <div className="h-24 w-24 shrink-0 sm:h-[110px] sm:w-[110px]">
           <GeometricFigure />
         </div>
-        <div className="font-heading text-deck leading-[1.55] font-light italic text-text-2">
+        <div className="font-heading text-deck text-text-2 leading-[1.55] font-light italic">
           <p>The door is open.</p>
           <p>The rooms are waiting.</p>
         </div>
@@ -22,10 +22,10 @@ function FoyerPage() {
           gesture and the theme toggle's ascent into the sky live in
           CONSTELLATION.md; until they pull, this small italic line is
           the door from the Foyer to the firmament above it. */}
-      <p className="mt-4 max-w-deck font-body text-list leading-body italic text-text-3">
+      <p className="max-w-deck font-body text-list leading-body text-text-3 mt-4 italic">
         <Link
           to="/sky"
-          className="no-underline transition-colors duration-200 hover:text-text-2"
+          className="hover:text-text-2 no-underline transition-colors duration-200"
           viewTransition={false}
         >
           ↑ Look up

@@ -3,14 +3,14 @@ import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
 import { useConstellationParallax } from './useConstellationParallax';
 
 describe('useConstellationParallax', () => {
-  let originalMatchMedia: typeof window.matchMedia | undefined;
+  let originalMatchMedia: typeof globalThis.matchMedia | undefined;
 
   beforeEach(() => {
-    originalMatchMedia = window.matchMedia;
+    originalMatchMedia = globalThis.matchMedia;
   });
 
   afterEach(() => {
-    if (originalMatchMedia) window.matchMedia = originalMatchMedia;
+    if (originalMatchMedia) globalThis.matchMedia = originalMatchMedia;
   });
 
   test('returns a ref the consumer can attach to an element', () => {
@@ -54,7 +54,7 @@ describe('useConstellationParallax', () => {
   });
 
   test('refuses to attach listeners when prefers-reduced-motion is reduce', () => {
-    window.matchMedia = vi.fn().mockReturnValue({
+    globalThis.matchMedia = vi.fn().mockReturnValue({
       matches: true,
       media: '(prefers-reduced-motion: reduce)',
       onchange: null,
@@ -63,7 +63,7 @@ describe('useConstellationParallax', () => {
       addListener: vi.fn(),
       removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
-    }) as unknown as typeof window.matchMedia;
+    });
 
     const el = document.createElement('div');
     const addSpy = vi.spyOn(el, 'addEventListener');

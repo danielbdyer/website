@@ -1,0 +1,39 @@
+// Markdownlint config for the spec files. The site's prose is voice-
+// sensitive — most opinion-laden rules are disabled because the markdown
+// IS the voice. We enforce only structural concerns (heading levels,
+// duplicate headings, broken tables) and decline anything that would
+// rewrite Danny's prose register.
+{
+  "config": {
+    "default": true,
+    // Long lines — disabled. Our specs use one-sentence-per-line in
+    // some files and prose-paragraph-flow in others; voice owns the
+    // line break, not lint.
+    "MD013": false,
+    // Heading style — disabled because some specs nest deeper than
+    // markdownlint's default permits and we don't want forced ATX
+    // alternates.
+    "MD024": false,
+    // Inline HTML — allowed (we use spans/details intentionally).
+    "MD033": false,
+    // First line as H1 — disabled; CLAUDE.md and others lead with
+    // a heading-shaped quote then the title.
+    "MD041": false,
+    // Bare URLs — allowed in code-style backticks; not an enforcement
+    // concern for our prose.
+    "MD034": false,
+    // Fenced-code-language — many of our fenced blocks are ASCII art
+    // (folder trees) or shell snippets where the lang would be lying.
+    // Allow unlabeled blocks; enforcement is voluntary.
+    "MD040": false,
+    // Table-column-style — voice file tables are deliberately compact.
+    // The pipe-spacing rule is purely cosmetic; declined.
+    "MD060": false,
+    // No-emphasis-as-heading — our specs deliberately use bold prose
+    // labels (*"What it unlocks"*) inside sections rather than always
+    // promoting them to subheadings. Voice owns the structural register.
+    "MD036": false
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules", "dist", ".claude/**"]
+}

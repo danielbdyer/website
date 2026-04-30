@@ -255,4 +255,3 @@ Not yet implemented:
 - Page-to-page route transitions.
 
 The order of arrival follows need: reduced-motion alternatives are the next implementation here because they are an accessibility gap. Page transitions and focus ring earn their place when the next design moment for them arises.
-

@@ -19,24 +19,24 @@ interface ErrorBoundaryState {
  * VOICE_AND_COPY.md.
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false };
+  override state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     if (import.meta.env.DEV) {
       console.error('ErrorBoundary caught an error:', error, info);
     }
   }
 
-  render() {
+  override render() {
     if (!this.state.hasError) return this.props.children;
     return (
       <Reveal>
         <div className="py-16">
-          <div className="font-heading text-deck font-light italic text-text-2 leading-relaxed">
+          <div className="font-heading text-deck text-text-2 leading-relaxed font-light italic">
             <p>Something here caught and fell.</p>
             <p>The rest of the house is still here.</p>
           </div>
@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <Link
             to="/"
             viewTransition={false}
-            className="inline-block border-b border-transparent text-list italic text-text-2 no-underline transition-colors duration-200 hover:border-text-3 hover:text-text"
+            className="text-list text-text-2 hover:border-text-3 hover:text-text inline-block border-b border-transparent italic no-underline transition-colors duration-200"
           >
             Back home →
           </Link>

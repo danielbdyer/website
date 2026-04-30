@@ -48,8 +48,8 @@ export function useConstellationParallax<T extends StyledElement>() {
     const el = ref.current;
     if (!el) return;
     if (
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      globalThis.window !== undefined &&
+      globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     ) {
       return;
     }
@@ -67,10 +67,10 @@ export function useConstellationParallax<T extends StyledElement>() {
     const onLeave = () => setVars(0, 0);
 
     el.addEventListener('pointermove', onMove as EventListener);
-    el.addEventListener('pointerleave', onLeave as EventListener);
+    el.addEventListener('pointerleave', onLeave);
     return () => {
       el.removeEventListener('pointermove', onMove as EventListener);
-      el.removeEventListener('pointerleave', onLeave as EventListener);
+      el.removeEventListener('pointerleave', onLeave);
     };
   }, []);
 

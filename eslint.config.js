@@ -5,13 +5,25 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
+import unicorn from 'eslint-plugin-unicorn';
 import boundaries from 'eslint-plugin-boundaries';
 
 export default tseslint.config(
   { ignores: ['dist', 'src/app/routeTree.gen.ts'] },
 
   js.configs.recommended,
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['*.ts', '*.cjs', '*.mjs', '*.js'],
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
 
   // ── React ────────────────────────────────────────────────────
   {
@@ -82,6 +94,43 @@ export default tseslint.config(
     },
   },
 
+  // ── Unicorn — modern JS antipattern catcher ─────────────────
+  // Recommended config minus a few rules that fight our voice or our
+  // file-naming convention (PascalCase atoms vs unicorn's kebab-case
+  // preference, abbreviation rules vs `props`/`ref`).
+  {
+    plugins: { unicorn },
+    rules: {
+      ...unicorn.configs.recommended.rules,
+      // Filenames: we use PascalCase for atom/molecule/organism files
+      // per REACT_NORTH_STAR.md — `Diamond.tsx`, `WorkRow.tsx`, etc.
+      'unicorn/filename-case': 'off',
+      // Abbreviations: `props`, `ref`, `prev`, `i` are React idioms;
+      // forcing `properties`/`reference`/`previous` is over-pedantic.
+      'unicorn/prevent-abbreviations': 'off',
+      // null vs undefined: TanStack Router and many DOM APIs return
+      // null; the convention isn't worth fighting.
+      'unicorn/no-null': 'off',
+      // Reduce: legitimately the right tool for some site flows.
+      'unicorn/no-array-reduce': 'off',
+      // ForEach: same — readable in many cases.
+      'unicorn/no-array-for-each': 'off',
+      // Negation: false positives on `if (!x)` patterns.
+      'unicorn/no-negated-condition': 'off',
+      // Top-level await: not relevant to our SSG runtime.
+      'unicorn/prefer-top-level-await': 'off',
+      // Module export naming: we co-locate components and types,
+      // which trips this rule.
+      'unicorn/no-anonymous-default-export': 'off',
+      // Callback-reference: `.some(isPreviewWork)` is idiomatic; the
+      // wrapper-arrow rewrite reads as ceremony, not safety.
+      'unicorn/no-array-callback-reference': 'off',
+      // Function-scoping: surfaces inside-fixture arrows that read
+      // perfectly clearly inline; declined to keep tests cohesive.
+      'unicorn/consistent-function-scoping': 'off',
+    },
+  },
+
   // The root layout file is a structural exception to jsx-max-depth.
   // RootDocument > ThemeProvider > html/body/main wrapping is inherent
   // to root layouts; the depth rule is meant to flag over-nested
@@ -96,11 +145,103 @@ export default tseslint.config(
   // Test files are exempt from import restrictions — they may need
   // wildcard React imports for stateful test fixtures, and the
   // no-manual-memoization warning doesn't apply to test code.
+  // Type-checked rules also relax for tests where mocks intentionally
+  // shape `any`-typed surfaces and empty methods are placeholders.
   {
-    files: ['**/*.test.{ts,tsx}'],
+    files: ['**/*.test.{ts,tsx}', 'src/test/**'],
     rules: {
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/only-throw-error': 'off',
+    },
+  },
+
+  // The async barrel in `src/shared/content/index.ts` and the display
+  // wrappers are intentionally async-without-await per
+  // RENDERING_STRATEGY.md §"The async barrel" — the signature is the
+  // architectural seam for a future hybrid render path. Disable
+  // require-await for those files.
+  {
+    files: ['src/shared/content/index.ts', 'src/shared/content/display.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+
+  // ThemeProvider's default context value is an empty `toggle` —
+  // allowed because a Provider always overrides it. Empty-function
+  // warnings here would force ceremonial busywork. The unbound-method
+  // rule fights `useSyncExternalStore`'s canonical method-as-callback
+  // pattern (subscribe/getSnapshot/getServerSnapshot) — declined here
+  // for the same reason; the React 19 hook is the source of truth.
+  {
+    files: ['src/app/providers/**'],
+    rules: {
+      '@typescript-eslint/no-empty-function': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
+
+  // Atom tier — REACT_NORTH_STAR.md commits atoms to "zero internal
+  // state, zero side effects, zero domain knowledge." The rules below
+  // enforce that contract at lint time. New atoms inheriting these
+  // rules can't accidentally absorb the responsibilities of a
+  // molecule/organism without the lint catching it.
+  {
+    files: ['src/shared/atoms/**/*.{ts,tsx}'],
+    ignores: ['src/shared/atoms/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react',
+              importNames: ['useState', 'useEffect', 'useReducer', 'useContext', 'useRef'],
+              message:
+                "Atoms are stateless and side-effect-free per REACT_NORTH_STAR.md §'Atoms'. If state or effects are needed, the component is a molecule (or higher) and lives one tier up. Exceptions: `useId` and refs forwarded for accessibility — request a per-line disable with a one-line reason.",
+            },
+            {
+              name: 'react',
+              importNames: ['memo', 'forwardRef'],
+              message:
+                "React 19: `forwardRef` is unnecessary (`ref` is a regular prop) and `memo` is unnecessary (React Compiler auto-memoizes). See REACT_NORTH_STAR.md §'React Compiler'.",
+            },
+          ],
+          patterns: [
+            {
+              // Atoms may consume *types* from the domain (their props
+              // can be domain-shaped) but must not import runtime
+              // domain logic (loader, preview-data, display).
+              group: [
+                '@/shared/content/loader',
+                '@/shared/content/display',
+                '@/shared/content/preview-data',
+                '@/shared/content/wikilinks',
+                '@/shared/content/wikilink-marked',
+              ],
+              message:
+                "Atoms have zero domain knowledge per REACT_NORTH_STAR.md §'Atoms'. Type imports from `@/shared/content/schema` are allowed (types are the architectural seam); runtime logic belongs to a higher tier.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // Route files use TanStack Router's `throw notFound()` and
+  // `throw redirect()` idioms; these throw control-flow tokens that
+  // aren't `Error` subclasses, which the `only-throw-error` rule
+  // flags. The framework owns the convention.
+  {
+    files: ['src/app/routes/**'],
+    rules: {
+      '@typescript-eslint/only-throw-error': 'off',
     },
   },
 

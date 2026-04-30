@@ -5,7 +5,7 @@ import { Firmament } from '@/shared/atoms/Firmament/Firmament';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Star } from '@/shared/atoms/Star/Star';
 import { Thread } from '@/shared/atoms/Thread/Thread';
-import { WebGLFirmament } from '@/shared/atoms/WebGLFirmament/WebGLFirmament';
+import { WebGLFirmament } from '@/shared/molecules/WebGLFirmament/WebGLFirmament';
 import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
 import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
 import { useStarHoverState } from '@/shared/hooks/useStarHoverState';

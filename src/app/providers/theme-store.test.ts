@@ -15,7 +15,7 @@ describe('themeStore', () => {
   it('defaults to light when no preference is stored and system is light', () => {
     vi.stubGlobal(
       'matchMedia',
-      vi.fn(() => ({ matches: false })) as unknown as typeof window.matchMedia,
+      vi.fn(() => ({ matches: false })),
     );
     expect(themeStore.getSnapshot()).toBe(false);
   });
@@ -25,7 +25,7 @@ describe('themeStore', () => {
       'matchMedia',
       vi.fn((query: string) => ({
         matches: query.includes('dark'),
-      })) as unknown as typeof window.matchMedia,
+      })),
     );
     expect(themeStore.getSnapshot()).toBe(true);
   });
@@ -34,7 +34,7 @@ describe('themeStore', () => {
     localStorage.setItem('theme', 'light');
     vi.stubGlobal(
       'matchMedia',
-      vi.fn(() => ({ matches: true })) as unknown as typeof window.matchMedia,
+      vi.fn(() => ({ matches: true })),
     );
     expect(themeStore.getSnapshot()).toBe(false);
   });
@@ -81,7 +81,7 @@ describe('themeStore', () => {
 
     // Simulate another tab toggling to dark.
     localStorage.setItem('theme', 'dark');
-    window.dispatchEvent(new StorageEvent('storage', { key: 'theme' }));
+    globalThis.dispatchEvent(new StorageEvent('storage', { key: 'theme' }));
 
     expect(calls).toBe(1);
     expect(themeStore.getSnapshot()).toBe(true);
@@ -96,7 +96,7 @@ describe('themeStore', () => {
       calls++;
     });
 
-    window.dispatchEvent(new StorageEvent('storage', { key: 'something-else' }));
+    globalThis.dispatchEvent(new StorageEvent('storage', { key: 'something-else' }));
 
     expect(calls).toBe(0);
     unsubscribe();

@@ -37,15 +37,17 @@ export function useStarHoverState() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
   const handleActivate = (e: SyntheticEvent<Element>) => {
-    const handle = (e.target as Element).closest('[data-node-key]');
+    const handle = (e.target as Element).closest<HTMLElement | SVGElement>('[data-node-key]');
     if (!handle) return;
-    setActiveKey(handle.getAttribute('data-node-key'));
+    setActiveKey(handle.dataset.nodeKey ?? null);
   };
 
-  const handleMouseLeave = () => setActiveKey(null);
+  const handleMouseLeave = () => {
+    setActiveKey(null);
+  };
 
   const handleBlur = (e: FocusEvent<Element>) => {
-    const next = e.relatedTarget as Element | null;
+    const next = e.relatedTarget;
     if (next?.closest('[data-node-key]')) return;
     setActiveKey(null);
   };
