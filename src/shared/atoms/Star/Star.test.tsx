@@ -39,6 +39,14 @@ describe('Star atom', () => {
     expect(container.querySelector('[data-hue="violet"]')).not.toBeNull();
   });
 
+  test('the halo passes through the watercolor filter for soft pigment edges', () => {
+    const { container } = render(
+      withSvg(<Star href="/garden/x" label="x" cx={30} cy={30} hue="warm" />),
+    );
+    const halo = container.querySelector('.constellation-star__halo');
+    expect(halo?.getAttribute('filter')).toBe('url(#cn-watercolor-halo)');
+  });
+
   test('has no axe-detectable accessibility violations', async () => {
     const { container } = render(
       withSvg(

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ConstellationGraph } from '@/shared/content/constellation';
+import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
 import { Firmament } from '@/shared/atoms/Firmament/Firmament';
 import { Star } from '@/shared/atoms/Star/Star';
 import { Thread } from '@/shared/atoms/Thread/Thread';
@@ -47,6 +48,7 @@ export function Constellation({ graph, className }: ConstellationProps) {
         onClick={onSkyClick}
         className="constellation block w-full"
       >
+        <ConstellationFilters />
         <Firmament size={VIEWBOX} />
 
         <g aria-hidden="true">
@@ -65,7 +67,7 @@ export function Constellation({ graph, className }: ConstellationProps) {
                 x2={target.x}
                 y2={target.y}
                 hue={edge.hue}
-                className={active ? 'opacity-90' : ''}
+                active={active}
               />
             );
           })}

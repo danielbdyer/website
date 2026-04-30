@@ -51,14 +51,20 @@ export function Star({ href, label, cx, cy, hue, isPreview = false, className }:
       data-hue={hue}
     >
       {/* The halo: a soft outer disc that catches the eye without
-          announcing itself. Painted by the parent surface's CSS — by
-          day it is a watercolor bleed, by night a soft glow. */}
+          announcing itself. Passes through the watercolor-halo
+          filter (defined once per constellation in
+          ConstellationFilters) so the edge bleeds with paper-water
+          variance rather than rendering as a mathematically circular
+          disc. By day this reads as a watercolor pigment bleed;
+          by night, as a soft glow with organic edge — same filter,
+          two registers, the theme handles the difference. */}
       <circle
         cx={cx}
         cy={cy}
         r={4.6}
         fill={colorVar}
-        opacity={0.18}
+        opacity={0.22}
+        filter="url(#cn-watercolor-halo)"
         className="constellation-star__halo pointer-events-none"
       />
       {/* The body: the addressable point. Slightly smaller than the

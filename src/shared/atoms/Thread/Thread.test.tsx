@@ -51,4 +51,24 @@ describe('Thread atom', () => {
     const line = container.querySelector('line');
     expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/pointer-events-none/);
   });
+
+  test('at rest, applies no filter and reads as a quiet wisp', () => {
+    const { container } = render(
+      withSvg(<Thread id="x|y|z" x1={0} y1={0} x2={1} y2={1} hue="rose" />),
+    );
+    const line = container.querySelector('line');
+    expect(line?.getAttribute('filter')).toBeNull();
+    expect(line?.getAttribute('data-active')).toBeNull();
+    expect(line?.getAttribute('stroke-width')).toBe('0.45');
+  });
+
+  test('when active, applies the vespers bloom filter and a wider stroke', () => {
+    const { container } = render(
+      withSvg(<Thread id="x|y|z" x1={0} y1={0} x2={1} y2={1} hue="rose" active />),
+    );
+    const line = container.querySelector('line');
+    expect(line?.getAttribute('filter')).toBe('url(#cn-vespers-bloom)');
+    expect(line?.getAttribute('data-active')).toBe('true');
+    expect(line?.getAttribute('stroke-width')).toBe('1.1');
+  });
 });
