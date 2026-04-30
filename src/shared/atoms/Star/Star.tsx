@@ -14,6 +14,12 @@ interface StarProps {
   /** Preview/draft works render quieter and carry a different aria
    *  hint so a screen reader can announce the surface honestly. */
   isPreview?: boolean;
+  /** Animation-delay (in seconds) for the halo's twinkle keyframe.
+   *  Stable per slug, set by the organism from
+   *  ConstellationNode.twinklePhase so adjacent stars don't pulse in
+   *  sync. Reduced-motion is honored globally; the delay is harmless
+   *  when the animation is paused. */
+  twinkleDelay?: number;
   /** Optional className for layout-level adjustments by the parent. */
   className?: string;
 }
@@ -37,8 +43,18 @@ const HUE_CSS_VAR: Record<ConstellationHue, string> = {
 // blooms, label reveal — lives at the molecule level so the atom
 // stays a leaf with clean inputs and no internal state.
 
-export function Star({ href, label, cx, cy, hue, isPreview = false, className }: StarProps) {
+export function Star({
+  href,
+  label,
+  cx,
+  cy,
+  hue,
+  isPreview = false,
+  twinkleDelay,
+  className,
+}: StarProps) {
   const colorVar = HUE_CSS_VAR[hue];
+  const haloStyle = twinkleDelay !== undefined ? { animationDelay: `${twinkleDelay}s` } : undefined;
   return (
     <a
       href={href}
@@ -65,6 +81,7 @@ export function Star({ href, label, cx, cy, hue, isPreview = false, className }:
         fill={colorVar}
         opacity={0.22}
         filter="url(#cn-watercolor-halo)"
+        style={haloStyle}
         className="constellation-star__halo pointer-events-none"
       />
       {/* The body: the addressable point. Slightly smaller than the

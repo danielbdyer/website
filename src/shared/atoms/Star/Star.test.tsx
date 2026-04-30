@@ -47,6 +47,14 @@ describe('Star atom', () => {
     expect(halo?.getAttribute('filter')).toBe('url(#cn-watercolor-halo)');
   });
 
+  test('twinkleDelay applies as the halo animation-delay so adjacent stars desync', () => {
+    const { container } = render(
+      withSvg(<Star href="/garden/x" label="x" cx={30} cy={30} hue="warm" twinkleDelay={2.7} />),
+    );
+    const halo = container.querySelector<SVGCircleElement>('.constellation-star__halo');
+    expect(halo?.style.animationDelay).toBe('2.7s');
+  });
+
   test('has no axe-detectable accessibility violations', async () => {
     const { container } = render(
       withSvg(

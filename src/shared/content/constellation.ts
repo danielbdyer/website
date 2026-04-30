@@ -93,6 +93,12 @@ export interface ConstellationNode {
    *  this hue; thread blooms toward this star adopt their own
    *  facet's hue, not the star's. */
   hue: ConstellationHue;
+  /** Twinkle phase offset in seconds, deterministic per slug, used
+   *  as the halo's animation-delay so adjacent stars don't pulse in
+   *  sync. The phase is bounded by the twinkle duration in CSS
+   *  (`star-twinkle` keyframes); any value in [0, duration) yields a
+   *  stable, lightly-randomized starfield. */
+  twinklePhase: number;
 }
 
 export interface ConstellationEdge {
@@ -139,6 +145,13 @@ function unitOffset(seed: string): number {
 // sector center, leaving a small gap to neighboring sectors so the
 // rooms read as adjacent rather than seamless.
 const SECTOR_HALF_SPREAD = 35;
+
+// Twinkle phase ceiling — the upper bound on each star's halo
+// animation-delay. Matches the CSS `star-twinkle` keyframe duration
+// in tokens.css so a phase value in [0, ceiling) puts each star at a
+// random point in the cycle. If the CSS duration changes, this
+// changes too — the value is paired, not free.
+const TWINKLE_DURATION_SECONDS = 4.5;
 
 // Radius lives in [0.45, 0.92] — never at the polestar (the center is
 // reserved for the geometric figure's eventual ascension) and never at
@@ -220,6 +233,7 @@ export function getConstellationGraphSync(): ConstellationGraph {
       posture: work.posture,
       isPreview: isPreviewWork(work),
       hue: primaryFacet ? FACET_HUE[primaryFacet] : 'gold',
+      twinklePhase: unitOffset(`${room}/${work.slug}/twinkle`) * TWINKLE_DURATION_SECONDS,
       ...placeNode(room, work.slug),
     };
   });

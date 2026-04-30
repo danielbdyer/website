@@ -1,17 +1,19 @@
 import { useState } from 'react';
+import type { SyntheticEvent } from 'react';
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
 import { Firmament } from '@/shared/atoms/Firmament/Firmament';
 import { Star } from '@/shared/atoms/Star/Star';
 import { Thread } from '@/shared/atoms/Thread/Thread';
 import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
+import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
 import { cn } from '@/shared/utils/cn';
 import {
   ROOM_LABEL,
   VIEWBOX,
   buildPositionedMap,
-  nodeKey,
-  presentationOrder,
+  buildRenderableNodes,
+  resolveEdges,
   skyTitle,
 } from './layout';
 
@@ -20,23 +22,40 @@ interface ConstellationProps {
   className?: string;
 }
 
-// The full sky surface. Composes the firmament, every thread between
-// facet-related works, and every work as a star. A hovered or focused
-// star blooms its connected threads — the active-key state is the
-// only piece of local state in the surface.
-//
-// Internal links delegate to TanStack Router via
-// useInternalLinkDelegation, so SVG anchors navigate without a full
-// reload. The visible empty Foyer is honored: the constellation lists
-// works from Studio, Garden, Study, Salon. Foyer works do not exist
-// in the data layer and the surface honestly shows what it has.
+// The full sky surface. Pure composition over precomputed data —
+// `resolveEdges` and `buildRenderableNodes` (in layout.ts) take the
+// graph and produce the exact shapes the renderer iterates, so the
+// JSX is a thin map from data to elements with no per-render
+// lookups. Hover state is event-delegated through `data-node-key` on
+// the per-star group: one handler set serves every star, no per-node
+// closures, no per-render allocation. Internal anchor clicks
+// delegate through TanStack via useInternalLinkDelegation; cursor
+// parallax updates CSS variables on the SVG via
+// useConstellationParallax (reduced-motion-honest).
+
+const isThreadActive = (activeKey: string | null, sourceKey: string, targetKey: string): boolean =>
+  activeKey === sourceKey || activeKey === targetKey;
 
 export function Constellation({ graph, className }: ConstellationProps) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
+  const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const positioned = buildPositionedMap(graph);
-  const orderedNodes = presentationOrder(graph.nodes);
+  const edges = resolveEdges(graph.edges, positioned);
+  const nodes = buildRenderableNodes(graph.nodes, positioned);
   const titleId = 'constellation-title';
+
+  const handleActivate = (e: SyntheticEvent<Element>) => {
+    const handle = (e.target as Element).closest('[data-node-key]');
+    if (!handle) return;
+    setActiveKey(handle.getAttribute('data-node-key'));
+  };
+  const handleMouseLeave = () => setActiveKey(null);
+  const handleBlur = (e: React.FocusEvent<SVGGElement>) => {
+    const next = e.relatedTarget as Element | null;
+    if (next?.closest('[data-node-key]')) return;
+    setActiveKey(null);
+  };
 
   return (
     <nav aria-labelledby={titleId} className={cn('constellation-frame', className)}>
@@ -44,61 +63,52 @@ export function Constellation({ graph, className }: ConstellationProps) {
         {skyTitle(graph.nodes.length)}
       </h2>
       <svg
+        ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         onClick={onSkyClick}
         className="constellation block w-full"
       >
         <ConstellationFilters />
-        <Firmament size={VIEWBOX} />
-
-        <g aria-hidden="true">
-          {graph.edges.map((edge) => {
-            const source = positioned.get(`${edge.source.room}/${edge.source.slug}`);
-            const target = positioned.get(`${edge.target.room}/${edge.target.slug}`);
-            if (!source || !target) return null;
-            const id = `${nodeKey(source)}|${nodeKey(target)}|${edge.facet}`;
-            const active = activeKey === nodeKey(source) || activeKey === nodeKey(target);
-            return (
-              <Thread
-                key={id}
-                id={id}
-                x1={source.x}
-                y1={source.y}
-                x2={target.x}
-                y2={target.y}
-                hue={edge.hue}
-                active={active}
-              />
-            );
-          })}
+        <g className="constellation-parallax--firmament">
+          <Firmament size={VIEWBOX} />
         </g>
-
-        <g>
-          {orderedNodes.map((node) => {
-            const pos = positioned.get(nodeKey(node));
-            if (!pos) return null;
-            const key = nodeKey(node);
-            const setActive = () => setActiveKey(key);
-            const clearActive = () => setActiveKey((current) => (current === key ? null : current));
-            return (
-              <g
-                key={key}
-                onMouseEnter={setActive}
-                onMouseLeave={clearActive}
-                onFocus={setActive}
-                onBlur={clearActive}
-              >
-                <Star
-                  href={`/${node.room}/${node.slug}`}
-                  label={`${node.title} — ${ROOM_LABEL[node.room]}`}
-                  cx={pos.x}
-                  cy={pos.y}
-                  hue={node.hue}
-                  isPreview={node.isPreview}
+        <g className="constellation-parallax--sky">
+          <g className="constellation-rotates">
+            <g aria-hidden="true">
+              {edges.map((edge) => (
+                <Thread
+                  key={edge.id}
+                  id={edge.id}
+                  x1={edge.x1}
+                  y1={edge.y1}
+                  x2={edge.x2}
+                  y2={edge.y2}
+                  hue={edge.hue}
+                  active={isThreadActive(activeKey, edge.sourceKey, edge.targetKey)}
                 />
-              </g>
-            );
-          })}
+              ))}
+            </g>
+            <g
+              onMouseOver={handleActivate}
+              onMouseLeave={handleMouseLeave}
+              onFocus={handleActivate}
+              onBlur={handleBlur}
+            >
+              {nodes.map(({ node, pos, key }) => (
+                <g key={key} data-node-key={key}>
+                  <Star
+                    href={`/${node.room}/${node.slug}`}
+                    label={`${node.title} — ${ROOM_LABEL[node.room]}`}
+                    cx={pos.x}
+                    cy={pos.y}
+                    hue={node.hue}
+                    isPreview={node.isPreview}
+                    twinkleDelay={node.twinklePhase}
+                  />
+                </g>
+              ))}
+            </g>
+          </g>
         </g>
       </svg>
     </nav>

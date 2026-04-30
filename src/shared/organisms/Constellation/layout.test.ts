@@ -21,6 +21,7 @@ const NODE_A: ConstellationNode = {
   angleDeg: 135,
   radius: 0.6,
   hue: 'gold',
+  twinklePhase: 1.2,
 };
 
 const NODE_B: ConstellationNode = {
