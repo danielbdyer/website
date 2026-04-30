@@ -180,6 +180,20 @@
   --slot-stripe: rgba(0, 0, 0, 0.018);
   --geo-color: rgba(74, 124, 106, 0.12);
   --geo-accent: rgba(200, 118, 77, 0.15);
+
+  /* Constellation sky — sea-painted dome by day. The umber palette
+     breathed up into a luminous expanse: warmer, paler, paper-water.
+     Zenith is the firmament's top tone; horizon is where the sky
+     blends back into the Foyer ground (--bg). The glow is the
+     daystar's warmth gathering near the upper-mid of the sky. Grain
+     is the paper-water texture (subtler in light mode where the
+     ground itself already carries paper-grain at 0.025; the sky's
+     extra grain compounds gently). See CONSTELLATION.md
+     §"Two Render Modes" — daylight: watercolor ocean. */
+  --sky-zenith: #fcf8f1;
+  --sky-horizon: var(--bg);
+  --sky-grain-opacity: 0.04;
+  --sky-glow: rgba(200, 118, 77, 0.07);
 }
 
 /* ─── Dark palette ──────────────────────────────────────────── */
@@ -216,6 +230,17 @@
   --slot-stripe: rgba(255, 255, 255, 0.025);
   --geo-color: rgba(106, 174, 146, 0.1);
   --geo-accent: rgba(224, 144, 106, 0.12);
+
+  /* Constellation sky — paper-night by night. Deeper than --bg, with
+     a hint of cooler tone (the umber undercurrent breathes upward
+     into something starlit). The glow is the moon's silver-cool
+     gathering near the upper-mid; grain compounds the body's grain
+     to give the dark sky a stardust-feel. See CONSTELLATION.md
+     §"Two Render Modes" — night: the firmament. */
+  --sky-zenith: #0d0e12;
+  --sky-horizon: var(--bg);
+  --sky-grain-opacity: 0.06;
+  --sky-glow: rgba(212, 152, 152, 0.05);
 }
 
 /* ─── Base ──────────────────────────────────────────────────── */
