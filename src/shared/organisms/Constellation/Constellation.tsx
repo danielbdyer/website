@@ -1,5 +1,3 @@
-import { useState } from 'react';
-import type { SyntheticEvent } from 'react';
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
 import { Daystar } from '@/shared/atoms/Daystar/Daystar';
@@ -7,8 +5,10 @@ import { Firmament } from '@/shared/atoms/Firmament/Firmament';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Star } from '@/shared/atoms/Star/Star';
 import { Thread } from '@/shared/atoms/Thread/Thread';
+import { WebGLFirmament } from '@/shared/atoms/WebGLFirmament/WebGLFirmament';
 import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
 import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
+import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
 import { cn } from '@/shared/utils/cn';
 import {
   ROOM_LABEL,
@@ -39,7 +39,7 @@ const isThreadActive = (activeKey: string | null, sourceKey: string, targetKey: 
   activeKey === sourceKey || activeKey === targetKey;
 
 export function Constellation({ graph, className }: ConstellationProps) {
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const { activeKey, handleActivate, handleMouseLeave, handleBlur } = useStarHoverState();
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const positioned = buildPositionedMap(graph);
@@ -47,28 +47,17 @@ export function Constellation({ graph, className }: ConstellationProps) {
   const nodes = buildRenderableNodes(graph.nodes, positioned);
   const titleId = 'constellation-title';
 
-  const handleActivate = (e: SyntheticEvent<Element>) => {
-    const handle = (e.target as Element).closest('[data-node-key]');
-    if (!handle) return;
-    setActiveKey(handle.getAttribute('data-node-key'));
-  };
-  const handleMouseLeave = () => setActiveKey(null);
-  const handleBlur = (e: React.FocusEvent<SVGGElement>) => {
-    const next = e.relatedTarget as Element | null;
-    if (next?.closest('[data-node-key]')) return;
-    setActiveKey(null);
-  };
-
   return (
-    <nav aria-labelledby={titleId} className={cn('constellation-frame', className)}>
+    <nav aria-labelledby={titleId} className={cn('constellation-frame relative', className)}>
       <h2 id={titleId} className="sr-only">
         {skyTitle(graph.nodes.length)}
       </h2>
+      <WebGLFirmament />
       <svg
         ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         onClick={onSkyClick}
-        className="constellation block w-full"
+        className="constellation relative block w-full"
       >
         <ConstellationFilters />
         <g className="constellation-parallax--firmament">
