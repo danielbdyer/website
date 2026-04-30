@@ -431,7 +431,23 @@ If a readiness's trigger fires and the doing-it-right register cannot be held, t
 
 ### Phase 0 (shipped) — *Does the structural surface exist?*
 
-Six commits already in. `/sky` prerenders. `small-weather` is a real link. Held accents are paired editorially. Tests are green. Spec catches up to code.
+`/sky` prerenders. `small-weather` is a real link. Held accents paired editorially. Tests green. Spec catches up to code.
+
+### Phase 1 (partially shipped) — *Does the carpet roll out when you look up?*
+
+The first-paint carpet animation has shipped: `.sky-arrival` clip-paths from the top edge over 900ms with the signature easing curve. Works on any entry path. *What remains held* in this readiness: the overscroll-up gesture from the Foyer (so the gesture is initiated by the visitor, not by route arrival), and the daystar's cross-page morph (currently the daystar simply *is* in the firmament when /sky paints, rather than ascending from the nav corner via View Transitions).
+
+### Phase 2 (shipped in SVG; WebGL still ahead) — *Does the sky have weather?*
+
+Paper grain, layered radial gradient (sky-glow → zenith → horizon), watercolor-filtered halos on stars and the daystar — all shipped via SVG `<feTurbulence>`, `<feGaussianBlur>`, `<feDisplacementMap>` filter primitives + `mix-blend-mode: soft-light`. The sky has weather. *What remains held*: the WebGL atmospheric layer, which delivers what SVG filters cannot — cursor-responsive twinkle fields, depth-aware shader parallax, drifting motes, procedural noise with continuous parallax offset rather than the static feTurbulence we have today.
+
+### Phase 3 (shipped in SVG; WebGL still ahead) — *Does the sky live?*
+
+Slow rotation (600s/cycle around the polestar), per-star twinkle (4.5s with deterministic phase offsets), cursor-driven parallax (two depths, signature easing) — all shipped via CSS animations + the `useConstellationParallax` hook. The sky lives. *What remains held*: shader-based motion that responds to the cursor at the per-pixel level, parallax with real depth-of-field rather than two CSS layers.
+
+### Phase 4 (shipped) — *Does looking at a star bloom its threads?*
+
+The vespers bloom — Gaussian blur + brightness-boost color matrix + merge composite — applies to active threads when one of their endpoint stars is hovered or focused. Wider stroke, opacity from 0.25 to 0.95, 200ms transition. The wispy pastel vespers fan outward.
 
 ### Phase 1 — *Does the carpet roll out when you look up?*
 
@@ -493,15 +509,9 @@ Tech: `SurfaceLineage` table authored as a `.ts` file (no derivation — explici
 
 Two commits — table + component.
 
-### Phase 7 — *Does the geometric figure ascend?*
+### Phase 7 (partially shipped) — *Does the geometric figure ascend?*
 
-The polestar. The Foyer's `GeometricFigure` becomes the still point of the constellation. Same atom, repositioned in the page-level chrome. The sky rotates around it; the Foyer no longer carries it.
-
-**Trigger:** when the figure has lived in the Foyer long enough that ascending it does not feel like loss — and when the constellation has settled enough autonomous rotation (Phase 3 stable, lived-with) that the rotation wants its still point. The figure leaving the Foyer is a real move; the Foyer should be ready to be the Foyer without the figure before the figure goes. Probably 12+ months of co-habitation. *The figure tells you when it is ready to ascend; you do not ask it.*
-
-Tech: `GeometricFigure` becomes a context-aware atom that knows whether it lives at the Foyer scale or the firmament scale; the route layout decides where it mounts. The Foyer keeps its silhouette but the figure follows the visitor's gaze upward.
-
-One commit. This is small but architecturally significant — it commits to the figure as a cross-route entity.
+A polestar — the same five geometric primitives, inlined into the constellation's viewBox at center (500, 500), still while the heavens rotate around it — has shipped. The figure inhabits two surfaces now (Foyer at 60s self-rotation; constellation at center, still). *What remains held*: extracting a shared `GeometricFigureGeometry` atom (the geometry is duplicated for now; the design system's "anticipation > use repeats" discipline holds the refactor for a third use), and the cross-page morph where the Foyer's figure visually ascends into the firmament when the visitor crosses the threshold (rather than two separate instances). The functional inversion the held vision named — *the figure that turned in the Foyer, ascended, becomes the axis the heavens turn upon* — is now real in shape.
 
 ### Phase 8 — *Does the Salon's region hum?*
 

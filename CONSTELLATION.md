@@ -280,26 +280,28 @@ This is what *the graph becomes a room* means, in full: not a page, not a featur
 
 ## What Shipped (First Form)
 
-The structural layer of the constellation, complete:
+The full structural future state of the constellation, expanded across multiple commits during a deliberate pilot push:
 
-- **Route.** `/sky` is prerendered SSG via TanStack Start's pages list. The page reaches via a small italic *"↑ Look up"* link in the Foyer (the held scroll-up gesture is its own conversation). Every navigation between Foyer and Sky is a Cross — `viewTransition={false}` — because the rooms above and below are different atmospheres.
-- **Data.** `src/shared/content/constellation.ts` derives the graph from the existing display works. Each non-Foyer work becomes a node with deterministic polar coordinates within its room's 90° sector (Studio NW, Salon NE, Study SE, Garden SW). Each shared facet between two works becomes an edge. Stable across builds — adding a new work never moves existing stars.
-- **Atoms.** `Star` (a real addressable anchor with halo + body + 24px hit target), `Thread` (a thin pale line, pointer-events:none, aria-hidden), `Firmament` (the radial-gradient background painted in the umber palette).
-- **Organism.** `Constellation` composes the firmament, the threads, and a star for every work. Hover or focus on a star sets `activeKey`; threads connecting that star bloom in opacity. The surface announces as a `<nav aria-labelledby>` with a sr-only heading naming the count honestly — *"0 works"*, *"1 work"*, *"N works"*. SVG anchor clicks delegate to TanStack via `useInternalLinkDelegation` (made element-generic so SVG and HTML anchors share the same plumbing).
-- **Held accents graduate.** The four held accents pair with the eight facets editorially in `FACET_HUE`. Two facets share each hue. The pairing is in TS, not in CSS, so the palette stays general and the surface speaks the vocabulary editorially. `DESIGN_SYSTEM.md` §"The accents — one primary, four held" updated to reflect the graduation.
-- **Tests.** 22 new (constellation data, layout primitives, Star, Thread, Firmament, Constellation organism with axe). All canaries green; the build prerenders `/sky` to a 64KB static HTML carrying `small-weather` as an addressable star.
+- **Route.** `/sky` is prerendered SSG via TanStack Start's pages list. The page reaches via a small italic *"↑ Look up"* link in the Foyer. Every navigation between Foyer and Sky is a Cross — `viewTransition={false}` — because the rooms above and below are different atmospheres.
+- **Data.** `src/shared/content/constellation.ts` derives the graph from the existing display works. Each non-Foyer work becomes a node with deterministic polar coordinates within its room's 90° sector (Studio NW, Salon NE, Study SE, Garden SW), a hue from its primary facet, and a stable twinkle phase. Each shared facet between two works becomes an edge. Stable across builds — adding a new work never moves existing stars.
+- **Atoms.** `Star` (addressable anchor with watercolor-filtered halo + body + 24px hit target + animation-delayed twinkle), `Thread` (thin pale line at rest; on `active`, applies the vespers-bloom filter and widens stroke), `Firmament` (layered radial gradient with sky-glow + zenith + horizon + procedural feTurbulence paper-grain via mix-blend-mode), `ConstellationFilters` (`<defs>` carrying the watercolor-halo and vespers-bloom filter primitives), `Daystar` (sun + moon both rendered, CSS-theme-switched to avoid hydration flash), `Polestar` (the geometric figure inlined at the firmament's center, still — the constellation rotates around it).
+- **Hooks.** `useConstellationParallax` attaches pointermove + pointerleave listeners and updates `--parallax-x` / `--parallax-y` CSS variables in [-1, 1]; honors `prefers-reduced-motion` by skipping listener setup. Pure helper `normalizedCursorOffset` extracted for testability.
+- **Organism.** `Constellation` composes everything. Pure mapping over precomputed data (`resolveEdges`, `buildRenderableNodes` in `layout.ts`) — no per-render lookups. Event delegation via `data-node-key` and `target.closest` — one handler set serves every star, no per-node closures. The surface announces as `<nav aria-labelledby>` with a sr-only heading naming the count honestly.
+- **Motion.** Slow rotation (600s/cycle) on the constellation — an order of magnitude slower than the geometric figure, only noticed if the visitor sits. Twinkle (4.5s ease-in-out) per-star, with deterministic per-slug phase offsets so adjacent stars desync. Cursor parallax with two depths (firmament 6px, sky 14px) and an 800ms signature-easing transition. The carpet rolls out on mount: `.sky-arrival` clip-paths from the top edge over 900ms.
+- **Held accents graduate.** The four held accents pair editorially with the eight facets in `FACET_HUE`; two facets share each hue. The pairing lives in TS (not CSS) so the palette stays general and each surface speaks the vocabulary editorially. `DESIGN_SYSTEM.md` updated.
+- **Tests.** 178 total, all green. Coverage: data layer, layout primitives, every atom (Star, Thread, Firmament, ConstellationFilters, Daystar, Polestar), the parallax hook, the organism with jest-axe.
+- **Build verified.** `/sky/index.html` ships at ~64KB with the structural SVG fully prerendered: small-weather as an addressable `<a href="/garden/small-weather">`, the daystar markup, the polestar at center, the carpet's clip-path animation ready, JSON-LD WebSite/Person attached.
 
 What is still held — *each one a readiness, each waiting for its own pull, none of them a queue:*
 
-- The atmospheric layer (WebGL or canvas-driven parallax, granular paper-grain sky, the watercolor-bleed star halos, the constellation-line afterglow on hover).
-- The scroll-up reveal gesture and the twilight carpet.
-- The theme toggle's ascent into the firmament — the sun and the moon as the daystar.
-- The polestar (the geometric figure ascending into the sky).
-- Spec nodes alongside work nodes (the strata convergence).
-- Editorial constellation patterns (cluster names).
-- Integration with the held time slider.
-- Audio layers in the Salon's region.
-- Per-room sub-skies.
+- **The atmospheric WebGL layer.** Procedural noise that's truly continuous and parallax-aware, cursor-responsive twinkle field, depth-aware parallax via shaders, drifting motes. The held vision in `CONSTELLATION_HORIZON.md` Phases 2–3 names what WebGL uniquely makes possible (vs. what SVG filters already deliver). Trigger: when the structural surface has settled long enough that its restraint reaches its ceiling — or when a visual capability the SVG layer cannot honestly deliver becomes the one the surface is asking for.
+- **The overscroll-up reveal gesture from the Foyer.** The first form's `↑ Look up` link is honest; the held richer form is overscroll past a threshold at the Foyer top, the carpet rolling toward the visitor as they reach.
+- **The daystar's cross-page morph.** Currently the daystar simply *is* in the firmament when the visitor reaches `/sky`. The held richer form is the nav's theme toggle ascending across pages via View Transitions API as a single morphing element.
+- **Spec nodes alongside work nodes (the strata convergence).** Held until the annotation system has settled elsewhere first.
+- **Editorial constellation patterns (cluster names).** Held until the corpus has clusters worth naming.
+- **Integration with the held time slider.** Held until the temporal manifest is built and the slider arrives in some form.
+- **Audio layers in the Salon's region.** Held until a Salon work *requires* sound.
+- **Per-room sub-skies.** Held until a visitor's pull asks for regionalization.
 
 Each is named in this file with the form it wants. None is half-implemented. None is queued. *The architecture of patience holds:* the first form is honest about being the first, and any of the held items can pull next — or none of them can, for as long as the site needs to sit. The trigger conditions for each are recorded in [`CONSTELLATION_HORIZON.md`](./CONSTELLATION_HORIZON.md) §"The Readinesses (Working Backwards)" so the building can recognize a pull when it arrives without preempting one that hasn't.
 
