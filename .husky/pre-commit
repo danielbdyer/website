@@ -8,10 +8,13 @@
 #   3. pnpm lint     the full repo-wide chain — eslint, stylelint,
 #                    color-contrast, markdownlint, cspell, secretlint,
 #                    spec-wikilinks, and the voice guard. Same chain
-#                    CI runs as one command. ~7s on a clean repo.
+#                    CI runs as one command. ~7s on a clean repo. The
+#                    earlier hook ran only the per-file lint-staged
+#                    subset, which let stylelint / markdownlint / cspell
+#                    findings drift past pre-commit and fail in CI.
 #   4. vitest related  fast run of tests that touch the staged files.
 #
-# When CI's `check` job grows a step (size-limit, audit), grow this
+# When CI's `check` job grows a step (audit, size-limit), grow this
 # hook to match. The pre-push hook adds `pnpm run doctor` as a
 # backstop — typecheck + lint + the full vitest pass — which catches
 # anything pre-commit would have caught had `--no-verify` been used.
