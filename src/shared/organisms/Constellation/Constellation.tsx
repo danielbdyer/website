@@ -11,12 +11,16 @@ import { useConstellationNavigation } from '@/shared/hooks/useConstellationNavig
 import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
 import {
+  STAGE_CAMERA,
   VIEWBOX,
   buildPositionedMap,
   buildRenderableNodes,
   resolveEdges,
   skyTitle,
 } from './layout';
+import { cameraBasis } from '@/shared/geometry/camera';
+
+const STAGE_BASIS = cameraBasis(STAGE_CAMERA);
 
 interface ConstellationProps {
   graph: ConstellationGraph;
@@ -40,9 +44,11 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const titleId = 'constellation-title';
   const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
     useStarHoverState(null);
-  const navigableNodes = nodes.map(({ key, pos }) => ({ key, pos }));
+  const navigableNodes = nodes.map(({ key, node }) => ({ key, unitPos: node.unitPosition }));
   const { dragHandlers, onKeyDown, onKeyUp } = useConstellationNavigation({
     nodes: navigableNodes,
+    camera: STAGE_CAMERA,
+    basis: STAGE_BASIS,
     viewboxSize: VIEWBOX,
     setActiveKey,
     cameraRef,

@@ -119,3 +119,32 @@ function clamp01(v: number): number {
   if (v > 1) return 1;
   return v;
 }
+
+/** Inverse of `project`: given normalized screen coords (x, y in
+ *  [-1, 1]) return the world-space ray cast through that screen
+ *  point. The ray's origin is the camera position; its direction
+ *  is a unit vector. Composes with raySphereIntersect to lift 2D
+ *  pointer events onto the latent sphere. */
+export function unproject(
+  screenX: number,
+  screenY: number,
+  camera: Camera,
+  basis: CameraBasis,
+  aspect: number,
+): { origin: Vec3; direction: UnitVector3 } {
+  const f = 1 / Math.tan(camera.fovY / 2);
+  // World-space ray direction in camera basis: (xCam, yCam, 1) where
+  // xCam and yCam are the inverse of the perspective divide. zCam = 1
+  // since we're going forward by one focal length.
+  const xCam = (screenX * aspect) / f;
+  const yCam = screenY / f;
+  // Compose into world space: dir = right * xCam + up * yCam + forward.
+  const dx = basis.right.x * xCam + basis.up.x * yCam + basis.forward.x;
+  const dy = basis.right.y * xCam + basis.up.y * yCam + basis.forward.y;
+  const dz = basis.right.z * xCam + basis.up.z * yCam + basis.forward.z;
+  const m = Math.hypot(dx, dy, dz);
+  return {
+    origin: camera.position,
+    direction: { x: dx / m, y: dy / m, z: dz / m },
+  };
+}

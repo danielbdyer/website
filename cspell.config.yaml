@@ -66,6 +66,14 @@ words:
   - longtask
   - recalc
   - orthogonalized
+  - lerp
+  - slerp
+  - unproject
+  - unprojects
+  - geodesic
+  - antipode
+  - antipodes
+  - antipodal
 
   # Code + tooling
   - tanstack

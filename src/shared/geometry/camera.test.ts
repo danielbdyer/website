@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { type Camera, cameraBasis, project } from './camera';
+import { type Camera, cameraBasis, project, unproject } from './camera';
 
 const LOOKING_UP: Camera = {
   position: { x: 0, y: 0, z: -2 },
@@ -96,5 +96,42 @@ describe('project', () => {
     const right = project({ x: 0.4, y: 0.2, z: 0 }, LOOKING_UP, basis, 1);
     expect(left.screenX).toBeCloseTo(-right.screenX, 9);
     expect(left.screenY).toBeCloseTo(right.screenY, 9);
+  });
+});
+
+describe('unproject', () => {
+  const basis = cameraBasis(LOOKING_UP);
+
+  test('center screen unprojects to a ray pointing at the look-at target', () => {
+    const ray = unproject(0, 0, LOOKING_UP, basis, 1);
+    // The center ray should equal the camera's forward direction.
+    expect(ray.direction.x).toBeCloseTo(basis.forward.x, 9);
+    expect(ray.direction.y).toBeCloseTo(basis.forward.y, 9);
+    expect(ray.direction.z).toBeCloseTo(basis.forward.z, 9);
+  });
+
+  test('returns a unit-length ray direction', () => {
+    const ray = unproject(0.7, -0.3, LOOKING_UP, basis, 1);
+    expect(Math.hypot(ray.direction.x, ray.direction.y, ray.direction.z)).toBeCloseTo(1, 9);
+  });
+
+  test('origin equals the camera position', () => {
+    const ray = unproject(0.5, 0.5, LOOKING_UP, basis, 1);
+    expect(ray.origin).toEqual(LOOKING_UP.position);
+  });
+
+  test('round-trip: project then unproject gives a ray through the original point', () => {
+    const point = { x: 0.3, y: 0.2, z: 0.4 };
+    const projected = project(point, LOOKING_UP, basis, 1);
+    expect(projected.inFront).toBe(true);
+    const ray = unproject(projected.screenX, projected.screenY, LOOKING_UP, basis, 1);
+    // The point should lie on the ray: point = origin + t * direction for some t > 0.
+    const dx = point.x - ray.origin.x;
+    const dy = point.y - ray.origin.y;
+    const dz = point.z - ray.origin.z;
+    const t = Math.hypot(dx, dy, dz);
+    expect(dx / t).toBeCloseTo(ray.direction.x, 9);
+    expect(dy / t).toBeCloseTo(ray.direction.y, 9);
+    expect(dz / t).toBeCloseTo(ray.direction.z, 9);
   });
 });

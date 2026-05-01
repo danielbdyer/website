@@ -112,6 +112,91 @@ export function diskToHemisphere(unitRadius: number, angleRadians: number): Unit
   return sphericalToUnit(spherical(r * HALF_PI, angleRadians));
 }
 
+/** A 3D vector that may not be unit-length. Used for tangent
+ *  vectors (perpendicular to a sphere position) and forces. */
+export interface Vec3 {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
+
+/** Unit tangent vector at `from` pointing along the great circle
+ *  toward `to`. The result lies in the tangent plane at `from`
+ *  (perpendicular to `from`) and has unit length. When `from` and
+ *  `to` are the same point or antipodal, returns the zero vector
+ *  (no defined direction); callers should treat that case as "no
+ *  pull." */
+export function tangentTowards(from: UnitVector3, to: UnitVector3): Vec3 {
+  const dot = from.x * to.x + from.y * to.y + from.z * to.z;
+  // Project `to` onto the tangent plane at `from`: `to - dot * from`.
+  const tx = to.x - dot * from.x;
+  const ty = to.y - dot * from.y;
+  const tz = to.z - dot * from.z;
+  const m = Math.hypot(tx, ty, tz);
+  if (m < 1e-12) return { x: 0, y: 0, z: 0 };
+  return { x: tx / m, y: ty / m, z: tz / m };
+}
+
+/** Re-project `v` onto the tangent plane at `p` by removing the
+ *  component along `p`. The result is perpendicular to `p`. Used
+ *  to keep velocity tangent after numerical drift. */
+export function projectOntoTangentPlane(v: Vec3, p: UnitVector3): Vec3 {
+  const dot = v.x * p.x + v.y * p.y + v.z * p.z;
+  return { x: v.x - dot * p.x, y: v.y - dot * p.y, z: v.z - dot * p.z };
+}
+
+/** Step a unit-sphere position forward by a tangent vector. Adds
+ *  `tangent * dt` to the position (a small straight-line step in
+ *  the tangent plane), then re-normalizes onto the sphere. Stable
+ *  for small dt; accumulates angular error for large dt that
+ *  callers should mitigate by clamping dt. */
+export function stepOnSphere(p: UnitVector3, tangent: Vec3, dt: number): UnitVector3 {
+  return unitVector(p.x + tangent.x * dt, p.y + tangent.y * dt, p.z + tangent.z * dt);
+}
+
+/** Spherical linear interpolation between two unit vectors. t ∈
+ *  [0, 1]; t=0 returns `from`, t=1 returns `to`. The path is the
+ *  great circle from `from` to `to`. Falls back to linear-then-
+ *  normalize at near-identity (where slerp is numerically unstable
+ *  and the result equals lerp anyway). */
+export function slerp(from: UnitVector3, to: UnitVector3, t: number): UnitVector3 {
+  const dot = clamp(from.x * to.x + from.y * to.y + from.z * to.z, -1, 1);
+  const omega = Math.acos(dot);
+  if (omega < 1e-6) {
+    return unitVector(
+      from.x + (to.x - from.x) * t,
+      from.y + (to.y - from.y) * t,
+      from.z + (to.z - from.z) * t,
+    );
+  }
+  const sinO = Math.sin(omega);
+  const a = Math.sin((1 - t) * omega) / sinO;
+  const b = Math.sin(t * omega) / sinO;
+  return unitVector(a * from.x + b * to.x, a * from.y + b * to.y, a * from.z + b * to.z);
+}
+
+/** Ray-sphere intersection with the unit sphere centered at the
+ *  origin. Returns the nearer-to-origin-of-ray intersection point
+ *  on the sphere, or null if the ray misses. The ray is `origin +
+ *  t * direction` for t ≥ 0; direction must be a unit vector. */
+export function raySphereIntersect(origin: Vec3, direction: Vec3): UnitVector3 | null {
+  // Quadratic: ||origin + t*dir||^2 = 1
+  // → t^2 + 2 (origin·dir) t + (||origin||^2 - 1) = 0
+  const b = origin.x * direction.x + origin.y * direction.y + origin.z * direction.z;
+  const c = origin.x * origin.x + origin.y * origin.y + origin.z * origin.z - 1;
+  const disc = b * b - c;
+  if (disc < 0) return null;
+  const sq = Math.sqrt(disc);
+  const tNear = -b - sq;
+  const t = tNear >= 0 ? tNear : -b + sq;
+  if (t < 0) return null;
+  return unitVector(
+    origin.x + t * direction.x,
+    origin.y + t * direction.y,
+    origin.z + t * direction.z,
+  );
+}
+
 function clamp(value: number, min: number, max: number): number {
   if (value < min) return min;
   if (value > max) return max;
