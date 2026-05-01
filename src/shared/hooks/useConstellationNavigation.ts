@@ -28,6 +28,29 @@ import { useEffect, useRef } from 'react';
 // `prefers-reduced-motion: reduce` short-circuits the loop and
 // pointer/keyboard fall back to direct snap-to-nearest. The graph
 // is still navigable; it just stops moving on its own.
+//
+// ┌─ Asymptotic complexity ────────────────────────────────────────┐
+// │ N = node count, S = pointer-sample buffer (capped, ≤ ~10).     │
+// │                                                                │
+// │   nearestNode               O(N) time, O(1) space              │
+// │   basinFieldForce           O(N) time, O(1) space              │
+// │   neighborInDirection       O(N) time, O(1) space              │
+// │   holdDirection             O(1) (set has ≤ 4 keys)            │
+// │   flickVelocity             O(S) time, O(1) space              │
+// │   pruneSamples              amortized O(1) per insertion       │
+// │   computeAcceleration       O(N) (dominated by basin field)    │
+// │   tick                      O(N) per RAF frame                 │
+// │   handlePointer{Down,Up}    O(N) (sets active by nearest)      │
+// │   handlePointerMove         O(1) (RAF picks up the new target) │
+// │   handleKey{Down,Up}        O(N) under reduced-motion, O(1)    │
+// │                             otherwise                          │
+// │                                                                │
+// │ Per-frame cost is O(N). At the site's current ~12 nodes that's │
+// │ ~24 multiply-add ops; at 200 nodes the bounding-box reject     │
+// │ keeps it at ~200 axis comparisons + a small inner loop. The    │
+// │ idle-stop optimization makes the amortized cost zero when the  │
+// │ cursor is settled.                                             │
+// └────────────────────────────────────────────────────────────────┘
 
 export interface NavigableNode {
   readonly key: string;
