@@ -21,9 +21,14 @@ module.exports = [
     gzip: true,
   },
   {
+    // Pass 2 (the latent-sphere navigation) adds ~3KB gzipped of
+    // pure geometry / camera math: sphere conversions, Cartesian
+    // basis, ray-sphere intersect, geodesic basin physics. The
+    // growth is content; the main entry stays well under its
+    // limit and most pages don't load the sky chunk.
     name: 'all client JS (every chunk shipped)',
     path: 'dist/client/assets/*.js',
-    limit: '200 KB',
+    limit: '215 KB',
     gzip: true,
   },
 ];
