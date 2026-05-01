@@ -226,6 +226,20 @@ function shouldRenderWebGL(): boolean {
 }
 
 async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | null> {
+  // Probe WebGL availability with our own canvas before letting ogl
+  // try. ogl's Renderer constructor calls
+  // `console.error('unable to create webgl context')` on failure
+  // (ogl/src/core/Renderer.js line 46) — and the e2e error-boundary
+  // spec catches every console error as a test failure. Headless
+  // CI Chromium without GPU emulation falls into exactly this case.
+  // Pre-probing here lets us bail silently before ogl gets the
+  // chance to log; the SVG firmament continues as the only firmament
+  // with no log noise.
+  const probe = document.createElement('canvas');
+  if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
+    return null;
+  }
+
   // Lazy-import ogl so the dependency is only pulled into the chunk
   // that actually mounts the WebGL surface. Routes that don't reach
   // /sky never download the WebGL bundle.
