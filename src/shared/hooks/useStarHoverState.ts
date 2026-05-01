@@ -33,8 +33,8 @@ import type { FocusEvent, SyntheticEvent } from 'react';
  * one star to another from briefly clearing the active key — care
  * at the seam where state transitions live.
  */
-export function useStarHoverState() {
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+export function useStarHoverState(initialKey: string | null = null) {
+  const [activeKey, setActiveKey] = useState<string | null>(initialKey);
 
   const handleActivate = (e: SyntheticEvent<Element>) => {
     const handle = (e.target as Element).closest<HTMLElement | SVGElement>('[data-node-key]');
@@ -52,5 +52,5 @@ export function useStarHoverState() {
     setActiveKey(null);
   };
 
-  return { activeKey, handleActivate, handleMouseLeave, handleBlur };
+  return { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey };
 }

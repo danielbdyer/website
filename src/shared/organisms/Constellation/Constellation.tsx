@@ -10,6 +10,8 @@ import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegat
 import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
 import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
 import { cn } from '@/shared/utils/cn';
+import { useConstellationDragSelect } from '@/shared/hooks/useConstellationDragSelect';
+import { useConstellationCamera } from '@/shared/hooks/useConstellationCamera';
 import {
   ROOM_LABEL,
   VIEWBOX,
@@ -44,14 +46,53 @@ interface ConstellationProps {
 const isThreadActive = (activeKey: string | null, sourceKey: string, targetKey: string): boolean =>
   activeKey === sourceKey || activeKey === targetKey;
 
+const buildAdjacency = (edges: ReturnType<typeof resolveEdges>) => {
+  const map = new Map<string, Set<string>>();
+  for (const edge of edges) {
+    const sourceSet = map.get(edge.sourceKey) ?? new Set<string>();
+    sourceSet.add(edge.targetKey);
+    map.set(edge.sourceKey, sourceSet);
+    const targetSet = map.get(edge.targetKey) ?? new Set<string>();
+    targetSet.add(edge.sourceKey);
+    map.set(edge.targetKey, targetSet);
+  }
+  return map;
+};
+
+// eslint-disable-next-line max-lines-per-function
 export function Constellation({ graph, fullViewport = false, className }: ConstellationProps) {
-  const { activeKey, handleActivate, handleMouseLeave, handleBlur } = useStarHoverState();
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const positioned = buildPositionedMap(graph);
   const edges = resolveEdges(graph.edges, positioned);
   const nodes = buildRenderableNodes(graph.nodes, positioned);
+  const defaultActiveKey = nodes
+    .toSorted((a, b) => {
+      const da = (a.pos.x - 500) ** 2 + (a.pos.y - 500) ** 2;
+      const db = (b.pos.x - 500) ** 2 + (b.pos.y - 500) ** 2;
+      return da - db;
+    })[0]?.key ?? null;
   const titleId = 'constellation-title';
+  const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
+    useStarHoverState(defaultActiveKey);
+
+
+  const adjacency = buildAdjacency(edges);
+
+  useConstellationCamera({
+    activeKey,
+    nodes,
+    svgRef: parallaxRef,
+    viewboxSize: VIEWBOX,
+  });
+
+  const dragSelectHandlers = useConstellationDragSelect({
+    nodes,
+    adjacency,
+    activeKey,
+    setActiveKey: (key) => setActiveKey(key),
+    viewboxSize: VIEWBOX,
+  });
 
   return (
     <nav
@@ -104,6 +145,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
               onMouseLeave={handleMouseLeave}
               onFocus={handleActivate}
               onBlur={handleBlur}
+              {...dragSelectHandlers}
             >
               {nodes.map(({ node, pos, key }) => (
                 <g key={key} data-node-key={key}>

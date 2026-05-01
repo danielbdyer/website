@@ -445,8 +445,20 @@ body::before {
 }
 
 .constellation-parallax--sky {
-  transform: translate(calc(var(--parallax-x, 0) * -14px), calc(var(--parallax-y, 0) * -14px));
-  transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  transform:
+    perspective(1200px)
+    translate3d(
+      calc(var(--parallax-x, 0) * -14px + var(--camera-x, 0px)),
+      calc(var(--parallax-y, 0) * -14px + var(--camera-y, 0px)),
+      0
+    )
+    rotateX(var(--camera-tilt-x, 0deg))
+    rotateY(var(--camera-tilt-y, 0deg));
+  transform-style: preserve-3d;
+  filter: saturate(var(--camera-saturation, 1));
+  transition:
+    transform 1.05s cubic-bezier(0.2, 0.85, 0.2, 1),
+    filter 1.05s cubic-bezier(0.2, 0.85, 0.2, 1);
 }
 
 /* Daystar — theme-conditional visibility. Both bodies render in the
