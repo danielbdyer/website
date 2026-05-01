@@ -26,6 +26,7 @@ interface StageProps {
   onMouseLeave: () => void;
   onBlur: (e: FocusEvent<Element>) => void;
   onKeyDown: (e: KeyboardEvent) => void;
+  onKeyUp: (e: KeyboardEvent) => void;
   dragHandlers: DragHandlers;
 }
 
@@ -38,6 +39,7 @@ export function Stage({
   onMouseLeave,
   onBlur,
   onKeyDown,
+  onKeyUp,
   dragHandlers,
 }: StageProps) {
   return (
@@ -64,6 +66,7 @@ export function Stage({
           onFocus={onActivate}
           onBlur={onBlur}
           onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
           {...dragHandlers}
         >
           {nodes.map(({ node, pos, key }) => (

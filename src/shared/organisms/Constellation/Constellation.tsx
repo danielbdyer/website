@@ -41,7 +41,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
     useStarHoverState(null);
   const navigableNodes = nodes.map(({ key, pos }) => ({ key, pos }));
-  const { dragHandlers, onKeyDown } = useConstellationNavigation({
+  const { dragHandlers, onKeyDown, onKeyUp } = useConstellationNavigation({
     nodes: navigableNodes,
     viewboxSize: VIEWBOX,
     setActiveKey,
@@ -80,6 +80,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
               onMouseLeave={handleMouseLeave}
               onBlur={handleBlur}
               onKeyDown={onKeyDown}
+              onKeyUp={onKeyUp}
               dragHandlers={dragHandlers}
             />
           </g>

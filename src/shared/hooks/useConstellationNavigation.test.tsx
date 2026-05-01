@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
-  applyBasinPull,
-  directionalNeighbor,
+  basinFieldForce,
+  flickVelocity,
+  holdDirection,
   nearestNode,
-  springStep,
+  neighborInDirection,
   type NavigableNode,
 } from './useConstellationNavigation';
 
@@ -30,64 +31,96 @@ describe('nearestNode', () => {
   });
 });
 
-describe('applyBasinPull', () => {
-  test('leaves the target untouched when no node is in range', () => {
-    expect(applyBasinPull({ x: 500, y: 500 }, NODES, 50)).toEqual({ x: 500, y: 500 });
+describe('basinFieldForce', () => {
+  test('returns zero force when no node is within influence', () => {
+    expect(basinFieldForce({ x: 500, y: 500 }, NODES, 50)).toEqual({ x: 0, y: 0 });
   });
 
-  test('bends the target toward a single nearby node', () => {
-    const pulled = applyBasinPull({ x: 150, y: 500 }, [NODE_A], 200, 0.6);
-    expect(pulled.x).toBeLessThan(150);
-    expect(pulled.x).toBeGreaterThan(NODE_A.pos.x);
-    expect(pulled.y).toBeCloseTo(500, 5);
+  test('points toward a single nearby node', () => {
+    const force = basinFieldForce({ x: 200, y: 500 }, [NODE_A], 200, 30);
+    expect(force.x).toBeLessThan(0);
+    expect(Math.abs(force.y)).toBeLessThan(0.001);
   });
 
-  test('competing pulls between equidistant nodes settle near the saddle', () => {
-    // Pulls compose sequentially — each updates the position before the
-    // next computes — so the result is near, not exactly on, the saddle.
-    // Within 1% of viewbox is the intended "between two basins" feel.
-    const pulled = applyBasinPull({ x: 500, y: 500 }, [NODE_A, NODE_B], 800, 0.4);
-    expect(pulled.y).toBeCloseTo(500, 5);
-    expect(Math.abs(pulled.x - 500)).toBeLessThan(10);
-  });
-});
-
-describe('springStep', () => {
-  test('a settled spring at its target stays put', () => {
-    const result = springStep({ x: 500, y: 500 }, { x: 0, y: 0 }, { x: 500, y: 500 }, 0.016);
-    expect(result.pos.x).toBeCloseTo(500, 5);
-    expect(result.pos.y).toBeCloseTo(500, 5);
-    expect(result.vel.x).toBeCloseTo(0, 5);
-    expect(result.vel.y).toBeCloseTo(0, 5);
+  test('cancels along the saddle between two equidistant nodes', () => {
+    const force = basinFieldForce({ x: 500, y: 500 }, [NODE_A, NODE_B], 800, 30);
+    expect(force.x).toBeCloseTo(0, 5);
+    expect(force.y).toBeCloseTo(0, 5);
   });
 
-  test('integrating many steps converges toward the target', () => {
-    let pos = { x: 0, y: 0 };
-    let vel = { x: 0, y: 0 };
-    for (let i = 0; i < 600; i++) {
-      const next = springStep(pos, vel, { x: 100, y: 100 }, 1 / 60);
-      pos = next.pos;
-      vel = next.vel;
-    }
-    expect(pos.x).toBeCloseTo(100, 1);
-    expect(pos.y).toBeCloseTo(100, 1);
+  test('is zero at the node center so the cursor can settle', () => {
+    const force = basinFieldForce(NODE_A.pos, [NODE_A], 300, 30);
+    expect(force.x).toBeCloseTo(0, 5);
+    expect(force.y).toBeCloseTo(0, 5);
+  });
+
+  test('vanishes at the influence boundary', () => {
+    // At d = R the shape factor is zero by construction.
+    const force = basinFieldForce({ x: 100 + 300, y: 500 }, [NODE_A], 300, 30);
+    expect(force.x).toBeCloseTo(0, 5);
+    expect(force.y).toBeCloseTo(0, 5);
   });
 });
 
-describe('directionalNeighbor', () => {
+describe('holdDirection', () => {
+  test('a single arrow yields a unit vector', () => {
+    expect(holdDirection(new Set(['ArrowRight']))).toEqual({ x: 1, y: 0 });
+    expect(holdDirection(new Set(['ArrowUp']))).toEqual({ x: 0, y: -1 });
+  });
+
+  test('diagonal holds normalize to unit length', () => {
+    const v = holdDirection(new Set(['ArrowRight', 'ArrowDown']));
+    expect(Math.hypot(v.x, v.y)).toBeCloseTo(1, 5);
+    expect(v.x).toBeCloseTo(Math.SQRT1_2, 5);
+    expect(v.y).toBeCloseTo(Math.SQRT1_2, 5);
+  });
+
+  test('opposing holds cancel to zero', () => {
+    expect(holdDirection(new Set(['ArrowLeft', 'ArrowRight']))).toEqual({ x: 0, y: 0 });
+  });
+
+  test('an empty set is the zero vector', () => {
+    expect(holdDirection(new Set())).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('flickVelocity', () => {
+  test('returns zero with fewer than two samples', () => {
+    expect(flickVelocity([])).toEqual({ x: 0, y: 0 });
+    expect(flickVelocity([{ time: 0, pos: { x: 0, y: 0 } }])).toEqual({ x: 0, y: 0 });
+  });
+
+  test('infers velocity from the start-to-end position change over the window', () => {
+    const samples = [
+      { time: 1000, pos: { x: 100, y: 100 } },
+      { time: 1050, pos: { x: 150, y: 100 } },
+      { time: 1100, pos: { x: 200, y: 100 } },
+    ];
+    const v = flickVelocity(samples, 200);
+    expect(v.x).toBeCloseTo(1000, 5);
+    expect(v.y).toBeCloseTo(0, 5);
+  });
+
+  test('a stationary release yields zero velocity', () => {
+    const samples = [
+      { time: 0, pos: { x: 50, y: 50 } },
+      { time: 60, pos: { x: 50, y: 50 } },
+      { time: 120, pos: { x: 50, y: 50 } },
+    ];
+    expect(flickVelocity(samples)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('neighborInDirection', () => {
   test('right of A picks the node to the right', () => {
-    expect(directionalNeighbor('a', NODES, 'right')?.key).toBe('b');
+    expect(neighborInDirection('a', NODES, 'ArrowRight')?.key).toBe('b');
   });
 
   test('up from D picks the central upper node', () => {
-    expect(directionalNeighbor('d', NODES, 'up')?.key).toBe('c');
+    expect(neighborInDirection('d', NODES, 'ArrowUp')?.key).toBe('c');
   });
 
   test('returns null when no candidate lies in the requested direction', () => {
-    expect(directionalNeighbor('b', [NODE_A, NODE_B], 'right')).toBeNull();
-  });
-
-  test('falls back to the first node when the active key is unknown', () => {
-    expect(directionalNeighbor('missing', NODES, 'left')?.key).toBe('a');
+    expect(neighborInDirection('b', [NODE_A, NODE_B], 'ArrowRight')).toBeNull();
   });
 });
