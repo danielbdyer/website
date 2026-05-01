@@ -42,13 +42,13 @@ The backlog is not a queue. It is a list of held tensions, each tagged with the 
 
 If we follow the arrows, three convergences come into view. None of them is far.
 
-### The strata become navigable in the surface itself.
+### The strata become navigable in the surface itself
 
 The visitor will descend through the layers — surface, implementation, contract, expression, navigation, structure, ground — not via a docs section but via annotation that lets the rooms reveal what they are made of. A design token traces back to `DESIGN_SYSTEM.md`. A navigation pattern traces back to `INFORMATION_ARCHITECTURE.md`. A view-transition kind traces back to a row in the kind-table. The architecture is not *behind* the site; it is *under* it, the way bedrock is under a house. And bedrock, here, is visible by design.
 
 The annotation system is not yet built. The commitment to it is.
 
-### The graph becomes a room.
+### The graph becomes a room
 
 Possibly literally — a sixth room is a domain change, but the door has not been bolted. More likely a view the rooms share: a slow rotation, like the geometric figure, where a facet is a thread you can pull and a backlink is a path you can walk. The data already exists. The trigger is roughly thirty works with enough interlinks to feel like a web. Until then the graph is felt rather than seen — through the outward invitation, the facet threads, the wikilinks resolving quietly at build time.
 
@@ -56,13 +56,13 @@ The graph waits for its first edge. *Small weather* carries four facets — `rel
 
 What is interesting is that the graph view will not need new philosophy when it arrives. The philosophy is already there: hypertextuality is a dimension of the medium, not a feature to be designed. When the surface is ready, the surface will be a *rendering* of something the site already knows.
 
-### The agentic surface and the rendered surface converge.
+### The agentic surface and the rendered surface converge
 
 A visitor will be able to read `CLAUDE.md` the way they read a poem — not as documentation but as part of the work. The skills layer (`coding`, `writing-prose`, `writing-specs`, `architecting`, `auditing`) and the spec layer and the published rooms will all be addressable in the same sense. The maker, the agent, the visitor — three readers of one medium, each with different write privileges, all encountering the same site.
 
 This is what `TRANSPARENCY.md` promised. It is closer than it looks. The dual-life of every spec is already real for the agent; making it real for the visitor is mostly a rendering problem and a voice problem — *can the spec be authored well enough to be read by both?* Most of the existing specs already pass that test. The ones that don't yet are visible.
 
-### A fourth, quieter convergence: the time slider arrives.
+### A fourth, quieter convergence: the time slider arrives
 
 Held in `TRANSPARENCY.md` as structural reasoning, located in `INFORMATION_ARCHITECTURE.md` (nav top-right), waiting in `BACKLOG.md` for enough temporal depth to make movement through time feel like something. When it lands: you anchor on a work, you slide back, and the room around the work reverts. Specs thin. Tokens shift to an earlier palette. Empty rooms become emptier. *Absence is information.* The site teaches a visitor that a place has a history the way a house in a city has a history — and that the present moment is just one of many states that, viewed together, form an organism developing in real time.
 

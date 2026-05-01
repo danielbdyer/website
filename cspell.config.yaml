@@ -202,7 +202,41 @@ words:
   - wordlist
   - ified
 
-flagWords: []
+  # Constellation vocabulary — the sky surface added a domain
+  # of names the rest of the site doesn't use. These belong here
+  # in the deliberate wordlist, not as comment-level overrides
+  # in source files.
+  - Skyrim
+  - Readinesses
+  - readinesses
+  - VIEWBOX
+  - letterboxed
+  - desaturate
+  - desync
+  - distinguishability
+  - facetless
+  - paintable
+  - parallactically
+  - precomputation
+  - regionalization
+  - starfields
+  - trackpads
+  - unhover
+
+  # WebGL / shader vocabulary — the GLSL fragment shader uses
+  # tokens that aren't in the standard dictionaries.
+  - GLSL
+  - glsl
+  - Inlines
+  - Perlin
+  - Ashima
+  - oframe
+  - regl
+  - mediump
+  - snoise
+  - fract
+  - xxzz
+  - xyxy
 
 dictionaries:
   - en_US

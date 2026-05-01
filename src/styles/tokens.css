@@ -403,6 +403,7 @@ body::before {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -413,6 +414,7 @@ body::before {
   100% {
     opacity: 0.22;
   }
+
   50% {
     opacity: 0.34;
   }
@@ -456,6 +458,7 @@ body::before {
 .lt .constellation-daystar__moon {
   display: none;
 }
+
 .dk .constellation-daystar__sun {
   display: none;
 }
@@ -498,6 +501,7 @@ body::before {
     transform: perspective(1800px) rotateX(-32deg);
     opacity: 0.4;
   }
+
   to {
     clip-path: inset(0 0 0 0);
     transform: perspective(1800px) rotateX(0deg);
