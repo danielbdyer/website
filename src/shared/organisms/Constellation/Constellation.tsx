@@ -10,6 +10,7 @@ import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegat
 import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
 import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
 import { cn } from '@/shared/utils/cn';
+import { useConstellationDragSelect } from '@/shared/hooks/useConstellationDragSelect';
 import {
   ROOM_LABEL,
   VIEWBOX,
@@ -45,13 +46,21 @@ const isThreadActive = (activeKey: string | null, sourceKey: string, targetKey: 
   activeKey === sourceKey || activeKey === targetKey;
 
 export function Constellation({ graph, fullViewport = false, className }: ConstellationProps) {
-  const { activeKey, handleActivate, handleMouseLeave, handleBlur } = useStarHoverState();
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const positioned = buildPositionedMap(graph);
   const edges = resolveEdges(graph.edges, positioned);
   const nodes = buildRenderableNodes(graph.nodes, positioned);
+  const defaultActiveKey = nodes[0]?.key ?? null;
   const titleId = 'constellation-title';
+  const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
+    useStarHoverState(defaultActiveKey);
+
+  const dragSelectHandlers = useConstellationDragSelect({
+    nodes,
+    setActiveKey: (key) => setActiveKey(key),
+    viewboxSize: VIEWBOX,
+  });
 
   return (
     <nav
@@ -104,6 +113,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
               onMouseLeave={handleMouseLeave}
               onFocus={handleActivate}
               onBlur={handleBlur}
+              {...dragSelectHandlers}
             >
               {nodes.map(({ node, pos, key }) => (
                 <g key={key} data-node-key={key}>
