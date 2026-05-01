@@ -115,6 +115,15 @@ function RootComponent() {
   useEffect(() => {
     reportWebVitals();
   }, []);
+  // /sky is an immersive surface — the visitor enters by looking up,
+  // and the chrome (nav, footer, column constraints) belongs to the
+  // rooms below, not to the firmament. CONSTELLATION.md §"Reframe 1"
+  // committed: *the whole website slides down and gives way to the
+  // viewport.* In layout terms, that means the chrome is conditionally
+  // hidden and the column constraints are dropped, while the skip-link
+  // and main landmark stay so the surface remains accessible.
+  const isSky = pathname === '/sky' || pathname.startsWith('/sky/');
+
   return (
     <RootDocument>
       <ThemeProvider>
@@ -126,12 +135,16 @@ function RootComponent() {
           >
             Skip to main content
           </a>
-          <Nav />
+          {!isSky && <Nav />}
           <main
             ref={mainRef}
             id="main-content"
             tabIndex={-1}
-            className="max-w-column pt-page-top pb-page-bottom pl-edge pr-edge sm:pt-page-top-md sm:pb-page-bottom-md sm:pl-edge-md sm:pr-edge-md mx-auto w-full flex-1 focus:outline-none"
+            className={
+              isSky
+                ? 'min-h-dvh w-full flex-1 focus:outline-none'
+                : 'max-w-column pt-page-top pb-page-bottom pl-edge pr-edge sm:pt-page-top-md sm:pb-page-bottom-md sm:pl-edge-md sm:pr-edge-md mx-auto w-full flex-1 focus:outline-none'
+            }
           >
             {/* Keying the boundary on the pathname means React mounts a
                 fresh one whenever the route changes. Without this, a
@@ -142,7 +155,7 @@ function RootComponent() {
               <Outlet />
             </ErrorBoundary>
           </main>
-          <Footer />
+          {!isSky && <Footer />}
         </div>
         <Suspense fallback={null}>
           <RouterDevtools />

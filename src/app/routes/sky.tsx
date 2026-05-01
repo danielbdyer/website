@@ -1,23 +1,18 @@
-import { Link, createFileRoute } from '@tanstack/react-router';
-import { Reveal } from '@/shared/molecules/Reveal/Reveal';
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Constellation } from '@/shared/organisms/Constellation/Constellation';
+import { useReturnGesture } from '@/shared/hooks/useReturnGesture';
 import { getConstellationGraph } from '@/shared/content/constellation';
 
-// The constellation route. The graph view this site wants is a sky —
-// a second way the Foyer offers itself, reached today by a small
-// "look up" link from the Foyer.
+// The constellation route. The visitor enters by looking up; the page
+// occupies the entire viewport — no nav, no footer, no column. The
+// chrome belongs to the rooms below, not to the firmament. The carpet
+// rolls out on first paint via .sky-arrival; the visitor leaves via
+// any of three gestures (ArrowDown / Escape, sustained scroll-down,
+// touch swipe-down) wired through useReturnGesture.
 //
-// On mount, the page wraps in `.sky-arrival` so the carpet rolls out:
-// a clip-path animation reveals the firmament from the top down over
-// 900ms with the site's signature easing. Works on any entry path
-// (Foyer click, direct URL, back-navigation). Reduced motion makes
-// the carpet snap to revealed without rolling — still complete.
-//
-// Held: the richer overscroll-up gesture from the Foyer (scroll past
-// the threshold; the carpet rolls toward you as you reach), the
-// daystar morphing across pages via View Transitions API. Both ride
-// the same .sky-arrival surface when their triggers pull —
-// CONSTELLATION_HORIZON.md Phase 1 names the conditions.
+// CONSTELLATION.md §"Reframe 1" committed to this layout opt-out;
+// __root.tsx hides Nav/Footer and drops column constraints when the
+// pathname matches /sky.
 
 export const Route = createFileRoute('/sky')({
   loader: async () => {
@@ -39,27 +34,27 @@ export const Route = createFileRoute('/sky')({
 
 function SkyPage() {
   const { graph } = Route.useLoaderData();
+  const navigate = useNavigate();
+  useReturnGesture(() => {
+    void navigate({ to: '/' });
+  });
+
   return (
-    <div className="sky-arrival">
-      <Reveal>
-        <h1 className="mt-6 mb-4 font-heading text-display leading-display font-normal tracking-display text-text">
-          The constellation
-        </h1>
-        <p className="mb-10 max-w-deck font-body text-body leading-body italic text-text-2 sm:mb-14">
-          The site as a sky. Each work is a star. Each shared facet is a faint thread between two
-          stars — wisps at rest, blooming as you approach.
-        </p>
-        <Constellation graph={graph} className="my-8" />
-        <div className="mt-12 mb-4 max-w-deck font-body text-list leading-body italic text-text-2">
-          <Link
-            to="/"
-            className="no-underline transition-colors duration-200 hover:text-text"
-            viewTransition={false}
-          >
-            ↓ Return to the Foyer
-          </Link>
-        </div>
-      </Reveal>
+    <div className="sky-arrival relative h-dvh w-full overflow-hidden">
+      <Constellation graph={graph} fullViewport className="h-full w-full" />
+      {/* The return affordance — small, italic, low contrast, fixed at
+          the bottom-center of the viewport. The gesture-based returns
+          (down arrow, scroll-down, swipe-down) are the canonical paths;
+          this link is the visible fallback for visitors who don't
+          discover them. The aria-label is verbose so screen readers
+          announce what the small ↓ glyph means. */}
+      <Link
+        to="/"
+        aria-label="Return to the Foyer"
+        className="font-body text-list text-text-3 hover:text-text-2 absolute bottom-8 left-1/2 z-10 -translate-x-1/2 italic no-underline transition-colors duration-200"
+      >
+        ↓ Return to the Foyer
+      </Link>
     </div>
   );
 }

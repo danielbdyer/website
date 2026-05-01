@@ -21,6 +21,12 @@ import {
 
 interface ConstellationProps {
   graph: ConstellationGraph;
+  /** When true, the SVG fills the frame via `xMidYMid slice` (cover-
+   *  fit) so the constellation occupies every available pixel rather
+   *  than being letterboxed inside a column. The frame's sizing is
+   *  the consumer's responsibility — passing a `className` like
+   *  `h-dvh w-screen` makes the surface a true full-viewport sky. */
+  fullViewport?: boolean;
   className?: string;
 }
 
@@ -38,7 +44,7 @@ interface ConstellationProps {
 const isThreadActive = (activeKey: string | null, sourceKey: string, targetKey: string): boolean =>
   activeKey === sourceKey || activeKey === targetKey;
 
-export function Constellation({ graph, className }: ConstellationProps) {
+export function Constellation({ graph, fullViewport = false, className }: ConstellationProps) {
   const { activeKey, handleActivate, handleMouseLeave, handleBlur } = useStarHoverState();
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
@@ -67,8 +73,9 @@ export function Constellation({ graph, className }: ConstellationProps) {
       <svg
         ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
+        preserveAspectRatio={fullViewport ? 'xMidYMid slice' : 'xMidYMid meet'}
         onClick={onSkyClick}
-        className="constellation relative block w-full"
+        className={cn('constellation relative block w-full', fullViewport && 'h-full')}
       >
         <ConstellationFilters />
         <g className="constellation-parallax--firmament">
