@@ -55,3 +55,14 @@ export function workMetaTransitionName(room: Room, slug: string): string {
 export function workCardTransitionName(room: Room, slug: string): string {
   return `work-card-${room}-${slug}`;
 }
+
+/** Daystar — paired between the nav's theme-toggle icon (on every
+ * route except /sky) and the constellation's celestial body (on
+ * /sky). When the visitor navigates from any room into the sky, the
+ * View Transitions API morphs the small corner icon into the large
+ * upper-mid daystar — the toggle ascends into the firmament. On
+ * return, the daystar descends back to the corner. The name is
+ * unique per snapshot because /sky has no Nav (so no toggle), and
+ * non-/sky routes have no firmament. CONSTELLATION.md §"The Sun and
+ * the Moon" describes the felt sense; this is the canonical name. */
+export const DAYSTAR_TRANSITION_NAME = 'daystar';

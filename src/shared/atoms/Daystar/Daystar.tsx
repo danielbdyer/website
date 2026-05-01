@@ -1,3 +1,5 @@
+import { DAYSTAR_TRANSITION_NAME } from '@/shared/utils/view-transition-names';
+
 interface DaystarProps {
   /** Center position in the SVG's viewBox space. */
   cx: number;
@@ -26,7 +28,11 @@ interface DaystarProps {
 
 export function Daystar({ cx, cy, radius = 38 }: DaystarProps) {
   return (
-    <g className="constellation-daystar" aria-hidden="true">
+    <g
+      className="constellation-daystar"
+      style={{ viewTransitionName: DAYSTAR_TRANSITION_NAME }}
+      aria-hidden="true"
+    >
       {/* The sun — visible in light mode. A warm-glow disc with a
           gentle rim. The glow halo is rendered via the watercolor
           filter so the edge bleeds rather than rendering as a hard
