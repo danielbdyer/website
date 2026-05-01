@@ -61,6 +61,9 @@ words:
   - facet
   - facets
   - flowy
+  - vsync
+  - backgrounding
+  - longtask
 
   # Code + tooling
   - tanstack

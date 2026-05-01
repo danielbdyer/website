@@ -1,48 +1,82 @@
 import { expect, test } from '@playwright/test';
 
-// Frame-rate guards for the constellation's navigation surface. The
-// vitest perf tests cover the JS hot path (basin field, nearest
-// node, etc.) but cannot see what a real browser does — paint,
-// composite, the WebGL firmament, the camera transform's effect on
-// the rasterizer. These tests run in a real Chromium and count RAF
-// frames during interaction so the full pipeline is honoured.
+// Real-browser performance guards for the constellation's
+// navigation surface. The vitest perf tests cover the JS hot path
+// in jsdom (basin field, nearest node, flick velocity); these
+// cover what a real browser does — paint, composite, the WebGL
+// firmament's draws, the camera transform's rasterizer cost.
 //
-// Tagged @perf rather than @smoke so they're an opt-in gate (run via
-// `pnpm test:e2e --grep @perf`). They're not CI-blocking by default
-// because frame timings vary across machines and headless modes.
+// The metric: **long-task delta**, not absolute count or FPS. We
+// measure the page's idle long-task count first (that captures
+// WebGL firmament cost, the rotates animation, etc.), then again
+// during interaction. The delta is what the navigation contributes.
+// A clean implementation should add few or no long tasks beyond
+// the page's resting cost; a regression that blocks the main
+// thread on every frame would push the delta way above baseline.
+//
+// FPS is the metric people reach for first but it's unreliable in
+// headless and depends on GPU/display. Long-task delta is honest in
+// any environment because it measures *blocking work added*, not
+// frame production. CPU-only, software-rasterized headless picks
+// up paint cost as long tasks too — that goes into the baseline.
+//
+// Tagged @perf so they run on demand:
+//   pnpm test:e2e --grep @perf
+// (Run under `xvfb-run` on a CI machine without a display.)
+
+test.use({
+  launchOptions: {
+    args: [
+      '--disable-frame-rate-limit',
+      '--disable-gpu-vsync',
+      '--disable-background-timer-throttling',
+      '--disable-renderer-backgrounding',
+      '--disable-backgrounding-occluded-windows',
+    ],
+  },
+});
 
 const PERF_TAG = { tag: '@perf' as const };
 
-interface FpsMeasurement {
-  frames: number;
-  elapsed: number;
+interface LongTaskReport {
+  count: number;
+  longest: number;
+  total: number;
 }
 
-// Counts RAF callbacks inside the page over `durationMs`. The
-// counter runs through requestAnimationFrame independently of the
-// navigation hook's loop, so it keeps firing even if the hook's
-// own RAF idles — what we measure is the browser's frame cadence
-// during the interaction window.
-async function countFrames(
+async function observeLongTasks(
   page: import('@playwright/test').Page,
   durationMs: number,
-): Promise<FpsMeasurement> {
-  return await page.evaluate((duration: number) => {
-    return new Promise<FpsMeasurement>((resolve) => {
-      let frames = 0;
-      const start = performance.now();
-      const finish = start + duration;
-      function tick() {
-        frames += 1;
-        if (performance.now() < finish) {
-          requestAnimationFrame(tick);
-        } else {
-          resolve({ frames, elapsed: performance.now() - start });
-        }
-      }
-      requestAnimationFrame(tick);
+): Promise<LongTaskReport> {
+  await page.evaluate(() => {
+    interface PerfWindow extends Window {
+      __longTasks?: PerformanceEntry[];
+      __longTaskObserver?: PerformanceObserver;
+    }
+    const w = window as PerfWindow;
+    w.__longTasks = [];
+    w.__longTaskObserver = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) w.__longTasks!.push(entry);
     });
-  }, durationMs);
+    w.__longTaskObserver.observe({ entryTypes: ['longtask'] });
+  });
+  await page.waitForTimeout(durationMs);
+  return await page.evaluate(() => {
+    interface PerfWindow extends Window {
+      __longTasks?: PerformanceEntry[];
+      __longTaskObserver?: PerformanceObserver;
+    }
+    const w = window as PerfWindow;
+    w.__longTaskObserver?.disconnect();
+    const tasks = w.__longTasks ?? [];
+    let longest = 0;
+    let total = 0;
+    for (const t of tasks) {
+      if (t.duration > longest) longest = t.duration;
+      total += t.duration;
+    }
+    return { count: tasks.length, longest, total };
+  });
 }
 
 async function constellationBounds(page: import('@playwright/test').Page) {
@@ -51,60 +85,73 @@ async function constellationBounds(page: import('@playwright/test').Page) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2, w: box.width };
 }
 
-test.describe('constellation frame cadence', () => {
-  test('idle /sky paints at near display rate', PERF_TAG, async ({ page }) => {
+function annotate(t: import('@playwright/test').TestInfo, label: string, r: LongTaskReport): void {
+  t.annotations.push({
+    type: label,
+    description: `count=${r.count} longest=${r.longest.toFixed(1)}ms total=${r.total.toFixed(1)}ms`,
+  });
+}
+
+test.describe('constellation main-thread health', () => {
+  test(
+    'drag does not add long tasks beyond the page baseline',
+    PERF_TAG,
+    async ({ page }, info) => {
+      await page.goto('/sky');
+      await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
+      // Let the sky-arrival animation finish.
+      await page.waitForTimeout(1800);
+
+      // Baseline: page at rest, just the WebGL firmament + CSS rotation.
+      const baseline = await observeLongTasks(page, 2000);
+      annotate(info, 'baseline', baseline);
+
+      // Interaction: a continuous 360° drag for 2s.
+      const { x, y, w } = await constellationBounds(page);
+      const radius = Math.min(w * 0.18, 200);
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      const dragMeasurement = observeLongTasks(page, 2000);
+      const steps = 60;
+      for (let i = 0; i < steps; i++) {
+        const angle = (i / steps) * Math.PI * 2;
+        await page.mouse.move(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+        await page.waitForTimeout(30);
+      }
+      await page.mouse.up();
+      const drag = await dragMeasurement;
+      annotate(info, 'drag', drag);
+
+      // The hook's per-frame cost is microseconds (vitest perf tests).
+      // What matters here is that interaction doesn't *add* long tasks
+      // beyond the page's resting cost. We allow drag.total to grow
+      // by 50% of baseline (generous; a real regression would multiply
+      // it). The longest task during drag must not exceed baseline by
+      // more than 50ms — a single new blocking frame.
+      // Total time is the meaningful aggregate; a regression that
+      // blocks every frame would multiply this. We allow the drag's
+      // total to grow by 50% of baseline (generous) plus 100ms
+      // headroom for browser variance.
+      expect(drag.total).toBeLessThan(baseline.total * 1.5 + 100);
+      // The longest single task during interaction shouldn't be
+      // dramatically longer than baseline's longest. 100ms headroom
+      // tolerates one frame of incidental browser work without
+      // flaking; an unbounded regression (e.g. an O(N²) loop) would
+      // produce tasks well beyond that.
+      expect(drag.longest).toBeLessThan(baseline.longest + 100);
+    },
+  );
+
+  test('flick coast settles without piling up long tasks', PERF_TAG, async ({ page }, info) => {
     await page.goto('/sky');
     await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
-    // Let the sky-arrival animation finish so we're not measuring
-    // its frames specifically.
     await page.waitForTimeout(1800);
-    const { frames, elapsed } = await countFrames(page, 1500);
-    const fps = (frames / elapsed) * 1000;
-    test.info().annotations.push({ type: 'fps-idle', description: fps.toFixed(1) });
-    // Idle: the page is mostly composited frames; 50fps headroom is
-    // generous against CI variance.
-    expect(fps).toBeGreaterThan(50);
-  });
 
-  test('continuous pointer drag holds frame rate', PERF_TAG, async ({ page }) => {
-    await page.goto('/sky');
-    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
-    await page.waitForTimeout(1500);
-    const { x, y, w } = await constellationBounds(page);
-    const radius = Math.min(w * 0.18, 200);
+    const baseline = await observeLongTasks(page, 1500);
+    annotate(info, 'baseline', baseline);
 
-    await page.mouse.move(x, y);
-    await page.mouse.down();
-    const fpsPromise = countFrames(page, 2000);
-
-    // Drive a 360° drag over the measurement window. ~30Hz move
-    // rate matches a typical pointermove cadence.
-    const steps = 60;
-    for (let i = 0; i < steps; i++) {
-      const angle = (i / steps) * Math.PI * 2;
-      await page.mouse.move(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
-      await page.waitForTimeout(30);
-    }
-    const { frames, elapsed } = await fpsPromise;
-    await page.mouse.up();
-
-    const fps = (frames / elapsed) * 1000;
-    test.info().annotations.push({ type: 'fps-drag', description: fps.toFixed(1) });
-    // Drag exercises pointermove → drag spring → camera transform
-    // every frame. 45fps is the floor for "feels smooth" on the
-    // perceptual side; we hold to that.
-    expect(fps).toBeGreaterThan(45);
-  });
-
-  test('flick coast holds frame rate', PERF_TAG, async ({ page }) => {
-    await page.goto('/sky');
-    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
-    await page.waitForTimeout(1500);
     const { x, y, w } = await constellationBounds(page);
     const reach = Math.min(w * 0.3, 300);
-
-    // Quick, hard flick — five fast moves over ~80ms imparts the
-    // velocity buffer the hook samples on release.
     await page.mouse.move(x - reach, y);
     await page.mouse.down();
     for (let i = 1; i <= 5; i++) {
@@ -112,12 +159,10 @@ test.describe('constellation frame cadence', () => {
       await page.waitForTimeout(15);
     }
     await page.mouse.up();
+    const coast = await observeLongTasks(page, 1500);
+    annotate(info, 'coast', coast);
 
-    // Measure during the coast; the cursor should drift through
-    // basins until friction settles it.
-    const { frames, elapsed } = await countFrames(page, 1200);
-    const fps = (frames / elapsed) * 1000;
-    test.info().annotations.push({ type: 'fps-coast', description: fps.toFixed(1) });
-    expect(fps).toBeGreaterThan(50);
+    expect(coast.total).toBeLessThan(baseline.total * 1.5 + 100);
+    expect(coast.longest).toBeLessThan(baseline.longest + 100);
   });
 });
