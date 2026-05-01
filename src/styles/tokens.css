@@ -460,32 +460,54 @@ body::before {
   display: none;
 }
 
-/* The carpet rolls out — the sky page's first-paint gesture. A
-   clip-path animates from a fully-clipped top edge to a fully-
-   revealed page over 900ms, with the site's signature easing. The
-   visitor's experience is the ceiling opening: the firmament, which
-   was always above, now meets the page. Works on any entry path
-   (a Foyer click, a direct /sky URL load, a back-navigation) — the
-   CSS runs on mount of the sky-arrival container, so the gesture
-   IS the arrival. The global prefers-reduced-motion rule kills the
-   animation-duration to ~0, so the carpet simply *is* there for
-   reduced-motion visitors — still honest, still complete, just
-   without the rolling. CONSTELLATION.md §"The Reveal Mechanism"
-   describes the held richer overscroll-up gesture from the Foyer;
-   this is the first form. */
-@keyframes sky-carpet-roll {
+/* The lift-and-pitch — the sky page's first-paint gesture. *Not* a
+   z-axis rotation; a perspective camera move. The visitor's
+   experience is looking up: gaze tilts upward, the ceiling pitches
+   into view, the firmament settles upright. Three composed motions
+   in one keyframe over 1100ms with the signature easing:
+
+     - clip-path animates from `inset(0 0 100% 0)` to `inset(0 0 0 0)`
+       so the surface reveals from the top edge down (the ceiling
+       coming into view).
+     - perspective(1800px) + rotateX(-32deg → 0) tilts the surface
+       through 32° around the upper edge — the firmament starting
+       tilted away and rotating upright as the visitor's gaze rises.
+     - opacity 0.4 → 1 lets the SVG firmament behind read briefly
+       through the carpet roll, so the arrival doesn't read as a
+       hard cut.
+
+   Anchored at `transform-origin: 50% 0%` (the top edge of the
+   surface). This is what makes the rotation feel like *looking up*
+   rather than *flipping a card* — the top edge stays in the
+   visitor's plane while the bottom edge sweeps in from below.
+
+   prefers-reduced-motion is honored globally (the animation-
+   duration collapses to ~0 ms via the universal block above), so
+   the firmament simply *is* there for reduced-motion visitors —
+   no lift, no tilt, no clip — present and complete from first
+   paint.
+
+   The reverse — the firmament tilting away as the visitor scrolls
+   back down to the Foyer — is held. Adding a leave-side animation
+   requires intercepting the navigation; today the visitor returns
+   via the standard view-transition fade. CONSTELLATION_HORIZON.md
+   names the symmetric reverse as the next refinement. */
+@keyframes sky-look-up {
   from {
     clip-path: inset(0 0 100% 0);
-    opacity: 0.5;
+    transform: perspective(1800px) rotateX(-32deg);
+    opacity: 0.4;
   }
   to {
     clip-path: inset(0 0 0 0);
+    transform: perspective(1800px) rotateX(0deg);
     opacity: 1;
   }
 }
 
 .sky-arrival {
-  animation: sky-carpet-roll 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  transform-origin: 50% 0%;
+  animation: sky-look-up 1100ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 /* ─── View Transitions ──────────────────────────────────────────
