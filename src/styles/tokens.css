@@ -373,11 +373,11 @@ body::before {
 
 /* ─── Geometric ornament ────────────────────────────────────── */
 @keyframes geo-spin {
-  from {
+  0% {
     transform: rotate(0deg);
   }
 
-  to {
+  100% {
     transform: rotate(360deg);
   }
 }
@@ -400,11 +400,11 @@ body::before {
    organism from constellation.ts's twinklePhase) breaks the chord
    into a distributed shimmer. */
 @keyframes constellation-spin {
-  from {
+  0% {
     transform: rotate(0deg);
   }
 
-  to {
+  100% {
     transform: rotate(360deg);
   }
 }
@@ -466,15 +466,21 @@ body::before {
 /* The lift-and-pitch — the sky page's first-paint gesture. *Not* a
    z-axis rotation; a perspective camera move. The visitor's
    experience is looking up: gaze tilts upward, the ceiling pitches
-   into view, the firmament settles upright. Three composed motions
-   in one keyframe over 1100ms with the signature easing:
+   into view, the firmament settles upright. The opening state is more
+   dramatic: the surface begins aggressively pitched away (near-folded)
+   and slightly compressed, then unfolds through a held midpoint before
+   arriving level. Four composed motions in one keyframe over 1350ms
+   with the signature easing:
 
      - clip-path animates from `inset(0 0 100% 0)` to `inset(0 0 0 0)`
        so the surface reveals from the top edge down (the ceiling
        coming into view).
-     - perspective(1800px) + rotateX(-32deg → 0) tilts the surface
-       through 32° around the upper edge — the firmament starting
-       tilted away and rotating upright as the visitor's gaze rises.
+     - perspective(1300px) + rotateX(-72deg → 0) tilts the surface
+       through 72° around the upper edge — closer to a folded-plane
+       reveal before settling to a normal read.
+     - translateY(8dvh → 0) + scaleY(0.86 → 1) stages a slight
+       depth-compression in the opening beat so the motion feels like
+       the ground plane hinging into place above the visitor.
      - opacity 0.4 → 1 lets the SVG firmament behind read briefly
        through the carpet roll, so the arrival doesn't read as a
        hard cut.
@@ -496,22 +502,28 @@ body::before {
    via the standard view-transition fade. CONSTELLATION_HORIZON.md
    names the symmetric reverse as the next refinement. */
 @keyframes sky-look-up {
-  from {
+  0% {
     clip-path: inset(0 0 100% 0);
-    transform: perspective(1800px) rotateX(-32deg);
-    opacity: 0.4;
+    transform: perspective(1300px) translateY(8dvh) rotateX(-72deg) scaleY(0.86);
+    opacity: 0.25;
   }
 
-  to {
+  62% {
     clip-path: inset(0 0 0 0);
-    transform: perspective(1800px) rotateX(0deg);
+    transform: perspective(1300px) translateY(1.5dvh) rotateX(-18deg) scaleY(0.97);
+    opacity: 0.92;
+  }
+
+  100% {
+    clip-path: inset(0 0 0 0);
+    transform: perspective(1300px) translateY(0) rotateX(0deg) scaleY(1);
     opacity: 1;
   }
 }
 
 .sky-arrival {
   transform-origin: 50% 0%;
-  animation: sky-look-up 1100ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: sky-look-up 1350ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* ─── View Transitions ──────────────────────────────────────────
