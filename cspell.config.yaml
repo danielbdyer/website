@@ -65,6 +65,7 @@ words:
   - backgrounding
   - longtask
   - recalc
+  - orthogonalized
 
   # Code + tooling
   - tanstack

@@ -82,6 +82,28 @@ describe('layout — buildPositionedMap', () => {
     expect(typeof a?.x).toBe('number');
     expect(typeof a?.y).toBe('number');
   });
+
+  test('every positioned node carries a depth in [0, 1]', () => {
+    const map = buildPositionedMap(graph);
+    for (const node of map.values()) {
+      expect(node.depth).toBeGreaterThanOrEqual(0);
+      expect(node.depth).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test('a node at the polestar (radius = 0) projects to viewbox center', () => {
+    const center: ConstellationNode = {
+      ...NODE_A,
+      slug: 'centered',
+      angleDeg: 0,
+      radius: 0,
+      unitPosition: projectToSphere(0, 0),
+    };
+    const map = buildPositionedMap({ ...graph, nodes: [center] });
+    const placed = map.get('garden/centered');
+    expect(placed?.x).toBeCloseTo(CENTER, 6);
+    expect(placed?.y).toBeCloseTo(CENTER, 6);
+  });
 });
 
 describe('layout — presentationOrder', () => {
