@@ -56,6 +56,10 @@ interface UseConstellationNavigationArgs {
   readonly viewboxSize: number;
   readonly setActiveKey: (key: string) => void;
   readonly cameraRef: RefObject<SVGGElement | null>;
+  /** Companion glyph — a small mote at the cursor's projected screen
+   *  position. The hook updates its cx and cy each RAF tick so the
+   *  visitor can see *where they are* on the latent sphere. */
+  readonly glyphRef: RefObject<SVGCircleElement | null>;
 }
 
 // Force-field constants, in spherical units. Position is a unit
@@ -263,6 +267,7 @@ interface RuntimeRefs {
   readonly stateRef: RefObject<NavState>;
   readonly nodesRef: RefObject<readonly NavigableNode[]>;
   readonly cameraRef: RefObject<SVGGElement | null>;
+  readonly glyphRef: RefObject<SVGCircleElement | null>;
   readonly camera: Camera;
   readonly basis: CameraBasis;
   readonly viewboxSize: number;
@@ -349,22 +354,32 @@ function tick(now: number, refs: RuntimeRefs): void {
   const nearest = geodesicNearestNode(state.pos, refs.nodesRef.current, BASIN_RADIUS_RAD);
   if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
 
-  if (refs.cameraRef.current) {
-    const projected = project(state.pos, refs.camera, refs.basis, 1);
-    if (projected.inFront) {
-      const center = refs.viewboxSize / 2;
-      const radius = refs.viewboxSize * 0.44;
-      const cursorViewboxX = projected.screenX * radius;
-      const cursorViewboxY = -projected.screenY * radius;
-      // Yaw from the screen-space x velocity (camera-right component
-      // of the tangent velocity). Bounded to MAX_YAW_DEG.
+  // Single per-frame projection of the cursor's sphere position to
+  // viewbox coords, reused for both the camera-pan transform (the
+  // 2D pan/yaw flourish) and the companion glyph's screen position
+  // so the visitor can see *where they are* on the latent sphere.
+  const projectedCursor = project(state.pos, refs.camera, refs.basis, 1);
+  if (projectedCursor.inFront) {
+    const center = refs.viewboxSize / 2;
+    const radius = refs.viewboxSize * 0.44;
+    const cursorViewboxX = center + projectedCursor.screenX * radius;
+    const cursorViewboxY = center - projectedCursor.screenY * radius;
+    if (refs.glyphRef.current) {
+      refs.glyphRef.current.setAttribute('cx', cursorViewboxX.toFixed(2));
+      refs.glyphRef.current.setAttribute('cy', cursorViewboxY.toFixed(2));
+    }
+    if (refs.cameraRef.current) {
       const screenVelX =
         state.vel.x * refs.basis.right.x +
         state.vel.y * refs.basis.right.y +
         state.vel.z * refs.basis.right.z;
       const yaw = clamp(screenVelX * YAW_VELOCITY_SCALE * 0.001, -MAX_YAW_DEG, MAX_YAW_DEG);
-      applyCameraTransform(refs.cameraRef.current, cursorViewboxX, cursorViewboxY, yaw);
-      void center; // viewbox center is implicit in the SVG layout
+      applyCameraTransform(
+        refs.cameraRef.current,
+        projectedCursor.screenX * radius,
+        -projectedCursor.screenY * radius,
+        yaw,
+      );
     }
   }
 
@@ -544,6 +559,7 @@ export function useConstellationNavigation({
   viewboxSize,
   setActiveKey,
   cameraRef,
+  glyphRef,
 }: UseConstellationNavigationArgs) {
   const stateRef = useRef<NavState>(buildInitialState());
   const nodesRef = useRef<readonly NavigableNode[]>(nodes);
@@ -565,6 +581,7 @@ export function useConstellationNavigation({
     stateRef,
     nodesRef,
     cameraRef,
+    glyphRef,
     camera,
     basis,
     viewboxSize,

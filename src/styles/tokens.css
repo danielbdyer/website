@@ -442,6 +442,20 @@ body::before {
     rotate(calc(var(--cam-yaw, 0) * 1deg));
 }
 
+/* Companion glyph — the small mote that marks where the visitor's
+   cursor is on the latent sphere. The hook positions it each RAF
+   tick by writing cx and cy attributes; this rule sets the visual
+   character. A faint warm-amber dot with a soft halo via the same
+   watercolor filter the stars use, so the glyph reads as kin to
+   the constellation rather than chrome on top of it. */
+.constellation-companion {
+  fill: var(--accent-warm);
+  opacity: 0.55;
+  filter: url('#cn-watercolor-halo');
+  pointer-events: none;
+  transition: opacity 200ms ease-out;
+}
+
 .constellation-star__halo {
   animation: star-twinkle 4.5s ease-in-out infinite;
 }
