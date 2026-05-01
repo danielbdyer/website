@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { ConstellationGraph, ConstellationNode } from '@/shared/content/constellation';
+import { diskToHemisphere } from '@/shared/geometry/sphere';
 import {
   CENTER,
   SKY_RADIUS,
@@ -9,6 +10,9 @@ import {
   presentationOrder,
   skyTitle,
 } from './layout';
+
+const projectToSphere = (angleDeg: number, radius: number) =>
+  diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
 
 const NODE_A: ConstellationNode = {
   room: 'garden',
@@ -20,6 +24,7 @@ const NODE_A: ConstellationNode = {
   isPreview: false,
   angleDeg: 135,
   radius: 0.6,
+  unitPosition: projectToSphere(135, 0.6),
   hue: 'gold',
   twinklePhase: 1.2,
 };

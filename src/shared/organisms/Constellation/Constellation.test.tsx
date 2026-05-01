@@ -8,7 +8,11 @@ import {
 } from '@tanstack/react-router';
 import { axe } from '@/test/axe';
 import type { ConstellationGraph } from '@/shared/content/constellation';
+import { diskToHemisphere } from '@/shared/geometry/sphere';
 import { Constellation } from './Constellation';
+
+const projectToSphere = (angleDeg: number, radius: number) =>
+  diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
 
 // Mount the Constellation under a minimal in-memory router so the
 // link-delegation hook has the router context it needs.
@@ -45,6 +49,7 @@ const SAMPLE_GRAPH: ConstellationGraph = {
       isPreview: false,
       angleDeg: 135,
       radius: 0.6,
+      unitPosition: projectToSphere(135, 0.6),
       hue: 'gold',
       twinklePhase: 1.2,
     },
@@ -58,6 +63,7 @@ const SAMPLE_GRAPH: ConstellationGraph = {
       isPreview: false,
       angleDeg: 225,
       radius: 0.7,
+      unitPosition: projectToSphere(225, 0.7),
       hue: 'rose',
       twinklePhase: 3.4,
     },

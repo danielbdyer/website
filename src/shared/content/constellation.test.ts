@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { diskToHemisphere } from '@/shared/geometry/sphere';
 import { getConstellationGraphSync } from './constellation';
 
 describe('getConstellationGraphSync — shape', () => {
@@ -81,6 +82,31 @@ describe('getConstellationGraphSync — content', () => {
       expect(`${edge.source.room}/${edge.source.slug}`).not.toBe(
         `${edge.target.room}/${edge.target.slug}`,
       );
+    }
+  });
+
+  // The latent-sphere invariants: every node's 3D unitPosition is
+  // a true unit vector, sits on the upper hemisphere (the disk
+  // projects there only), and equals the projection of the node's
+  // 2D (angleDeg, radius) — the disk and the sphere can never
+  // disagree about where a work is.
+  test('every node carries a unit-norm 3D position on the upper hemisphere', () => {
+    const g = getConstellationGraphSync();
+    for (const node of g.nodes) {
+      const { x, y, z } = node.unitPosition;
+      const norm = Math.hypot(x, y, z);
+      expect(norm).toBeCloseTo(1, 9);
+      expect(z).toBeGreaterThanOrEqual(-1e-9);
+    }
+  });
+
+  test('unitPosition equals diskToHemisphere(radius, angleDeg)', () => {
+    const g = getConstellationGraphSync();
+    for (const node of g.nodes) {
+      const projected = diskToHemisphere(node.radius, (node.angleDeg * Math.PI) / 180);
+      expect(node.unitPosition.x).toBeCloseTo(projected.x, 9);
+      expect(node.unitPosition.y).toBeCloseTo(projected.y, 9);
+      expect(node.unitPosition.z).toBeCloseTo(projected.z, 9);
     }
   });
 });

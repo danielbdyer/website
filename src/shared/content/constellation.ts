@@ -1,5 +1,7 @@
 import type { DisplayWork } from './preview';
 import type { Facet, Room } from '@/shared/types/common';
+import type { UnitVector3 } from '@/shared/geometry/sphere';
+import { diskToHemisphere } from '@/shared/geometry/sphere';
 import { isPreviewWork } from './preview';
 import { getDisplayWorksByRoomSync } from './display';
 
@@ -88,6 +90,14 @@ export interface ConstellationNode {
    *  the horizon. Position is deterministic in (room, slug). */
   angleDeg: number;
   radius: number;
+  /** Position on the latent unit sphere — the topology Pass 2's
+   *  navigation orbits. The 2D `(angleDeg, radius)` is the
+   *  azimuthal-equidistant projection of this 3D position onto the
+   *  upper hemisphere: the disk's center is the north pole, the rim
+   *  is the equator. Adding this field is un-projecting — restoring
+   *  the z component the disk dropped. The 2D renderer ignores it;
+   *  the held cairn rendering will consume it. */
+  unitPosition: UnitVector3;
   /** Hue of the work's first-listed facet, or 'gold' as a quiet
    *  default for facetless works. The renderer paints the star in
    *  this hue; thread blooms toward this star adopt their own
@@ -166,16 +176,26 @@ const TWINKLE_DURATION_SECONDS = 4.5;
 const RADIUS_MIN = 0.45;
 const RADIUS_MAX = 0.92;
 
-function placeNode(
-  room: Exclude<Room, 'foyer'>,
-  slug: string,
-): { angleDeg: number; radius: number } {
+interface NodePlacement {
+  readonly angleDeg: number;
+  readonly radius: number;
+  readonly unitPosition: UnitVector3;
+}
+
+// Pure pipeline: a (room, slug) determines a 2D disk position, and
+// the 2D disk position determines the 3D unit-sphere position via
+// the upper-hemisphere projection. The disk values stay authoritative
+// for today's renderer; the unitPosition rides alongside as the
+// future-form 3D coord, derived deterministically from the same
+// inputs.
+function placeNode(room: Exclude<Room, 'foyer'>, slug: string): NodePlacement {
   const sectorCenter = ROOM_SECTOR_DEG[room];
   const angleOffset = (unitOffset(`${room}/${slug}/angle`) - 0.5) * 2 * SECTOR_HALF_SPREAD;
   const radiusT = unitOffset(`${room}/${slug}/radius`);
   const radius = RADIUS_MIN + radiusT * (RADIUS_MAX - RADIUS_MIN);
   const angleDeg = (sectorCenter + angleOffset + 360) % 360;
-  return { angleDeg, radius };
+  const unitPosition = diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
+  return { angleDeg, radius, unitPosition };
 }
 
 // ─── Edge derivation ───────────────────────────────────────────────
