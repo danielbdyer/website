@@ -108,7 +108,14 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
               {nodes.map(({ node, pos, key }) => (
                 <g key={key} data-node-key={key}>
                   <Star
-                    href={`/${node.room}/${node.slug}`}
+                    // Stars open as overlays at /sky/{room}/{slug} —
+                    // an addressable URL where the constellation
+                    // continues to paint behind a takeover panel.
+                    // The work-page at /{room}/{slug} remains
+                    // independently addressable for direct-link and
+                    // SEO; the overlay is *the sky's way of opening
+                    // a work*, not a replacement.
+                    href={`/sky/${node.room}/${node.slug}`}
                     label={`${node.title} — ${ROOM_LABEL[node.room]}`}
                     cx={pos.x}
                     cy={pos.y}

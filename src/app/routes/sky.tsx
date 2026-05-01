@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Link, Outlet, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Constellation } from '@/shared/organisms/Constellation/Constellation';
 import { useReturnGesture } from '@/shared/hooks/useReturnGesture';
 import { getConstellationGraph } from '@/shared/content/constellation';
@@ -42,6 +42,10 @@ function SkyPage() {
   return (
     <div className="sky-arrival relative h-dvh w-full overflow-hidden">
       <Constellation graph={graph} fullViewport className="h-full w-full" />
+      {/* The Outlet renders nested overlay routes (sky.$room.$slug)
+          when the URL points at a specific work; otherwise it's
+          empty and the constellation alone fills the surface. */}
+      <Outlet />
       {/* The return affordance — small, italic, low contrast, fixed at
           the bottom-center of the viewport. The gesture-based returns
           (down arrow, scroll-down, swipe-down) are the canonical paths;

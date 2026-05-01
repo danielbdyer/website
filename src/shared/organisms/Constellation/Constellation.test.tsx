@@ -79,15 +79,19 @@ const EMPTY_GRAPH: ConstellationGraph = {
 };
 
 describe('Constellation organism', () => {
-  test('renders a star for every node, addressable by work URL', async () => {
+  test('renders a star for every node, addressable by sky-overlay URL', async () => {
+    // Stars open as overlays inside /sky, so their hrefs follow the
+    // /sky/{room}/{slug} pattern; the work-page route at
+    // /{room}/{slug} remains independently addressable for direct
+    // links from outside the sky.
     renderConstellation(SAMPLE_GRAPH);
     expect(await screen.findByRole('link', { name: /small weather/i })).toHaveAttribute(
       'href',
-      '/garden/small-weather',
+      '/sky/garden/small-weather',
     );
     expect(await screen.findByRole('link', { name: /a second work/i })).toHaveAttribute(
       'href',
-      '/studio/a-second-work',
+      '/sky/studio/a-second-work',
     );
   });
 
