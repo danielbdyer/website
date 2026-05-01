@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { getConstellationCursor } from '@/shared/state/constellationCursor';
 
 // Inline GLSL — embedded at build time via the JS bundler. Splitting
 // shader code into separate .glsl files would require a Vite raw-text
@@ -88,22 +89,33 @@ const FRAGMENT_SHADER = /* glsl */ `
     n = n * 0.5 + 0.5;
 
     // Cursor pool — a soft luminous disc that follows the visitor's
-    // gaze. Centered at uCursor (mapped from [-1,1] to [0,1]),
-    // smoothstep gives the falloff. uActive gates the pool to zero
-    // when the cursor is outside the surface so the firmament is
-    // calm by default.
+    // sphere-surface position (driven by the navigation cursor, not
+    // the raw pointer). smoothstep gives the falloff; squaring it
+    // gives a slightly rotund (bulb-like) profile rather than a
+    // linear ramp, so the pool feels held rather than flat — the
+    // Galaxy hint Pass 2 is reaching for. uActive gates the pool
+    // to zero when the cursor is outside the surface.
     vec2 cursorUv = uCursor * 0.5 + 0.5;
     float dist = distance(vUv, cursorUv);
-    float pool = smoothstep(0.55, 0.0, dist) * uActive * 0.4;
+    float poolBase = smoothstep(0.55, 0.0, dist);
+    float pool = poolBase * poolBase * uActive * 0.45;
 
     // Theme palette — warm-glow in light mode, cool-silver in dark.
     vec3 lightTone = vec3(0.95, 0.85, 0.65);
     vec3 darkTone  = vec3(0.55, 0.6, 0.85);
     vec3 tone = mix(lightTone, darkTone, uTheme);
 
+    // Saturation boost in the pool — pushes the tone toward a richer
+    // chroma where the visitor's attention sits. Computed as a soft
+    // shift away from the noise's mid-grey toward the saturated
+    // tone; pool * 0.35 keeps the boost subtle.
+    vec3 saturatedTone = tone + (tone - vec3(0.5)) * 0.4;
+    vec3 baseTone = mix(tone, saturatedTone, pool * 0.35);
+
     // Composite: the noise gives texture; the pool gives focus. The
-    // theme tone shifts the whole layer warm or cool.
-    vec3 color = tone * (n * 0.18 + pool);
+    // theme tone shifts the whole layer warm or cool; the pool both
+    // brightens and saturates near the cursor.
+    vec3 color = baseTone * (n * 0.18 + pool);
     float alpha = (n * 0.12) + pool * 0.7;
 
     // Vignette — a vignette/painted sense of attention, not a
@@ -135,6 +147,8 @@ import type { Mesh, Renderer } from 'ogl';
 
 interface UniformsShape {
   uTime: { value: number | readonly number[] };
+  uCursor: { value: number | readonly number[] };
+  uActive: { value: number | readonly number[] };
 }
 interface RenderLoopArgs {
   uniforms: UniformsShape;
@@ -149,6 +163,13 @@ interface RenderLoopArgs {
 // pageerror. Returns a `stop` callback the disposer calls on
 // unmount. Extracted so initWebGL stays under the 80-line ceiling
 // per REACT_NORTH_STAR.md §"Threshold System".
+//
+// Reads the navigation cursor signal each frame so the firmament's
+// luminous pool of attention follows the visitor's surface position
+// on the latent sphere — not the raw pointer. The pool now lives
+// where the cursor lives, which means it stays anchored after a
+// flick releases (the cursor's spring carries the pool along) and
+// settles into the active basin when the navigation does.
 function startRenderLoop({ uniforms, renderer, mesh, canvas }: RenderLoopArgs): () => void {
   let raf = 0;
   let halted = false;
@@ -157,6 +178,9 @@ function startRenderLoop({ uniforms, renderer, mesh, canvas }: RenderLoopArgs): 
     if (halted) return;
     try {
       uniforms.uTime.value = (performance.now() - startTime) / 1000;
+      const cursor = getConstellationCursor();
+      uniforms.uCursor.value = [cursor.x, cursor.y];
+      uniforms.uActive.value = cursor.active ? 1 : 0;
       renderer.render({ scene: mesh });
     } catch {
       halted = true;
@@ -292,17 +316,12 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
     { value: number | readonly number[] }
   >;
 
-  const onPointerMove = (e: PointerEvent) => {
-    const rect = container.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-    uniforms.uCursor.value = [x, -y]; // flip Y for shader space
-    uniforms.uActive.value = 1;
-  };
-  const onPointerLeave = () => {
-    uniforms.uActive.value = 0;
-  };
+  // Cursor + active state are no longer driven by raw pointer
+  // events; the navigation hook writes the visitor's sphere-
+  // surface cursor to the constellationCursor signal, which the
+  // render loop reads each frame. This means the luminous pool
+  // follows the visitor's *intent* (where they are on the latent
+  // sphere) rather than the device pointer's screen position.
 
   const themeObserver = new MutationObserver(() => {
     uniforms.uTheme.value = document.documentElement.classList.contains('dk') ? 1 : 0;
@@ -315,17 +334,12 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(container);
 
-  container.addEventListener('pointermove', onPointerMove);
-  container.addEventListener('pointerleave', onPointerLeave);
-
   const stopRaf = startRenderLoop({ uniforms, renderer, mesh, canvas });
 
   const dispose = () => {
     stopRaf();
     themeObserver.disconnect();
     resizeObserver.disconnect();
-    container.removeEventListener('pointermove', onPointerMove);
-    container.removeEventListener('pointerleave', onPointerLeave);
     if (canvas.parentNode === container) canvas.remove();
   };
 

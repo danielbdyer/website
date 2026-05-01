@@ -2,6 +2,7 @@ import type { KeyboardEvent, PointerEvent, RefObject } from 'react';
 import { useEffect, useRef } from 'react';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import { cameraBasis, project, unproject } from '@/shared/geometry/camera';
+import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import type { UnitVector3, Vec3 } from '@/shared/geometry/sphere';
 import {
   NORTH_POLE,
@@ -413,13 +414,22 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   // Glyph rides the cursor's screen position — leads when the
   // camera lags, settles back to the active basin's projection
   // when the camera catches up.
-  if (refs.glyphRef.current) {
-    const proj = projectToViewbox(state.pos, camera, basis, viewboxSize);
-    if (proj.inFront) {
-      refs.glyphRef.current.setAttribute('cx', proj.x.toFixed(2));
-      refs.glyphRef.current.setAttribute('cy', proj.y.toFixed(2));
-    }
+  const cursorProj = projectToViewbox(state.pos, camera, basis, viewboxSize);
+  if (refs.glyphRef.current && cursorProj.inFront) {
+    refs.glyphRef.current.setAttribute('cx', cursorProj.x.toFixed(2));
+    refs.glyphRef.current.setAttribute('cy', cursorProj.y.toFixed(2));
   }
+  // Hand the cursor's normalized screen position to the WebGL
+  // firmament so its luminous pool of attention follows the
+  // visitor's surface position rather than the raw pointer.
+  // Normalize: viewbox center → 0, edges → ±1; flip Y for shader
+  // space (shader convention is +y up, SVG is +y down).
+  const center = viewboxSize / 2;
+  setConstellationCursor(
+    (cursorProj.x - center) / center,
+    -(cursorProj.y - center) / center,
+    cursorProj.inFront,
+  );
 }
 
 function isAtRest(state: NavState, accel: Vec3): boolean {
