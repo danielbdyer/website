@@ -425,6 +425,19 @@ body::before {
   animation: constellation-spin 600s linear infinite;
 }
 
+/* The navigation camera. Wraps the world (polestar + rotates layer)
+   so a small pan-and-yaw can follow the visitor's selection without
+   touching the rotation animation beneath. The hook
+   useConstellationNavigation writes `transform` inline each frame
+   (the spring is the smoothing), so no CSS transition lives here —
+   it would fight the integrator. transform-origin is the firmament's
+   center so the yaw pivots around the polestar. With
+   prefers-reduced-motion: reduce, the hook short-circuits and the
+   inline transform never gets set; the camera renders as identity. */
+.constellation-camera {
+  transform-origin: 500px 500px;
+}
+
 .constellation-star__halo {
   animation: star-twinkle 4.5s ease-in-out infinite;
 }

@@ -60,6 +60,7 @@ words:
   - wikilinks
   - facet
   - facets
+  - flowy
 
   # Code + tooling
   - tanstack
