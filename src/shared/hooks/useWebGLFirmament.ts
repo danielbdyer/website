@@ -94,10 +94,23 @@ const FRAGMENT_SHADER = /* glsl */ `
     vec3 tone = mix(lightTone, darkTone, uTheme);
 
     // Composite: the noise gives texture; the pool gives focus. The
-    // theme tone shifts the whole layer warm or cool. Output alpha
-    // stays low so the SVG underneath always carries the structure.
+    // theme tone shifts the whole layer warm or cool.
     vec3 color = tone * (n * 0.18 + pool);
     float alpha = (n * 0.12) + pool * 0.7;
+
+    // Vignette — a vignette/painted sense of attention, not a
+    // photographic darkening. Centered distance maps via smoothstep
+    // so the corners fall off softly toward the umber ground rather
+    // than hard-clipping. Multiplies into both the color and the
+    // alpha so the WebGL contribution simply *recedes* at the edges
+    // and the SVG firmament beneath becomes the final paint there.
+    // Concentrates attention toward the polestar at the center.
+    vec2 centered = vUv - 0.5;
+    float vignetteDist = length(centered) * 1.4;
+    float vignette = smoothstep(0.95, 0.35, vignetteDist);
+    color *= vignette;
+    alpha *= vignette;
+
     gl_FragColor = vec4(color, alpha);
   }
 `;
