@@ -2,6 +2,8 @@
 
 *Working document for visual and interaction design of the latent-sphere navigation surface. The companion to `CONSTELLATION.md` (the held experience) and `CONSTELLATION_HORIZON.md` (the technical envisioning). This file holds **the design read** — what a designer needs to produce hi-fi mockups, storyboard alternatives, and hand off to engineering.*
 
+> **A place, not an interface.**
+
 ---
 
 ## How to use this document
@@ -20,9 +22,44 @@ This document does not commit to a final design. It commits to the *surface area
 
 ---
 
+## Foundation
+
+Six principles that constrain every design decision in /sky. If a proposal violates one, the proposal is wrong (or the principle needs an explicit revision in this doc, not a silent override).
+
+- **World-like navigation** — the visitor moves through space, not menus. Hierarchy is spatial, not categorical.
+- **Quiet chrome** — controls retire when not invoked. The constellation is the surface; chrome is below.
+- **Continuous reachability** — every state is reachable from any other in at most two gestures. No mode locks the visitor in.
+- **Spatial reading** — content has place; place has content. The same star always sits in the same region of the sphere.
+- **Second-voice microcopy** — the system speaks in italic, never in directives. "the constellation by name…" never "Search the constellation."
+- **Serif-only language** — no sans-serif anywhere in /sky. The sky speaks in the same voice as the rest of the site.
+
+---
+
 ## Brief
 
 The visitor encounters a small spherical world holding every work the site has authored. They navigate it continuously by gesture, keyboard, or assistive technology. They can wander, filter, search, mark places to return to, view the constellation as it was at past dates, and open any star to read the work. All chrome retires when not invoked. Every state must be reachable from any other in at most two gestures. The experience must feel like visiting a place, not operating an interface.
+
+---
+
+## Constellation Lexicon
+
+Every constellation surface speaks in this small vocabulary. Designers should use these words in mocks, microcopy, and annotations; engineers should respect them in identifiers and comments. New terms enter the lexicon only when an existing one cannot carry the meaning.
+
+- **Star** — a single work. Addressable. Always a real link.
+- **Thread** — a relationship between two stars. Decorative in assistive output; meaningful visually. (Facet co-membership today; wikilinks once the resolver activates.)
+- **Basin** — a collection of stars the cursor can settle into. A named gathering — the editorial equivalent of an asterism. *Note: the per-star gravitational well that draws the cursor is referenced in code as `BASIN_RADIUS_RAD`; for design conversation, "basin" means the named cluster.*
+- **Facet** — a curatorial angle works share. Eight in the site's vocabulary.
+- **Horizon** — the temporal edge. Where time lives in the chrome. The horizon strip's position is metaphor as much as layout.
+
+## Visual Cues
+
+The named motions that signal state changes. Designers should call these by name in mocks; engineers should match the visual language at the implementation level.
+
+- **Halo claim** — a gentle ring affirms an owned or focused star. The room becoming attentive to you. Visible at `BasinSettled` (S6) and `Hover` (S3).
+- **Radial action bloom** — choices branch outward from the cursor center when settled. The radial echo unfolding. Visible at `RadialEcho` (S7).
+- **Strip thickening** — the horizon grows slightly to anchor time and place when filters or time-scrubbing are active. Visible at `FilterActive` (S9) and `TimeScrubbed` (S10).
+- **Atmosphere dimming** — motion and luminance recede when the visitor goes quiet. The constellation continuing without you. Visible at `Contemplative` (S15).
+- **Overlay veil** — content takes focus, the cosmos steps back. The work content sharpens; the constellation softens behind. Visible at `WorkOpen` (S13).
 
 ---
 
@@ -553,61 +590,95 @@ The character of the design at the working level. Implementation-level specifics
 
 ### Type
 
-- **Heading register** (S13 work overlay heading, polestar panel section labels): serif display, generous leading.
-- **Body register** (work content): serif body, prose leading.
-- **Second voice** (labels, microcopy, the system's whispered narration): italic serif at meta size.
-- **System voice** (chip labels, search placeholder, button labels): italic serif at meta or chip size.
-- *No sans-serif, anywhere in /sky.* The sky speaks in the same voice as the rest of the site.
+Four registers carry every word /sky speaks. Each has a sample so a designer can hold the voice without rereading the principles.
+
+| Register | Use | Sample |
+|---|---|---|
+| **Heading** — serif display | Work overlay heading; major labels | *"The constellation gathers"* |
+| **Body** — serif body, prose leading | Work content, longer reading surfaces | *"The visitor wanders, filters, searches, and returns."* |
+| **Second voice** — italic serif | Labels, captions, the system's whispered narration | *"places you've held"* |
+| **System voice** — italic serif at meta or chip size | Chip labels, placeholders, microcopy | *"the constellation by name…"* |
+
+*No sans-serif, anywhere in /sky.*
 
 ### Color
 
-- **Background**: paper umber (light) / deep night-blue with horizon warmth (dark).
-- **Stars**: facet-hued (warm, rose, violet, gold per facet pair).
-- **Threads**: facet-hued at low opacity, brightening on focus.
-- **Cursor glyph**: warm (amber) by default, hue-shifting toward active basin's color.
-- **Atmosphere pool**: theme-toned (warm in light, cool-silver in dark) with saturation boost in the pool zone.
-- **HorizonStrip and chrome**: --text-3 (the quietest tone), barely-there.
-- **Active filter chip**: full facet color.
-- **Pin ribbon**: --accent-warm regardless of star's hue (consistent visual signal).
+The named palette /sky paints with. Each token has a meaning, not just a hex.
 
-### Motion register
+**Light theme (daylight):**
 
-| Vocabulary | Use |
-|---|---|
-| **Slow** (10s+) | Background rotation, polestar |
-| **Held** (1–2 s) | Travel along a thread, autonomous demonstration drift, work overlay open/close |
-| **Reach** (300–600 ms) | Filter dimming, theme crossfade, panel open, label fade-in |
-| **Spring** (continuous) | Cursor follow during drag |
-| **Settle** (200–400 ms) | Basin claim acknowledgment, halo crescendo |
-| **Snap** (≤100 ms) | Reduced-motion fallback for any animation, focus ring |
+- **Paper umber** — the sky background; paper warmth as ground.
+- **Horizon warmth** — the strip where sky meets horizon-strip; the meeting place of theme and chrome.
+- **Quiet chrome** — the strip's resting tone; --text-3 quietness; barely-there.
+- **Rose facet, violet facet, gold facet, warm facet** — the four facet hues, paired across eight facets per `DESIGN_SYSTEM.md`.
+- **Amber cursor** — the companion glyph's resting hue. Warm in both themes; never theme-conditional.
+
+**Dark theme (night):**
+
+- **Deep night-blue** — the sky background; trending toward black at the upper register, with horizon warmth at the bottom edge.
+- **Horizon warmth** — same role as light; the bottom-edge umber bleed.
+- **Cool silver atmosphere** — the WebGL pool's tone in dark.
+- **Rose, violet, gold, warm facets** — same hues, desaturated toward starlight.
+- **Amber cursor** — unchanged; the visitor's body keeps its color across themes.
 
 ### Materials
 
-- **Sky**: paper-grain texture (visible noise, not photographic).
-- **Stars**: watercolor halos (soft edges, paper-bleed look).
-- **Threads**: brushstroke-like, not laser-thin.
-- **Atmosphere pool**: soft-light blend, never a hard disc.
-- **Polestar**: geometric figure (existing site ornament).
-- **Chrome**: barely-rendered when at rest; gentle when active.
+The substrates /sky is made of. Each material is a way of being rendered, not just a texture.
+
+- **Paper grain** — the sky's substrate. Visible noise, paper-bleed, never photographic.
+- **Watercolor halo** — stars' outer disc. Soft edge, organic bleed via the existing `cn-watercolor-halo` filter.
+- **Brushstroke thread** — connections between stars. Tapered, slightly varied, not laser-thin.
+- **Atmosphere pool** — WebGL light around the cursor. Soft-light blend, rotund profile, never a hard disc.
+- **Geometric polestar** — the site's ornament. Slow, structural-warm, the still center.
+- **Quiet chrome** — controls. Barely-rendered at rest; gentle at full opacity.
+
+### Motion Register
+
+Six speeds, each with its purposes named. A motion that doesn't fit one of the six is probably wrong for this surface.
+
+| Register | Vocabulary | Used for |
+|---|---|---|
+| **Slow** | 10 s+ | Background rotation, polestar |
+| **Held** | 1–2 s | Thread travel, opening/closing overlay, autonomous demonstration drift |
+| **Reach** | 300–600 ms | Filter dimming, theme crossfade, panel reveal, label fade-in |
+| **Spring** | continuous | Cursor follow during drag |
+| **Settle** | 200–400 ms | Basin claim acknowledgment, halo crescendo |
+| **Snap** | ≤100 ms | Reduced-motion fallback for any animation; focus ring |
+
+### Iconography
+
+A small icon set, used only in chrome. Each icon is single-stroke, italic-aware, and respects the serif voice rather than fighting it.
+
+- **search** — magnifying glass; expands the search field
+- **filter** — funnel; opens facet chip set (or marks active filter)
+- **pin** — bookmark mark; pins a star to the session
+- **sparkle** — small star with rays; signals "new" or "from the constellation"
+- **grid** — small grid of dots; alternative view (held)
+- **layers** — stacked planes; depth/time controls
+- **book** — opens reading view (work overlay)
+- **share** — copy link / share affordance
+- **more** — three dots; secondary actions
+
+Icons live exclusively in `HorizonStrip` and `RadialEcho`. They never appear on stars, threads, the polestar, or the glyph — those carry their meaning through form, not symbol.
 
 ---
 
 ## Responsive Notes
 
-The constellation must work from 320 px (small phone, portrait) to 4K wide. Key responsive shifts:
+> **Phone, tablet, and desktop preserve the same world. Chrome adapts, content scales, meaning holds.**
+
+The constellation must work from 320 px (small phone, portrait) to 4K wide. The constellation as a *world* does not change between breakpoints — only chrome and FOV adjust.
 
 | Property | Phone (≤640 px) | Tablet (641–1024) | Desktop (>1024) |
 |---|---|---|---|
-| Camera FOV | 55° vertical | 50° vertical | 45° vertical |
+| Camera FOV | 55° vertical (tighter view) | 50° vertical | 45° vertical |
 | Camera distance | 1.9 × radius | 2.2 × radius | 2.5 × radius |
 | Star halo size | ~1.6× of body | ~1.4× of body | ~1.3× of body |
 | HorizonStrip height | 12% of viewport | 9% of viewport | 7% of viewport |
 | Facet chips | 6 + "more" expander on small | 8 visible | 8 visible |
 | Search field width when expanded | 70% of viewport | 50% | 35% |
 | Radial echo ring radius | larger (touch reach) | medium | smaller |
-| WorkOverlay layout | full-screen sheet | full-screen with veil | overlay with veil |
-
-The constellation as a *world* does not change between breakpoints. Only chrome and FOV adjust.
+| WorkOverlay layout | full-screen sheet | overlay with veil | overlay with veil |
 
 ---
 
@@ -628,25 +699,70 @@ For designers marking up Figma files or other deliverables:
 
 ## Copy Patterns
 
-The system speaks in second voice — italic, low-prominence, never declarative. Sample patterns:
+The system speaks in **second voice** — italic, low-prominence, never declarative. Sample patterns, organized by surface:
+
+**Stars and traversal:**
 
 - Star label on settle: *"{title}"* (italic, no period)
 - Star label hover (longer dwell): *"{title} — {room}, on {facets}"*
-- Search placeholder: *"the constellation by name…"*
-- Empty filter result: *"the constellation has no works on those threads"*
-- TimeScrubbed indicator: *"as of {date} — {n} works"*
-- Pin panel header: *"places you've held"*
-- Pin panel empty: *"nothing held yet — long-press a star"*
-- Polestar panel legend: *"{N} works in {M} rooms, threaded by {P} facets"*
-- Trace prompt on overlay close: *"continue with {next-title}"*
-- Authoring trace (new since last visit): *"{n} new in the constellation"* — only if the visitor explicitly opens the polestar panel; otherwise no copy, just the bloom
+- Empty constellation: *"the constellation gathers"* (the heading-register copy when the sky is being populated)
 
-Voice rules:
+**Search:**
+
+- Placeholder: *"the constellation by name…"*
+- Empty result: *"no stars match. clear filters."*
+
+**Filtering and time:**
+
+- TimeScrubbed indicator: *"as of {date} — {n} works"*
+- Active filter pill (multiple): *"filtered by {facet1}, {facet2}"*
+
+**Pin panel:**
+
+- Header: *"places you've held"*
+- Empty state: *"nothing held yet — long-press a star"*
+- Legend: *"{N} works in {M} rooms, threaded by {P} facets"*
+
+**Tracing:**
+
+- Trace prompt on overlay close: *"continue with {next-title}"*
+
+**Authoring trace:**
+
+- New-since-last-visit (only when polestar panel is open): *"{n} new in the constellation"*
+
+**System states:**
+
+- LoadingSky: *"gathering"* (with orbiting loader)
+- OfflineSky: *"you're offline. explore cached stars."*
+
+**Voice rules:**
 
 - Lower-case after periods unless proper noun
 - Italic everywhere
-- Never directives ("click here")
-- Never confirmations ("filter applied")
+- Never directives ("click here", "tap to open")
+- Never confirmations ("filter applied", "saved")
+- Always second-voice, never first-person system ("I noticed you…")
+- Numbers spelled in copy when ≤ ten *unless* part of a count or date
+
+---
+
+## Reduced Motion
+
+> **Same destinations. Different choreography.**
+
+All the surfaces in the inventory remain reachable; the kinetic vocabulary changes. Specifically:
+
+- All `Spring` and `Held` motions become `Snap` (≤ 100 ms fade).
+- Parallax, streaks, and radial action blooms are removed entirely.
+- Timing accelerates — settle becomes instant; halo claim becomes a static state, not a crescendo.
+- The autonomous demonstration drift on first visit doesn't happen; cursor sits at the polestar.
+- The contemplative drift doesn't happen; idle is just idle.
+- WebGL atmosphere stops the noise drift; the pool stays static at the cursor's position.
+- Theme crossfade collapses from 500 ms to 80 ms.
+
+State hierarchy, meaning, and outcomes remain identical. A reduced-motion visitor can still wander, filter, search, pin, and open every star. They just don't feel the kinetic vocabulary that carries the world's life. **Designers must produce reduced-motion pairs for every animated state in the canonical set.**
+
 - Always second-voice, never first-person system
 
 ---
