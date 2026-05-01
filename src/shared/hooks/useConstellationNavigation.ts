@@ -97,6 +97,14 @@ interface Vec2 {
   readonly y: number;
 }
 
+// Internal mutable point. The exported Vec2 stays readonly for the
+// pure-function helpers; this one is for the tick's per-frame state
+// where mutating in place avoids allocating Vec2 objects every RAF.
+interface MutableVec2 {
+  x: number;
+  y: number;
+}
+
 const ZERO: Vec2 = { x: 0, y: 0 };
 
 function distanceSquared(a: Vec2, b: Vec2): number {
@@ -210,24 +218,33 @@ function prefersReducedMotion(): boolean {
 }
 
 interface NavState {
-  pos: Vec2;
-  vel: Vec2;
+  pos: MutableVec2;
+  vel: MutableVec2;
   mode: 'free' | 'dragging';
-  dragTarget: Vec2 | null;
+  dragTarget: MutableVec2 | null;
   pointerSamples: PointerSample[];
   pointerId: number | null;
   heldKeys: Set<string>;
   lastTime: number;
   raf: number | null;
   activeKey: string | null;
+  // Reused acceleration buffer; the tick writes into it each frame.
+  accelBuffer: MutableVec2;
 }
 
+// Camera writes through CSS variables (matching the parallax pattern
+// in useConstellationParallax). CSS variable mutations don't trigger
+// style recalc on the element itself; the transform is composed
+// downstream in the .constellation-camera rule. No string allocation
+// per frame.
 function applyCameraTransform(el: SVGGElement, pos: Vec2, vel: Vec2, viewboxSize: number): void {
   const center = viewboxSize / 2;
   const panX = -(pos.x - center) * PAN_FACTOR;
   const panY = -(pos.y - center) * PAN_FACTOR;
   const yaw = clamp(vel.x * YAW_VELOCITY_SCALE, -MAX_YAW_DEG, MAX_YAW_DEG);
-  el.style.transform = `translate(${panX.toFixed(2)}px, ${panY.toFixed(2)}px) rotate(${yaw.toFixed(2)}deg)`;
+  el.style.setProperty('--cam-x', panX.toFixed(2));
+  el.style.setProperty('--cam-y', panY.toFixed(2));
+  el.style.setProperty('--cam-yaw', yaw.toFixed(2));
 }
 
 function pointFromPointer(e: PointerEvent<SVGGElement>, viewboxSize: number): Vec2 | null {
@@ -256,36 +273,23 @@ function flipActive(state: NavState, key: string, setActiveKey: (k: string) => v
 }
 
 // Sum the field, drag, hold, and friction forces into a net
-// acceleration for one tick.
-function computeAcceleration(state: NavState, nodes: readonly NavigableNode[]): Vec2 {
+// acceleration. Writes into the state's reused accelBuffer to avoid
+// allocating a Vec2 per frame.
+function computeAccelerationInto(state: NavState, nodes: readonly NavigableNode[]): void {
   const basin = basinFieldForce(state.pos, nodes);
-  let ax = basin.x;
-  let ay = basin.y;
+  const out = state.accelBuffer;
+  out.x = basin.x;
+  out.y = basin.y;
   if (state.mode === 'dragging' && state.dragTarget) {
-    ax += DRAG_SPRING * (state.dragTarget.x - state.pos.x) - DRAG_DAMPING * state.vel.x;
-    ay += DRAG_SPRING * (state.dragTarget.y - state.pos.y) - DRAG_DAMPING * state.vel.y;
+    out.x += DRAG_SPRING * (state.dragTarget.x - state.pos.x) - DRAG_DAMPING * state.vel.x;
+    out.y += DRAG_SPRING * (state.dragTarget.y - state.pos.y) - DRAG_DAMPING * state.vel.y;
   } else {
-    ax -= FREE_DAMPING * state.vel.x;
-    ay -= FREE_DAMPING * state.vel.y;
+    out.x -= FREE_DAMPING * state.vel.x;
+    out.y -= FREE_DAMPING * state.vel.y;
     const hold = holdDirection(state.heldKeys);
-    ax += HOLD_ACCEL * hold.x;
-    ay += HOLD_ACCEL * hold.y;
+    out.x += HOLD_ACCEL * hold.x;
+    out.y += HOLD_ACCEL * hold.y;
   }
-  return { x: ax, y: ay };
-}
-
-function clampVelocity(vel: Vec2): Vec2 {
-  const speed = Math.hypot(vel.x, vel.y);
-  if (speed <= MAX_VELOCITY) return vel;
-  const scale = MAX_VELOCITY / speed;
-  return { x: vel.x * scale, y: vel.y * scale };
-}
-
-function clampPosition(pos: Vec2, viewboxSize: number): Vec2 {
-  return {
-    x: clamp(pos.x, -POSITION_MARGIN, viewboxSize + POSITION_MARGIN),
-    y: clamp(pos.y, -POSITION_MARGIN, viewboxSize + POSITION_MARGIN),
-  };
 }
 
 function isAtRest(state: NavState, accel: Vec2): boolean {
@@ -296,24 +300,45 @@ function isAtRest(state: NavState, accel: Vec2): boolean {
   return accel2 <= IDLE_ACCELERATION_EPSILON * IDLE_ACCELERATION_EPSILON;
 }
 
+// One physics step. Mutates state in place — no Vec2 allocations
+// per frame.
 function tick(now: number, refs: RuntimeRefs): void {
   const state = refs.stateRef.current;
   const nodes = refs.nodesRef.current;
   const dt = state.lastTime === 0 ? 0 : Math.min((now - state.lastTime) / 1000, MAX_DT_SECONDS);
   state.lastTime = now;
-  const accel = computeAcceleration(state, nodes);
-  state.vel = clampVelocity({ x: state.vel.x + accel.x * dt, y: state.vel.y + accel.y * dt });
-  state.pos = clampPosition(
-    { x: state.pos.x + state.vel.x * dt, y: state.pos.y + state.vel.y * dt },
-    refs.viewboxSize,
-  );
+
+  computeAccelerationInto(state, nodes);
+  const accel = state.accelBuffer;
+
+  // Integrate velocity; clamp magnitude in place.
+  state.vel.x += accel.x * dt;
+  state.vel.y += accel.y * dt;
+  const speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y;
+  if (speed2 > MAX_VELOCITY * MAX_VELOCITY) {
+    const scale = MAX_VELOCITY / Math.sqrt(speed2);
+    state.vel.x *= scale;
+    state.vel.y *= scale;
+  }
+
+  // Integrate position; clamp to padded viewbox in place.
+  state.pos.x += state.vel.x * dt;
+  state.pos.y += state.vel.y * dt;
+  const lo = -POSITION_MARGIN;
+  const hi = refs.viewboxSize + POSITION_MARGIN;
+  if (state.pos.x < lo) state.pos.x = lo;
+  else if (state.pos.x > hi) state.pos.x = hi;
+  if (state.pos.y < lo) state.pos.y = lo;
+  else if (state.pos.y > hi) state.pos.y = hi;
+
   const nearest = nearestNode(state.pos, nodes, BASIN_RADIUS);
   if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
   if (refs.cameraRef.current) {
     applyCameraTransform(refs.cameraRef.current, state.pos, state.vel, refs.viewboxSize);
   }
   if (isAtRest(state, accel)) {
-    state.vel = ZERO;
+    state.vel.x = 0;
+    state.vel.y = 0;
     state.raf = null;
     return;
   }
@@ -373,10 +398,14 @@ function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void 
     if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
   } else {
     const v = flickVelocity(state.pointerSamples);
-    state.vel = clampVelocity({
-      x: state.vel.x + v.x * FLICK_SCALE,
-      y: state.vel.y + v.y * FLICK_SCALE,
-    });
+    state.vel.x += v.x * FLICK_SCALE;
+    state.vel.y += v.y * FLICK_SCALE;
+    const speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y;
+    if (speed2 > MAX_VELOCITY * MAX_VELOCITY) {
+      const scale = MAX_VELOCITY / Math.sqrt(speed2);
+      state.vel.x *= scale;
+      state.vel.y *= scale;
+    }
   }
   state.mode = 'free';
   state.dragTarget = null;
@@ -426,8 +455,10 @@ function handleKeyDown(refs: RuntimeRefs, e: KeyboardEvent): void {
   }
   const next = neighborInDirection(state.activeKey, refs.nodesRef.current, e.key);
   if (!next) return;
-  state.pos = next.pos;
-  state.vel = ZERO;
+  state.pos.x = next.pos.x;
+  state.pos.y = next.pos.y;
+  state.vel.x = 0;
+  state.vel.y = 0;
   flipActive(state, next.key, refs.setActiveKey);
   focusNodeByKey(next.key);
 }
@@ -441,7 +472,7 @@ function buildInitialState(viewboxSize: number): NavState {
   const center = viewboxSize / 2;
   return {
     pos: { x: center, y: center },
-    vel: ZERO,
+    vel: { x: 0, y: 0 },
     mode: 'free',
     dragTarget: null,
     pointerSamples: [],
@@ -450,6 +481,7 @@ function buildInitialState(viewboxSize: number): NavState {
     lastTime: 0,
     raf: null,
     activeKey: null,
+    accelBuffer: { x: 0, y: 0 },
   };
 }
 

@@ -428,14 +428,18 @@ body::before {
 /* The navigation camera. Wraps the world (polestar + rotates layer)
    so a small pan-and-yaw can follow the visitor's selection without
    touching the rotation animation beneath. The hook
-   useConstellationNavigation writes `transform` inline each frame
-   (the spring is the smoothing), so no CSS transition lives here —
-   it would fight the integrator. transform-origin is the firmament's
-   center so the yaw pivots around the polestar. With
-   prefers-reduced-motion: reduce, the hook short-circuits and the
-   inline transform never gets set; the camera renders as identity. */
+   useConstellationNavigation writes `--cam-x`, `--cam-y`, `--cam-yaw`
+   (in viewbox units / degrees) each RAF tick — the same custom-
+   property pattern useConstellationParallax uses. The integrator is
+   the source of smoothing so no CSS transition lives here; it would
+   fight the loop. transform-origin is the firmament's center so the
+   yaw pivots around the polestar. With prefers-reduced-motion: reduce,
+   the hook short-circuits and the variables stay at their defaults;
+   the camera renders as identity. */
 .constellation-camera {
   transform-origin: 500px 500px;
+  transform: translate(calc(var(--cam-x, 0) * 1px), calc(var(--cam-y, 0) * 1px))
+    rotate(calc(var(--cam-yaw, 0) * 1deg));
 }
 
 .constellation-star__halo {
