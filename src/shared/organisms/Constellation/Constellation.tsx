@@ -8,19 +8,16 @@ import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegat
 import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
 import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
 import { useConstellationNavigation } from '@/shared/hooks/useConstellationNavigation';
+import type { NavigableEdge } from '@/shared/hooks/useConstellationNavigation';
 import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
 import {
-  STAGE_CAMERA,
   VIEWBOX,
   buildPositionedMap,
   buildRenderableNodes,
   resolveEdges,
   skyTitle,
 } from './layout';
-import { cameraBasis } from '@/shared/geometry/camera';
-
-const STAGE_BASIS = cameraBasis(STAGE_CAMERA);
 
 interface ConstellationProps {
   graph: ConstellationGraph;
@@ -46,10 +43,15 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
     useStarHoverState(null);
   const navigableNodes = nodes.map(({ key, node }) => ({ key, unitPos: node.unitPosition }));
+  const navigableEdges: NavigableEdge[] = edges.flatMap((edge) => {
+    const source = positioned.get(edge.sourceKey);
+    const target = positioned.get(edge.targetKey);
+    if (!source || !target) return [];
+    return [{ id: edge.id, sourcePos: source.unitPosition, targetPos: target.unitPosition }];
+  });
   const { dragHandlers, onKeyDown, onKeyUp } = useConstellationNavigation({
     nodes: navigableNodes,
-    camera: STAGE_CAMERA,
-    basis: STAGE_BASIS,
+    edges: navigableEdges,
     viewboxSize: VIEWBOX,
     setActiveKey,
     cameraRef,

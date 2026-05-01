@@ -68,6 +68,8 @@ words:
   - orthogonalized
   - lerp
   - slerp
+  - slerped
+  - slerps
   - unproject
   - unprojects
   - geodesic

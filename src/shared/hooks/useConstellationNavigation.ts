@@ -1,13 +1,14 @@
 import type { KeyboardEvent, PointerEvent, RefObject } from 'react';
 import { useEffect, useRef } from 'react';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
-import { project, unproject } from '@/shared/geometry/camera';
+import { cameraBasis, project, unproject } from '@/shared/geometry/camera';
 import type { UnitVector3, Vec3 } from '@/shared/geometry/sphere';
 import {
   NORTH_POLE,
   geodesicDistance,
   projectOntoTangentPlane,
   raySphereIntersect,
+  slerp,
   stepOnSphere,
   tangentTowards,
   unitVector,
@@ -49,10 +50,18 @@ export interface NavigableNode {
   readonly unitPos: UnitVector3;
 }
 
+/** An edge in the navigable scene. The hook re-projects each
+ *  endpoint per frame and writes the line element's x1/y1/x2/y2
+ *  attributes. The id matches the rendered Thread's data-thread-id. */
+export interface NavigableEdge {
+  readonly id: string;
+  readonly sourcePos: UnitVector3;
+  readonly targetPos: UnitVector3;
+}
+
 interface UseConstellationNavigationArgs {
   readonly nodes: readonly NavigableNode[];
-  readonly camera: Camera;
-  readonly basis: CameraBasis;
+  readonly edges: readonly NavigableEdge[];
   readonly viewboxSize: number;
   readonly setActiveKey: (key: string) => void;
   readonly cameraRef: RefObject<SVGGElement | null>;
@@ -78,7 +87,25 @@ const MAX_DT_SECONDS = 0.033;
 const IDLE_VELOCITY_EPSILON = 0.005;
 const IDLE_ACCELERATION_EPSILON = 0.04;
 const VELOCITY_SAMPLE_WINDOW_MS = 120;
-const PAN_FACTOR = 0.22;
+
+// Camera orbit constants. The camera sits at -ORBIT_DISTANCE *
+// cameraSurfacePos and looks at origin — so the surface point lands
+// near image center. cameraSurfacePos slerps toward state.pos with
+// a damped catch-up rate, which means the camera *trails* the
+// cursor: when the visitor flicks, the cursor leads, the glyph
+// drifts off-center, the world re-projects toward where the visitor
+// is reaching. Settled state: glyph at center, world centered on
+// the active basin.
+const ORBIT_DISTANCE = 2.5;
+const CAMERA_LAG_RATE = 6;
+const CAMERA_FOV_Y = Math.PI / 4;
+const CAMERA_NEAR = 0.1;
+const CAMERA_FAR = 10;
+const WORLD_UP: UnitVector3 = { x: 0, y: 1, z: 0 };
+
+// Yaw — a small rotation flourish on top of the orbit, driven by
+// the cursor's screen-space x-velocity. Bounded so it never reads
+// as tilt.
 const YAW_VELOCITY_SCALE = 800;
 const MAX_YAW_DEG = 5;
 
@@ -230,18 +257,42 @@ interface NavState {
   raf: number | null;
   activeKey: string | null;
   accelBuffer: MutableVec3;
+  /** Sphere point the orbital camera follows. Slerps toward `pos`
+   *  with CAMERA_LAG_RATE so the cursor leads, the camera trails. */
+  cameraSurfacePos: MutableVec3;
+  /** Live camera + basis, rebuilt each tick from cameraSurfacePos.
+   *  Pointer events read from these for ray-casting; keyboard hold
+   *  reads from currentBasis to decompose against the visitor's
+   *  current frame of reference. */
+  currentCamera: Camera;
+  currentBasis: CameraBasis;
 }
 
-function applyCameraTransform(
-  el: SVGGElement,
-  cursorScreenX: number,
-  cursorScreenY: number,
-  yaw: number,
-): void {
-  const panX = -cursorScreenX * PAN_FACTOR;
-  const panY = -cursorScreenY * PAN_FACTOR;
-  el.style.setProperty('--cam-x', panX.toFixed(2));
-  el.style.setProperty('--cam-y', panY.toFixed(2));
+/** Build the orbital camera that places `surfacePos` near the
+ *  image center. Camera sits at -ORBIT_DISTANCE * surfacePos,
+ *  looking at the origin, with world-up as the up reference.
+ *  cameraBasis handles degeneracy when surfacePos is parallel to
+ *  world-up (the south/north poles of the up vector). */
+function orbitalCamera(surfacePos: UnitVector3): Camera {
+  return {
+    position: {
+      x: -surfacePos.x * ORBIT_DISTANCE,
+      y: -surfacePos.y * ORBIT_DISTANCE,
+      z: -surfacePos.z * ORBIT_DISTANCE,
+    },
+    target: { x: 0, y: 0, z: 0 },
+    up: WORLD_UP,
+    fovY: CAMERA_FOV_Y,
+    near: CAMERA_NEAR,
+    far: CAMERA_FAR,
+  };
+}
+
+// Phase D2 retired the screen-space pan: the orbital camera handles
+// where things move on screen by re-projecting through the live
+// camera each frame. Yaw remains as a small flourish driven by the
+// cursor's screen-space x velocity, written through --cam-yaw.
+function applyCameraYaw(el: SVGGElement, yaw: number): void {
   el.style.setProperty('--cam-yaw', yaw.toFixed(2));
 }
 
@@ -266,10 +317,9 @@ function pointerToSphere(
 interface RuntimeRefs {
   readonly stateRef: RefObject<NavState>;
   readonly nodesRef: RefObject<readonly NavigableNode[]>;
+  readonly edgesRef: RefObject<readonly NavigableEdge[]>;
   readonly cameraRef: RefObject<SVGGElement | null>;
   readonly glyphRef: RefObject<SVGCircleElement | null>;
-  readonly camera: Camera;
-  readonly basis: CameraBasis;
   readonly viewboxSize: number;
   readonly setActiveKey: (key: string) => void;
 }
@@ -297,10 +347,78 @@ function computeAccelerationInto(state: NavState, refs: RuntimeRefs): void {
     out.x -= FREE_DAMPING * state.vel.x;
     out.y -= FREE_DAMPING * state.vel.y;
     out.z -= FREE_DAMPING * state.vel.z;
-    const hold = tangentHoldDirection(state.heldKeys, refs.basis, pos);
+    const hold = tangentHoldDirection(state.heldKeys, state.currentBasis, pos);
     out.x += HOLD_ACCEL * hold.x;
     out.y += HOLD_ACCEL * hold.y;
     out.z += HOLD_ACCEL * hold.z;
+  }
+}
+
+/** Project a 3D unit-sphere position into viewbox coords. Helper
+ *  shared by the per-frame DOM mutation path. SVG +Y grows down,
+ *  screen +Y grows up — the negation handles the convention shift. */
+function projectToViewbox(
+  point: UnitVector3,
+  camera: Camera,
+  basis: CameraBasis,
+  viewboxSize: number,
+): { x: number; y: number; inFront: boolean } {
+  const proj = project(point, camera, basis, 1);
+  const center = viewboxSize / 2;
+  const radius = viewboxSize * 0.44;
+  return {
+    x: center + proj.screenX * radius,
+    y: center - proj.screenY * radius,
+    inFront: proj.inFront,
+  };
+}
+
+/** Re-project every star, thread, and the cursor's glyph through
+ *  the state's live camera and mutate the DOM accordingly. Stars
+ *  get a transform="translate(x y)" attribute on their data-node-key
+ *  wrapper group; threads get x1/y1/x2/y2 on their data-thread-id
+ *  line; the glyph gets cx/cy. Behind-camera points (theoretically
+ *  possible if a node sits on the far side of the sphere from the
+ *  current camera target) are hidden by a translate-far-offscreen
+ *  trick rather than added complexity in the DOM. */
+function projectScene(state: NavState, refs: RuntimeRefs): void {
+  const cameraGroup = refs.cameraRef.current;
+  if (!cameraGroup) return;
+  const camera = state.currentCamera;
+  const basis = state.currentBasis;
+  const viewboxSize = refs.viewboxSize;
+  // Stars: outer transform attribute on the data-node-key wrapper.
+  for (const node of refs.nodesRef.current) {
+    const el = cameraGroup.querySelector(`[data-node-key="${node.key}"]`);
+    if (!el) continue;
+    const proj = projectToViewbox(node.unitPos, camera, basis, viewboxSize);
+    el.setAttribute(
+      'transform',
+      proj.inFront
+        ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)})`
+        : 'translate(-9999 -9999)',
+    );
+  }
+  // Threads: x1/y1/x2/y2 on the data-thread-id line element.
+  for (const edge of refs.edgesRef.current) {
+    const el = cameraGroup.querySelector(`[data-thread-id="${edge.id}"]`);
+    if (!el) continue;
+    const ps = projectToViewbox(edge.sourcePos, camera, basis, viewboxSize);
+    const pt = projectToViewbox(edge.targetPos, camera, basis, viewboxSize);
+    el.setAttribute('x1', ps.x.toFixed(2));
+    el.setAttribute('y1', ps.y.toFixed(2));
+    el.setAttribute('x2', pt.x.toFixed(2));
+    el.setAttribute('y2', pt.y.toFixed(2));
+  }
+  // Glyph rides the cursor's screen position — leads when the
+  // camera lags, settles back to the active basin's projection
+  // when the camera catches up.
+  if (refs.glyphRef.current) {
+    const proj = projectToViewbox(state.pos, camera, basis, viewboxSize);
+    if (proj.inFront) {
+      refs.glyphRef.current.setAttribute('cx', proj.x.toFixed(2));
+      refs.glyphRef.current.setAttribute('cy', proj.y.toFixed(2));
+    }
   }
 }
 
@@ -354,33 +472,32 @@ function tick(now: number, refs: RuntimeRefs): void {
   const nearest = geodesicNearestNode(state.pos, refs.nodesRef.current, BASIN_RADIUS_RAD);
   if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
 
-  // Single per-frame projection of the cursor's sphere position to
-  // viewbox coords, reused for both the camera-pan transform (the
-  // 2D pan/yaw flourish) and the companion glyph's screen position
-  // so the visitor can see *where they are* on the latent sphere.
-  const projectedCursor = project(state.pos, refs.camera, refs.basis, 1);
-  if (projectedCursor.inFront) {
-    const center = refs.viewboxSize / 2;
-    const radius = refs.viewboxSize * 0.44;
-    const cursorViewboxX = center + projectedCursor.screenX * radius;
-    const cursorViewboxY = center - projectedCursor.screenY * radius;
-    if (refs.glyphRef.current) {
-      refs.glyphRef.current.setAttribute('cx', cursorViewboxX.toFixed(2));
-      refs.glyphRef.current.setAttribute('cy', cursorViewboxY.toFixed(2));
-    }
-    if (refs.cameraRef.current) {
-      const screenVelX =
-        state.vel.x * refs.basis.right.x +
-        state.vel.y * refs.basis.right.y +
-        state.vel.z * refs.basis.right.z;
-      const yaw = clamp(screenVelX * YAW_VELOCITY_SCALE * 0.001, -MAX_YAW_DEG, MAX_YAW_DEG);
-      applyCameraTransform(
-        refs.cameraRef.current,
-        projectedCursor.screenX * radius,
-        -projectedCursor.screenY * radius,
-        yaw,
-      );
-    }
+  // Slerp the camera's surface point toward the cursor with a
+  // damped catch-up rate. The camera *trails* the cursor: when the
+  // visitor flicks, the cursor leads, the camera takes a beat to
+  // follow, and the projected scene visibly shifts toward where
+  // the visitor is reaching.
+  const lagT = 1 - Math.exp(-CAMERA_LAG_RATE * dt);
+  const slerped = slerp(state.cameraSurfacePos, state.pos, lagT);
+  state.cameraSurfacePos.x = slerped.x;
+  state.cameraSurfacePos.y = slerped.y;
+  state.cameraSurfacePos.z = slerped.z;
+  state.currentCamera = orbitalCamera(state.cameraSurfacePos);
+  state.currentBasis = cameraBasis(state.currentCamera);
+
+  // Re-project the entire scene through the live camera and write
+  // back to the DOM. Stars get a transform attribute on their
+  // wrapper group; threads get x1/y1/x2/y2 on their line element;
+  // the glyph rides the cursor's projected screen position.
+  projectScene(state, refs);
+
+  if (refs.cameraRef.current) {
+    const screenVelX =
+      state.vel.x * state.currentBasis.right.x +
+      state.vel.y * state.currentBasis.right.y +
+      state.vel.z * state.currentBasis.right.z;
+    const yaw = clamp(screenVelX * YAW_VELOCITY_SCALE * 0.001, -MAX_YAW_DEG, MAX_YAW_DEG);
+    applyCameraYaw(refs.cameraRef.current, yaw);
   }
 
   speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
@@ -413,9 +530,9 @@ function focusNodeByKey(key: string): void {
 }
 
 function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void {
-  const pt = pointerToSphere(e, refs.camera, refs.basis);
-  if (!pt) return;
   const state = refs.stateRef.current;
+  const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
+  if (!pt) return;
   state.mode = 'dragging';
   state.dragTarget = pt;
   state.pointerId = e.pointerId;
@@ -432,7 +549,7 @@ function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): voi
 function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void {
   const state = refs.stateRef.current;
   if (state.mode !== 'dragging' || state.pointerId !== e.pointerId) return;
-  const pt = pointerToSphere(e, refs.camera, refs.basis);
+  const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
   if (!pt) return;
   state.dragTarget = pt;
   const now = globalThis.performance.now();
@@ -516,7 +633,7 @@ function handleKeyDown(refs: RuntimeRefs, e: KeyboardEvent): void {
     state.activeKey,
     refs.nodesRef.current,
     e.key,
-    refs.basis,
+    state.currentBasis,
   );
   if (!next) return;
   state.pos.x = next.unitPos.x;
@@ -535,10 +652,15 @@ function handleKeyUp(refs: RuntimeRefs, e: KeyboardEvent): void {
 }
 
 function buildInitialState(): NavState {
+  // Cursor and camera both begin at the polestar — the still center
+  // of the constellation, what the visitor finds when they first
+  // look up. Live camera + basis are computed from the surface point
+  // so first paint matches the rest of the scene before the loop
+  // wakes up.
+  const startPos: UnitVector3 = { ...NORTH_POLE };
+  const initialCamera = orbitalCamera(startPos);
   return {
-    // Cursor begins at the polestar — the still center of the
-    // constellation, what the visitor finds when they first look up.
-    pos: { x: NORTH_POLE.x, y: NORTH_POLE.y, z: NORTH_POLE.z },
+    pos: { x: startPos.x, y: startPos.y, z: startPos.z },
     vel: { x: 0, y: 0, z: 0 },
     mode: 'free',
     dragTarget: null,
@@ -549,13 +671,15 @@ function buildInitialState(): NavState {
     raf: null,
     activeKey: null,
     accelBuffer: { x: 0, y: 0, z: 0 },
+    cameraSurfacePos: { x: startPos.x, y: startPos.y, z: startPos.z },
+    currentCamera: initialCamera,
+    currentBasis: cameraBasis(initialCamera),
   };
 }
 
 export function useConstellationNavigation({
   nodes,
-  camera,
-  basis,
+  edges,
   viewboxSize,
   setActiveKey,
   cameraRef,
@@ -563,10 +687,15 @@ export function useConstellationNavigation({
 }: UseConstellationNavigationArgs) {
   const stateRef = useRef<NavState>(buildInitialState());
   const nodesRef = useRef<readonly NavigableNode[]>(nodes);
+  const edgesRef = useRef<readonly NavigableEdge[]>(edges);
 
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
 
   useEffect(() => {
     const state = stateRef.current;
@@ -580,10 +709,9 @@ export function useConstellationNavigation({
   const refs: RuntimeRefs = {
     stateRef,
     nodesRef,
+    edgesRef,
     cameraRef,
     glyphRef,
-    camera,
-    basis,
     viewboxSize,
     setActiveKey,
   };
