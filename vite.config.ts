@@ -35,6 +35,12 @@ export default defineConfig({
         { path: '/garden' },
         { path: '/study' },
         { path: '/salon' },
+        // The constellation — the graph view as a sky. Held vision in
+        // CONSTELLATION.md, first form shipped (structural layer only;
+        // atmospheric layer deferred). Listed explicitly so an empty
+        // sky still prerenders rather than relying on a Foyer link to
+        // be discovered by crawlLinks.
+        { path: '/sky' },
         // The eight facet pages. Listed explicitly so an unused facet
         // (no work currently carries it) still renders its empty state
         // — crawlLinks would otherwise miss it because no chip points

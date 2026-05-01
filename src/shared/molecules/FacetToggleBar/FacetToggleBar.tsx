@@ -4,6 +4,17 @@ import { cn } from '@/shared/utils/cn';
 
 const MAX_DEPTH = 2;
 
+// Pure helper for the chip's variant class — extracted to keep the
+// per-chip render a flat composition rather than nesting a ternary
+// inside a ternary inside a `cn()` call. Read top-down: on (active)
+// → warm tint; off + disabled (max depth reached, this off-chip can't
+// be added) → muted; off + enabled → neutral.
+function chipVariant(isOn: boolean, isDisabled: boolean): string {
+  if (isOn) return 'bg-accent-warm/15 text-text ring-1 ring-accent-warm/40 hover:bg-accent-warm/20';
+  if (isDisabled) return 'bg-tag-bg/50 text-text-3 cursor-not-allowed';
+  return 'bg-tag-bg text-tag-text hover:bg-border-lt hover:text-text';
+}
+
 interface FacetToggleBarProps {
   /** All facets to render as toggles. */
   facets: readonly Facet[];
@@ -47,11 +58,7 @@ export function FacetToggleBar({ facets, selected }: FacetToggleBarProps) {
         const isDisabled = !isOn && atMaxDepth;
         const className = cn(
           'inline-block rounded-[2px] px-2.5 py-1 font-body text-chip tracking-meta no-underline transition-colors duration-200',
-          isOn
-            ? 'bg-accent-warm/15 text-text ring-1 ring-accent-warm/40 hover:bg-accent-warm/20'
-            : (isDisabled
-              ? 'bg-tag-bg/50 text-text-3 cursor-not-allowed'
-              : 'bg-tag-bg text-tag-text hover:bg-border-lt hover:text-text'),
+          chipVariant(isOn, isDisabled),
         );
 
         if (isDisabled) {

@@ -1,12 +1,12 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import path from 'node:path';
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, './src'),
     },
   },
   // Mirror the build-time define from vite.config.ts so the tests see
@@ -37,11 +37,7 @@ export default defineConfig({
         'src/shared/seo/**/*.ts',
         'src/shared/utils/**/*.{ts,tsx}',
       ],
-      exclude: [
-        '**/*.test.{ts,tsx}',
-        '**/index.ts',
-        'src/shared/utils/view-transition-names.ts',
-      ],
+      exclude: ['**/*.test.{ts,tsx}', '**/index.ts', 'src/shared/utils/view-transition-names.ts'],
       thresholds: {
         lines: 70,
         functions: 70,

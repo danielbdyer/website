@@ -10,6 +10,16 @@ import {
   workTitleTransitionName,
 } from '@/shared/utils/view-transition-names';
 
+// Extracted to keep the row's render a flat composition — the
+// nested ternary that previously lived inline drew an
+// unicorn/no-nested-ternary lint flag, and a named function reads
+// more clearly than a parenthesized conditional anyway.
+function RowThumbnail({ work, thumbLabel }: { work: Work; thumbLabel: string | undefined }) {
+  if (work.image) return <ImgSlot kind="filled" image={work.image} />;
+  if (thumbLabel) return <ImgSlot kind="standin" label={thumbLabel} />;
+  return <RoomGlyph room={work.room} />;
+}
+
 interface WorkRowProps {
   work: Work;
   /**
@@ -57,13 +67,7 @@ export function WorkRow({ work, thumbLabel }: WorkRowProps) {
           className="bg-bg-warm relative aspect-[16/10] overflow-hidden rounded-[2px] shadow-sm sm:aspect-square sm:h-[132px] sm:w-[132px]"
           style={{ viewTransitionName: workHeroTransitionName(work.room, work.slug) }}
         >
-          {work.image ? (
-            <ImgSlot kind="filled" image={work.image} />
-          ) : (thumbLabel ? (
-            <ImgSlot kind="standin" label={thumbLabel} />
-          ) : (
-            <RoomGlyph room={work.room} />
-          ))}
+          <RowThumbnail work={work} thumbLabel={thumbLabel} />
         </div>
         <div className="min-w-0 pt-1">
           <div

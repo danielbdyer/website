@@ -35,5 +35,11 @@
     "MD036": false
   },
   "globs": ["**/*.md"],
-  "ignores": ["node_modules", "dist", ".claude/**"]
+  "ignores": [
+    "node_modules",
+    "dist",
+    ".claude/**",
+    "test-results/**",
+    "playwright-report/**"
+  ]
 }

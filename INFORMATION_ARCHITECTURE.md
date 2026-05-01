@@ -34,9 +34,12 @@ URLs follow the house. The grammar is small and strict:
 /{room}                     A room landing — /studio, /garden, /study, /salon
 /{room}/{slug}              A work — /garden/a-poem, /studio/some-case-study
 /facet/{facet}              A facet lens — /facet/craft, /facet/language, ...
+/sky                        The constellation — the graph as a sky (CONSTELLATION.md)
 ```
 
 That is the whole site's URL surface. There is no `/posts`, no `/blog`, no `/archive`, no `/tags`. The house doesn't have those rooms. Plural nouns are declined because the site is organized by place, not by format.
+
+**`/sky` is reached by looking up.** The route exists for direct linking and for the small *"↑ Look up"* affordance in the Foyer. The held richer gesture (scroll-up reveal, twilight carpet, the theme toggle's ascent) lives in `CONSTELLATION.md` as the form the route is growing toward. The sky is not nested under the Foyer in URL space — it is its own destination — but its felt sense is the Foyer's ceiling opening, not a separate room.
 
 **The Foyer is reached via `/`, not `/foyer`.** The Foyer is implicit home. The word "Foyer" belongs to the internal vocabulary (the `Room` type, the spec files) and never appears in a URL or a visitor-facing label. A visitor returning home clicks the wordmark in the nav; the nav does not display a "Foyer" link.
 

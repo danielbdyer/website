@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { GeometricFigure } from '@/shared/atoms/GeometricFigure/GeometricFigure';
 
@@ -18,6 +18,19 @@ function FoyerPage() {
           <p>The rooms are waiting.</p>
         </div>
       </div>
+      {/* The first form of the look-up affordance. The held scroll-up
+          gesture and the theme toggle's ascent into the sky live in
+          CONSTELLATION.md; until they pull, this small italic line is
+          the door from the Foyer to the firmament above it. */}
+      <p className="max-w-deck font-body text-list leading-body text-text-3 mt-4 italic">
+        <Link
+          to="/sky"
+          className="hover:text-text-2 no-underline transition-colors duration-200"
+          viewTransition={false}
+        >
+          ↑ Look up
+        </Link>
+      </p>
     </Reveal>
   );
 }

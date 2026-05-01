@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudyRouteImport } from './routes/study'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as SkyRouteImport } from './routes/sky'
 import { Route as SalonRouteImport } from './routes/salon'
 import { Route as GardenRouteImport } from './routes/garden'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FacetFacetRouteImport } from './routes/facet.$facet'
 import { Route as RoomSlugRouteImport } from './routes/$room.$slug'
+import { Route as SkyRoomSlugRouteImport } from './routes/sky.$room.$slug'
 
 const StudyRoute = StudyRouteImport.update({
   id: '/study',
@@ -25,6 +27,11 @@ const StudyRoute = StudyRouteImport.update({
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SkyRoute = SkyRouteImport.update({
+  id: '/sky',
+  path: '/sky',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalonRoute = SalonRouteImport.update({
@@ -52,34 +59,45 @@ const RoomSlugRoute = RoomSlugRouteImport.update({
   path: '/$room/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SkyRoomSlugRoute = SkyRoomSlugRouteImport.update({
+  id: '/$room/$slug',
+  path: '/$room/$slug',
+  getParentRoute: () => SkyRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/garden': typeof GardenRoute
   '/salon': typeof SalonRoute
+  '/sky': typeof SkyRouteWithChildren
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
   '/$room/$slug': typeof RoomSlugRoute
   '/facet/$facet': typeof FacetFacetRoute
+  '/sky/$room/$slug': typeof SkyRoomSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/garden': typeof GardenRoute
   '/salon': typeof SalonRoute
+  '/sky': typeof SkyRouteWithChildren
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
   '/$room/$slug': typeof RoomSlugRoute
   '/facet/$facet': typeof FacetFacetRoute
+  '/sky/$room/$slug': typeof SkyRoomSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/garden': typeof GardenRoute
   '/salon': typeof SalonRoute
+  '/sky': typeof SkyRouteWithChildren
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
   '/$room/$slug': typeof RoomSlugRoute
   '/facet/$facet': typeof FacetFacetRoute
+  '/sky/$room/$slug': typeof SkyRoomSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,34 +105,41 @@ export interface FileRouteTypes {
     | '/'
     | '/garden'
     | '/salon'
+    | '/sky'
     | '/studio'
     | '/study'
     | '/$room/$slug'
     | '/facet/$facet'
+    | '/sky/$room/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/garden'
     | '/salon'
+    | '/sky'
     | '/studio'
     | '/study'
     | '/$room/$slug'
     | '/facet/$facet'
+    | '/sky/$room/$slug'
   id:
     | '__root__'
     | '/'
     | '/garden'
     | '/salon'
+    | '/sky'
     | '/studio'
     | '/study'
     | '/$room/$slug'
     | '/facet/$facet'
+    | '/sky/$room/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GardenRoute: typeof GardenRoute
   SalonRoute: typeof SalonRoute
+  SkyRoute: typeof SkyRouteWithChildren
   StudioRoute: typeof StudioRoute
   StudyRoute: typeof StudyRoute
   RoomSlugRoute: typeof RoomSlugRoute
@@ -135,6 +160,13 @@ declare module '@tanstack/react-router' {
       path: '/studio'
       fullPath: '/studio'
       preLoaderRoute: typeof StudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sky': {
+      id: '/sky'
+      path: '/sky'
+      fullPath: '/sky'
+      preLoaderRoute: typeof SkyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/salon': {
@@ -172,13 +204,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoomSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sky/$room/$slug': {
+      id: '/sky/$room/$slug'
+      path: '/$room/$slug'
+      fullPath: '/sky/$room/$slug'
+      preLoaderRoute: typeof SkyRoomSlugRouteImport
+      parentRoute: typeof SkyRoute
+    }
   }
 }
+
+interface SkyRouteChildren {
+  SkyRoomSlugRoute: typeof SkyRoomSlugRoute
+}
+
+const SkyRouteChildren: SkyRouteChildren = {
+  SkyRoomSlugRoute: SkyRoomSlugRoute,
+}
+
+const SkyRouteWithChildren = SkyRoute._addFileChildren(SkyRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GardenRoute: GardenRoute,
   SalonRoute: SalonRoute,
+  SkyRoute: SkyRouteWithChildren,
   StudioRoute: StudioRoute,
   StudyRoute: StudyRoute,
   RoomSlugRoute: RoomSlugRoute,

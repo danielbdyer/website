@@ -177,6 +177,20 @@
   --slot-stripe: rgb(0, 0, 0, 0.018);
   --geo-color: rgb(74, 124, 106, 0.12);
   --geo-accent: rgb(200, 118, 77, 0.15);
+
+  /* Constellation sky — sea-painted dome by day. The umber palette
+     breathed up into a luminous expanse: warmer, paler, paper-water.
+     Zenith is the firmament's top tone; horizon is where the sky
+     blends back into the Foyer ground (--bg). The glow is the
+     daystar's warmth gathering near the upper-mid of the sky. Grain
+     is the paper-water texture (subtler in light mode where the
+     ground itself already carries paper-grain at 0.025; the sky's
+     extra grain compounds gently). See CONSTELLATION.md
+     §"Two Render Modes" — daylight: watercolor ocean. */
+  --sky-zenith: #fcf8f1;
+  --sky-horizon: var(--bg);
+  --sky-grain-opacity: 0.04;
+  --sky-glow: rgb(200, 118, 77, 0.07);
 }
 
 /* ─── Dark palette ──────────────────────────────────────────── */
@@ -213,6 +227,17 @@
   --slot-stripe: rgb(255, 255, 255, 0.025);
   --geo-color: rgb(106, 174, 146, 0.1);
   --geo-accent: rgb(224, 144, 106, 0.12);
+
+  /* Constellation sky — paper-night by night. Deeper than --bg, with
+     a hint of cooler tone (the umber undercurrent breathes upward
+     into something starlit). The glow is the moon's silver-cool
+     gathering near the upper-mid; grain compounds the body's grain
+     to give the dark sky a stardust-feel. See CONSTELLATION.md
+     §"Two Render Modes" — night: the firmament. */
+  --sky-zenith: #0d0e12;
+  --sky-horizon: var(--bg);
+  --sky-grain-opacity: 0.06;
+  --sky-glow: rgb(212, 152, 152, 0.05);
 }
 
 /* ─── Base ──────────────────────────────────────────────────── */
@@ -355,6 +380,138 @@ body::before {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ─── Constellation motion ──────────────────────────────────────
+   Three slow, restrained gestures that give the sky a body. All
+   three honor prefers-reduced-motion via the global block above —
+   the rotation pauses, twinkle stops, parallax returns to neutral.
+   See CONSTELLATION.md §"What Shipped (First Form)" and
+   CONSTELLATION_HORIZON.md Phase 3 for the felt rationale.
+
+   The spin cycle is 600s (10 minutes) — the slowest motion on the
+   site, an order of magnitude beyond the geometric figure. So slow
+   the visitor only notices if they sit. The transform-origin pins
+   to the polestar at the center of the 1000-unit viewBox.
+
+   The twinkle cycle is 4.5s — short enough that a static visitor
+   reads the starfield as alive, slow enough that it does not
+   announce itself. Per-star animation-delay (set inline by the
+   organism from constellation.ts's twinklePhase) breaks the chord
+   into a distributed shimmer. */
+@keyframes constellation-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+
+  50% {
+    opacity: 0.34;
+  }
+}
+
+.constellation-rotates {
+  transform-origin: 500px 500px;
+  animation: constellation-spin 600s linear infinite;
+}
+
+.constellation-star__halo {
+  animation: star-twinkle 4.5s ease-in-out infinite;
+}
+
+/* Parallax layers — each group translates by a multiplier of the
+   normalized cursor offset stored on the SVG as --parallax-x and
+   --parallax-y (set by useConstellationParallax). The firmament
+   moves least (depth = 6px max); the constellation moves more
+   (depth = 14px max), so the foreground responds to the cursor more
+   than the painted backdrop. Negative multipliers reverse the
+   direction so the surface behaves like a window — moving the
+   cursor right shifts the scene a little left, as if the visitor
+   were looking past it. The 800ms ease-out transition gives the
+   motion an arrival rhythm rather than a one-to-one jitter. */
+.constellation-parallax--firmament {
+  transform: translate(calc(var(--parallax-x, 0) * -6px), calc(var(--parallax-y, 0) * -6px));
+  transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.constellation-parallax--sky {
+  transform: translate(calc(var(--parallax-x, 0) * -14px), calc(var(--parallax-y, 0) * -14px));
+  transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Daystar — theme-conditional visibility. Both bodies render in the
+   DOM so the switch is pure CSS, not React-conditional, avoiding the
+   hydration flash a JS-state-driven render would cause under SSG.
+   The .lt / .dk classes on <html> are applied pre-paint by the
+   inline init script in __root.tsx; the daystar is correct from
+   first paint. */
+.lt .constellation-daystar__moon {
+  display: none;
+}
+
+.dk .constellation-daystar__sun {
+  display: none;
+}
+
+/* The lift-and-pitch — the sky page's first-paint gesture. *Not* a
+   z-axis rotation; a perspective camera move. The visitor's
+   experience is looking up: gaze tilts upward, the ceiling pitches
+   into view, the firmament settles upright. Three composed motions
+   in one keyframe over 1100ms with the signature easing:
+
+     - clip-path animates from `inset(0 0 100% 0)` to `inset(0 0 0 0)`
+       so the surface reveals from the top edge down (the ceiling
+       coming into view).
+     - perspective(1800px) + rotateX(-32deg → 0) tilts the surface
+       through 32° around the upper edge — the firmament starting
+       tilted away and rotating upright as the visitor's gaze rises.
+     - opacity 0.4 → 1 lets the SVG firmament behind read briefly
+       through the carpet roll, so the arrival doesn't read as a
+       hard cut.
+
+   Anchored at `transform-origin: 50% 0%` (the top edge of the
+   surface). This is what makes the rotation feel like *looking up*
+   rather than *flipping a card* — the top edge stays in the
+   visitor's plane while the bottom edge sweeps in from below.
+
+   prefers-reduced-motion is honored globally (the animation-
+   duration collapses to ~0 ms via the universal block above), so
+   the firmament simply *is* there for reduced-motion visitors —
+   no lift, no tilt, no clip — present and complete from first
+   paint.
+
+   The reverse — the firmament tilting away as the visitor scrolls
+   back down to the Foyer — is held. Adding a leave-side animation
+   requires intercepting the navigation; today the visitor returns
+   via the standard view-transition fade. CONSTELLATION_HORIZON.md
+   names the symmetric reverse as the next refinement. */
+@keyframes sky-look-up {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: perspective(1800px) rotateX(-32deg);
+    opacity: 0.4;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: perspective(1800px) rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+.sky-arrival {
+  transform-origin: 50% 0%;
+  animation: sky-look-up 1100ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 /* ─── View Transitions ──────────────────────────────────────────

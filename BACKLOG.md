@@ -125,13 +125,12 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ### Accent color semantic assignment
 
-**Why:** `DESIGN_SYSTEM.md` holds `--accent-warm`, `--accent-rose`, `--accent-violet`, `--accent-gold` as vocabulary with evocations but no semantic role. `GRAPH_AND_LINKING.md` notes these could become facet tints in a future visible graph surface.
-**Trigger:** When a surface (facet chips, a graph view, per-facet identifying mark) earns a colored distinction.
+**State:** Partially graduated as of the constellation's first form. The four held accents pair editorially with the eight facets in `FACET_HUE` (`src/shared/content/constellation.ts`); the held discipline still holds for the rest of the site (chips, toggles, outward invitation remain neutral). A future surface that needs a different pairing names its own pairing in its own file.
 
 ### Visible graph surface
 
-**Why:** `INFORMATION_ARCHITECTURE.md` and `GRAPH_AND_LINKING.md` hold this as a future possibility. The build pipeline will already produce the `Graph` object it needs.
-**Trigger:** When the content graph has enough nodes and edges to be meaningful. Probably 30+ works with enough interlinks.
+**State:** Substantially shipped at `/sky`. The structural future state in pure SVG/CSS is real (layered firmament with paper-grain noise, watercolor-filtered halos, vespers thread bloom, slow rotation, per-star twinkle, cursor parallax, the daystar, the polestar, the carpet rolling out on first paint), and a focused first WebGL move has shipped on top — `useWebGLFirmament` paints a continuous procedural-noise / cursor-pool layer additively via `mix-blend-mode: soft-light`. `CONSTELLATION.md` §"What Shipped (First Form)" and `CONSTELLATION_HORIZON.md` Phases 0–4, 7 enumerate every shipped element. *What remains held*: the full-viewport reframe (no chrome, lift-and-pitch perspective camera, stars-as-overlay at addressable URLs), shader-based per-star halos, drifting motes, the strata layer, the time slider integration, audio in the Salon's region, per-room sub-skies.
+**Trigger for the next moves:** Danny's pull on the full-viewport reframe; the SVG/WebGL hybrid hitting a visible ceiling on the per-star halo behavior; a Salon work that asks for sound. Each named with its own trigger in `CONSTELLATION_HORIZON.md`.
 
 ### Time-slider drawer
 

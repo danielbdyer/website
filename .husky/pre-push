@@ -1,8 +1,14 @@
-# Pre-push gate — typecheck + tests must pass before push. The
-# pre-commit hook handles per-file lint+format+related-tests; this
-# hook is the broader gate that catches "I forgot to run tests" or
-# "the type system is unhappy somewhere I didn't touch."
+# Pre-push gate — typecheck + the full lint chain + tests must pass
+# before push. The pre-commit hook already runs all three; this hook
+# is the backstop that catches `git commit --no-verify` and any drift
+# between what was last committed and what's about to be pushed.
 #
-# `pnpm doctor` composes typecheck + lint + test:fast --run. Tweak in
-# package.json if the gate ever needs to broaden.
-pnpm doctor
+# `pnpm run doctor` composes typecheck + lint + test:fast --run.
+# **The `run` is load-bearing.** `pnpm doctor` (without `run`) hits
+# pnpm's built-in `doctor` command — a project-health diagnostic that
+# silently no-ops here — instead of the script in package.json. The
+# branch shipped with that bug for a stretch and CI caught failures
+# the pre-push hook should have caught locally; the explicit `run`
+# eliminates the precedence ambiguity.
+pnpm run doctor
+

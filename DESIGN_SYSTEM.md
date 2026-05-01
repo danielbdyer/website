@@ -61,7 +61,18 @@ Four additional accent hues are defined in `tokens.css` and currently unused in 
 - `--accent-violet` — dusk violet
 - `--accent-gold` — candlelight gold
 
-**Proposal: these four stay held, not assigned.** They are vocabulary, not semantics. No code currently branches on them, and the design system does not assign them to rooms, facets, or any other domain concept today. This mirrors the move in `DOMAIN_MODEL.md` with Modes: the concept is named so its arrival has a place to land; the assignment waits for spanda.
+**These four were held, not assigned, until the constellation arrived.** They were vocabulary, not semantics. No code branched on them, and the design system did not assign them to rooms, facets, or any other domain concept — the assignment waited for spanda. The first surface where they speak aloud is **the constellation** (`CONSTELLATION.md`). There, and there only, the eight facets pair with the four hues editorially:
+
+| Hue | Facets |
+|---|---|
+| `--accent-warm` | `craft`, `body` |
+| `--accent-rose` | `beauty`, `language` |
+| `--accent-violet` | `consciousness`, `becoming` |
+| `--accent-gold` | `leadership`, `relation` |
+
+The pairing lives in TypeScript at `src/shared/content/constellation.ts` (`FACET_HUE`). Two facets share each hue by design — eight facets across four colors, with the difference legible in the *position* a star occupies in the sky and the *label* the thread surfaces on hover, not in an exhaustive eight-color palette.
+
+**The held discipline still holds for the rest of the site.** Facet chips on work pages, in the toggle bar, and in the outward invitation remain neutral (`--tag-bg` / `--tag-text`). The held accents do not leak out of the constellation. A future surface that earns its own use of one of the four (a graph view inside a work page, a color-aware facet badge somewhere) would be a separate decision named in writing — not an automatic extension of the constellation's vocabulary.
 
 **What each evokes** (first-pass character, not a binding):
 
@@ -72,7 +83,7 @@ Four additional accent hues are defined in `tokens.css` and currently unused in 
 
 **Not mapped to rooms.** The most obvious use of five accents on a five-room site would be to give each room a color. This is declined. Rooms are atmospheres and rhythms, not hues; the umber ground is continuous across rooms because the site is one house, not five themed sections. Mapping accent-to-room would collapse the rooms into colored tabs and fight the continuity the site is trying to hold.
 
-**When an accent earns its assignment**, the design system gains a new named token (e.g., `--facet-craft` or `--highlight-seasonal`) that *references* the hue but has its own name. The four vocabulary tokens stay general; the meaning-bearing tokens stay specific. This keeps the palette's character and the site's semantics each free to evolve without pulling on the other.
+**When an accent earns an assignment, the assignment lives in the surface that uses it, not in the global palette.** The vocabulary tokens (`--accent-warm`, etc.) stay general; the *editorial pairing* — which facet wears which hue — lives in TypeScript at the surface that consumes it (in the constellation's case, `FACET_HUE` in `src/shared/content/constellation.ts`). The CSS palette doesn't gain a `--facet-craft` token, because two facets share each hue and a one-to-one CSS rename would clutter the palette without adding meaning. The decoupling the design system wants — palette free to evolve without pulling on semantics, and vice versa — is preserved by keeping the pairing in code and the values in tokens. A future surface that needs a *different* pairing (a Studio-only highlight, a seasonal accent) would name its own pairing in its own file. The held vocabulary stays vocabulary; each surface speaks it editorially.
 
 ### Derived surfaces
 

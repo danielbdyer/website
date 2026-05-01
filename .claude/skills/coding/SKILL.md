@@ -42,6 +42,93 @@ Almost never. `useEffect` decision tree (from `REACT_NORTH_STAR.md`):
 
 Effects that fit the two legitimate patterns (subscriptions; analytics) live in custom hooks, never raw in components.
 
+## FP discipline at the component layer
+
+The site commits to functional-programming style at the React layer. The compiler auto-memoizes; the lint forbids manual `useMemo` / `useCallback` / `memo`. That trust is only honest if the component author writes code the compiler can memoize cleanly. The discipline below is what makes a component *compiler-friendly* and *intent-clear* at the same time.
+
+**Take computation out of render.** A `.map()` whose body does lookups, sorts, derivation — that work belongs in a pure helper in a sibling `.ts` file (often `layout.ts` next to the component). The component imports the helper and the JSX becomes a thin map from precomputed data to elements. Compare:
+
+```tsx
+// suspect — render does lookups, derivation, conditional skip
+{graph.edges.map((edge) => {
+  const source = positioned.get(`${edge.source.room}/${edge.source.slug}`);
+  const target = positioned.get(`${edge.target.room}/${edge.target.slug}`);
+  if (!source || !target) return null;
+  const id = `${nodeKey(source)}|${nodeKey(target)}|${edge.facet}`;
+  return <Thread key={id} ... />;
+})}
+
+// preferred — pure helper precomputes; render is a thin map
+const edges = resolveEdges(graph.edges, positioned);
+// ...
+{edges.map((edge) => <Thread key={edge.id} ... />)}
+```
+
+The helper is testable in isolation; the component shrinks; the compiler's job becomes obvious.
+
+**Module-level pure functions for predicates and small derivations.** A two-line predicate or hue lookup belongs at module scope, not redefined inside the component on every render:
+
+```tsx
+// at module scope
+const isThreadActive = (
+  activeKey: string | null,
+  sourceKey: string,
+  targetKey: string,
+): boolean => activeKey === sourceKey || activeKey === targetKey;
+
+// inside render — no allocation per call
+{edges.map((edge) => (
+  <Thread active={isThreadActive(activeKey, edge.sourceKey, edge.targetKey)} ... />
+))}
+```
+
+A predicate that closes over no component state has no business living inside the component.
+
+**Event delegation over per-element closures.** When a list of items each needs hover/focus handlers, *do not* create an arrow function per item inside the map. One handler set on the parent serves every child via `data-` attributes and `target.closest`:
+
+```tsx
+// suspect — N closures allocated per render, one per item
+{nodes.map((node) => (
+  <g
+    key={key}
+    onMouseEnter={() => setActive(key)}
+    onMouseLeave={() => setActive(null)}
+    onFocus={() => setActive(key)}
+    onBlur={() => setActive(null)}
+  >
+    <Star ... />
+  </g>
+))}
+
+// preferred — one handler set, delegation via data-key
+const handleActivate = (e: SyntheticEvent<Element>) => {
+  const handle = (e.target as Element).closest('[data-node-key]');
+  if (!handle) return;
+  setActiveKey(handle.getAttribute('data-node-key'));
+};
+const handleMouseLeave = () => setActiveKey(null);
+const handleBlur = (e: React.FocusEvent<Element>) => {
+  if ((e.relatedTarget as Element | null)?.closest('[data-node-key]')) return;
+  setActiveKey(null);
+};
+// ...
+<g onMouseOver={handleActivate} onMouseLeave={handleMouseLeave} onFocus={handleActivate} onBlur={handleBlur}>
+  {nodes.map(({ node, key }) => (
+    <g key={key} data-node-key={key}>
+      <Star ... />
+    </g>
+  ))}
+</g>
+```
+
+The blur handler's `relatedTarget` check is the small bit of care that keeps a moving focus from briefly clearing the active key. *Care at the seam where state transitions live.*
+
+**Higher-order functions over branching configuration.** Prefer composing small typed transformations over a single function with many flags. `nodes.flatMap(work => positioned.get(...) ? [{ node, pos }] : [])` is preferred to a manual loop with conditionals.
+
+**Atomic boundaries.** Atoms are leaves — zero state, zero subscriptions, render their props. Molecules compose atoms with small local state (e.g., a `Reveal` wrapping intersection-observer state). Organisms compose molecules at feature scale, holding the kind of cross-cutting state the surface owns. If an atom grows hover-state or a subscription, it has become a molecule; rename and move it.
+
+When a component crosses the 80-line ceiling, the question to ask is *what computation here doesn't need to live in render?* — not *what should I split into another component?* Extracting pure helpers usually pulls the line count back down without inventing new component boundaries.
+
 ## The data layer is async; the implementation is sync today
 
 `RENDERING_STRATEGY.md` commits to **pure SSG with no production server runtime**, and to an isomorphic data contract: `src/shared/content/index.ts` exposes async functions (`getDisplayWorksByRoom`, `getDisplayWork`, etc.) that today wrap synchronous bundled reads. The async signature is the architectural seam — it means the day the loader changes (to JSON manifests fetched from `/data/*.json`, to a CMS in a hybrid setup, to anything else) **no route file changes**.

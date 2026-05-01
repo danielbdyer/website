@@ -154,6 +154,8 @@ A sixth state, **Fall through**, is "the visitor arrived fresh" — direct URL, 
 | Work page | another work | `[[wikilink]]` | Step |
 | Work page | another work | backlink in outward invitation | Step |
 | 404 / ErrorBoundary | Foyer | "Back home →" | Cross |
+| Foyer | `/sky` | "↑ Look up" link | Cross |
+| `/sky` | Foyer | "↓ Return to the Foyer" link | Cross |
 | any | any | browser back/forward | matches the forward gesture, reversed (browser-native) |
 | any | any | direct URL / reload | Fall through |
 

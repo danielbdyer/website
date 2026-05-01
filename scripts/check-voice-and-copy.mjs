@@ -25,7 +25,11 @@ function listFiles(dir, acc = []) {
     const full = join(dir, entry);
     const stat = statSync(full);
     if (stat.isDirectory()) listFiles(full, acc);
-    else if (/\.(tsx|ts)$/.test(entry) && !entry.endsWith('.test.ts') && !entry.endsWith('.test.tsx')) {
+    else if (
+      /\.(tsx|ts)$/.test(entry) &&
+      !entry.endsWith('.test.ts') &&
+      !entry.endsWith('.test.tsx')
+    ) {
       acc.push(full);
     }
   }
@@ -33,9 +37,18 @@ function listFiles(dir, acc = []) {
 }
 
 const FORBIDDEN = [
-  { pattern: /\bclick here\b/i, message: 'Voice: "click here" is a banned CTA per VOICE_AND_COPY.md.' },
-  { pattern: /\bread more\b/i, message: 'Voice: "read more" is a banned CTA per VOICE_AND_COPY.md.' },
-  { pattern: /\bwelcome to\b/i, message: 'Voice: "welcome to" is performed; the site does not perform.' },
+  {
+    pattern: /\bclick here\b/i,
+    message: 'Voice: "click here" is a banned CTA per VOICE_AND_COPY.md.',
+  },
+  {
+    pattern: /\bread more\b/i,
+    message: 'Voice: "read more" is a banned CTA per VOICE_AND_COPY.md.',
+  },
+  {
+    pattern: /\bwelcome to\b/i,
+    message: 'Voice: "welcome to" is performed; the site does not perform.',
+  },
   // Emoji range — broad Unicode emoji block (skip the Diamond ◆ which
   // is decorative typography in the wordmark).
   {
