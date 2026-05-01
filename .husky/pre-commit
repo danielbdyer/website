@@ -1,5 +1,24 @@
+# Pre-commit gate — mirrors the CI `check` job's first three steps so a
+# commit that would fail CI is caught locally before it lands. The four
+# parts below match the four kinds of error CI catches:
+#
+#   1. lint-staged   per-file auto-fix (eslint --fix + prettier --write)
+#                    on the changed files only.
+#   2. typecheck     full project (tsc -b). Strictness here matches CI.
+#   3. pnpm lint     the full repo-wide chain — eslint, stylelint,
+#                    color-contrast, markdownlint, cspell, secretlint,
+#                    spec-wikilinks, and the voice guard. Same chain
+#                    CI runs as one command. ~7s on a clean repo.
+#   4. vitest related  fast run of tests that touch the staged files.
+#
+# When CI's `check` job grows a step (size-limit, audit), grow this
+# hook to match. The pre-push hook adds `pnpm run doctor` as a
+# backstop — typecheck + lint + the full vitest pass — which catches
+# anything pre-commit would have caught had `--no-verify` been used.
+
 pnpm exec lint-staged
 pnpm exec tsc -b
+pnpm lint
 
 staged_ts=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx)$' || true)
 if [ -n "$staged_ts" ]; then

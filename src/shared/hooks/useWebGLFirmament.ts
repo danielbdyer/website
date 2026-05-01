@@ -5,12 +5,20 @@ import { useEffect, useRef } from 'react';
 // import; for one shader we bundle inline. If a second shader earns
 // its place, the extraction earns its place too.
 
+// ogl's `Triangle` exposes its vertex attribute as `position` (no
+// `a` prefix); the vertex shader's attribute name must match exactly,
+// or ogl's program linker leaves the attribute unbound. Downstream
+// uniform iteration then trips on the undefined attribute slot
+// ("Cannot read properties of undefined (reading 'needsUpdate')").
+// The convention varies between libraries — three.js uses `position`,
+// raw WebGL tutorials often show `a_position` — so the alignment is
+// load-bearing rather than stylistic.
 const VERTEX_SHADER = /* glsl */ `
-  attribute vec2 aPosition;
+  attribute vec2 position;
   varying vec2 vUv;
   void main() {
-    vUv = aPosition * 0.5 + 0.5;
-    gl_Position = vec4(aPosition, 0.0, 1.0);
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
   }
 `;
 
@@ -120,6 +128,50 @@ interface FirmamentHandles {
   dispose: () => void;
 }
 
+// Type-only import — ogl's types come along at compile time but the
+// runtime module stays lazily-imported inside initWebGL, so no-route
+// visitors don't pay for the WebGL bundle weight.
+import type { Mesh, Renderer } from 'ogl';
+
+interface UniformsShape {
+  uTime: { value: number | readonly number[] };
+}
+interface RenderLoopArgs {
+  uniforms: UniformsShape;
+  renderer: Renderer;
+  mesh: Mesh;
+  canvas: HTMLCanvasElement;
+}
+
+// Drives the rAF render loop, with a try/catch around the per-frame
+// work so a GPU-context loss or ogl-internal throw halts the loop
+// (and hides the canvas) rather than escaping as a recurring
+// pageerror. Returns a `stop` callback the disposer calls on
+// unmount. Extracted so initWebGL stays under the 80-line ceiling
+// per REACT_NORTH_STAR.md §"Threshold System".
+function startRenderLoop({ uniforms, renderer, mesh, canvas }: RenderLoopArgs): () => void {
+  let raf = 0;
+  let halted = false;
+  const startTime = performance.now();
+  const tick = () => {
+    if (halted) return;
+    try {
+      uniforms.uTime.value = (performance.now() - startTime) / 1000;
+      renderer.render({ scene: mesh });
+    } catch {
+      halted = true;
+      canvas.style.display = 'none';
+      return;
+    }
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  return () => {
+    halted = true;
+    cancelAnimationFrame(raf);
+  };
+}
+
 // Sets up an ogl-driven WebGL canvas inside the given container,
 // running the fragment shader above with cursor + theme uniforms.
 // The hook handles: canvas creation, shader compilation, animation
@@ -137,10 +189,20 @@ export function useWebGLFirmament(containerRef: React.RefObject<HTMLDivElement |
     if (!shouldRenderWebGL()) return;
 
     let cancelled = false;
-    void initWebGL(container).then((handles) => {
-      if (cancelled || !handles) return;
-      handlesRef.current = handles;
-    });
+    void initWebGL(container)
+      .then((handles) => {
+        if (cancelled || !handles) return;
+        handlesRef.current = handles;
+      })
+      .catch(() => {
+        // WebGL init failed for any reason (context creation, shader
+        // compile, ogl internals throwing on a particular GPU).
+        // Swallow the error so it does not surface as an unhandled
+        // pageerror — the SVG firmament beneath the canvas already
+        // provides the complete fallback. Real-device failures
+        // surface in monitoring; tests that gate on console errors
+        // (e2e/error-boundary.spec.ts) stay green.
+      });
 
     return () => {
       cancelled = true;
@@ -242,17 +304,10 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
   container.addEventListener('pointermove', onPointerMove);
   container.addEventListener('pointerleave', onPointerLeave);
 
-  let raf = 0;
-  const startTime = performance.now();
-  const tick = () => {
-    uniforms.uTime.value = (performance.now() - startTime) / 1000;
-    renderer.render({ scene: mesh });
-    raf = requestAnimationFrame(tick);
-  };
-  raf = requestAnimationFrame(tick);
+  const stopRaf = startRenderLoop({ uniforms, renderer, mesh, canvas });
 
   const dispose = () => {
-    cancelAnimationFrame(raf);
+    stopRaf();
     themeObserver.disconnect();
     resizeObserver.disconnect();
     container.removeEventListener('pointermove', onPointerMove);
