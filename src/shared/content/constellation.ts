@@ -136,9 +136,16 @@ function hash(input: string): number {
   return h >>> 0;
 }
 
+// 2^32 - 1, the maximum value `hash()` can return. Inlined as a
+// computed constant rather than the hex literal `0xFFFFFFFF` because
+// stylistic-prettier normalizes hex casing to lowercase, which
+// then trips unicorn/number-literal-case. The constant form is
+// stable across the formatters.
+const UINT32_MAX = 2 ** 32 - 1;
+
 function unitOffset(seed: string): number {
   // Maps a hash to [0, 1) deterministically.
-  return hash(seed) / 0xff_ff_ff_ff;
+  return hash(seed) / UINT32_MAX;
 }
 
 // Within a 90° sector the work spreads across [-35°, +35°] from the
