@@ -1,4 +1,5 @@
 import type { KeyboardEvent, PointerEvent, RefObject, SyntheticEvent, FocusEvent } from 'react';
+import type { ConstellationHue } from '@/shared/content/constellation';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Star } from '@/shared/atoms/Star/Star';
 import { Thread } from '@/shared/atoms/Thread/Thread';
@@ -33,6 +34,60 @@ interface StageProps {
    *  RAF tick. Sibling of the rotates layer so the slow background
    *  rotation doesn't drag it around. */
   glyphRef: RefObject<SVGCircleElement | null>;
+  /** The active star's facet hue, when a basin is settled. The
+   *  wrapping companion group sets data-active-hue from this so CSS
+   *  can mix the glyph's amber toward the active hue by the
+   *  --companion-claim factor the hook writes per tick. Null while
+   *  the cursor is at-rest-no-active (the glyph stays full amber). */
+  activeHue: ConstellationHue | null;
+}
+
+// Number of ghost positions trailing the cursor. Mirrors TRAIL_LENGTH
+// in useConstellationNavigation; the hook positions each ghost's
+// cx/cy by querying [data-companion-trail="N"] each frame.
+const TRAIL_LENGTH = 4;
+
+interface CompanionGroupProps {
+  glyphRef: RefObject<SVGCircleElement | null>;
+  activeHue: ConstellationHue | null;
+}
+
+// The visitor's surface position plus its ghost-decay trail. Trail
+// circles render before the glyph so the live mark paints on top.
+// The navigation hook positions each per RAF tick via data-companion
+// / data-companion-trail queries; CSS handles the visual register
+// (paper-amber by default, mixed toward the active facet hue by
+// --companion-claim, ghosts modulated by --trail-strength).
+// aria-hidden because keyboard / screen-reader focus moves through
+// the addressable star anchors, not this visual marker.
+function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
+  return (
+    <g
+      data-companion-group
+      data-active-hue={activeHue ?? 'warm'}
+      aria-hidden="true"
+      className="constellation-companion-group"
+    >
+      {Array.from({ length: TRAIL_LENGTH }, (_, i) => (
+        <circle
+          key={i}
+          data-companion-trail={i}
+          cx={500}
+          cy={500}
+          r={3.5}
+          className={`constellation-companion-trail constellation-companion-trail--${i}`}
+        />
+      ))}
+      <circle
+        ref={glyphRef}
+        cx={500}
+        cy={500}
+        r={3.5}
+        className="constellation-companion"
+        data-companion="true"
+      />
+    </g>
+  );
 }
 
 export function Stage({
@@ -47,25 +102,12 @@ export function Stage({
   onKeyUp,
   dragHandlers,
   glyphRef,
+  activeHue,
 }: StageProps) {
   return (
     <>
       <Polestar cx={500} cy={500} />
-      {/* Companion glyph — the visitor's surface position. Begins
-          at the polestar (image center on first paint); the hook
-          re-positions it each frame as the cursor moves on the
-          sphere. aria-hidden because keyboard / screen-reader
-          focus moves through the addressable star anchors, not
-          this visual marker. */}
-      <circle
-        ref={glyphRef}
-        cx={500}
-        cy={500}
-        r={3.5}
-        className="constellation-companion"
-        aria-hidden="true"
-        data-companion="true"
-      />
+      <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
       <g className="constellation-rotates">
         <g aria-hidden="true">
           {edges.map((edge) => (

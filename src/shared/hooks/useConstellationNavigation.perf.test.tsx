@@ -4,13 +4,13 @@ import { NORTH_POLE, sphericalToUnit } from '@/shared/geometry/sphere';
 import {
   flickAngularVelocity,
   geodesicNearestNode,
-  sphericalBasinForce,
+  sphericalWellForce,
   tangentHoldDirection,
   type NavigableNode,
 } from './useConstellationNavigation';
 
 // Performance regression guards for the navigation hot path. The
-// constellation's RAF loop runs sphericalBasinForce + geodesicNearestNode
+// constellation's RAF loop runs sphericalWellForce + geodesicNearestNode
 // once per frame; the budgets below are generous enough to be CI-
 // stable while still catching algorithmic regressions (an order-of-
 // magnitude slowdown will trip them).
@@ -48,18 +48,18 @@ function timed(fn: () => void): number {
 }
 
 describe('navigation hot path performance', () => {
-  test('sphericalBasinForce — 30 nodes × 60_000 iterations stays under 600ms', () => {
+  test('sphericalWellForce — 30 nodes × 60_000 iterations stays under 600ms', () => {
     const nodes = generateNodes(30);
     const elapsed = timed(() => {
-      for (let i = 0; i < 60_000; i++) sphericalBasinForce(cursorAt(i), nodes);
+      for (let i = 0; i < 60_000; i++) sphericalWellForce(cursorAt(i), nodes);
     });
     expect(elapsed).toBeLessThan(600);
   });
 
-  test('sphericalBasinForce — 200 nodes × 10_000 iterations stays under 600ms', () => {
+  test('sphericalWellForce — 200 nodes × 10_000 iterations stays under 600ms', () => {
     const nodes = generateNodes(200);
     const elapsed = timed(() => {
-      for (let i = 0; i < 10_000; i++) sphericalBasinForce(cursorAt(i), nodes);
+      for (let i = 0; i < 10_000; i++) sphericalWellForce(cursorAt(i), nodes);
     });
     expect(elapsed).toBeLessThan(600);
   });

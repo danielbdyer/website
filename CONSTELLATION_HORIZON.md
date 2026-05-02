@@ -130,6 +130,8 @@ A full-route-bleed WebGL canvas, mounted behind everything else, `aria-hidden="t
 
 The atmospheric layer carries **zero semantic content**. It is paint, not navigation. A screen reader walks past it; a `prefers-reduced-data` visitor never downloads it.
 
+*Pass 2 (Phase E) shipped the first form of this layer: a `<canvas>` mounted behind the structural SVG, an `ogl`-flavored render loop, and a fragment shader that paints a luminous pool of attention around the cursor's projected sphere position with a squared-falloff profile and a saturation boost in the active well's zone. The radial gradient, the procedural noise field, the twinkle, the parallax depth, and the day↔night shader crossfade remain held — the canvas exists, the shader is small, the rest is added when each pulls.*
+
 ### Layer 2: Labeling (the transient annotations)
 
 Lives inside the SVG, above the structural anchors. Renders only when something is hovered or focused: the work's title and room as a small italic callout positioned near the star; a midpoint tag on a hovered thread naming the joining facet; a constellation pattern's name when its bounding cluster is dwelt on.
@@ -432,6 +434,8 @@ If a readiness's trigger fires and the doing-it-right register cannot be held, t
 ### Phase 0 (shipped) — *Does the structural surface exist?*
 
 `/sky` prerenders. `small-weather` is a real link. Held accents paired editorially. Tests green. Spec catches up to code.
+
+*Pass 2 then shipped beneath the structural surface: latent sphere positions for every star, a perspectival camera, a per-star gravity well that claims the cursor on settle (in code: `WELL_RADIUS_RAD` — the design lexicon's "basin" stays free for the editorial cluster), tangent velocity with spring-tension drag and flick momentum, an orbital camera that trails the cursor's surface position, a companion glyph at the projected screen position, and the WebGL atmosphere pool described in Layer 1 above. The structural layer didn't change shape; the world the visitor moves through deepened.*
 
 ### Phase 1 (partially shipped) — *Does the carpet roll out when you look up?*
 

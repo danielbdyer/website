@@ -5,7 +5,7 @@ import {
   flickAngularVelocity,
   geodesicNearestNode,
   geodesicNeighborInDirection,
-  sphericalBasinForce,
+  sphericalWellForce,
   tangentHoldDirection,
   type NavigableNode,
 } from './useConstellationNavigation';
@@ -53,9 +53,9 @@ describe('geodesicNearestNode', () => {
   });
 });
 
-describe('sphericalBasinForce', () => {
+describe('sphericalWellForce', () => {
   test('zero force when no node is within influence', () => {
-    const force = sphericalBasinForce(NORTH_POLE, [NODE_EAST], 0.5);
+    const force = sphericalWellForce(NORTH_POLE, [NODE_EAST], 0.5);
     expect(force.x).toBeCloseTo(0, 9);
     expect(force.y).toBeCloseTo(0, 9);
     expect(force.z).toBeCloseTo(0, 9);
@@ -64,7 +64,7 @@ describe('sphericalBasinForce', () => {
   test('points along the great circle toward a single nearby node', () => {
     // Cursor between pole and east, slightly toward east.
     const cursor = sphericalToUnit({ theta: 0.3, phi: 0 });
-    const force = sphericalBasinForce(cursor, [NODE_EAST], Math.PI, 1);
+    const force = sphericalWellForce(cursor, [NODE_EAST], Math.PI, 1);
     // Tangent toward east at this position: the x component of the
     // tangent should be positive (we're east of the pole, tangent
     // points further east — also +x in this configuration).
@@ -76,7 +76,7 @@ describe('sphericalBasinForce', () => {
 
   test('cancels at the saddle between two equidistant nodes', () => {
     // The pole is equidistant from east and west (both at π/2).
-    const force = sphericalBasinForce(NORTH_POLE, [NODE_EAST, NODE_WEST], Math.PI, 1);
+    const force = sphericalWellForce(NORTH_POLE, [NODE_EAST, NODE_WEST], Math.PI, 1);
     // Pulls along ±x cancel. Tangent at the pole has no z component
     // anyway, so y is also cancelled (no y in either node).
     expect(force.x).toBeCloseTo(0, 9);
@@ -85,7 +85,7 @@ describe('sphericalBasinForce', () => {
   });
 
   test('is zero exactly at the node center (cursor settles)', () => {
-    const force = sphericalBasinForce(NODE_EAST.unitPos, [NODE_EAST], 0.5, 5);
+    const force = sphericalWellForce(NODE_EAST.unitPos, [NODE_EAST], 0.5, 5);
     expect(force.x).toBeCloseTo(0, 9);
     expect(force.y).toBeCloseTo(0, 9);
     expect(force.z).toBeCloseTo(0, 9);
@@ -94,13 +94,13 @@ describe('sphericalBasinForce', () => {
   test('vanishes at the influence radius (shape = 0)', () => {
     // Cursor at theta = 0.5 from pole, with influence exactly 0.5.
     const cursor = sphericalToUnit({ theta: 0.5, phi: 0 });
-    const force = sphericalBasinForce(cursor, [NODE_POLE], 0.5, 5);
+    const force = sphericalWellForce(cursor, [NODE_POLE], 0.5, 5);
     expect(Math.hypot(force.x, force.y, force.z)).toBeLessThan(1e-6);
   });
 
   test('always returns a tangent force (perpendicular to position)', () => {
     const cursor = sphericalToUnit({ theta: 0.4, phi: 1.2 });
-    const force = sphericalBasinForce(cursor, NODES);
+    const force = sphericalWellForce(cursor, NODES);
     const dot = force.x * cursor.x + force.y * cursor.y + force.z * cursor.z;
     expect(Math.abs(dot)).toBeLessThan(1e-9);
   });

@@ -35,12 +35,16 @@ import {
 //     acceleration pushes the cursor in the held direction
 //     (decomposed against the camera's right/up basis projected
 //     onto the sphere's tangent plane at the cursor).
-//   - The basin field: every node radiates a tangent attractor
-//     force that falls off with geodesic distance. Always on.
-//     Between two nodes the pulls compete (the saddle); inside a
-//     basin one wins (the local minimum). Friction lets a coasting
-//     cursor settle into whatever basin its momentum carries it
-//     into.
+//   - The well field: every node is a gravity well radiating a
+//     tangent attractor force that falls off with geodesic
+//     distance. Always on. Between two nodes the pulls compete
+//     (the saddle); inside a well one wins (the local minimum).
+//     Friction lets a coasting cursor settle into whatever well
+//     its momentum carries it into. *Code naming note: in the
+//     design lexicon "basin" is the editorial cluster — a named
+//     gathering of stars. The per-star physics here is the *well*
+//     each star carries; the cluster meaning lives at the chrome
+//     layer. CONSTELLATION_DESIGN.md §"Constellation Lexicon".*
 //
 // `prefers-reduced-motion: reduce` short-circuits the loop and
 // pointer/keyboard fall back to direct snap-to-nearest by geodesic
@@ -76,8 +80,8 @@ interface UseConstellationNavigationArgs {
 // vector on the sphere; "distance" is geodesic (radians along great
 // circle). Velocity is angular (rad/s).
 const INFLUENCE_RADIUS_RAD = 0.7;
-const BASIN_RADIUS_RAD = 0.3;
-const BASIN_STIFFNESS = 9;
+const WELL_RADIUS_RAD = 0.3;
+const WELL_STIFFNESS = 9;
 const DRAG_SPRING = 60;
 const DRAG_DAMPING = 14;
 const FREE_DAMPING = 4;
@@ -96,7 +100,7 @@ const VELOCITY_SAMPLE_WINDOW_MS = 120;
 // cursor: when the visitor flicks, the cursor leads, the glyph
 // drifts off-center, the world re-projects toward where the visitor
 // is reaching. Settled state: glyph at center, world centered on
-// the active basin.
+// the active well.
 const ORBIT_DISTANCE = 2.5;
 const CAMERA_LAG_RATE = 6;
 const CAMERA_FOV_Y = Math.PI / 4;
@@ -150,15 +154,15 @@ export function geodesicNearestNode(
  *  shape is linear in geodesic distance and zero at the influence
  *  rim. The result is a tangent vector at `pos` — perpendicular to
  *  it by construction. */
-export function sphericalBasinForce(
+export function sphericalWellForce(
   pos: UnitVector3,
   nodes: readonly NavigableNode[],
   influenceRadius = INFLUENCE_RADIUS_RAD,
-  stiffness = BASIN_STIFFNESS,
+  stiffness = WELL_STIFFNESS,
 ): Vec3 {
   // dot ≥ minDot ⇔ geodesic ≤ influenceRadius. The dot test is a
   // single multiply-add per node; full geodesicDistance only fires
-  // for nodes inside the basin's reach.
+  // for nodes inside the well's reach.
   const minDot = influenceRadius >= Math.PI ? -1 : Math.cos(influenceRadius);
   let fx = 0;
   let fy = 0;
@@ -267,7 +271,27 @@ interface NavState {
    *  current frame of reference. */
   currentCamera: Camera;
   currentBasis: CameraBasis;
+  /** Last four sphere positions (newest at index 0). The companion
+   *  glyph's ghost-decay trail reads these per frame to render a
+   *  short fade-tail behind the cursor during fast travel. The
+   *  trail is the *trace* the design's semiotic layer asks of the
+   *  glyph — *a footstep in sand; a breath on glass.* Length is
+   *  fixed at TRAIL_LENGTH so allocations never happen on the hot
+   *  path. */
+  trailHistory: MutableVec3[];
 }
+
+/** Number of ghost positions kept behind the cursor for the
+ *  companion glyph's fade-tail. Each ghost has a fixed base opacity
+ *  in CSS (.constellation-companion-trail--N); the per-tick velocity
+ *  modulates `--trail-strength` so the trail is invisible at rest
+ *  and asserts itself only during real motion. */
+const TRAIL_LENGTH = 4;
+/** Angular speed (rad/s) at which the trail reaches full strength.
+ *  Below this, the strength scales linearly to zero. Tuned so a
+ *  drag that's just starting to coast doesn't paint a trail; a
+ *  flick or a held-key acceleration does. */
+const TRAIL_FULL_SPEED_RAD = 3;
 
 /** Build the orbital camera that places `surfacePos` near the
  *  image center. Camera sits at -ORBIT_DISTANCE * surfacePos,
@@ -333,11 +357,11 @@ function flipActive(state: NavState, key: string, setActiveKey: (k: string) => v
 
 function computeAccelerationInto(state: NavState, refs: RuntimeRefs): void {
   const pos: UnitVector3 = state.pos;
-  const basin = sphericalBasinForce(pos, refs.nodesRef.current);
+  const well = sphericalWellForce(pos, refs.nodesRef.current);
   const out = state.accelBuffer;
-  out.x = basin.x;
-  out.y = basin.y;
-  out.z = basin.z;
+  out.x = well.x;
+  out.y = well.y;
+  out.z = well.z;
   if (state.mode === 'dragging' && state.dragTarget) {
     const tangent = tangentTowards(pos, state.dragTarget);
     const distance = geodesicDistance(pos, state.dragTarget);
@@ -412,12 +436,26 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
     el.setAttribute('y2', pt.y.toFixed(2));
   }
   // Glyph rides the cursor's screen position — leads when the
-  // camera lags, settles back to the active basin's projection
+  // camera lags, settles back to the active well's projection
   // when the camera catches up.
   const cursorProj = projectToViewbox(state.pos, camera, basis, viewboxSize);
   if (refs.glyphRef.current && cursorProj.inFront) {
     refs.glyphRef.current.setAttribute('cx', cursorProj.x.toFixed(2));
     refs.glyphRef.current.setAttribute('cy', cursorProj.y.toFixed(2));
+  }
+  // Ghost-decay trail: each prior position is projected and written
+  // to the matching trail circle. Ghosts inherit their opacity from
+  // CSS (--trail-strength multiplied by per-ghost base opacity) so
+  // the trail asserts itself only during fast travel. Querying once
+  // per frame is acceptable on this hot path; the count is fixed
+  // (TRAIL_LENGTH = 4) and the selectors are direct descendants.
+  for (let i = 0; i < state.trailHistory.length; i++) {
+    const entry = state.trailHistory[i]!;
+    const trailEl = cameraGroup.querySelector(`[data-companion-trail="${i}"]`);
+    if (!trailEl) continue;
+    const proj = projectToViewbox(entry, camera, basis, viewboxSize);
+    trailEl.setAttribute('cx', proj.inFront ? proj.x.toFixed(2) : (-9999).toString());
+    trailEl.setAttribute('cy', proj.inFront ? proj.y.toFixed(2) : (-9999).toString());
   }
   // Hand the cursor's normalized screen position to the WebGL
   // firmament so its luminous pool of attention follows the
@@ -473,20 +511,52 @@ function tick(now: number, refs: RuntimeRefs): void {
   state.pos.y = next.y;
   state.pos.z = next.z;
 
+  // Shift the ghost-decay trail history. The newest entry (index 0)
+  // becomes the just-updated pos; older entries slide back. In-place
+  // mutation keeps the hot path allocation-free.
+  const tr = state.trailHistory;
+  for (let i = tr.length - 1; i >= 1; i--) {
+    tr[i]!.x = tr[i - 1]!.x;
+    tr[i]!.y = tr[i - 1]!.y;
+    tr[i]!.z = tr[i - 1]!.z;
+  }
+  tr[0]!.x = state.pos.x;
+  tr[0]!.y = state.pos.y;
+  tr[0]!.z = state.pos.z;
+
   // Re-tangent velocity to the new position too.
   const dotVP2 = state.vel.x * state.pos.x + state.vel.y * state.pos.y + state.vel.z * state.pos.z;
   state.vel.x -= dotVP2 * state.pos.x;
   state.vel.y -= dotVP2 * state.pos.y;
   state.vel.z -= dotVP2 * state.pos.z;
 
-  const nearest = geodesicNearestNode(state.pos, refs.nodesRef.current, BASIN_RADIUS_RAD);
+  const nearest = geodesicNearestNode(state.pos, refs.nodesRef.current, WELL_RADIUS_RAD);
   if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
+
+  // Write the per-frame style channels the companion glyph reads
+  // for its visible state:
+  //   --companion-claim — 0 at rest / off-well, 1 at well center.
+  //     CSS color-mixes amber toward the active facet hue by this
+  //     factor, honoring the design's continuous-modulation intent.
+  //   --trail-strength  — 0 at rest, 1 at fast travel. CSS multiplies
+  //     each ghost's base opacity by this so the trail asserts itself
+  //     only during real motion.
+  const glyph = refs.glyphRef.current;
+  if (glyph) {
+    const claim = nearest ? 1 - clamp(nearest.distance / WELL_RADIUS_RAD, 0, 1) : 0;
+    glyph.style.setProperty('--companion-claim', claim.toFixed(3));
+    const speed = Math.hypot(state.vel.x, state.vel.y, state.vel.z);
+    const trailStrength = clamp(speed / TRAIL_FULL_SPEED_RAD, 0, 1);
+    const parent = glyph.parentElement as SVGElement | HTMLElement | null;
+    parent?.style.setProperty('--trail-strength', trailStrength.toFixed(3));
+  }
 
   // Slerp the camera's surface point toward the cursor with a
   // damped catch-up rate. The camera *trails* the cursor: when the
   // visitor flicks, the cursor leads, the camera takes a beat to
   // follow, and the projected scene visibly shifts toward where
-  // the visitor is reaching.
+  // the visitor is reaching. Settled state: glyph at center, world
+  // centered on the active well's projection.
   const lagT = 1 - Math.exp(-CAMERA_LAG_RATE * dt);
   const slerped = slerp(state.cameraSurfacePos, state.pos, lagT);
   state.cameraSurfacePos.x = slerped.x;
@@ -666,9 +736,16 @@ function buildInitialState(): NavState {
   // of the constellation, what the visitor finds when they first
   // look up. Live camera + basis are computed from the surface point
   // so first paint matches the rest of the scene before the loop
-  // wakes up.
+  // wakes up. The trail history is initialized to the polestar so
+  // the first frame after wake-up doesn't render ghosts at random
+  // positions before the shift cycle has filled them.
   const startPos: UnitVector3 = { ...NORTH_POLE };
   const initialCamera = orbitalCamera(startPos);
+  const trailHistory: MutableVec3[] = Array.from({ length: TRAIL_LENGTH }, () => ({
+    x: startPos.x,
+    y: startPos.y,
+    z: startPos.z,
+  }));
   return {
     pos: { x: startPos.x, y: startPos.y, z: startPos.z },
     vel: { x: 0, y: 0, z: 0 },
@@ -684,6 +761,7 @@ function buildInitialState(): NavState {
     cameraSurfacePos: { x: startPos.x, y: startPos.y, z: startPos.z },
     currentCamera: initialCamera,
     currentBasis: cameraBasis(initialCamera),
+    trailHistory,
   };
 }
 

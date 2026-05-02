@@ -42,6 +42,14 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const titleId = 'constellation-title';
   const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
     useStarHoverState(null);
+  // The active star's facet hue, propagated to the companion group
+  // so CSS can mix the glyph's amber toward it by the per-tick
+  // --companion-claim factor the navigation hook writes. Null when
+  // no basin is settled — the glyph stays at-rest-no-active and
+  // reads as paper-amber.
+  const activeHue = activeKey
+    ? (nodes.find(({ key }) => key === activeKey)?.node.hue ?? null)
+    : null;
   const navigableNodes = nodes.map(({ key, node }) => ({ key, unitPos: node.unitPosition }));
   const navigableEdges: NavigableEdge[] = edges.flatMap((edge) => {
     const source = positioned.get(edge.sourceKey);
@@ -85,6 +93,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
               edges={edges}
               nodes={nodes}
               activeKey={activeKey}
+              activeHue={activeHue}
               isThreadActive={isThreadActive}
               onActivate={handleActivate}
               onMouseLeave={handleMouseLeave}
