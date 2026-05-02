@@ -55,7 +55,7 @@ export function Thread({ x1, y1, x2, y2, hue, id, active = false, className }: T
       data-active={active ? 'true' : undefined}
       aria-hidden="true"
       className={cn(
-        'constellation-thread pointer-events-none transition-all duration-200 ease-out',
+        'constellation-thread pointer-events-none',
         active ? 'opacity-95' : 'opacity-25',
         className,
       )}

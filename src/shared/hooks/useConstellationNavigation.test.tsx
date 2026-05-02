@@ -1,10 +1,12 @@
-import { describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { type CameraBasis } from '@/shared/geometry/camera';
 import { NORTH_POLE, sphericalToUnit, unitVector } from '@/shared/geometry/sphere';
 import {
   flickAngularVelocity,
   geodesicNearestNode,
   geodesicNeighborInDirection,
+  persistCursorPos,
+  readPersistedCursorPos,
   sphericalWellForce,
   tangentHoldDirection,
   type NavigableNode,
@@ -198,5 +200,46 @@ describe('geodesicNeighborInDirection', () => {
       STAGE_BASIS,
     );
     expect(result).toBeNull();
+  });
+});
+
+describe('cursor session persistence', () => {
+  beforeEach(() => {
+    globalThis.sessionStorage?.clear();
+  });
+
+  afterEach(() => {
+    globalThis.sessionStorage?.clear();
+  });
+
+  test('roundtrip — persisted unit vector reads back as the same point', () => {
+    const pos = sphericalToUnit({ theta: 0.4, phi: 1.2 });
+    persistCursorPos(pos);
+    const restored = readPersistedCursorPos();
+    expect(restored).not.toBeNull();
+    expect(restored!.x).toBeCloseTo(pos.x, 6);
+    expect(restored!.y).toBeCloseTo(pos.y, 6);
+    expect(restored!.z).toBeCloseTo(pos.z, 6);
+  });
+
+  test('returns null when no value has been stored', () => {
+    expect(readPersistedCursorPos()).toBeNull();
+  });
+
+  test('rejects values whose magnitude is not on the unit sphere', () => {
+    // A value that parses as {x,y,z} but isn't a unit vector — guard
+    // against corrupt or schema-drifted storage.
+    globalThis.sessionStorage?.setItem('sky:cursor:pos', JSON.stringify({ x: 5, y: 5, z: 5 }));
+    expect(readPersistedCursorPos()).toBeNull();
+  });
+
+  test('returns null on malformed JSON', () => {
+    globalThis.sessionStorage?.setItem('sky:cursor:pos', 'not-json');
+    expect(readPersistedCursorPos()).toBeNull();
+  });
+
+  test('returns null when the schema is missing a coordinate', () => {
+    globalThis.sessionStorage?.setItem('sky:cursor:pos', JSON.stringify({ x: 0, y: 0 }));
+    expect(readPersistedCursorPos()).toBeNull();
   });
 });

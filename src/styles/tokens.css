@@ -534,7 +534,80 @@ body::before {
 }
 
 .constellation-star__halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1);
+  opacity: 0.22;
+  transition:
+    transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
   animation: star-twinkle 4.5s ease-in-out infinite;
+}
+
+/* Halo claim — when the cursor settles into this star's well, the
+   halo crescendos: a small scale growth (~6%) and an opacity rise
+   over ~400ms with the signature easing. The design's named
+   *halo claim* visual cue — *the room becoming attentive to you.*
+   The twinkle animation keeps running; the claim composes with it
+   rather than replacing. */
+.constellation-star[data-active='true'] .constellation-star__halo {
+  transform: scale(1.065);
+  opacity: 0.45;
+}
+
+/* Gold-as-attention overlay. Invisible at rest; rises to a soft
+   ring around the facet halo when the well claims. Gold is the
+   language of attention given (CONSTELLATION_DESIGN.md §"Light as
+   Medium" — *gold marks attention; facet hues mark category*). */
+.constellation-star__gold {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.94);
+  opacity: 0;
+  transition:
+    transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.constellation-star[data-active='true'] .constellation-star__gold {
+  transform: scale(1);
+  opacity: 0.42;
+}
+
+/* The whispered label — *"{title}"* in italic serif at meta size,
+   second-voice, low opacity. Hidden at rest; fades in over 400ms
+   when the basin claims. CONSTELLATION_DESIGN.md §"System Voice"
+   names this register: whispered narration, no period. */
+.constellation-star__label {
+  fill: var(--text-2);
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 400ms ease-out;
+}
+
+.constellation-star[data-active='true'] .constellation-star__label {
+  opacity: 0.85;
+}
+
+/* Thread vesper persistence — *the afterimage is information.*
+   When a thread goes inactive, opacity and stroke-width fade over
+   ~600ms (the vesper register), letting the visitor's eye carry
+   the connection forward as their attention moves on. Going active
+   is quicker (~200ms) so the bloom arrives with the cursor's
+   settle. CONSTELLATION_DESIGN.md §"C3. Thread" V3.A and
+   CONSTELLATION.md §"The Threads" both name this rhythm. */
+.constellation-thread {
+  transition:
+    opacity 600ms ease-out,
+    stroke-width 600ms ease-out;
+}
+
+.constellation-thread[data-active='true'] {
+  transition:
+    opacity 200ms ease-out,
+    stroke-width 200ms ease-out;
 }
 
 /* Parallax layers — each group translates by a multiplier of the

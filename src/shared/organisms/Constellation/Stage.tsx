@@ -143,11 +143,13 @@ export function Stage({
               <Star
                 href={`/sky/${node.room}/${node.slug}`}
                 label={`${node.title} — ${ROOM_LABEL[node.room]}`}
+                visibleLabel={node.title}
                 cx={0}
                 cy={0}
                 hue={node.hue}
                 isPreview={node.isPreview}
                 twinkleDelay={node.twinklePhase}
+                isActive={key === activeKey}
               />
             </g>
           ))}

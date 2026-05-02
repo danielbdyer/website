@@ -353,6 +353,71 @@ function flipActive(state: NavState, key: string, setActiveKey: (k: string) => v
   if (key === state.activeKey) return;
   state.activeKey = key;
   setActiveKey(key);
+  persistCursorPos(state.pos);
+}
+
+/** sessionStorage key for the cursor's last sphere position. The
+ *  schema is `{x, y, z}` JSON; the position alone is enough to
+ *  re-mount the cursor where the visitor left it. P11 may extend
+ *  to a richer manifest (last active key, etc.); first form is
+ *  the minimum that survives a refresh. */
+const CURSOR_STORAGE_KEY = 'sky:cursor:pos';
+
+export function persistCursorPos(pos: { x: number; y: number; z: number }): void {
+  try {
+    globalThis.sessionStorage?.setItem(
+      CURSOR_STORAGE_KEY,
+      JSON.stringify({ x: pos.x, y: pos.y, z: pos.z }),
+    );
+  } catch {
+    // sessionStorage may be unavailable (private mode quotas, SSR).
+    // Persistence is best-effort; the rest of the navigation works.
+  }
+}
+
+export function readPersistedCursorPos(): UnitVector3 | null {
+  try {
+    const raw = globalThis.sessionStorage?.getItem(CURSOR_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      typeof (parsed as { x?: unknown }).x === 'number' &&
+      typeof (parsed as { y?: unknown }).y === 'number' &&
+      typeof (parsed as { z?: unknown }).z === 'number'
+    ) {
+      const candidate = parsed as { x: number; y: number; z: number };
+      const m = Math.hypot(candidate.x, candidate.y, candidate.z);
+      if (m < 0.5 || m > 1.5) return null; // not a unit vector — discard
+      return unitVector(candidate.x, candidate.y, candidate.z);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Apply a restored cursor position to the state. Mutates pos,
+ *  cameraSurfacePos, currentCamera, currentBasis, and seeds the
+ *  trail history at the restored point so the first frame after
+ *  wake-up doesn't render a streak. Extracted so the on-mount
+ *  restore effect doesn't mutate state inline (which the
+ *  React-Compiler lint rule flags). */
+function applyRestoredCursor(state: NavState, restored: UnitVector3): void {
+  state.pos.x = restored.x;
+  state.pos.y = restored.y;
+  state.pos.z = restored.z;
+  state.cameraSurfacePos.x = restored.x;
+  state.cameraSurfacePos.y = restored.y;
+  state.cameraSurfacePos.z = restored.z;
+  state.currentCamera = orbitalCamera(restored);
+  state.currentBasis = cameraBasis(state.currentCamera);
+  for (const entry of state.trailHistory) {
+    entry.x = restored.x;
+    entry.y = restored.y;
+    entry.z = restored.z;
+  }
 }
 
 function computeAccelerationInto(state: NavState, refs: RuntimeRefs): void {
@@ -803,6 +868,51 @@ export function useConstellationNavigation({
     viewboxSize,
     setActiveKey,
   };
+
+  // Cursor session persistence. On mount, restore the last sphere
+  // position the visitor settled on (within this session) and kick
+  // a tick so the scene re-projects through the restored camera.
+  // On pagehide / visibilitychange, persist the current position so
+  // a refresh or an overlay round-trip lands the cursor where the
+  // visitor left it. flipActive also persists on every basin claim
+  // so the saved value tracks live state.
+  useEffect(() => {
+    const state = stateRef.current;
+    const restored = readPersistedCursorPos();
+    if (restored) {
+      applyRestoredCursor(state, restored);
+      // Kick a tick so projectScene runs against the restored
+      // camera. First frame's dt = 0 (no integration); the loop
+      // continues from there and the well-attractor force smooths
+      // the cursor into whatever well it lands within. Build a
+      // local kickRefs from the stable inputs so the effect's deps
+      // stay narrow and the on-mount intent holds.
+      if (!prefersReducedMotion()) {
+        const kickRefs: RuntimeRefs = {
+          stateRef,
+          nodesRef,
+          edgesRef,
+          cameraRef,
+          glyphRef,
+          viewboxSize,
+          setActiveKey,
+        };
+        ensureRunning(kickRefs);
+      }
+    }
+    const persistOnHide = () => persistCursorPos(state.pos);
+    globalThis.addEventListener?.('pagehide', persistOnHide);
+    globalThis.addEventListener?.('visibilitychange', persistOnHide);
+    return () => {
+      globalThis.removeEventListener?.('pagehide', persistOnHide);
+      globalThis.removeEventListener?.('visibilitychange', persistOnHide);
+      // Final persist on unmount for SPA-style route changes that
+      // don't fire pagehide (TanStack Router transitions through
+      // the work overlay).
+      persistCursorPos(state.pos);
+    };
+  }, [cameraRef, glyphRef, viewboxSize, setActiveKey]);
+
   return {
     dragHandlers: {
       onPointerDown: (e: PointerEvent<SVGGElement>) => handlePointerDown(refs, e),
