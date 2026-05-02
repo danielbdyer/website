@@ -591,6 +591,40 @@ body::before {
   opacity: 0.85;
 }
 
+/* Behind-the-veil constellation — when the WorkOverlay is mounted
+   inside the /sky parent, the constellation continues to render
+   at reduced opacity. The slow rotation persists; the atmosphere
+   pool mutes; the companion glyph hides (the visitor's body is
+   inside the work now, not on the surface). CSS :has() queries
+   the parent for the overlay's presence and applies the veil; no
+   JS needed for the toggle. The 600ms fade with the signature
+   easing matches the View Transitions morph the panel plays
+   simultaneously, so the world dims as the star expands.
+   CONSTELLATION_DESIGN.md §"C12. WorkOverlay" names the *overlay
+   veil* visual cue and the *return-to-star* commitment. */
+.constellation,
+.webgl-firmament {
+  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.constellation-companion-group {
+  transition:
+    opacity 400ms ease-out,
+    transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sky-arrival:has(.work-overlay) .constellation {
+  opacity: 0.3;
+}
+
+.sky-arrival:has(.work-overlay) .webgl-firmament {
+  opacity: 0.5;
+}
+
+.sky-arrival:has(.work-overlay) .constellation-companion-group {
+  opacity: 0;
+}
+
 /* Thread vesper persistence — *the afterimage is information.*
    When a thread goes inactive, opacity and stroke-width fade over
    ~600ms (the vesper register), letting the visitor's eye carry

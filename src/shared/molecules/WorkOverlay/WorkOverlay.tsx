@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { DisplayWork } from '@/shared/content';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
 
 // The sky's way of opening a work. *An iframe-but-not-an-iframe.*
 //
@@ -26,13 +27,19 @@ import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 //   - Click outside the panel (on the backdrop) closes via the
 //     `closeHref` Link.
 //
-// The arrival animation is a simple opacity + scale fade-in over
-// 500ms with the signature easing — the *iframe-from-the-firmament*
-// gesture in its first form. The held richer form is a paired
-// view-transition morph from the clicked star into the overlay's
-// center, with reverse-Open on close. That requires the star to
-// suppress its own viewTransitionName when active so the morph is
-// unambiguous; held until the next pass.
+// Arrival is a paired view-transition morph from the clicked star
+// into the overlay's center, with reverse-Open on close. The
+// panel and the matching Star anchor both carry the same
+// `skyStarTransitionName` for the work's room+slug; the
+// Constellation organism suppresses the active star's name while
+// the overlay is open so the morph is unambiguous (a name on two
+// elements in one snapshot is undefined behavior). The browser
+// orchestrates the morph in both directions; navigation runs
+// through the router's defaultViewTransition global (router.tsx).
+// Behind the panel, the constellation continues at ~30% opacity
+// (CSS `:has(.work-overlay)` rule in tokens.css) — the world is
+// veiled, never replaced. Reduced-motion collapses the morph to
+// the global ~80ms fade.
 
 interface WorkOverlayProps {
   work: DisplayWork;
@@ -74,6 +81,7 @@ export function WorkOverlay({ work, closeHref }: WorkOverlayProps) {
       <div
         ref={panelRef}
         tabIndex={-1}
+        style={{ viewTransitionName: skyStarTransitionName(work.room, work.slug) }}
         className="work-overlay__panel bg-bg-card border-border relative max-h-[85dvh] w-[min(92vw,640px)] overflow-y-auto rounded-sm border px-8 py-10 shadow-lg focus:outline-none sm:px-12 sm:py-14"
       >
         <Link

@@ -26,6 +26,14 @@ interface StarProps {
    *  the halo claim, the gold-as-attention overlay, and the
    *  whispered label's fade-in. */
   isActive?: boolean;
+  /** Optional CSS view-transition name applied to the anchor. The
+   *  Constellation organism builds this from the work's room+slug
+   *  via skyStarTransitionName so a click into /sky/{room}/{slug}
+   *  morphs this star into the WorkOverlay panel. The organism
+   *  passes `undefined` for the star whose overlay is currently
+   *  open — names must be unique per snapshot, and the overlay
+   *  panel carries the same name. */
+  viewTransitionName?: string;
 }
 
 // The addressable star — a real `<a href>` anchor wrapping the
@@ -49,6 +57,7 @@ export function Star({
   isPreview = false,
   twinkleDelay,
   isActive = false,
+  viewTransitionName,
 }: StarProps) {
   return (
     <a
@@ -60,6 +69,7 @@ export function Star({
       )}
       data-hue={hue}
       data-active={isActive ? 'true' : undefined}
+      style={viewTransitionName ? { viewTransitionName } : undefined}
     >
       <StarMark
         hue={hue}

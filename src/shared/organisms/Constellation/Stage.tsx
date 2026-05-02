@@ -3,6 +3,7 @@ import type { ConstellationHue } from '@/shared/content/constellation';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
 import { Star } from '@/shared/molecules/Star/Star';
+import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
 import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 
 // The inside of the navigation camera. Extracted from Constellation
@@ -40,6 +41,12 @@ interface StageProps {
    *  --companion-claim factor the hook writes per tick. Null while
    *  the cursor is at-rest-no-active (the glyph stays full amber). */
   activeHue: ConstellationHue | null;
+  /** The key (`{room}/{slug}`) of the star whose overlay is
+   *  currently open at /sky/{room}/{slug}, when one is. That star
+   *  suppresses its viewTransitionName so the overlay panel's
+   *  matching name has unambiguous ownership across snapshots —
+   *  required for the morph to play. */
+  overlayKey: string | null;
 }
 
 // Number of ghost positions trailing the cursor. Mirrors TRAIL_LENGTH
@@ -103,6 +110,7 @@ export function Stage({
   dragHandlers,
   glyphRef,
   activeHue,
+  overlayKey,
 }: StageProps) {
   return (
     <>
@@ -148,6 +156,9 @@ export function Stage({
                 isPreview={node.isPreview}
                 twinkleDelay={node.twinklePhase}
                 isActive={key === activeKey}
+                {...(key === overlayKey
+                  ? {}
+                  : { viewTransitionName: skyStarTransitionName(node.room, node.slug) })}
               />
             </g>
           ))}
