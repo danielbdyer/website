@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "paths": {
+      "@dby/sky": ["./src/index.ts"],
+      "@dby/sky/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "harness"]
+}

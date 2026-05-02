@@ -17,7 +17,9 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@dby/sky": ["./packages/sky/src/index.ts"],
+      "@dby/sky/*": ["./packages/sky/src/*"]
     }
   },
   "include": ["src"]

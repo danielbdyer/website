@@ -37,6 +37,7 @@
   "globs": ["**/*.md"],
   "ignores": [
     "node_modules",
+    "**/node_modules/**",
     "dist",
     ".claude/**",
     "test-results/**",

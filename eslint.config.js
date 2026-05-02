@@ -9,7 +9,19 @@ import unicorn from 'eslint-plugin-unicorn';
 import boundaries from 'eslint-plugin-boundaries';
 
 export default tseslint.config(
-  { ignores: ['dist', 'src/app/routeTree.gen.ts', 'e2e/**'] },
+  {
+    ignores: [
+      'dist',
+      'src/app/routeTree.gen.ts',
+      'e2e/**',
+      // The constellation perf harness is a standalone Vite app
+      // under packages/sky/harness/. It deliberately uses untyped
+      // helpers (window event handlers, browser APIs without
+      // dom-types narrowing) and is dev-only — outside the
+      // type-checked surface that lints govern.
+      'packages/sky/harness/**',
+    ],
+  },
 
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -18,7 +30,7 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.ts', '*.cjs', '*.mjs', '*.js'],
+          allowDefaultProject: ['*.ts', '*.cjs', '*.mjs', '*.js', 'scripts/*.mjs'],
         },
         tsconfigRootDir: import.meta.dirname,
       },

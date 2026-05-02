@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@dby/sky': path.resolve(__dirname, './packages/sky/src/index.ts'),
     },
   },
   // Mirror the build-time define from vite.config.ts so the tests see

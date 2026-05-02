@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { resolve } from 'path';
+import path from 'node:path';
 
 export default defineConfig({
   plugins: [
@@ -18,7 +18,7 @@ export default defineConfig({
         // Co-located test files (Foo.test.tsx) live next to the route
         // files they exercise. Without this they trip a "does not export
         // a Route" warning on every build pass.
-        routeFileIgnorePattern: '\\.test\\.',
+        routeFileIgnorePattern: String.raw`\.test\.`,
       },
       // SSG: every known route is prerendered to static HTML at build time.
       // crawlLinks follows links from each page to discover paths the static
@@ -125,10 +125,14 @@ export default defineConfig({
         brotliSize: true,
         template: 'treemap',
       }),
-  ].filter(Boolean),
+  ].filter(Boolean) as PluginOption[],
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, './src'),
+      // Workspace alias for the @dby/sky package. Today the package
+      // is a re-export shim over the in-tree shared modules; Phase 2
+      // moves the implementations into packages/sky/src.
+      '@dby/sky': path.resolve(__dirname, './packages/sky/src/index.ts'),
     },
   },
   // Cloudflare Web Analytics token. Inlined as a build-time constant
