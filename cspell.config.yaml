@@ -154,6 +154,7 @@ words:
   - antipodal
 
   # Code + tooling
+  - devserver
   - tanstack
   - tsr
   - vitest
