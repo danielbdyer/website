@@ -79,6 +79,70 @@ A designer producing mocks for /sky should feel like they're drafting in a folio
 
 **The discipline this demands of designers:** if a mock looks like it could ship today on a typical SaaS site, the mock is wrong. If it looks like a careful page from a printed journal of celestial observations — possibly hand-bound — the mock is on register.
 
+### Aesthetic References
+
+Concrete coordinates an agent or designer can actually go look at. These are not influences in the marketing sense; they are *touchstones for calibration* — places to verify that a proposal lives in the right neighborhood.
+
+**Star atlases and celestial cartography:**
+
+- *Uranometria* (Johann Bayer, 1603) — the first atlas of the whole celestial sphere; the calligraphic precision; the way stars are *placed*, not arranged.
+- *Firmamentum Sobiescianum sive Uranographia* (Johannes Hevelius, 1690) — denser, more illustrative, the constellations rendered as figures with the stars showing through. The honeyed hand of the engraver.
+- *Atlas Coelestis* (John Flamsteed, 1729) — the working precision of an observatory atlas: less ornament, more record.
+- *Bonner Durchmusterung* charts (1859–1903) — the modern record-keeping star catalogue; the visual ethos of *the work that counts*.
+- Modern: Wil Tirion's *Sky Atlas 2000.0* — contemporary clarity, watercolor-ish density, still recognizably descended from the tradition.
+
+**Paper, ink, and the printed page:**
+
+- Khadi paper, Arches cold-press, Hahnemühle Bugra — the ground tones the *paper umber* token is reaching for.
+- Iron-gall ink and lampblack on rag paper — the warmth of dark marks on warm grounds; never pure black on pure white.
+- Doves Press editions (1900–1916), Officina Bodoni, the Ashendene Press — private-press typographic restraint; the way a single typeface can carry an entire publication.
+
+**Watercolor and the painted halo:**
+
+- Late J. M. W. Turner watercolors (the Burning of the Houses of Parliament series, 1834–35) — light as substance; what bleeding edges look like when an artist trusts the medium.
+- John Sell Cotman, *Greta Bridge* — the held quietness; the disciplined wash.
+- Hilma af Klint's geometric watercolors — symbolic forms in soft media; how a structural figure (the polestar) can sit gently inside a painted field.
+- Contemporary: Beatrice Forshall's botanical drypoints with watercolor — single-stroke linework against painted ground.
+
+**Typography:**
+
+- Newsreader (Production Type) and Literata (Type Together) — the site's actual faces; serifs designed for screen reading with optical-size axes that descend from Caslon, Centaur, and the metal traditions.
+- Caslon's *English Roman* (1734) — the warmth and irregularity. *Newsreader* in display sizes carries this lineage.
+- Galaxie Copernicus (Christian Schwartz / Kris Sowersby) — adjacent reference; the contemporary serif that still feels of the page.
+
+**Bookbinding and library aesthetics:**
+
+- Quarto and folio formats; signatures hand-sewn; head-bands; marbled endpapers as the chromatic relative of *paper umber + horizon warmth*.
+- The Newberry Library's reading rooms; the Beinecke's translucent marble. Spaces that hold attention without performing it.
+
+**Field guides and natural-history illustration:**
+
+- Roger Tory Peterson's bird guides (the original 1934 edition) — diagnostic clarity at small scale; the way a small mark must carry a full identification.
+- David Sibley's bird guides — denser plates, watercolor-like washes, ample whitespace around each subject.
+- Audubon's *Birds of America* double-elephant folios — generosity of scale; the dignity of single-subject pages.
+
+**Music as aesthetic kin:**
+
+- Arvo Pärt's *tintinnabuli* works — the *quiet* the constellation is reaching for. Reverent, slow, structurally clear.
+- Henryk Górecki's *Symphony No. 3* — held duration; what "slow" feels like when it isn't padding.
+- Hildur Guðnadóttir's *Saint* — the ambient drone Audio Considerations gestures at.
+
+**Cinema and spatial reference:**
+
+- *Solaris* (Tarkovsky, 1972) — the slow camera on familiar materials; how time slows when you're somewhere worth being.
+- *2001: A Space Odyssey* (Kubrick, 1968) — the Star Gate; the dignity of empty space; black and warm light together.
+- *Arrival* (Villeneuve, 2016) — the chambered approach to the unknown; the way a sphere can hold mystery.
+
+**Game design as wayfinding kin:**
+
+- *Super Mario Galaxy* (Nintendo, 2007) — the small-spherical-world traversal that Pass 2 cites by name. Specifically the *Good Egg Galaxy* — gentle gravity, intimate scale.
+- *Journey* (Thatgamecompany, 2012) — wordless wayfinding; the visitor learns by inhabiting; chrome retires entirely.
+- *Outer Wilds* (Mobius Digital, 2019) — a spherical world with hand-authored intimacy; everything is reachable from any state.
+
+**What to take from these:**
+
+The point is not to imitate any single touchstone. The point is that /sky lives at a particular *intersection*: the precision of celestial cartography, the warmth of private-press print culture, the patience of *tintinnabuli*, the wayfinding of small spherical worlds. A proposal that lives in only one of those neighborhoods is too narrow; one that lives in all of them, even faintly, is on register.
+
 ---
 
 ## What /sky Is NOT
@@ -100,6 +164,47 @@ When a proposal pulls toward any of the above, the question isn't "how do we ada
 
 ---
 
+## Epistemic Posture
+
+The constellation is an **epistemic object** — a way of knowing the corpus, not just navigating it. Beyond the question of *what /sky is for*, there is a deeper question: *what kind of knowledge does it produce in the visitor?* Honoring this question keeps designers from drifting into patterns that produce a different kind of knowledge while wearing the same clothes.
+
+**What the constellation enables the visitor to know:**
+
+- **Spatial recognition** — *where* a work sits among others. The visitor learns the corpus the way one learns a neighborhood: by walking it, by getting lost, by the felt-sense of "I am near the Garden's quarter now." This kind of knowledge cannot be acquired from a list.
+- **Relational understanding** — *what connects to what.* The threads make authored relationships perceptible. The visitor sees that *small weather* and *spanda waiting for the tremor* share a thread of *body* — and that knowledge is structural, not editorial commentary.
+- **Compositional awareness** — *what shape the whole has.* Looking at the populated cairn, the visitor perceives the corpus as a *body of work with weight and balance.* They notice clusters; they notice empty regions; they notice gravitational centers. This is knowledge of the author through the work's distribution.
+- **Temporal trace** — *when each work entered.* Through time-scrubbing, the visitor can encounter the constellation as it was. Authoring is dated; the surface lets the visitor witness that.
+- **Authorial trace** — *that the corpus is made by a hand.* The constellation is authored from end to end: every star placed, every thread drawn. The visitor's perception of the surface includes the perception of *someone having made it this way.*
+
+**What the constellation explicitly refuses to enable the visitor to know:**
+
+- **What others have read.** No reading counts, no popularity, no leaderboards. The constellation is intimate; its visitors do not surveil each other.
+- **What is "trending."** Time-scrubbing shows historical state, not popularity over time. There is no recency-as-importance.
+- **What an algorithm thinks they would like.** No "you might also like." No "people who read this also read." The constellation is what the author placed; inferring beyond that violates the authoring commitment.
+- **How well a work is performing.** No metrics, no engagement signals, no view counts. Works are not measured by the constellation; they are *placed* by it.
+- **How the visitor compares.** No "you've read 12% of the constellation." No completion meters. The visitor is not a user being tracked through a funnel.
+- **What is recommended.** The constellation does not curate beyond what the author already curated. The visitor's path is theirs to make.
+
+**Epistemic posture toward the visitor:**
+
+The visitor is treated as a **guest**, not a user. As an **explorer**, not a target. As a **reader**, not a consumer. As a **person**, not a metric.
+
+This translates into specific commitments throughout the surface:
+
+- The system never offers the visitor's reading history *back to them* as a feature ("places you've held" exists in the polestar panel only because the visitor explicitly held them).
+- The system never tells the visitor what to do (no directives, no tutorials, no nudges).
+- The system never measures the visitor (no telemetry that shapes their experience; what minimal analytics exist are aggregated, anonymous, used by the author to understand what's *given*, not what's *taken*).
+- The system never surprises the visitor with an interruption that wasn't initiated by them.
+- The system never asks the visitor for credentials, preferences, or sign-ups. The visitor *is* a visitor; that is the relationship.
+
+**Why this matters for design:**
+
+A proposal that introduces a "recommendations" panel, a "people also viewed" surface, a "your reading streak" indicator, or a "share to social" affordance is not just adding a feature — it is *changing the kind of knowledge the constellation produces.* It's importing a different epistemic posture (the surveillance-and-recommendation posture of contemporary feeds and platforms) into a surface designed to refuse that posture.
+
+When a proposal seems harmless ("just a small badge showing how many works exist"), check it against this posture: *does this addition treat the visitor as a guest, or as a measured user?* If the latter, the addition belongs to a different surface, not /sky.
+
+---
+
 ## Constellation Lexicon
 
 Every constellation surface speaks in this small vocabulary. Designers should use these words in mocks, microcopy, and annotations; engineers should respect them in identifiers and comments. New terms enter the lexicon only when an existing one cannot carry the meaning.
@@ -110,6 +215,50 @@ Every constellation surface speaks in this small vocabulary. Designers should us
 - **Facet** — a curatorial angle works share. Eight in the site's vocabulary.
 - **Horizon** — the temporal edge. Where time lives in the chrome. The horizon strip's position is metaphor as much as layout.
 
+### Metaphorical Grammar
+
+The lexicon is not just a glossary; it is a *grammar* — an interlocking system of metaphors that resonate with and reinforce one another. Understanding the grammar lets designers extend the metaphor without breaking it.
+
+**The metaphors compose:**
+
+The constellation is a **place** (you visit it, you wander, you return). The place has **stars** (points of light), **threads** (drawn between stars), **basins** (gatherings), and a **polestar** (still center). Above it sits a **sky**; beneath it is a **horizon** (the edge of the world); around the visitor is **atmosphere** (what light does in the medium). The visitor has a **companion glyph** (a body in this place) and **pinned places** (memory; held points of return). Time is **scrubbed** (raked across the surface); the corpus is **filtered** through **facets** (lenses).
+
+Each metaphor implies the others. *Stars* require *sky* (where else would they sit?). *Sky* requires *horizon* (the edge of looking-up). *Horizon* requires *time* (horizons hold what was and what is to come). *Polestar* requires *navigation* (a still point implies a moving observer). The grammar is closed and self-referential — every term inside the system points to another term inside the system.
+
+**The metaphors carry multiple registers simultaneously:**
+
+| Term | Astronomical | Navigational | Mythological | Library / atlas |
+|---|---|---|---|---|
+| Star | celestial body | navigation reference | sign / portent | entry in the catalogue |
+| Constellation | pattern of stars | named asterism for wayfinding | divine narrative | grouping of plates |
+| Polestar | Polaris, the still axis | true north | the unmoved mover | the standard reference point |
+| Horizon | the visual edge | the cardinal line | the boundary of the world | the foot of the page |
+| Thread | photon-path between stars | rhumb line / great circle | thread of fate | cross-reference / index entry |
+| Basin | gravitational region | safe harbor | sacred enclosure | named cluster in the atlas |
+| Atmosphere | light-bearing medium | weather conditions | the breath of things | the page's tone / wash |
+
+A designer working with one register (say, the astronomical) should be aware of the resonances in the others. *Threads* in a navigational register suggest paths to walk; in mythological, fate; in library, citation. The constellation's threads carry all three.
+
+**Risks of metaphorical drift:**
+
+- **Pushing one register too far.** Treating the constellation purely astronomically (real star catalogues, real magnitudes, real coordinates) breaks the others; treating it purely navigationally (compass, distances, "9 km to the next city") makes it functional but loses the reverence. The sustainable register is the *intersection*, not any one direction.
+- **Importing metaphors from outside.** "Network," "graph," "timeline," "feed" — these come from other surfaces and bring their own loads. Using them in /sky's vocabulary leaks alien grammar into the system.
+- **Allegory creep.** The constellation should not become *about* something else. It is what it is. If a thread starts to mean "obligation" or a basin starts to mean "category," the metaphor has been forced into service of a parallel meaning that thins the original.
+- **Losing the ground.** The metaphors work because the constellation is *also* a literal thing — stars are real points on a sphere, threads connect them, the basin physics is real. The metaphor is *grounded* in mechanics that match it. When the metaphors stop being supported by the underlying mechanics, the surface becomes decorative; the words stop meaning anything.
+
+**Extending the lexicon:**
+
+If a new concept genuinely doesn't fit any existing term, a new term may enter the lexicon. The discipline:
+
+1. **Test fit against existing terms first.** Most "new" concepts are *aspects* of existing terms. ("Cluster" is a *basin*. "Connection" is a *thread*. "View" is a *surface state*.)
+2. **The new term must be in-register.** Astronomical, navigational, mythological, or library — within the same family. Not from physics, not from databases, not from social platforms.
+3. **The new term must be load-bearing.** It must do work that no other term does.
+4. **The new term must be memorable in italic.** If it doesn't read in the system's voice, it doesn't belong.
+
+Examples of *in-register* extensions that might earn their place over time: *meridian* (a line of latitude on the sphere; could name a temporal axis through the constellation), *ephemeris* (a moment-fixed table; could name a saved view of the constellation at a date), *transit* (a star crossing the meridian; could name a kind of thread-traversal). Examples of *out-of-register* extensions to refuse: *dashboard, tag, post, share, follow, feed, board, wall, profile.*
+
+The lexicon is the surface's spine. Take care of it.
+
 ## Visual Cues
 
 The named motions that signal state changes. Designers should call these by name in mocks; engineers should match the visual language at the implementation level.
@@ -119,6 +268,33 @@ The named motions that signal state changes. Designers should call these by name
 - **Strip thickening** — the horizon grows slightly to anchor time and place when filters or time-scrubbing are active. Visible at `FilterActive` (S9) and `TimeScrubbed` (S10).
 - **Atmosphere dimming** — motion and luminance recede when the visitor goes quiet. The constellation continuing without you. Visible at `Contemplative` (S15).
 - **Overlay veil** — content takes focus, the cosmos steps back. The work content sharpens; the constellation softens behind. Visible at `WorkOpen` (S13).
+
+---
+
+## Semiotic Layer
+
+What the surface's signs *mean* — independent of what they *do*. Every visual element in /sky carries a load of cultural and historical signal that designers and agents should respect when proposing changes. Replacing a sign with a different one is rarely a neutral substitution; it usually trades one set of inherited meanings for another.
+
+This section names the load each major sign carries, so a proposal that disrupts a sign's role is making the disruption *consciously*.
+
+| Sign | What it does | What it signifies (the load) |
+|---|---|---|
+| **Eight-point star (numerals, ornament, polestar form)** | Marks numbered sections; the polestar's geometric figure; a small flourish at section breaks | The navigational rose; the Christian star of Bethlehem; the Sufi *rub el hizb*; the Mesoamerican Venus glyph. *A mark of orientation across cultures.* The site adopts it as signature; replacing it would mean importing a different cultural inheritance. |
+| **Gold (linework, halos, link underlines, active states)** | Highlights the active, focused, hovered, attended-to | Gilding; manuscript illumination; iconographic haloing of the sacred-or-honored. *Gold is the language of attention given* — the visitor's eye is treated as a small reverence. Other facet hues mark categories; gold marks *being-paid-attention-to.* |
+| **Italic serif (the system's voice)** | All system-spoken copy; chip labels; placeholders; whispered narration | Paratext; citation; a voice slightly removed from the work itself. *The system speaks aside, never on stage.* Italic descends from cursive private writing — the register of a note, not a proclamation. |
+| **Watercolor halo (around stars; in title regions)** | The bleeding edge of every star body; soft regions in compositions | A repudiation of the digital register — paper-not-screen; medium that admits the hand. *The constellation is composed, not generated.* A vector-perfect circle would signify a different production; the wash signifies authorship. |
+| **Brushstroke thread (between stars)** | Marks an authored relationship | The hand-drawn line is *manual*; it could only have been placed by someone. The taper signifies direction without arrow-marks. *Threads were drawn, not derived.* This sign refuses algorithmic similarity edges. |
+| **Paper grain (sky background)** | The substrate on which everything is painted | The *page* — a unit of attention, of held material. Not "background"; not "wallpaper"; the medium itself. Visitors recognize paper at a perceptual level even when they don't notice it; the sign reads as *we are in something physical*. |
+| **The polestar (still center)** | World-axis; orientation anchor; constant across themes and time | True north; the unmoved mover; the Quaker meeting house's silence; the *eye* of the storm in a vortex pattern. *The point that does not have to argue for itself.* The polestar's stillness is a sign that the rest may move because something does not. |
+| **The companion glyph (visitor's mote)** | Where the visitor is, on the surface | A *trace* — a mark of presence in the field. (Compare: a footstep in sand; a breath on glass.) Not a pointer (which signals control); a presence (which signals inhabitance). The glyph's persistence-with-trail is the sign that *someone has been here, is here.* |
+| **Atmosphere pool (light following cursor)** | Brightens around the cursor's projected position | The world responding to attention. (Compare: a candle held over a manuscript; the light of reading.) The pool says *here is where you are looking; the world acknowledges it.* |
+| **Horizon strip (bottom edge chrome)** | Tools at the lower-edge of the world | The horizon as the line where ground meets sky; the horizon also as *the time-edge* (where what-was meets what-is). Tools live there because *that is where the visitor's hands rest when they are not reaching.* |
+| **Twin-sphere title pairing (light + dark)** | The two themes shown together at the top of mockup posters | *The same world at different hours.* The sign asserts that light and dark are equally valid; the constellation is not "light-themed with a dark mode" or vice versa. |
+| **Asterism dividers (three small marks between sections)** | Section breaks within long documents | The lineage of typography — printed asterisks, fleurons, manuscript dividers. *The page breathes between thoughts, decoratively.* A horizontal rule would be mechanical; an asterism is breath. |
+| **Slow rotation (600s/cycle)** | Background motion of the constellation | The world has its own time; not the visitor's. Subliminal — felt rather than seen. *A sign that something here is older and slower than the moment of visiting.* Honoring CLAUDE.md's commitment that the site does not perform for the visitor. |
+| **Negative space around stars** | Distance between points | The *room to look*. Not emptiness; not waste. (Compare: the white margin in a folio; the *ma* of Japanese composition — pregnant interval.) The stars are not crowded; the space between them is part of what they say. |
+
+**The discipline this demands:** when a designer proposes replacing a sign, they should name the new sign's *load* — what cultural inheritance does it bring, and is that inheritance compatible with the constellation's? A proposal that swaps the eight-point star for a four-point star is making a quiet cultural statement (modern minimalism over cross-cultural navigation); a proposal that swaps gold for blue is making a different one (cool-rationalist over warm-reverent). These swaps may be defensible; they should not be silent.
 
 ---
 
@@ -1131,6 +1307,33 @@ The small marks used decoratively across the surface and its documentation. Ever
 
 When ornamentation is added, ask: *does this mark carry meaning, or is it filling space?* If the latter, retire it.
 
+### Stylistic Asceticism and Generosity
+
+The surface practices both **asceticism** (radical restraint) and **generosity** (radical openhandedness) — *in different places.* Knowing which is appropriate where is part of the discipline.
+
+**Where the style is ascetic** — strict, restrained, refusing additions:
+
+- **Chrome.** The HorizonStrip is barely-there at rest. No labels at default opacity. No persistent indicators. No drop shadows. No badge counts. The strip's restraint is not an aesthetic preference; it is a moral position about what tools should do when the visitor is not asking for them.
+- **System voice.** Microcopy is minimal, italic, second-voice, never more than necessary. The word *please* never appears. The phrase *click here* never appears. Confirmation copy ("filter applied") is forbidden because the change itself is visible.
+- **Iconography.** Single-stroke; no fills; no rounded corners; never colored except in active states. The icon set is small (nine icons) and *closed* — it does not grow to accommodate features that don't already have a symbol in the family.
+- **Negative space around stars.** Stars are not crowded. The blank field between them is *honored* — designers should resist filling it with ornament, status indicators, or guides. The space is what makes the constellation *legible* as a constellation rather than a scatter.
+- **Ornamental marks.** Every ornamental element (eight-point star, asterism divider, gold rule) carries meaning. None is decorative-only. Designers proposing a new ornament must justify its load.
+
+**Where the style is generous** — full-bodied, abundant, openhanded:
+
+- **Work overlay body type.** Generous measure (50–75 characters per line). Generous leading (1.7–1.8). Generous margins. Drop-cap on first paragraph optional. The reading surface is where the constellation *gives the visitor everything*. Reading is treated as honored.
+- **Work overlay whitespace.** The overlay does not maximize content density; it gives the work room to breathe. A poem of three lines fills the same overlay as an essay of three thousand — the framing is not "use the available space" but "honor the work at its scale."
+- **Watercolor halos.** Halos bleed beyond the geometric circle of the body. They could be precise — they are deliberately not. The halo's softness is a *gift* given to the visitor's eye.
+- **Atmosphere pool.** The luminous region around the cursor is generous in radius (~45% of viewport short edge). It exceeds what is needed for the cursor itself; the surplus *brightens the visitor's neighborhood.* The pool is a small kindness.
+- **Gold.** When gold appears (active states, link underlines, halo crescendos), it is full-saturation and unhesitating. The site does not use *muted gold* anywhere — gold is gold. Honoring is not partial.
+- **Slow durations.** The 600s rotation, the 600ms reveal animations, the 1.4s arrival carpet — these are *long* by contemporary standards. The duration is a generosity to the visitor's attention; the surface refuses to hurry them.
+
+**The discipline this implies:**
+
+A common design failure is *uniform restraint* (everything tasteful, sparse, minimal) or *uniform abundance* (everything generous, decorated, fluid). /sky is neither. It is *strict where strictness honors the visitor's attention*; it is *generous where generosity honors the work being read.*
+
+When in doubt: chrome and microcopy default to ascetic; reading surfaces and welcome moments default to generous. If a design proposal applies the wrong register (lavish chrome, ascetic reading column), the proposal is misaligned even if it's individually well-crafted.
+
 ---
 
 ## Density and Pacing
@@ -1150,6 +1353,37 @@ When the corpus exceeds ~50 stars, the design must reckon with one of these stra
 - Smaller stars, denser packing, more reliance on filtering
 - Constellation patterns (named asterisms) that visually group related works
 - Camera zoom that brings clusters into focus while compressing the rest
+
+### Compositional Eye-Movement
+
+A populated constellation surface is *composed* — and composition implies a path the eye is encouraged to take. Designers should mock with this path in mind, not with the assumption that "the visitor will look wherever."
+
+**The canonical first arrival path** (when the visitor lands on the populated surface):
+
+1. **Polestar first.** The eye finds the still center before anything else. The polestar's position at viewbox center, its slow rotation, and the slight watercolor wash around it all draw the eye there on first glance.
+2. **The brightest star next.** Whichever star carries the most threads (the gravitational center of the populated cairn) — its halo will be slightly larger by depth-cue, its surrounding atmosphere subtly warmer. The eye moves from the polestar to this star as the second beat.
+3. **The companion glyph third.** During the Demonstration state, the glyph drifts from the polestar to the nearest star — and the eye follows. By the time the drift completes, the visitor's eye is at the demo star, having been led there by motion.
+4. **The threads fourth.** Once the visitor's eye is anchored at a star, the threads from that star (highlighted at full opacity by the active basin) become legible as paths.
+5. **The horizon last.** Chrome enters peripheral vision only when the visitor reaches for it (pointer near the strip, or after a few seconds of orientation).
+
+**Compositional principles supporting this path:**
+
+- **Center first, periphery later.** The strongest visual weight is at world center (polestar + slight wash). Stars distribute around the center; the rim is where the constellation thins. The eye's natural instinct to land at center is honored, not fought.
+- **Hierarchy through depth, not size.** Closer-to-camera stars are ~15% larger and more saturated than far-from-camera stars. The eye reads depth as importance — but the importance is *spatial*, not editorial.
+- **Threads create paths, not a web.** A web invites the eye to wander randomly. Threads that bloom from a focused star create *directional* paths — *from here, to there.* The eye is never overwhelmed by all threads at once because threads at default opacity are wisp-faint; only the active basin's threads brighten.
+- **The atmosphere pool concentrates attention without confining it.** The pool brightens around the cursor, but its smoothstep falloff means the rest of the constellation remains visible. The eye is *invited* to stay near the pool, not *forced*.
+- **No element shouts. Every element invites.** No flashing, pulsing-when-not-engaged, color-cycling, attention-grabbing motion exists in the default state. The constellation does not compete for the visitor's eye; the visitor's eye finds the constellation when it's ready.
+
+**Reading the constellation as a composition:**
+
+When a designer evaluates a populated mock, they should ask:
+
+- *Where does the eye land first?* If it's not the polestar, the composition is mis-weighted.
+- *Where does it go second?* If it scatters or fragments, the constellation is too uniform — there's no felt center of gravity in the populated cairn.
+- *Does the eye know where to rest?* If every star competes for attention, the composition has lost pacing. The eye should be able to *sit* at the polestar, the glyph, or the active basin.
+- *Is the periphery quiet enough to let the center breathe?* If chrome or rim-stars draw the eye away from the constellation's body, the composition is leaking attention outward.
+
+**The risk to watch for:** *visual democracy* — the design failure where every star, thread, and chrome element is rendered with equal weight, leaving the eye nowhere to land. Visual democracy is sometimes treated as a virtue ("everything is equally important") but in a constellation it produces *visual chaos.* The composition needs *hierarchy of attention* — and the polestar holds the keystone of that hierarchy.
 
 ---
 
@@ -1601,6 +1835,42 @@ world-like navigation · quiet chrome · continuous reachability · spatial read
 ### Sample Content
 
 Canonical sample work: ***Orion's Heart*** by *Lyra Bridge*. Sample threads: *Star Birth Cycle*, *Nebular Memory*, *Return to Orion*. Sample pinned items: *Draco's Gate*, *Lyra Bridge*, *Vela Forge*.
+
+### Semiotic Loads (the signs that matter)
+
+| Sign | Load |
+|---|---|
+| Eight-point star | Navigation rose; cross-cultural orientation mark |
+| Gold | Attention, illumination, the honored |
+| Italic serif | Second voice; aside, not stage |
+| Watercolor halo | Paper-not-screen; composed, not generated |
+| Brushstroke thread | Authored, not algorithmic |
+| Paper grain | Substrate; physical material |
+| Polestar | Unmoved mover; true north |
+| Companion glyph | A trace of presence |
+| Atmosphere pool | World responding to attention |
+| Horizon | Where ground meets sky; where time-edge meets spatial-edge |
+
+### Epistemic Posture (the knowledge produced)
+
+The constellation enables **spatial recognition**, **relational understanding**, **compositional awareness**, **temporal trace**, and **authorial trace**. It refuses to enable surveillance, recommendation, ranking, or comparison-against-others. The visitor is a **guest**, not a user; an **explorer**, not a target; a **reader**, not a consumer.
+
+### Metaphorical Registers
+
+The lexicon resonates across four registers simultaneously: **astronomical, navigational, mythological, library/atlas**. Extensions to the lexicon must stay within these registers. *Refused: dashboard, tag, post, share, follow, feed, board, wall, profile.*
+
+### Stylistic Register Map
+
+- **Ascetic** — chrome, microcopy, iconography, negative space, ornamental marks
+- **Generous** — work overlay body, whitespace, watercolor halos, atmosphere pool, gold, slow durations
+
+### Compositional Hierarchy
+
+Eye lands first at the polestar, then the brightest (most-connected) star, then the companion glyph, then threads from the active basin, then chrome. **Visual democracy is failure**; the composition has a center.
+
+### Aesthetic References
+
+Star atlases (*Uranometria* 1603; *Firmamentum Sobiescianum* 1690), private-press typography (Doves, Officina Bodoni), late Turner watercolors, Cotman's *Greta Bridge*, Hilma af Klint's geometric watercolors, Pärt's *tintinnabuli*, Tarkovsky's *Solaris*, *Super Mario Galaxy*'s Good Egg Galaxy, *Outer Wilds*. The intersection — celestial precision + private-press warmth + meditative slowness + small-spherical-world wayfinding — is the neighborhood.
 
 ---
 
