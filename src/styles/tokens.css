@@ -425,6 +425,37 @@ body::before {
   animation: constellation-spin 600s linear infinite;
 }
 
+/* The navigation camera. Wraps the world (polestar + rotates layer)
+   so a small pan-and-yaw can follow the visitor's selection without
+   touching the rotation animation beneath. The hook
+   useConstellationNavigation writes `--cam-x`, `--cam-y`, `--cam-yaw`
+   (in viewbox units / degrees) each RAF tick — the same custom-
+   property pattern useConstellationParallax uses. The integrator is
+   the source of smoothing so no CSS transition lives here; it would
+   fight the loop. transform-origin is the firmament's center so the
+   yaw pivots around the polestar. With prefers-reduced-motion: reduce,
+   the hook short-circuits and the variables stay at their defaults;
+   the camera renders as identity. */
+.constellation-camera {
+  transform-origin: 500px 500px;
+  transform: translate(calc(var(--cam-x, 0) * 1px), calc(var(--cam-y, 0) * 1px))
+    rotate(calc(var(--cam-yaw, 0) * 1deg));
+}
+
+/* Companion glyph — the small mote that marks where the visitor's
+   cursor is on the latent sphere. The hook positions it each RAF
+   tick by writing cx and cy attributes; this rule sets the visual
+   character. A faint warm-amber dot with a soft halo via the same
+   watercolor filter the stars use, so the glyph reads as kin to
+   the constellation rather than chrome on top of it. */
+.constellation-companion {
+  fill: var(--accent-warm);
+  opacity: 0.55;
+  filter: url('#cn-watercolor-halo');
+  pointer-events: none;
+  transition: opacity 200ms ease-out;
+}
+
 .constellation-star__halo {
   animation: star-twinkle 4.5s ease-in-out infinite;
 }

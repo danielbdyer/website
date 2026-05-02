@@ -9,7 +9,7 @@ import unicorn from 'eslint-plugin-unicorn';
 import boundaries from 'eslint-plugin-boundaries';
 
 export default tseslint.config(
-  { ignores: ['dist', 'src/app/routeTree.gen.ts'] },
+  { ignores: ['dist', 'src/app/routeTree.gen.ts', 'e2e/**'] },
 
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
