@@ -126,6 +126,22 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
   const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp, dragHandlers } = interactions;
   return (
     <>
+      {/* Watercolor wash — soft halo of paper-warm light around
+          the polestar. CONSTELLATION_DESIGN.md §"Materials"
+          commits to washes around the polestar; the gradient
+          lives in ConstellationFilters as `cn-polestar-wash` and
+          renders as a large fill-only circle behind the
+          geometric figure. The wash sits inside the SVG so the
+          firmament's noise composes through it; a CSS overlay
+          would sit on top instead and read as chrome. */}
+      <circle
+        cx={500}
+        cy={500}
+        r={220}
+        fill="url(#cn-polestar-wash)"
+        aria-hidden="true"
+        className="constellation-polestar-wash pointer-events-none"
+      />
       <Polestar cx={500} cy={500} />
       <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
       <g className="constellation-rotates">

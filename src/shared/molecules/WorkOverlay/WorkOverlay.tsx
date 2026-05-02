@@ -51,6 +51,43 @@ interface WorkOverlayProps {
   closeHref: string;
 }
 
+/** The overlay's lead-in: kicker → title → deck → metadata band →
+ *  asterism divider. CONSTELLATION_DESIGN.md §"Typographic Reading
+ *  System" orders these as the page settles before the body
+ *  arrives. Extracted so WorkOverlay's body keeps its 80-line
+ *  ceiling. */
+function OverlayLead({ work, titleId }: { work: DisplayWork; titleId: string }) {
+  return (
+    <>
+      <p className="text-kicker text-text-2 mb-4 italic">
+        From {ROOM_LABEL[work.room as keyof typeof ROOM_LABEL]}
+      </p>
+      <h1
+        id={titleId}
+        className="font-heading text-title leading-title tracking-display text-text mb-4 font-normal"
+      >
+        {work.title}
+      </h1>
+      {/* Deck — italic serif at meta size, second-voice. The
+          design's typographic system places the deck between
+          the title and the metadata band: an invitation, not a
+          summary. */}
+      {work.summary && <p className="work-overlay__deck">{work.summary}</p>}
+      <p className="text-meta text-text-3 mb-2 italic">
+        {work.date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })}
+      </p>
+      {/* Asterism — *the page breathes between thoughts.* */}
+      <div className="work-overlay__asterism" aria-hidden="true">
+        ⁂
+      </div>
+    </>
+  );
+}
+
 export function WorkOverlay({ work, closeHref }: WorkOverlayProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = `work-overlay-title-${work.room}-${work.slug}`;
@@ -91,24 +128,9 @@ export function WorkOverlay({ work, closeHref }: WorkOverlayProps) {
         >
           ×
         </Link>
-        <p className="text-kicker text-text-2 mb-4 italic">
-          From {ROOM_LABEL[work.room as keyof typeof ROOM_LABEL]}
-        </p>
-        <h1
-          id={titleId}
-          className="font-heading text-title leading-title tracking-display text-text mb-4 font-normal"
-        >
-          {work.title}
-        </h1>
-        <p className="text-meta text-text-3 mb-8 italic">
-          {work.date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </p>
+        <OverlayLead work={work} titleId={titleId} />
         <div
-          className={`prose ${work.type === 'poem' ? 'prose-poem' : ''}`}
+          className={`work-overlay__body prose ${work.type === 'poem' ? 'prose-poem' : ''}`}
           dangerouslySetInnerHTML={{ __html: work.html }}
         />
         {work.facets.length > 0 && (

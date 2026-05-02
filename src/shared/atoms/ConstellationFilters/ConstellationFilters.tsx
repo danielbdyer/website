@@ -40,6 +40,37 @@ export function ConstellationFilters() {
         />
       </filter>
 
+      {/* Brushstroke thread — the at-rest filter applied to every
+          thread so connections read as *hand-drawn* rather than
+          mathematically straight. CONSTELLATION_DESIGN.md
+          §"Materials" commits to brushstroke threads (tapered,
+          varied, hand-drawn quality) — and the audit named the
+          current vector lines as drift from that promise. The
+          filter is two passes: a subtle low-frequency turbulence
+          map (slower wobble than the watercolor halo's, so the
+          line doesn't shimmer) and a small displacement that
+          nudges the stroke laterally by ~0.6 viewbox units. Light
+          touch — the geometry stays legible; the *register*
+          shifts toward paper. Active threads bypass this filter
+          and use `cn-vespers-bloom` instead — bloom dominates,
+          the brushstroke would compete with it. */}
+      <filter id="cn-brushstroke-thread" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.18"
+          numOctaves="2"
+          seed="7"
+          result="brushNoise"
+        />
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="brushNoise"
+          scale="0.6"
+          xChannelSelector="R"
+          yChannelSelector="G"
+        />
+      </filter>
+
       {/* Vespers bloom — what a thread passes through when its endpoint
           star is hovered or focused. A wider gaussian blur, a brightness
           boost via color matrix to push the pastel toward luminescence,
@@ -61,6 +92,23 @@ export function ConstellationFilters() {
           <feMergeNode in="SourceGraphic" />
         </feMerge>
       </filter>
+
+      {/* Polestar wash — a soft watercolor halo around the geometric
+          figure at world center. CONSTELLATION_DESIGN.md
+          §"Materials" + §"Aesthetic / Visual Tone" commit to
+          *watercolor washes* in title regions and around the
+          polestar; this is its first form. Renders as a radial
+          gradient inside the SVG so it composes with the
+          firmament's noise rather than sitting on top as chrome.
+          The bleed extends ~150 viewbox units beyond the polestar
+          figure (~200 short-edge), large enough to feel like the
+          page receiving the figure rather than the figure being
+          drawn on the page. */}
+      <radialGradient id="cn-polestar-wash" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="var(--accent-warm)" stopOpacity="0.18" />
+        <stop offset="40%" stopColor="var(--accent-warm)" stopOpacity="0.08" />
+        <stop offset="100%" stopColor="var(--accent-warm)" stopOpacity="0" />
+      </radialGradient>
     </defs>
   );
 }
