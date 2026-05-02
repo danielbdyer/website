@@ -1,5 +1,5 @@
 import { Link, Outlet, createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Constellation } from '@/shared/organisms/Constellation/Constellation';
+import { Constellation } from '@dby/sky';
 import { useReturnGesture } from '@/shared/hooks/useReturnGesture';
 import { getConstellationGraph } from '@/shared/content/constellation';
 
