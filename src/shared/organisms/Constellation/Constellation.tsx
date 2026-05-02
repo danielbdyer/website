@@ -29,9 +29,6 @@ interface ConstellationProps {
   className?: string;
 }
 
-const isThreadActive = (activeKey: string | null, sourceKey: string, targetKey: string): boolean =>
-  activeKey === sourceKey || activeKey === targetKey;
-
 export function Constellation({ graph, fullViewport = false, className }: ConstellationProps) {
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
@@ -102,18 +99,15 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">
             <Stage
-              edges={edges}
-              nodes={nodes}
-              activeKey={activeKey}
-              activeHue={activeHue}
-              overlayKey={overlayKey}
-              isThreadActive={isThreadActive}
-              onActivate={handleActivate}
-              onMouseLeave={handleMouseLeave}
-              onBlur={handleBlur}
-              onKeyDown={onKeyDown}
-              onKeyUp={onKeyUp}
-              dragHandlers={dragHandlers}
+              world={{ edges, nodes, activeKey, activeHue, overlayKey }}
+              interactions={{
+                onActivate: handleActivate,
+                onMouseLeave: handleMouseLeave,
+                onBlur: handleBlur,
+                onKeyDown,
+                onKeyUp,
+                dragHandlers,
+              }}
               glyphRef={glyphRef}
             />
           </g>

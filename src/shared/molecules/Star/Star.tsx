@@ -2,37 +2,46 @@ import type { ConstellationHue } from '@/shared/content/constellation';
 import { StarMark } from '@/shared/atoms/StarMark/StarMark';
 import { cn } from '@/shared/utils/cn';
 
-interface StarProps {
+/** What the star represents — the work's addressing + display
+ *  attributes. The star *is* a work, rendered as a point of
+ *  light; this shape is the work's side of that pairing. The
+ *  parent (Stage) builds it from a RenderableNode. */
+export interface StarWork {
   /** The work's URL — `/sky/${room}/${slug}`. */
-  href: string;
-  /** Used as the anchor's accessible name. Typically
-   *  `"{title} — {room}"` so screen readers hear the work and its
-   *  neighborhood. */
-  label: string;
-  /** Visible label below the body when active or hovered. Italic
-   *  serif, second-voice, no period — *the constellation's whisper
-   *  of what this is.* Falls back to `label` if not provided. */
-  visibleLabel?: string;
+  readonly href: string;
+  /** The anchor's accessible name. Typically
+   *  `"{title} — {room}"` so screen readers hear the work and
+   *  its neighborhood. */
+  readonly label: string;
+  /** Visible label below the body when active or hovered.
+   *  Italic serif, second-voice, no period. Falls back to
+   *  `label` if not provided. */
+  readonly visibleLabel?: string;
   /** Visual hue from the work's primary facet. */
-  hue: ConstellationHue;
+  readonly hue: ConstellationHue;
   /** Preview/draft works render quieter and add a "(preview)"
    *  hint to the accessible name so screen readers announce the
    *  surface honestly. */
-  isPreview?: boolean;
-  /** Animation-delay (in seconds) for the halo's twinkle keyframe. */
+  readonly isPreview?: boolean;
+}
+
+interface StarProps {
+  work: StarWork;
+  /** Animation-delay (in seconds) for the halo's twinkle
+   *  keyframe. Stable per slug, set by the organism so adjacent
+   *  halos don't pulse in sync. */
   twinkleDelay?: number;
-  /** When true, the star is the cursor's settled basin (or hovered
-   *  / focused). The CSS uses data-active on this anchor to drive
-   *  the halo claim, the gold-as-attention overlay, and the
-   *  whispered label's fade-in. */
+  /** When true, the star is the cursor's settled basin (or
+   *  hovered / focused). CSS uses data-active on this anchor to
+   *  drive the halo claim, the gold-as-attention overlay, and
+   *  the whispered label's fade-in. */
   isActive?: boolean;
-  /** Optional CSS view-transition name applied to the anchor. The
-   *  Constellation organism builds this from the work's room+slug
-   *  via skyStarTransitionName so a click into /sky/{room}/{slug}
-   *  morphs this star into the WorkOverlay panel. The organism
-   *  passes `undefined` for the star whose overlay is currently
-   *  open — names must be unique per snapshot, and the overlay
-   *  panel carries the same name. */
+  /** Optional CSS view-transition name applied to the anchor.
+   *  Stage builds this from the work's room+slug via
+   *  `skyStarTransitionName` so a click into
+   *  /sky/{room}/{slug} morphs this star into the WorkOverlay
+   *  panel. Stage passes `undefined` for the star whose overlay
+   *  is currently open — names must be unique per snapshot. */
   viewTransitionName?: string;
 }
 
@@ -49,16 +58,8 @@ interface StarProps {
 // to drive the halo crescendo and the label fade-in — see
 // tokens.css §"Constellation".
 
-export function Star({
-  href,
-  label,
-  visibleLabel,
-  hue,
-  isPreview = false,
-  twinkleDelay,
-  isActive = false,
-  viewTransitionName,
-}: StarProps) {
+export function Star({ work, twinkleDelay, isActive = false, viewTransitionName }: StarProps) {
+  const { href, label, visibleLabel, hue, isPreview = false } = work;
   return (
     <a
       href={href}

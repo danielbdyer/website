@@ -1,12 +1,18 @@
 import type { ConstellationHue } from '@/shared/content/constellation';
 import { cn } from '@/shared/utils/cn';
 
+/** Endpoints in the SVG's viewBox space. Bundled so the atom's
+ *  prop count stays inside the ≤5 ceiling REACT_NORTH_STAR.md
+ *  asks of atoms — geometry is one cohesive concern, not four. */
+export interface ThreadEndpoints {
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+}
+
 interface ThreadProps {
-  /** Endpoints in the SVG's viewBox space. */
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+  endpoints: ThreadEndpoints;
   /** The thread's hue, derived from the facet that joins the two stars. */
   hue: ConstellationHue;
   /** Stable identifier (e.g. "garden/small-weather|study/note|relation")
@@ -38,14 +44,14 @@ const HUE_CSS_VAR: Record<ConstellationHue, string> = {
 // information; stars carry navigation. CONSTELLATION.md §"Interaction
 // Vocabulary" makes this distinction explicit.
 
-export function Thread({ x1, y1, x2, y2, hue, id, active = false, className }: ThreadProps) {
+export function Thread({ endpoints, hue, id, active = false, className }: ThreadProps) {
   const colorVar = HUE_CSS_VAR[hue];
   return (
     <line
-      x1={x1}
-      y1={y1}
-      x2={x2}
-      y2={y2}
+      x1={endpoints.x1}
+      y1={endpoints.y1}
+      x2={endpoints.x2}
+      y2={endpoints.y2}
       stroke={colorVar}
       strokeWidth={active ? 1.1 : 0.45}
       strokeLinecap="round"

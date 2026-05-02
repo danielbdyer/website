@@ -233,7 +233,7 @@ Compositions of atoms forming a cohesive unit (form field, search bar, card head
 
 ### Organisms
 
-Feature-level presentational components (nav bar, comment thread, data table, order summary). Composed from molecules and atoms. Receives ALL data and callbacks via props — uses a typed data object to flatten (e.g., `data: OrderSummaryData`). May own UI state (sort, expand, active tab). Never fetches data, never calls APIs, never imports from `hooks/` or `infrastructure/`. Maximum 7 props, 100 lines.
+Feature-level presentational components (nav bar, comment thread, data table, order summary). Composed from molecules and atoms. Receives ALL data and callbacks via props — uses a typed object **named for the domain it represents** (e.g., `work: WorkRecord`, `world: ConstellationWorld`, `comments: CommentThread`), never a generic `data` / `config` / `options` / `params` / `state` / `info` (the linter rejects these names; the script `scripts/check-component-shapes.mjs` enforces it). May own UI state (sort, expand, active tab). Never fetches data, never calls APIs, never imports from `hooks/` or `infrastructure/`. Maximum 7 props, 100 lines.
 
 ### Containers
 
@@ -597,6 +597,7 @@ Accessibility is not a feature. It is a constraint, like type safety.
 | No `any` | `tsconfig.json` strict mode |
 | Type coverage | TypeScript `strict: true`, `noUncheckedIndexedAccess: true` |
 | Component size limits | ESLint `max-lines-per-function` |
+| Per-tier prop count ceilings (5 atoms / 7 molecules / 7 organisms) + banned generic prop names (`data`, `config`, `options`, `params`, `state`, `info`) | `scripts/check-component-shapes.mjs`, run via `pnpm lint:component-shapes` |
 | No unused variables/imports | ESLint + TypeScript |
 | Consistent naming | ESLint naming-convention rules |
 | Formatting | Prettier (on save and in CI) |

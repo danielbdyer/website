@@ -2,7 +2,7 @@ import type { KeyboardEvent, PointerEvent, RefObject, SyntheticEvent, FocusEvent
 import type { ConstellationHue } from '@/shared/content/constellation';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
-import { Star } from '@/shared/molecules/Star/Star';
+import { Star, type StarWork } from '@/shared/molecules/Star/Star';
 import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
 import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 
@@ -13,40 +13,64 @@ import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 // inside it).
 
 interface DragHandlers {
-  onPointerDown: (e: PointerEvent<SVGGElement>) => void;
-  onPointerMove: (e: PointerEvent<SVGGElement>) => void;
-  onPointerUp: (e: PointerEvent<SVGGElement>) => void;
-  onPointerCancel: (e: PointerEvent<SVGGElement>) => void;
+  readonly onPointerDown: (e: PointerEvent<SVGGElement>) => void;
+  readonly onPointerMove: (e: PointerEvent<SVGGElement>) => void;
+  readonly onPointerUp: (e: PointerEvent<SVGGElement>) => void;
+  readonly onPointerCancel: (e: PointerEvent<SVGGElement>) => void;
+}
+
+/** The constellation's observable world — what Stage paints. The
+ *  edges + nodes are the structural graph; activeKey + activeHue
+ *  + overlayKey are the visitor's place in it. Held in one shape
+ *  so the organism's prop count fits the ≤7 ceiling
+ *  (REACT_NORTH_STAR.md §"Organisms"). */
+export interface ConstellationWorld {
+  readonly edges: readonly ResolvedEdge[];
+  readonly nodes: readonly RenderableNode[];
+  readonly activeKey: string | null;
+  readonly activeHue: ConstellationHue | null;
+  readonly overlayKey: string | null;
+}
+
+/** Interaction handlers Stage forwards to its inner star group.
+ *  Each comes from the hover-state hook or the navigation hook;
+ *  Stage doesn't own any of them. */
+export interface StageInteractions {
+  readonly onActivate: (e: SyntheticEvent<Element>) => void;
+  readonly onMouseLeave: () => void;
+  readonly onBlur: (e: FocusEvent<Element>) => void;
+  readonly onKeyDown: (e: KeyboardEvent) => void;
+  readonly onKeyUp: (e: KeyboardEvent) => void;
+  readonly dragHandlers: DragHandlers;
 }
 
 interface StageProps {
-  edges: readonly ResolvedEdge[];
-  nodes: readonly RenderableNode[];
-  activeKey: string | null;
-  isThreadActive: (activeKey: string | null, sourceKey: string, targetKey: string) => boolean;
-  onActivate: (e: SyntheticEvent<Element>) => void;
-  onMouseLeave: () => void;
-  onBlur: (e: FocusEvent<Element>) => void;
-  onKeyDown: (e: KeyboardEvent) => void;
-  onKeyUp: (e: KeyboardEvent) => void;
-  dragHandlers: DragHandlers;
+  world: ConstellationWorld;
+  interactions: StageInteractions;
   /** The companion glyph — a small mote at the cursor's projected
    *  screen position. The navigation hook updates its cx/cy each
    *  RAF tick. Sibling of the rotates layer so the slow background
    *  rotation doesn't drag it around. */
   glyphRef: RefObject<SVGCircleElement | null>;
-  /** The active star's facet hue, when a basin is settled. The
-   *  wrapping companion group sets data-active-hue from this so CSS
-   *  can mix the glyph's amber toward the active hue by the
-   *  --companion-claim factor the hook writes per tick. Null while
-   *  the cursor is at-rest-no-active (the glyph stays full amber). */
-  activeHue: ConstellationHue | null;
-  /** The key (`{room}/{slug}`) of the star whose overlay is
-   *  currently open at /sky/{room}/{slug}, when one is. That star
-   *  suppresses its viewTransitionName so the overlay panel's
-   *  matching name has unambiguous ownership across snapshots —
-   *  required for the morph to play. */
-  overlayKey: string | null;
+}
+
+/** A thread is "active" when one of its endpoints is the cursor's
+ *  current basin claim. CSS uses data-active to drive the
+ *  vespers bloom; the predicate is pure and stays at module scope
+ *  rather than as a Stage prop. */
+function isThreadActive(activeKey: string | null, sourceKey: string, targetKey: string): boolean {
+  return activeKey === sourceKey || activeKey === targetKey;
+}
+
+/** Build the StarWork shape from a renderable node — pure projection. */
+function starWorkFor(node: RenderableNode['node']): StarWork {
+  return {
+    href: `/sky/${node.room}/${node.slug}`,
+    label: `${node.title} — ${ROOM_LABEL[node.room]}`,
+    visibleLabel: node.title,
+    hue: node.hue,
+    isPreview: node.isPreview,
+  };
 }
 
 // Number of ghost positions trailing the cursor. Mirrors TRAIL_LENGTH
@@ -97,21 +121,9 @@ function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
   );
 }
 
-export function Stage({
-  edges,
-  nodes,
-  activeKey,
-  isThreadActive,
-  onActivate,
-  onMouseLeave,
-  onBlur,
-  onKeyDown,
-  onKeyUp,
-  dragHandlers,
-  glyphRef,
-  activeHue,
-  overlayKey,
-}: StageProps) {
+export function Stage({ world, interactions, glyphRef }: StageProps) {
+  const { edges, nodes, activeKey, activeHue, overlayKey } = world;
+  const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp, dragHandlers } = interactions;
   return (
     <>
       <Polestar cx={500} cy={500} />
@@ -122,10 +134,7 @@ export function Stage({
             <Thread
               key={edge.id}
               id={edge.id}
-              x1={edge.x1}
-              y1={edge.y1}
-              x2={edge.x2}
-              y2={edge.y2}
+              endpoints={{ x1: edge.x1, y1: edge.y1, x2: edge.x2, y2: edge.y2 }}
               hue={edge.hue}
               active={isThreadActive(activeKey, edge.sourceKey, edge.targetKey)}
             />
@@ -149,11 +158,7 @@ export function Stage({
             // the loop wakes up.
             <g key={key} data-node-key={key} transform={`translate(${pos.x} ${pos.y})`}>
               <Star
-                href={`/sky/${node.room}/${node.slug}`}
-                label={`${node.title} — ${ROOM_LABEL[node.room]}`}
-                visibleLabel={node.title}
-                hue={node.hue}
-                isPreview={node.isPreview}
+                work={starWorkFor(node)}
                 twinkleDelay={node.twinklePhase}
                 isActive={key === activeKey}
                 {...(key === overlayKey
