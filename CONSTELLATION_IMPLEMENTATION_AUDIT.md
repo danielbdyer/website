@@ -29,6 +29,13 @@ Each audited item carries a status marker:
 
 Markers are coarse-grained. They are not effort estimates. A row marked **absent** may be small to address (a missing copy line) or large (a missing component). The audit does not care; it cares that the gap exists and is named.
 
+**A distinction the markers do not encode but a reader should hold:**
+
+- **absent** is structural — the codebase doesn't carry the thing, and the design has named that it should.
+- **held** is intentional — the design has named that the thing waits for a tremor before being built. *Absent* and *held* are sometimes adjacent rows in the same row of the audit; the difference is whether the design wants the thing soon, or wants it eventually.
+
+Per the architecting practice (see `architecting` skill, the spanda commitment), many things in this audit are **legitimately absent because they have not yet been pulled into being.** A design commitment that is *named* is not the same as a design commitment that is *due*. Treating *every absent row as a backlog item* would violate the practice — the audit's job is to make legibility, not pressure. The plan that closes the gap (when it pulls) chooses what to bring into being and what to keep held.
+
 The audit is structured by surface area, not by task:
 
 - **Surface inventory** — the named states of /sky
@@ -239,6 +246,32 @@ Each of the six principles from `CONSTELLATION_DESIGN.md` §"Foundation":
 
 **Summary:** principles are honored in spirit by what's built, but several principles can't be fully observed yet because the surfaces they govern (chrome, microcopy) aren't implemented.
 
+### Two-gesture reachability — sampling
+
+The "continuous reachability" principle promises every state is reachable from any other in at most two gestures. A spot-check of state pairs against the current implementation:
+
+| From → To | Gestures needed (current) | Gestures needed (committed) | Status |
+|---|---|---|---|
+| `Idle` → `BasinSettled` | 1 (drag, key, or tap) | 1 | ✓ |
+| `Idle` → `WorkOpen` | 1 (click any star) | 1 | ✓ |
+| `BasinSettled` → `WorkOpen` | 1 (click active star or Enter) | 1 | ✓ |
+| `WorkOpen` → `Idle` | 1 (Esc, swipe-down, or close button) | 1 | ✓ |
+| `Idle` → `SearchActive` | n/a (absent) | 1 (`/` key) | absent path |
+| `Idle` → `FilterActive` | n/a (absent) | 1 (chip tap) | absent path |
+| `Idle` → `TimeScrubbed` | n/a (absent) | 1 (handle drag) | absent path |
+| `Idle` → `PinPanelOpen` | n/a (absent) | 1 (polestar tap or `Home`) | absent path |
+| `WorkOpen` → `BasinSettled (different star)` | 2 (close + drag) | 2 | ✓ |
+| `WorkOpen` → `FilterActive` | n/a (chrome absent) | 2 (close + chip tap) | absent path |
+| `FilterActive` → `Idle (cleared)` | n/a (absent) | 1 (× tap or clear) | absent path |
+| `Filtered+Searched` → `WorkOpen (matched star)` | n/a (absent) | 1 (click) | absent path |
+| `Contemplative` → `Idle` | n/a (absent) | 1 (any input) | absent path |
+| `BasinSettled` → `RadialEcho` | n/a (absent) | 1 (long-press or 800ms idle) | absent path |
+| `Foyer` → `Idle (on /sky)` | 1 (link click) | 1 (overscroll-up gesture committed) | ✓ in count, drift in form |
+
+**Reading:** the two-gesture rule **is honored across what's built**, by what's built. It cannot yet be honored across pairs that include unbuilt states. The rule will become observable surface-by-surface as chrome lands.
+
+The single drift-in-form: `Foyer → Idle` works in one gesture (clicking the *"↑ Look up"* link), matching the count, but the *form* committed to is overscroll-from-the-top — a richer first-form that hasn't shipped.
+
 ---
 
 ## Aesthetic audit
@@ -359,6 +392,60 @@ The platform underneath, evaluated against what the committed design will demand
 - **No server runtime.** **Honored, will remain so.** All proposed surfaces (Filter, Search, Time-scrub, Pin) are client-side; no `createServerFn` calls would be appropriate per `RENDERING_STRATEGY.md`.
 - **Knip / unused exports.** Unmeasured for the current pass — adding many components could leave orphaned exports if not carefully wired.
 
+### The shared chrome substrate that doesn't exist yet
+
+Six absent components share a substrate of common needs that is itself absent:
+
+- **HorizonStrip** — opens, focuses, dismisses
+- **SearchField** — opens, focuses, dismisses
+- **FacetChip-as-filter** — toggles, manages active set, broadcasts to scene
+- **TimeScrubber** — engages, dismisses, broadcasts position to scene
+- **RadialEcho** — opens, focuses, dismisses on motion / timeout
+- **PolestarPanel** — opens, focuses, dismisses on outside click
+
+Each needs:
+
+1. **Open/close state.** Likely a small state machine or set of `useState` hooks at the `Constellation` organism level.
+2. **Focus management.** When opened, focus enters the surface; when closed, focus returns to wherever it came from. Each surface needs a focus-trap-like shape.
+3. **Dismissal logic.** Esc, click-outside, a clear gesture, motion away. Not all surfaces dismiss the same way; the matrix needs naming.
+4. **Coordination with the navigation hook.** When chrome is open, does the constellation's drag-to-traverse still work? Does the basin-claim still flip activeKey? Different chrome surfaces probably have different answers.
+5. **Z-stack management.** All chrome layers above the constellation; specific orderings between them when multiple are open (e.g., RadialEcho over PolestarPanel?).
+6. **Broadcasting state to the scene.** Filter active → stars dim. Time scrubbed → atmosphere shifts. Search active → matches glow. The chrome surfaces need a way to talk back to the world they sit beside.
+
+**The audit's observation:** the right architecture for this substrate is **a design decision the codebase hasn't yet been forced to make.** Possible shapes include: extending `useConstellationNavigation`'s state machine, introducing a separate `useConstellationChrome` hook, lifting state to a context/provider at the `Constellation` organism level, or building an event bus between chrome surfaces and the world.
+
+Each shape has implications for testability, performance, and the React Compiler's ability to memoize. **None has been chosen.** Choosing would itself be an architectural decision worth documenting in `REACT_NORTH_STAR.md` and `CONSTELLATION_HORIZON.md`.
+
+This is the **substrate gap**: not a single component, but the missing common ground six absent components would all need.
+
+### Site navigation, theme toggle, daystar — and the proposed HorizonStrip
+
+A geographic question the audit must surface: **where does the existing site chrome live when /sky's HorizonStrip lands?**
+
+The current state on /sky:
+
+- Site `Nav` component renders at the top of every route, including /sky.
+- `ThemeToggle` (sun/moon icon) lives in the nav's top-right corner.
+- `Daystar` atom renders inside the constellation SVG at fixed position `cy=240` — visually, the same sun/moon icon ascended into the firmament.
+- No bottom-edge chrome exists.
+
+The committed state in `CONSTELLATION_DESIGN.md`:
+
+- HorizonStrip sits at the bottom of the viewport, carrying foyer-glyph, search, facet chips, timeline scrubber, and pin/polestar access.
+- The Foyer-glyph in the strip duplicates the *return home* function the site Nav already serves.
+- The design doc's epistemic posture says chrome should retire when not invoked — implying any persistent top-nav on /sky is a violation of "quiet chrome."
+- The "daystar's ascent into the orbiting frame" is held in `CONSTELLATION.md`; design doc gestures at it without committing.
+
+**Three reconcilable conflicts the audit names:**
+
+1. **Foyer access duplication.** Site Nav has a wordmark linking home; HorizonStrip has a foyer-glyph for the same purpose. *Both is too much; neither is too little.* The right answer is a design decision — likely *site Nav retires on /sky and the strip carries home-return* — but it needs to be named.
+
+2. **Theme toggle location.** Currently in site Nav. If site Nav retires on /sky, the theme toggle migrates to either (a) the daystar (the design's poetic answer — toggle the sun/moon icon that already lives in the sky), (b) the HorizonStrip's right side, or (c) the PolestarPanel. The design doc is silent on this; the audit names it as an open decision.
+
+3. **Daystar's role and movement.** Currently fixed at `cy=240`. Design implies it could ride the orbiting camera (so day/night is felt as part of the world's atmosphere, not a corner UI element). This is held in `CONSTELLATION.md`; the audit notes it as `partial / drift`.
+
+**Status:** the relationship between site nav and /sky chrome is **a design decision yet to be made**, blocking on the question *what does /sky's chrome look like, and what does the rest of the site's chrome do when the visitor is in /sky?*
+
 ---
 
 ## Specs in drift
@@ -373,6 +460,27 @@ Where existing specifications disagree with the new commitments in `CONSTELLATIO
 - **`BACKLOG.md`** holds many of the design-doc-committed items (filters, time slider, search, etc.) as held. Those backlog entries need to be reconciled with the design doc's commitments — they should remain held until pulled, but their *form* now exists in `CONSTELLATION_DESIGN.md`, which the backlog should reference.
 - **`SPECIFICATION_MAP.md`** has `CONSTELLATION_DESIGN.md` mapped; this audit document, when committed, will need its own entry.
 - **`VOICE_AND_COPY.md`** has microcopy patterns; the design doc's copy-pattern table should be cross-referenced or unified with what lives here.
+
+---
+
+## Code–design vocabulary drift
+
+A category of drift the *Specs in drift* section above does not capture: the source code itself uses vocabulary that disagrees with the design doc's lexicon.
+
+This drift is small but real, and it matters because future agents reading the code without the design doc will absorb the code's vocabulary as canonical.
+
+| Code surface | What it calls a thing | What the design lexicon calls it | Note |
+|---|---|---|---|
+| `useConstellationNavigation.ts` | `BASIN_RADIUS_RAD`, "the basin's gravitational well", "basin pull" | The per-star *gravity well* in code; the design's **basin** is the editorial cluster | The design doc flags this conflict explicitly. The naming is load-bearing in the physics; renaming to *well* or *attractor* in code would clarify. *Note: this is a refactor, not a feature.* |
+| `useConstellationNavigation.ts` | "the cursor's drag target" | *the visitor's reach* (would suit the design doc's voice) | Cosmetic; current naming is technically correct. |
+| `Constellation.tsx`, `Stage.tsx` | "the active key" | *the basin's claim* / *the focused star* | The "active key" name is generic React-state vocabulary; the design's metaphor is richer. |
+| `useWebGLFirmament.ts` | "uCursor", "uActive" — pool driven by uniforms | Honored at the boundary (the cursor signal); shader-internal vocabulary fine to remain technical |  |
+| Various atoms/molecules | "constellation-rotates", "constellation-camera", "sky-arrival" | *the world's heartbeat*, *orbital camera*, *carpet roll* in the design doc | CSS class names are functionally clear; the metaphor lives in the doc, not the class. *No drift here in practice.* |
+| `Star.tsx` | `cx`, `cy`, `r` (SVG-native attributes) | *body*, *halo*, *hit target* in the design doc's anatomy | The design doc names anatomy parts; the atom uses SVG primitives. *Tolerable; SVG conventions win in atoms.* |
+
+**The pattern:** code-internal vocabulary tends toward physics + framework conventions; the design lexicon tends toward metaphor + visitor experience. *They are not enemies.* The discipline is naming where the layers meet (component props, public exports, cross-cutting state) and letting each layer keep its own vocabulary internally.
+
+The largest legitimate concern is `BASIN_RADIUS_RAD`'s collision with the design's "basin." When chrome is built and the design vocabulary spreads into more code, this collision will produce confusion. Renaming the constant (and adjacent identifiers) to *well* or *attractor* in a small refactor would close the gap.
 
 ---
 
@@ -428,6 +536,38 @@ A read on the codebase's flexibility for what's committed but unbuilt.
 
 ---
 
+## Common drift modes when closing the gap
+
+Patterns the audit predicts will surface when implementation begins, named so they can be recognized and refused. These are not bugs — they are the *gravitational pulls* that exist when building UI in the contemporary web environment, and they need active resistance for /sky to stay /sky.
+
+**Drift toward dashboard.** Filter chips, time scrubbers, and search fields are common dashboard elements. The pull is to render them with dashboard conventions: counters, indicators, "showing 3 of 12 results", success-state confirmations. The constellation refuses these. *Counter-anchor: every chrome element should look like it could be in a Bayer star atlas, not a Looker dashboard.*
+
+**Drift toward gallery.** When filtered, the constellation might be tempted to "tile" the matched stars into a grid layout for clarity. The constellation refuses this. *Counter-anchor: filtered = dimmed-not-removed; the world stays the world; the lens just shifts emphasis.*
+
+**Drift toward feed.** The pin panel and recent-items list are easy to render as scrolling lists with avatars, timestamps, and hierarchy. The constellation refuses this. *Counter-anchor: the pin panel is a small console, not a feed; entries are spare and italic; the visitor's recent places are quietly noted, never narrated.*
+
+**Drift toward modal.** RadialEcho, PolestarPanel, WorkOverlay are easy to slip toward modal-with-backdrop conventions: dark overlay covering the world, focus-trap, "x" in the corner. The constellation half-refuses this. The work overlay does have backdrop and focus management — but the *constellation continues rendering behind a soft veil*, not behind a black scrim. *Counter-anchor: the world never disappears; it is veiled.*
+
+**Drift toward tooltip-following chrome.** Hover labels, tooltips that follow the cursor, popovers attached to the pointer. The constellation refuses these. *Counter-anchor: labels appear at fixed positions (below the star, at viewbox center, etc.); the cursor never carries text.*
+
+**Drift toward saturated branding.** The amber cursor is gold-warm. Facet hues are dusty rose, greyed violet, honey gold, paper warm. A pull exists to "punch up" these for visibility — saturated rose, electric violet. The constellation refuses this. *Counter-anchor: the palette is paper-and-watercolor; saturation is an active state, not a default.*
+
+**Drift toward instructive copy.** "Drag to navigate." "Click any star to read." "Use arrow keys to move." The constellation refuses these. *Counter-anchor: the Demonstration drift teaches by motion; every directive copy is the system performing.*
+
+**Drift toward analytics.** "Most-read works." "Trending facets." "Updated frequently." Metric-driven highlights. The constellation refuses these. *Counter-anchor: the visitor reads what they reach; the system does not narrate consumption.*
+
+**Drift toward third-party chrome.** Importing a UI library (Radix, Headless UI, MUI) for the chrome layer would solve focus management and accessibility "for free" — but at the cost of the visual register. Components from these libraries carry their own aesthetic load (default weights, default radii, default focus rings) that fight the watercolor + paper register. The constellation half-refuses this — it's reasonable to take *primitives* from such libraries (headless behaviors), but not *visuals*. *Counter-anchor: every visible element of chrome must be authored against the design doc, not styled atop a pre-existing pattern.*
+
+**Drift toward speed-as-virtue.** Modern UI conventions reward responsiveness in milliseconds. The constellation's slow durations (600s rotation, 1350ms arrival, 600ms reveal) are not failures of optimization — they are *commitments*. A pull exists to "make it snappier" by collapsing durations. *Counter-anchor: durations come from the motion register; speed below the register is a violation, not an improvement.*
+
+**Drift toward accessibility-as-checkbox.** Adding aria-labels and focus rings is necessary but not sufficient. The constellation's accessibility commitment is *parity* (everything reachable by every input channel produces the same outcome). A pull exists to ship a feature visually-first and "add accessibility later." This violates the foundation. *Counter-anchor: every committed gesture must have a keyboard equivalent and a screen-reader announcement before the gesture ships.*
+
+**Drift toward feature-completeness as virtue.** The audit's gap is large; the pull is to close it quickly. The architecting practice (spanda) refuses this. *Counter-anchor: build what pulls. A surface built before its tremor is more violation than progress.*
+
+These eleven drifts are **the audit's prediction of how the gap could be closed badly.** When a design proposal or implementation pull request seems to be drifting toward any of them, the question is the same as for "What /sky Is NOT": *what does the constellation's own answer to this need look like?*
+
+---
+
 ## Closing observations
 
 The shape of the gap, briefly.
@@ -439,6 +579,30 @@ The shape of the gap, briefly.
 - **The Spec/Code drift is small but real.** Three constellation specs (`CONSTELLATION.md`, `CONSTELLATION_HORIZON.md`, `CONSTELLATION_DESIGN.md`) now describe the surface from three angles. Reconciling them — without losing each one's voice — is its own piece of work, downstream of the next code phase or running alongside it.
 
 The next document needed (when the tremor pulls toward it): **a plan**. The plan should choose a slice of this gap to close, sequence the moves through it, and commit to a delivery shape. The plan does not exist yet; this audit is its prerequisite.
+
+---
+
+## What this audit does not cover
+
+The audit's scope is structural: surface-by-surface, component-by-component, principle-by-principle. Several things a downstream plan or design proposal will need to consider are **deliberately out of scope** here. Naming them prevents the audit from being misread as comprehensive.
+
+- **Effort estimation.** The status markers (present, partial, absent, drift, held) are not sized. A row marked **absent** could be hours of work or weeks; the audit refuses to estimate. Estimation is a planning concern.
+- **Bundle-size impact per surface.** The current 202.14 KB / 215 KB ceiling is named in the architectural section as *tight*. The audit does not estimate what each unbuilt surface (HorizonStrip, SearchField, RadialEcho, etc.) might add to that number. Production-ready estimates require building the surfaces or careful prototyping; this audit does neither.
+- **Per-surface color-contrast verification.** The committed palette is named; whether each pairing clears WCAG AA against each theme has not been audited surface-by-surface. The site's existing contrast guard (`scripts/check-color-contrast.mjs`) covers global tokens, not per-surface compositions.
+- **Per-device verification.** The five-breakpoint responsive table names target behaviors; the audit has not verified actual rendering on phone landscape, tablet portrait, or large-display widths. *Real-device testing is a separate practice.*
+- **Internationalization / localization.** The committed copy is English-only; the design doc does not name an i18n strategy. The audit does not surface this as drift because *no commitment exists to drift from*. If multilingual support enters scope, that's a new design surface entirely.
+- **SEO / search-engine discoverability of /sky's surfaces.** Filtered states, pinned states, time-scrubbed states are not currently URL-addressable; whether they should be (for shareability, deep-linking, search indexing) is a held design question. The audit names this as *open*, not *gap*.
+- **Analytics / observability surfaces for the author.** The epistemic posture refuses metrics shaping the visitor's view; whether *Danny-as-author* gets quiet observability about traffic, errors, and Core Web Vitals is held in `PRIVACY.md` and `PERFORMANCE_BUDGET.md`. Out of scope here.
+- **Print stylesheet for /sky.** The design doc names print as a real viewport with a static rendering. The audit notes its absence in passing but does not enumerate print-specific behaviors (page breaks, pagination of stars, what the polestar prints as). *Held until print becomes an active concern.*
+- **Audio implementation specifics.** The design doc names audio as held; the audit honors that. No audio architecture is sketched.
+- **Multi-visitor presence.** Held in the design doc; the audit does not engage.
+- **The relationship between `/sky` and the existing `/facet/{facet}` pages.** The site has facet pages elsewhere; the constellation's filter affordance overlaps in role. Whether they coexist, share data, or one supersedes the other is **a design decision yet to be made**, surfaced briefly in *Specs in drift* but not enumerated here.
+- **Performance under high node-count.** The design doc names ~50+ stars as the threshold where strategies must be chosen. The codebase's current performance under 50, 100, 500 nodes has not been measured; *the audit does not load-test*.
+- **The work overlay's full content-density study.** The design doc names three classes (short fragment, essay, media-rich); the audit notes WorkOverlay is partial without testing each class against real content.
+- **Visual regression testing.** No golden screenshots exist for /sky surfaces; the audit does not measure pixel drift across changes.
+- **The plan that closes the gap.** Out of scope by definition. *The audit names; the plan chooses.*
+
+If a downstream consumer of this audit needs any of the above, the right answer is: produce that artifact separately, alongside the audit. The audit is one document among several; it does not pretend to carry the others' work.
 
 ---
 
