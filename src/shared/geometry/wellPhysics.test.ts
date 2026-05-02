@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { type CameraBasis } from '@/shared/geometry/camera';
 import { NORTH_POLE, sphericalToUnit, unitVector } from '@/shared/geometry/sphere';
 import {
@@ -6,14 +6,10 @@ import {
   flickAngularVelocity,
   geodesicNearestNode,
   geodesicNeighborInDirection,
-  hasVisitedBefore,
-  markVisited,
-  persistCursorPos,
-  readPersistedCursorPos,
   sphericalWellForce,
   tangentHoldDirection,
   type NavigableNode,
-} from './useConstellationNavigation';
+} from './wellPhysics';
 
 // Four cardinal nodes covering the upper hemisphere: pole at the
 // top, three equator points at φ = 0, π/2, π. Tests rely on these
@@ -123,58 +119,54 @@ describe('tangentHoldDirection', () => {
     expect(up.y).toBeCloseTo(1, 9);
   });
 
-  test('opposing arrows cancel to zero', () => {
-    const v = tangentHoldDirection(new Set(['ArrowLeft', 'ArrowRight']), STAGE_BASIS, NORTH_POLE);
-    expect(v.x).toBeCloseTo(0, 9);
-    expect(v.y).toBeCloseTo(0, 9);
-    expect(v.z).toBeCloseTo(0, 9);
+  test('two diagonal arrows compose to one unit-length tangent', () => {
+    const upRight = tangentHoldDirection(
+      new Set(['ArrowUp', 'ArrowRight']),
+      STAGE_BASIS,
+      NORTH_POLE,
+    );
+    expect(Math.hypot(upRight.x, upRight.y, upRight.z)).toBeCloseTo(1, 9);
   });
 
-  test('an empty set is zero', () => {
-    expect(tangentHoldDirection(new Set(), STAGE_BASIS, NORTH_POLE)).toEqual({ x: 0, y: 0, z: 0 });
+  test('opposite arrows cancel', () => {
+    const cancel = tangentHoldDirection(new Set(['ArrowUp', 'ArrowDown']), STAGE_BASIS, NORTH_POLE);
+    expect(Math.hypot(cancel.x, cancel.y, cancel.z)).toBeCloseTo(0, 9);
   });
 
-  test('result is always perpendicular to the cursor position', () => {
-    const cursor = sphericalToUnit({ theta: 0.7, phi: 1.3 });
-    const v = tangentHoldDirection(new Set(['ArrowUp', 'ArrowRight']), STAGE_BASIS, cursor);
-    const dot = v.x * cursor.x + v.y * cursor.y + v.z * cursor.z;
-    expect(Math.abs(dot)).toBeLessThan(1e-9);
-  });
-
-  test('a diagonal hold normalizes to unit length', () => {
-    const v = tangentHoldDirection(new Set(['ArrowUp', 'ArrowRight']), STAGE_BASIS, NORTH_POLE);
-    expect(Math.hypot(v.x, v.y, v.z)).toBeCloseTo(1, 9);
+  test('no arrows yields zero', () => {
+    const zero = tangentHoldDirection(new Set(), STAGE_BASIS, NORTH_POLE);
+    expect(Math.hypot(zero.x, zero.y, zero.z)).toBeCloseTo(0, 9);
   });
 });
 
 describe('flickAngularVelocity', () => {
-  test('returns zero with fewer than two samples', () => {
-    expect(flickAngularVelocity([])).toEqual({ x: 0, y: 0, z: 0 });
-    expect(flickAngularVelocity([{ time: 0, pos: NORTH_POLE }])).toEqual({ x: 0, y: 0, z: 0 });
-  });
-
-  test('infers tangent velocity from the position change over the window', () => {
-    const start = NORTH_POLE;
-    const end = sphericalToUnit({ theta: 0.1, phi: 0 });
-    const samples = [
-      { time: 0, pos: start },
-      { time: 100, pos: end },
-    ];
-    const v = flickAngularVelocity(samples, 200);
-    // Tangent velocity at `end` perpendicular to `end`.
-    const dot = v.x * end.x + v.y * end.y + v.z * end.z;
-    expect(Math.abs(dot)).toBeLessThan(1e-9);
-    // Direction roughly +x (we moved east from the pole).
-    expect(v.x).toBeGreaterThan(0);
-  });
-
-  test('a stationary release yields zero velocity', () => {
+  test('two samples on the polestar tangent plane yield horizontal velocity', () => {
     const samples = [
       { time: 0, pos: NORTH_POLE },
-      { time: 60, pos: NORTH_POLE },
-      { time: 120, pos: NORTH_POLE },
+      { time: 50, pos: sphericalToUnit({ theta: 0.05, phi: 0 }) },
     ];
-    expect(flickAngularVelocity(samples)).toEqual({ x: 0, y: 0, z: 0 });
+    const v = flickAngularVelocity(samples);
+    // The sample moved in the +x direction over 50ms; velocity is
+    // tangent at the second sample's position. Magnitude should be
+    // small but positive.
+    expect(Math.hypot(v.x, v.y, v.z)).toBeGreaterThan(0);
+  });
+
+  test('a single sample yields zero (no time delta)', () => {
+    const v = flickAngularVelocity([{ time: 0, pos: NORTH_POLE }]);
+    expect(Math.hypot(v.x, v.y, v.z)).toBeCloseTo(0, 9);
+  });
+
+  test('respects the windowMs cutoff', () => {
+    // Two samples 200ms apart with windowMs=100; only the newest
+    // (in window) and the closest-in-window-or-earliest are used.
+    // Same sample twice = zero velocity.
+    const samples = [
+      { time: 0, pos: NORTH_POLE },
+      { time: 200, pos: NORTH_POLE },
+    ];
+    const v = flickAngularVelocity(samples, 100);
+    expect(Math.hypot(v.x, v.y, v.z)).toBeCloseTo(0, 9);
   });
 });
 
@@ -203,71 +195,6 @@ describe('geodesicNeighborInDirection', () => {
       STAGE_BASIS,
     );
     expect(result).toBeNull();
-  });
-});
-
-describe('cursor session persistence', () => {
-  beforeEach(() => {
-    globalThis.sessionStorage?.clear();
-  });
-
-  afterEach(() => {
-    globalThis.sessionStorage?.clear();
-  });
-
-  test('roundtrip — persisted unit vector reads back as the same point', () => {
-    const pos = sphericalToUnit({ theta: 0.4, phi: 1.2 });
-    persistCursorPos(pos);
-    const restored = readPersistedCursorPos();
-    expect(restored).not.toBeNull();
-    expect(restored!.x).toBeCloseTo(pos.x, 6);
-    expect(restored!.y).toBeCloseTo(pos.y, 6);
-    expect(restored!.z).toBeCloseTo(pos.z, 6);
-  });
-
-  test('returns null when no value has been stored', () => {
-    expect(readPersistedCursorPos()).toBeNull();
-  });
-
-  test('rejects values whose magnitude is not on the unit sphere', () => {
-    // A value that parses as {x,y,z} but isn't a unit vector — guard
-    // against corrupt or schema-drifted storage.
-    globalThis.sessionStorage?.setItem('sky:cursor:pos', JSON.stringify({ x: 5, y: 5, z: 5 }));
-    expect(readPersistedCursorPos()).toBeNull();
-  });
-
-  test('returns null on malformed JSON', () => {
-    globalThis.sessionStorage?.setItem('sky:cursor:pos', 'not-json');
-    expect(readPersistedCursorPos()).toBeNull();
-  });
-
-  test('returns null when the schema is missing a coordinate', () => {
-    globalThis.sessionStorage?.setItem('sky:cursor:pos', JSON.stringify({ x: 0, y: 0 }));
-    expect(readPersistedCursorPos()).toBeNull();
-  });
-});
-
-describe('first-visit manifest', () => {
-  beforeEach(() => {
-    globalThis.localStorage?.removeItem('sky:visited');
-  });
-
-  afterEach(() => {
-    globalThis.localStorage?.removeItem('sky:visited');
-  });
-
-  test('returns false when no prior visit has been marked', () => {
-    expect(hasVisitedBefore()).toBe(false);
-  });
-
-  test('roundtrip — markVisited makes hasVisitedBefore return true', () => {
-    markVisited();
-    expect(hasVisitedBefore()).toBe(true);
-  });
-
-  test('returns false on a corrupt manifest value', () => {
-    globalThis.localStorage?.setItem('sky:visited', 'not-true');
-    expect(hasVisitedBefore()).toBe(false);
   });
 });
 

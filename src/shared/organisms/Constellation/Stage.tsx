@@ -1,8 +1,8 @@
 import type { KeyboardEvent, PointerEvent, RefObject, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
-import { Star } from '@/shared/atoms/Star/Star';
 import { Thread } from '@/shared/atoms/Thread/Thread';
+import { Star } from '@/shared/molecules/Star/Star';
 import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 
 // The inside of the navigation camera. Extracted from Constellation
@@ -144,8 +144,6 @@ export function Stage({
                 href={`/sky/${node.room}/${node.slug}`}
                 label={`${node.title} — ${ROOM_LABEL[node.room]}`}
                 visibleLabel={node.title}
-                cx={0}
-                cy={0}
                 hue={node.hue}
                 isPreview={node.isPreview}
                 twinkleDelay={node.twinklePhase}

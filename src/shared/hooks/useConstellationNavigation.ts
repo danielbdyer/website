@@ -1,19 +1,47 @@
 import type { KeyboardEvent, PointerEvent, RefObject } from 'react';
 import { useEffect, useRef } from 'react';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
-import { cameraBasis, project, unproject } from '@/shared/geometry/camera';
-import { setConstellationCursor } from '@/shared/state/constellationCursor';
+import { cameraBasis, unproject } from '@/shared/geometry/camera';
+import {
+  TRAIL_LENGTH,
+  applyCameraYaw,
+  broadcastCursorToFirmament,
+  projectGlyph,
+  projectStars,
+  projectThreads,
+  projectTrail,
+  writeGlyphChannels,
+  type NavigableEdge,
+} from '@/shared/dom/skyProjector';
+import {
+  hasVisitedBefore,
+  markVisited,
+  persistCursorPos,
+  readPersistedCursorPos,
+} from '@/shared/state/cursorStorage';
 import type { UnitVector3, Vec3 } from '@/shared/geometry/sphere';
 import {
   NORTH_POLE,
   geodesicDistance,
-  projectOntoTangentPlane,
   raySphereIntersect,
   slerp,
   stepOnSphere,
   tangentTowards,
   unitVector,
 } from '@/shared/geometry/sphere';
+import {
+  MAX_ANGULAR_VELOCITY,
+  VELOCITY_SAMPLE_WINDOW_MS,
+  WELL_RADIUS_RAD,
+  easeOutCubic,
+  flickAngularVelocity,
+  geodesicNearestNode,
+  geodesicNeighborInDirection,
+  sphericalWellForce,
+  tangentHoldDirection,
+  type NavigableNode,
+  type PointerSample,
+} from '@/shared/geometry/wellPhysics';
 
 // Force-field navigation across the constellation's latent sphere.
 //
@@ -50,19 +78,17 @@ import {
 // pointer/keyboard fall back to direct snap-to-nearest by geodesic
 // distance. The graph is still navigable; it just stops moving.
 
-export interface NavigableNode {
-  readonly key: string;
-  readonly unitPos: UnitVector3;
-}
+// NavigableNode lives in @/shared/geometry/wellPhysics so the pure
+// physics functions can stand alone. Re-exported here so existing
+// consumers (Constellation organism, layout module) keep their
+// import path stable across the refactor.
+export type { NavigableNode } from '@/shared/geometry/wellPhysics';
 
-/** An edge in the navigable scene. The hook re-projects each
- *  endpoint per frame and writes the line element's x1/y1/x2/y2
- *  attributes. The id matches the rendered Thread's data-thread-id. */
-export interface NavigableEdge {
-  readonly id: string;
-  readonly sourcePos: UnitVector3;
-  readonly targetPos: UnitVector3;
-}
+// NavigableEdge lives in @/shared/dom/skyProjector — it's a render-
+// layer concern (x1/y1/x2/y2 written per tick), not a physics one.
+// Re-exported here so existing consumers (Constellation organism)
+// keep their import path stable across the refactor.
+export type { NavigableEdge } from '@/shared/dom/skyProjector';
 
 interface UseConstellationNavigationArgs {
   readonly nodes: readonly NavigableNode[];
@@ -76,22 +102,20 @@ interface UseConstellationNavigationArgs {
   readonly glyphRef: RefObject<SVGCircleElement | null>;
 }
 
-// Force-field constants, in spherical units. Position is a unit
-// vector on the sphere; "distance" is geodesic (radians along great
-// circle). Velocity is angular (rad/s).
-const INFLUENCE_RADIUS_RAD = 0.7;
-const WELL_RADIUS_RAD = 0.3;
-const WELL_STIFFNESS = 9;
+// Hook-local physics tuning. The well-field constants
+// (INFLUENCE_RADIUS_RAD, WELL_RADIUS_RAD, WELL_STIFFNESS,
+// MAX_ANGULAR_VELOCITY, VELOCITY_SAMPLE_WINDOW_MS) live in
+// @/shared/geometry/wellPhysics — this file imports the ones it
+// needs. The constants below tune the visitor's input gestures
+// against the well field and only matter at the hook boundary.
 const DRAG_SPRING = 60;
 const DRAG_DAMPING = 14;
 const FREE_DAMPING = 4;
 const HOLD_ACCEL = 5.5;
 const FLICK_SCALE = 1;
-const MAX_ANGULAR_VELOCITY = 8;
 const MAX_DT_SECONDS = 0.033;
 const IDLE_VELOCITY_EPSILON = 0.005;
 const IDLE_ACCELERATION_EPSILON = 0.04;
-const VELOCITY_SAMPLE_WINDOW_MS = 120;
 
 // Camera orbit constants. The camera sits at -ORBIT_DISTANCE *
 // cameraSurfacePos and looks at origin — so the surface point lands
@@ -124,119 +148,13 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-/** The closest node by geodesic distance, or null when nothing is
- *  within `maxRadians`. O(N) over the node list. Filters by dot
- *  product (cheap) before computing the geodesic (acos), since the
- *  two are monotonically related on the unit sphere. */
-export function geodesicNearestNode(
-  cursor: UnitVector3,
-  nodes: readonly NavigableNode[],
-  maxRadians = Math.PI,
-): { key: string; distance: number } | null {
-  // d ≤ maxRadians ⇔ cos(d) ≥ cos(maxRadians) ⇔ dot ≥ minDot.
-  const minDot = maxRadians >= Math.PI ? -1 : Math.cos(maxRadians);
-  let bestKey: string | null = null;
-  let bestDot = -2; // strictly below any real dot value
-  for (const node of nodes) {
-    const dot = cursor.x * node.unitPos.x + cursor.y * node.unitPos.y + cursor.z * node.unitPos.z;
-    if (dot < minDot) continue;
-    if (dot <= bestDot) continue;
-    bestDot = dot;
-    bestKey = node.key;
-  }
-  if (bestKey === null) return null;
-  return { key: bestKey, distance: Math.acos(clamp(bestDot, -1, 1)) };
-}
-
-/** Sum of tangent attractor forces at `pos` from every node within
- *  `influenceRadius` (radians). Each contribution is a unit tangent
- *  pointing toward the node, scaled by stiffness * shape(d) where
- *  shape is linear in geodesic distance and zero at the influence
- *  rim. The result is a tangent vector at `pos` — perpendicular to
- *  it by construction. */
-export function sphericalWellForce(
-  pos: UnitVector3,
-  nodes: readonly NavigableNode[],
-  influenceRadius = INFLUENCE_RADIUS_RAD,
-  stiffness = WELL_STIFFNESS,
-): Vec3 {
-  // dot ≥ minDot ⇔ geodesic ≤ influenceRadius. The dot test is a
-  // single multiply-add per node; full geodesicDistance only fires
-  // for nodes inside the well's reach.
-  const minDot = influenceRadius >= Math.PI ? -1 : Math.cos(influenceRadius);
-  let fx = 0;
-  let fy = 0;
-  let fz = 0;
-  for (const node of nodes) {
-    const dot = pos.x * node.unitPos.x + pos.y * node.unitPos.y + pos.z * node.unitPos.z;
-    if (dot < minDot) continue;
-    const d = geodesicDistance(pos, node.unitPos);
-    if (d <= 1e-12) continue;
-    const tangent = tangentTowards(pos, node.unitPos);
-    const shape = 1 - d / influenceRadius;
-    const magnitude = stiffness * d * shape;
-    fx += tangent.x * magnitude;
-    fy += tangent.y * magnitude;
-    fz += tangent.z * magnitude;
-  }
-  return { x: fx, y: fy, z: fz };
-}
-
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
-/** Tangent direction at `pos` synthesized from held arrow keys.
- *  Up/down map to ±camera-up projected onto the tangent plane;
- *  left/right map to ±camera-right. The result is normalized so
- *  pressing two keys diagonally produces unit-magnitude direction. */
-export function tangentHoldDirection(
-  heldKeys: ReadonlySet<string>,
-  basis: CameraBasis,
-  pos: UnitVector3,
-): Vec3 {
-  let upWeight = 0;
-  let rightWeight = 0;
-  if (heldKeys.has('ArrowUp')) upWeight += 1;
-  if (heldKeys.has('ArrowDown')) upWeight -= 1;
-  if (heldKeys.has('ArrowRight')) rightWeight += 1;
-  if (heldKeys.has('ArrowLeft')) rightWeight -= 1;
-  if (upWeight === 0 && rightWeight === 0) return { x: 0, y: 0, z: 0 };
-  // Compose then re-tangent (project off the radial component) and
-  // normalize so the magnitude is 1 regardless of how the basis
-  // happens to align with the tangent plane.
-  const wx = basis.up.x * upWeight + basis.right.x * rightWeight;
-  const wy = basis.up.y * upWeight + basis.right.y * rightWeight;
-  const wz = basis.up.z * upWeight + basis.right.z * rightWeight;
-  const tangent = projectOntoTangentPlane({ x: wx, y: wy, z: wz }, pos);
-  const m = Math.hypot(tangent.x, tangent.y, tangent.z);
-  if (m < 1e-9) return { x: 0, y: 0, z: 0 };
-  return { x: tangent.x / m, y: tangent.y / m, z: tangent.z / m };
-}
-
-interface PointerSample {
-  time: number;
-  pos: UnitVector3;
-}
-
-/** The gesture's release angular velocity, computed from pointer
- *  samples within the last `windowMs`. The result is a tangent
- *  vector at the most-recent sample's position. */
-export function flickAngularVelocity(
-  samples: readonly PointerSample[],
-  windowMs = VELOCITY_SAMPLE_WINDOW_MS,
-): Vec3 {
-  if (samples.length < 2) return { x: 0, y: 0, z: 0 };
-  const newest = samples.at(-1)!;
-  const cutoff = newest.time - windowMs;
-  const oldest = samples.find((s) => s.time >= cutoff) ?? samples[0]!;
-  const dt = (newest.time - oldest.time) / 1000;
-  if (dt <= 0) return { x: 0, y: 0, z: 0 };
-  const v3 = {
-    x: (newest.pos.x - oldest.pos.x) / dt,
-    y: (newest.pos.y - oldest.pos.y) / dt,
-    z: (newest.pos.z - oldest.pos.z) / dt,
-  };
-  return projectOntoTangentPlane(v3, newest.pos);
-}
+// geodesicNearestNode, sphericalWellForce, tangentHoldDirection,
+// flickAngularVelocity, geodesicNeighborInDirection, easeOutCubic —
+// all the pure helpers shared with the demonstration drift, the
+// keyboard fallback, and the performance tests — live in
+// @/shared/geometry/wellPhysics.
 
 function pruneSamples(samples: PointerSample[], now: number, windowMs: number): void {
   const cutoff = now - windowMs * 2;
@@ -287,17 +205,9 @@ interface NavState {
   demoDrift: DemoDrift | null;
 }
 
-/** Number of ghost positions kept behind the cursor for the
- *  companion glyph's fade-tail. Each ghost has a fixed base opacity
- *  in CSS (.constellation-companion-trail--N); the per-tick velocity
- *  modulates `--trail-strength` so the trail is invisible at rest
- *  and asserts itself only during real motion. */
-const TRAIL_LENGTH = 4;
-/** Angular speed (rad/s) at which the trail reaches full strength.
- *  Below this, the strength scales linearly to zero. Tuned so a
- *  drag that's just starting to coast doesn't paint a trail; a
- *  flick or a held-key acceleration does. */
-const TRAIL_FULL_SPEED_RAD = 3;
+// TRAIL_LENGTH and the trail-strength tuning live in
+// @/shared/dom/skyProjector since they're rendering concerns shared
+// with the Stage component.
 
 // Demonstration drift — the visitor's first lesson. After the
 // carpet roll completes, the cursor drifts autonomously to the
@@ -313,39 +223,11 @@ const TRAIL_FULL_SPEED_RAD = 3;
 const DEMO_DELAY_MS = 1400;
 const DEMO_FULL_DURATION_MS = 600;
 const DEMO_FAST_DURATION_MS = 300;
-const VISIT_MANIFEST_KEY = 'sky:visited';
-
 interface DemoDrift {
   readonly startPos: UnitVector3;
   readonly target: UnitVector3;
   readonly startTime: number;
   readonly durationMs: number;
-}
-
-export function hasVisitedBefore(): boolean {
-  try {
-    return globalThis.localStorage?.getItem(VISIT_MANIFEST_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-export function markVisited(): void {
-  try {
-    globalThis.localStorage?.setItem(VISIT_MANIFEST_KEY, 'true');
-  } catch {
-    // localStorage may be unavailable; visit manifest is best-effort.
-    // The visitor sees a demo on next visit anyway, which is honest.
-  }
-}
-
-/** Cubic ease-out — the design's signature easing
- *  (cubic-bezier(0.23, 1, 0.32, 1)) reads as ease-out cubic in the
- *  typical eye. Approximated here as 1 - (1-t)^3 for the demo
- *  drift's slerp parameter. */
-export function easeOutCubic(t: number): number {
-  const u = 1 - t;
-  return 1 - u * u * u;
 }
 
 /** Build the orbital camera that places `surfacePos` near the
@@ -366,14 +248,6 @@ function orbitalCamera(surfacePos: UnitVector3): Camera {
     near: CAMERA_NEAR,
     far: CAMERA_FAR,
   };
-}
-
-// Phase D2 retired the screen-space pan: the orbital camera handles
-// where things move on screen by re-projecting through the live
-// camera each frame. Yaw remains as a small flourish driven by the
-// cursor's screen-space x velocity, written through --cam-yaw.
-function applyCameraYaw(el: SVGGElement, yaw: number): void {
-  el.style.setProperty('--cam-yaw', yaw.toFixed(2));
 }
 
 /** Convert a pointer event to a unit-sphere position by ray-casting
@@ -409,48 +283,6 @@ function flipActive(state: NavState, key: string, setActiveKey: (k: string) => v
   state.activeKey = key;
   setActiveKey(key);
   persistCursorPos(state.pos);
-}
-
-/** sessionStorage key for the cursor's last sphere position. The
- *  schema is `{x, y, z}` JSON; the position alone is enough to
- *  re-mount the cursor where the visitor left it. P11 may extend
- *  to a richer manifest (last active key, etc.); first form is
- *  the minimum that survives a refresh. */
-const CURSOR_STORAGE_KEY = 'sky:cursor:pos';
-
-export function persistCursorPos(pos: { x: number; y: number; z: number }): void {
-  try {
-    globalThis.sessionStorage?.setItem(
-      CURSOR_STORAGE_KEY,
-      JSON.stringify({ x: pos.x, y: pos.y, z: pos.z }),
-    );
-  } catch {
-    // sessionStorage may be unavailable (private mode quotas, SSR).
-    // Persistence is best-effort; the rest of the navigation works.
-  }
-}
-
-export function readPersistedCursorPos(): UnitVector3 | null {
-  try {
-    const raw = globalThis.sessionStorage?.getItem(CURSOR_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      typeof (parsed as { x?: unknown }).x === 'number' &&
-      typeof (parsed as { y?: unknown }).y === 'number' &&
-      typeof (parsed as { z?: unknown }).z === 'number'
-    ) {
-      const candidate = parsed as { x: number; y: number; z: number };
-      const m = Math.hypot(candidate.x, candidate.y, candidate.z);
-      if (m < 0.5 || m > 1.5) return null; // not a unit vector — discard
-      return unitVector(candidate.x, candidate.y, candidate.z);
-    }
-    return null;
-  } catch {
-    return null;
-  }
 }
 
 /** Pick the nearest node by geodesic distance, used as the demo's
@@ -568,95 +400,20 @@ function computeAccelerationInto(state: NavState, refs: RuntimeRefs): void {
   }
 }
 
-/** Project a 3D unit-sphere position into viewbox coords. Helper
- *  shared by the per-frame DOM mutation path. SVG +Y grows down,
- *  screen +Y grows up — the negation handles the convention shift. */
-function projectToViewbox(
-  point: UnitVector3,
-  camera: Camera,
-  basis: CameraBasis,
-  viewboxSize: number,
-): { x: number; y: number; inFront: boolean } {
-  const proj = project(point, camera, basis, 1);
-  const center = viewboxSize / 2;
-  const radius = viewboxSize * 0.44;
-  return {
-    x: center + proj.screenX * radius,
-    y: center - proj.screenY * radius,
-    inFront: proj.inFront,
-  };
-}
-
-/** Re-project every star, thread, and the cursor's glyph through
- *  the state's live camera and mutate the DOM accordingly. Stars
- *  get a transform="translate(x y)" attribute on their data-node-key
- *  wrapper group; threads get x1/y1/x2/y2 on their data-thread-id
- *  line; the glyph gets cx/cy. Behind-camera points (theoretically
- *  possible if a node sits on the far side of the sphere from the
- *  current camera target) are hidden by a translate-far-offscreen
- *  trick rather than added complexity in the DOM. */
+/** Re-project every star, thread, the cursor's glyph, and the
+ *  ghost trail through the state's live camera. Each sub-mutation
+ *  lives in @/shared/dom/skyProjector; this helper composes them in
+ *  the order the layers expect. */
 function projectScene(state: NavState, refs: RuntimeRefs): void {
   const cameraGroup = refs.cameraRef.current;
   if (!cameraGroup) return;
-  const camera = state.currentCamera;
-  const basis = state.currentBasis;
+  const { currentCamera: camera, currentBasis: basis } = state;
   const viewboxSize = refs.viewboxSize;
-  // Stars: outer transform attribute on the data-node-key wrapper.
-  for (const node of refs.nodesRef.current) {
-    const el = cameraGroup.querySelector(`[data-node-key="${node.key}"]`);
-    if (!el) continue;
-    const proj = projectToViewbox(node.unitPos, camera, basis, viewboxSize);
-    el.setAttribute(
-      'transform',
-      proj.inFront
-        ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)})`
-        : 'translate(-9999 -9999)',
-    );
-  }
-  // Threads: x1/y1/x2/y2 on the data-thread-id line element.
-  for (const edge of refs.edgesRef.current) {
-    const el = cameraGroup.querySelector(`[data-thread-id="${edge.id}"]`);
-    if (!el) continue;
-    const ps = projectToViewbox(edge.sourcePos, camera, basis, viewboxSize);
-    const pt = projectToViewbox(edge.targetPos, camera, basis, viewboxSize);
-    el.setAttribute('x1', ps.x.toFixed(2));
-    el.setAttribute('y1', ps.y.toFixed(2));
-    el.setAttribute('x2', pt.x.toFixed(2));
-    el.setAttribute('y2', pt.y.toFixed(2));
-  }
-  // Glyph rides the cursor's screen position — leads when the
-  // camera lags, settles back to the active well's projection
-  // when the camera catches up.
-  const cursorProj = projectToViewbox(state.pos, camera, basis, viewboxSize);
-  if (refs.glyphRef.current && cursorProj.inFront) {
-    refs.glyphRef.current.setAttribute('cx', cursorProj.x.toFixed(2));
-    refs.glyphRef.current.setAttribute('cy', cursorProj.y.toFixed(2));
-  }
-  // Ghost-decay trail: each prior position is projected and written
-  // to the matching trail circle. Ghosts inherit their opacity from
-  // CSS (--trail-strength multiplied by per-ghost base opacity) so
-  // the trail asserts itself only during fast travel. Querying once
-  // per frame is acceptable on this hot path; the count is fixed
-  // (TRAIL_LENGTH = 4) and the selectors are direct descendants.
-  for (let i = 0; i < state.trailHistory.length; i++) {
-    const entry = state.trailHistory[i]!;
-    const trailEl = cameraGroup.querySelector(`[data-companion-trail="${i}"]`);
-    if (!trailEl) continue;
-    const proj = projectToViewbox(entry, camera, basis, viewboxSize);
-    trailEl.setAttribute('cx', proj.inFront ? proj.x.toFixed(2) : (-9999).toString());
-    trailEl.setAttribute('cy', proj.inFront ? proj.y.toFixed(2) : (-9999).toString());
-  }
-  // Hand the cursor's normalized screen position to the WebGL
-  // firmament so its luminous pool of attention follows the
-  // visitor's surface position rather than the raw pointer.
-  // Normalize: viewbox center → 0, edges → ±1; flip Y for shader
-  // space (shader convention is +y up, SVG is +y down).
-  const center = viewboxSize / 2;
-  setConstellationCursor(
-    (cursorProj.x - center) / center,
-    -(cursorProj.y - center) / center,
-    cursorProj.inFront,
-  );
+  projectStars(cameraGroup, refs.nodesRef.current, camera, basis, viewboxSize);
+  projectThreads(cameraGroup, refs.edgesRef.current, camera, basis, viewboxSize);
+  const cursorProj = projectGlyph(refs.glyphRef.current, state.pos, camera, basis, viewboxSize);
+  projectTrail(cameraGroup, state.trailHistory, camera, basis, viewboxSize);
+  broadcastCursorToFirmament(cursorProj, viewboxSize);
 }
 
 /** Integrate the navigation physics one tick: acceleration → tangent
@@ -698,17 +455,6 @@ function shiftTrailHistory(state: NavState): void {
   tr[0]!.x = state.pos.x;
   tr[0]!.y = state.pos.y;
   tr[0]!.z = state.pos.z;
-}
-
-/** Write the per-frame CSS variables the companion glyph reads:
- *    --companion-claim — 0 at rest, 1 at well center.
- *    --trail-strength  — 0 at rest, 1 at fast travel. */
-function writeGlyphChannels(glyph: SVGCircleElement | null, claim: number, speed: number): void {
-  if (!glyph) return;
-  glyph.style.setProperty('--companion-claim', claim.toFixed(3));
-  const trailStrength = clamp(speed / TRAIL_FULL_SPEED_RAD, 0, 1);
-  const parent = glyph.parentElement as SVGElement | HTMLElement | null;
-  parent?.style.setProperty('--trail-strength', trailStrength.toFixed(3));
 }
 
 function isAtRest(state: NavState, accel: Vec3): boolean {
@@ -897,34 +643,6 @@ function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void 
     e.currentTarget.releasePointerCapture(e.pointerId);
   }
   if (!prefersReducedMotion()) ensureRunning(refs);
-}
-
-/** Reduced-motion fallback: a tap → jump to the nearest neighbor in
- *  the requested direction. Direction is decomposed against the
- *  camera basis at the active node's position so "right" feels like
- *  "right on the visitor's screen." */
-export function geodesicNeighborInDirection(
-  activeKey: string | null,
-  nodes: readonly NavigableNode[],
-  arrowKey: string,
-  basis: CameraBasis,
-): NavigableNode | null {
-  const direction = tangentHoldDirection(new Set([arrowKey]), basis, NORTH_POLE);
-  if (direction.x === 0 && direction.y === 0 && direction.z === 0) return null;
-  const active = nodes.find((n) => n.key === activeKey);
-  const origin = active?.unitPos ?? NORTH_POLE;
-  let best: { node: NavigableNode; cost: number } | null = null;
-  for (const candidate of nodes) {
-    if (candidate.key === active?.key) continue;
-    const tangent = tangentTowards(origin, candidate.unitPos);
-    const along = tangent.x * direction.x + tangent.y * direction.y + tangent.z * direction.z;
-    if (along <= 0) continue;
-    const distance = geodesicDistance(origin, candidate.unitPos);
-    const cost = distance / Math.max(along, 0.05);
-    if (!best || cost < best.cost) best = { node: candidate, cost };
-  }
-  if (best) return best.node;
-  return active ? null : (nodes[0] ?? null);
 }
 
 function handleKeyDown(refs: RuntimeRefs, e: KeyboardEvent): void {

@@ -7,7 +7,7 @@ import {
   sphericalWellForce,
   tangentHoldDirection,
   type NavigableNode,
-} from './useConstellationNavigation';
+} from '@/shared/geometry/wellPhysics';
 
 // Performance regression guards for the navigation hot path. The
 // constellation's RAF loop runs sphericalWellForce + geodesicNearestNode
