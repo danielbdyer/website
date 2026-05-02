@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * Return-gesture wiring for `/sky`.
@@ -30,11 +30,16 @@ import { useEffect } from 'react';
  *   the hook by route — only attach on `/sky`)
  */
 export function useReturnGesture(onReturn: () => void, enabled = true) {
+  // Stateful gesture accumulators — wheel deltas summed across
+  // events, touch start-Y captured per gesture. useRef rather
+  // than `let` in a useEffect closure so the FP discipline (no
+  // compound `+=` on plain bindings) is honored without losing
+  // the cross-event continuity the gesture detector needs.
+  const wheelAccumulator = useRef(0);
+  const touchStartY = useRef(0);
+
   useEffect(() => {
     if (!enabled) return;
-
-    let wheelAccumulator = 0;
-    let touchStartY = 0;
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowDown' && e.key !== 'Escape') return;
@@ -58,23 +63,23 @@ export function useReturnGesture(onReturn: () => void, enabled = true) {
       if (e.deltaY < 0) {
         // Scrolling up resets the accumulator — the gesture is
         // unambiguously down or it doesn't count.
-        wheelAccumulator = 0;
+        wheelAccumulator.current = 0;
         return;
       }
-      wheelAccumulator += e.deltaY;
-      if (wheelAccumulator > 220) {
-        wheelAccumulator = 0;
+      wheelAccumulator.current = wheelAccumulator.current + e.deltaY;
+      if (wheelAccumulator.current > 220) {
+        wheelAccumulator.current = 0;
         onReturn();
       }
     };
 
     const onTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0]?.clientY ?? 0;
+      touchStartY.current = e.touches[0]?.clientY ?? 0;
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      const touchEndY = e.changedTouches[0]?.clientY ?? touchStartY;
-      if (touchEndY - touchStartY > 120) {
+      const touchEndY = e.changedTouches[0]?.clientY ?? touchStartY.current;
+      if (touchEndY - touchStartY.current > 120) {
         onReturn();
       }
     };
