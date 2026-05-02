@@ -29,7 +29,7 @@ If a downstream agent reads this plan and feels the impulse to start coding the 
 
 ## How to read this
 
-The plan is structured as **phases** (numbered `P0` through `P15`), with **cross-cutting concerns** spanning all phases.
+The plan is structured as **phases** (numbered `P0` through `P13`, with sub-phases like `P3.5`, `P10.5`, `P12.5`–`P12.7` where dependencies and scope justified them), plus a **held register** (appendix; not numbered phases) and **cross-cutting concerns** spanning all phases.
 
 ### Phase anatomy
 
@@ -88,7 +88,7 @@ From this shape, the plan's thesis follows:
 
 Translated into a sequencing principle: **substrate before consumers**, **polish alongside infrastructure**, **specs catch up, not lead**.
 
-The plan's structure mirrors this thesis. P0 is foundation refinement (vocabulary, spec sync, test fixtures). P1–P3 are Pass-2 polish (the visible commitments that landed in spirit but need explicit form). P4 is the chrome substrate. P5–P10 are the chrome surfaces in pulled order. P11–P12 are the living-document behaviors. P13 is the spec full reconciliation. P14–P15 are the held register and beyond-the-plan.
+The plan's structure mirrors this thesis. P0 is foundation refinement (vocabulary, spec sync, test fixtures). P1–P3 are Pass-2 polish (the visible commitments that landed in spirit but need explicit form). P3.5 brings aesthetic refinement; P3.6 ships empty/loading edge states; P3.7 / P3.8 close the arrival-and-departure gestures. P4 is the chrome substrate. P5–P10 are the chrome surfaces in pulled order, with P10.5 closing thread-traversal-as-navigation. P11–P12 are the living-document behaviors; P12.5 brings the daystar's ascent; P12.6 reconciles /sky with /facet pages; P12.7 prepares for high node-count. P13 is the spec full reconciliation. The **held register** (appendix) names items the design committed to but the plan is explicitly not addressing.
 
 The plan does **not** claim that all sixteen phases will be executed. The plan claims that *if* the pulls arrive, *this* is the sequence that respects the dependencies. Several phases may stay pending indefinitely — and that staying-pending may itself be the right answer for years. The plan's job is to make the sequence legible so any subsequent decision (to begin, to defer, to skip) is made knowingly.
 
@@ -133,7 +133,7 @@ P0   Foundation refinement and reconciliation
      │                                               │
      ├──→ P3.5 Aesthetic refinement ─────────────────│
      │                                               │
-     ├──→ P3.6 Empty / loading / offline states ─────│
+     ├──→ P3.6 Empty and loading states ─────────────│
      │                                               │
      ├──→ P3.7 Foyer "look up" gesture ──────────────│
      │                                               │
@@ -174,12 +174,13 @@ P0   Foundation refinement and reconciliation
      ├──→ P12.7 High node-count strategy             │
      │         (no strict blockers; corpus-pulled)   │
      │                                               │
-     ├──→ P13  Spec full reconciliation ←────────────┘
-     │         (downstream of all visible phases)
-     │
-     ├── P14  Held but visible (no implementation; doc-only)
-     │
-     └── P15  Beyond the plan (held register; no work expected)
+     └──→ P13  Spec full reconciliation ←────────────┘
+               (downstream of all visible phases)
+
+(Held register — appendix below the numbered phases — collects
+ documentation-only items: held-but-visible commitments and
+ beyond-the-plan vocabulary. Not a numbered phase; no implementation
+ expected.)
 ```
 
 **Reading the tree:**
@@ -194,7 +195,7 @@ P0   Foundation refinement and reconciliation
 - **Living-document (P11, P12).** P11 needs P8's persistence; P12 needs P10's drift cue (or its own equivalent).
 - **Late-stage refinements (P12.5, P12.6, P12.7).** Daystar ascent depends on P5's theme-toggle decision; /sky-/facet reconciliation depends on P6 shipping; high-node-count strategy is corpus-pulled rather than dependency-blocked.
 - **Reconciliation (P13).** Downstream of all visible phases; reconciling specs to a moving target is how drift compounds.
-- **Held register (P14, P15).** Documentation-only; no implementation expected.
+- **Held register (appendix).** Below the numbered phases lives a single Held register that collects two kinds of documentation-only items: *held-but-visible* commitments (named in specs and the design read; not yet ridden) and *beyond-the-plan* vocabulary (referent breadcrumbs that may resurface later). No implementation expected; no phase number; preserved here so the plan and the held truth stay legible to each other.
 
 A pull may legitimately arrive for a phase whose blockers are unmet. When that happens, the right answer is *honor the pull by completing the blockers first* — not by skipping them. The dependency tree exists because the dependencies are real.
 
@@ -509,19 +510,20 @@ P3.5 can run alongside P0, P1, P2, P3, P4. It depends on P1's gold-as-active fou
 
 ---
 
-## P3.6 — Empty, loading, and offline states
+## P3.6 — Empty and loading states
 
 *Status:* **pending**.
-*Pull condition:* the moment a visitor encounters /sky in an edge state (empty corpus during dev preview; first-paint hydration on a slow connection; an offline session) and the surface produces a default-rendered void instead of the design's committed copy. The audit named these as **partial** (empty), **absent** (loading, offline). P3.6 brings them into being.
+*Pull condition:* the moment a visitor encounters /sky in an edge state (empty corpus during dev preview; first-paint hydration on a slow connection) and the surface produces a default-rendered void instead of the design's committed copy. The audit named these as **partial** (empty), **absent** (loading). P3.6 brings them into being.
+
+*Note: offline-state was originally bundled into this phase; on review, the offline surface is held by design (see Held register). The complexity of detection + the limited value over the static-by-default deploy mean offline can wait for a real visitor pull.*
 
 ### Scope
 
-The three living-edge surfaces the design committed to. P3.6 ships:
+The two living-edge surfaces the design committed to. P3.6 ships:
 
 - **`S17 EmptySky` first-form.** When the constellation has zero nodes (a development preview; a deeper edge case), /sky renders the firmament, polestar, and atmosphere — exactly as it does for a populated constellation. Centered second-voice copy reads: *"the constellation gathers"* (italic, low opacity, fading in over ~1 s with the sky-arrival). The polestar is the only light; the visitor sees a world *waiting*. The cursor is present at the polestar but has nothing to claim.
 - **`S18 LoadingSky` first-form.** /sky is prerendered SSG, so loading-state largely doesn't apply at runtime. *But* the edge case is real: a slow connection where hydration is delayed; a code-split chunk fetch that hasn't resolved. First-form: a faint *"gathering"* second-voice line appears centered if hydration takes longer than ~1.5 s. Hidden when hydration completes. The orbiting-loader visual the design doc gestures at can be a small breath / fade-in animation at the polestar's edge — quiet, not insistent.
-- **`S19 OfflineSky` first-form.** When the visitor is offline (`navigator.onLine === false` at /sky entry), the surface still works (everything is prerendered + cached). The state's only difference: a second-voice line at the bottom of the strip's center reads *"you're offline. explore cached stars."* When the visitor reconnects, the line fades. No banner; no toast; no warning. The constellation continues working.
-- **Composition with other surfaces.** Each edge state must compose with active filters, time-scrub, etc. An offline visitor with active filters sees the offline-state line *plus* the filter dimming. An empty constellation that is also being filtered shows the *gathering* line; no filter has anything to act on.
+- **Composition with other surfaces.** Each edge state must compose with active filters, time-scrub, etc. An empty constellation that is also being filtered shows the *gathering* line; no filter has anything to act on.
 - **Reduced-motion equivalents.** All edge-state copy fades in at 80 ms rather than ~1 s. The constellation's sky-arrival proceeds normally if reduced-motion permits.
 
 ### Exit condition
@@ -530,8 +532,7 @@ P3.6 is done when:
 
 - A development preview with empty content shows `S17 EmptySky` correctly, with copy centered and fading in.
 - A slow-network simulation (Playwright + throttling) produces the loading state; quick networks don't show it.
-- An offline session (Playwright with `context.setOffline(true)`) shows `S19 OfflineSky`'s copy.
-- All three states compose correctly with active filters / time-scrub when those phases have shipped.
+- Both states compose correctly with active filters / time-scrub when those phases have shipped.
 - Reduced-motion equivalents work.
 - Playwright tests cover each edge state.
 - The first-time visitor who unfortunately encounters an edge state has a comprehensible experience.
@@ -540,17 +541,15 @@ P3.6 is done when:
 
 - **What "empty" means for triggers.** Truly zero `ConstellationNode` entries (which only happens in dev preview / a content-removal mistake) vs. zero *visible* stars (which can happen with all stars dimmed by filter). The design's *"the constellation gathers"* copy is for the former; the latter is `FilterActive` with all-dimmed (no committed copy). Decide whether the distinction is honored here or in P6's filter scope.
 - **Loading detection.** Options: a delayed-render trick (start with blank, render after 50 ms); a Suspense boundary (React 19 supports this); a manual `useEffect` with a setTimeout; a presence flag set by the route loader. The simplest answer is the delayed-render trick; the cleanest may be Suspense.
-- **Offline detection technique.** `navigator.onLine` is unreliable; service-worker-mediated detection is more accurate but adds complexity. First form: rely on `navigator.onLine`; document the unreliability; accept that occasionally the line shows when online and vice versa.
-- **Where the offline line lives.** In the strip (a center-spanning faint line); above the polestar; centered at viewport. Decide.
 - **Whether the empty-state copy ever shows in production.** If the corpus is never empty in production (post-launch), `S17 EmptySky` is dev-only. Decide whether the test surface includes production-only copy or only development copy.
 
 ### Parallel tracks
 
-P3.6 is mostly independent. It can run alongside P0 through P3 and beyond. P3.6 has small dependencies on each chrome phase (offline-state-with-filter-active needs P6's filter to exist) but the *primary* surface can ship before chrome.
+P3.6 is mostly independent. It can run alongside P0 through P3 and beyond. P3.6 has small dependencies on each chrome phase (empty-state-with-filter-active needs P6's filter to exist) but the *primary* surface can ship before chrome.
 
 ### What stays held within P3.6
 
-- A full service-worker-mediated offline experience (with custom cached-content prompts; with offline-only affordances) — held; first form is detection + copy only.
+- Offline-state detection and copy. *Held in the held register.* The static-by-default deploy means most "offline" cases just keep working; the visible offline-state line was a thin payoff for the detection complexity. Held until a visitor pull asks for it.
 - A "you appear to be on a slow connection" loading-state escalation — held; first form is the simple delay.
 - Empty-state CTAs ("be the first to read") — forbidden by epistemic posture; not in scope.
 
@@ -564,7 +563,6 @@ P3.6 is mostly independent. It can run alongside P0 through P3 and beyond. P3.6 
 
 - Playwright: empty-corpus rendering with copy.
 - Playwright: simulated slow network shows loading state.
-- Playwright: offline detection with `setOffline(true)`.
 - Playwright: composition with filter (when P6 has shipped).
 - Playwright: reduced-motion equivalents.
 - Vitest: edge-detection logic in isolation.
@@ -795,6 +793,7 @@ The HorizonStrip's bottom-edge presence and its at-rest / pointer-near / activel
 - **Site nav reconciliation on /sky.** A decision is made: site nav retires on /sky entirely, OR stays at minimum opacity, OR is replaced by the HorizonStrip's foyer glyph as the only home-return affordance. The phase commits to one and documents.
 - **Theme toggle relocation.** The current theme toggle (top-right of site nav) either: stays where it is (and site nav stays at minimum); migrates to the strip's right side; or migrates to the daystar (with the daystar interactive — a held vision becoming concrete). P5 chooses.
 - **Reduced-motion equivalent.** In reduced-motion mode, the strip's opacity transitions are 80 ms fades; the strip is otherwise identical.
+- **The chrome surface template.** P5 is the first chrome surface, and P6, P7, P8, P9, P10, P10.5 are all chrome surfaces with the same anatomy: a state machine over rest / pointer-near / actively-using, focusable-when-active, dismissable on Escape and outside-pointer, broadcasting an open-state signal so the constellation scene can soften behind it, and entering/leaving on the named *register* timings. P5 ships, alongside the HorizonStrip itself, a *chrome surface template* — a small, copy-paste scaffolding (a hook, a folder convention, or a thin abstraction; see decision) that subsequent chrome surfaces inherit rather than re-derive. The template carries: the state machine; the focus and dismissal contract; the scene-broadcast signal wiring; the standard test scaffolding (Playwright state transitions, axe landmarks/contrast, vitest with @testing-library/react). Future chrome surfaces start from this template and customize rather than re-discover the contract.
 
 ### Exit condition
 
@@ -810,6 +809,7 @@ P5 is done when:
 - A Playwright test verifies foyer glyph navigation.
 - An axe test verifies the strip has correct landmark roles, focus rings, AA contrast.
 - The strip's bundle weight is documented (within the 215 KB ceiling).
+- The chrome surface template is shipped alongside the HorizonStrip, demonstrably consumed by the strip itself (so the template's correctness is proven by the surface that ships with it), and documented in `REACT_NORTH_STAR.md` so the next chrome surface (P6's facet chips, then P7's search dialog, etc.) inherits it rather than re-derives it.
 
 ### Architectural decisions within this phase
 
@@ -826,6 +826,11 @@ P5 is done when:
   - In a future polestar panel (P8): more discoverable than daystar; less spatial.
   - The author chooses; the rationale is the phase's poetic-stakes commit.
 - **Strip's z-stack position.** Above constellation (per layering rules) but below RadialEcho (so a radial echo over the cursor can be in the strip's vertical space without conflict). P4's z-stack module enforces.
+- **Chrome surface template's shape.** Three honest options:
+  - *A custom hook* (`useChromeSurface`) returning state, refs, and event handlers; the consuming surface composes the hook into its own JSX. Most idiomatic to the React signals-flavored style; lowest abstraction cost; the template is essentially a function. Risk: every surface ends up with subtly different markup, and the contract decays.
+  - *A higher-order component* (`<ChromeSurface>...</ChromeSurface>`) that wraps the surface's content and provides the state machine and contract via context. Highest cohesion; surface authors fill in only the surface-specific markup. Risk: the wrapping abstraction occludes the surface's structure, and customization escapes through context props.
+  - *A folder convention with copy-paste scaffolding* — a `chrome-surface/` template directory (state-machine module, test scaffolding, focus-management module, scene-broadcast wiring) that new chrome surfaces copy and customize. Lowest abstraction; most explicit; most duplication. Risk: drift across surfaces as the template evolves and copies don't.
+  - The author chooses; the rationale is the phase's architectural commit. The hook variant is currently most aligned with how the codebase composes signals and refs; the folder-convention variant is the most spanda-honest if the contract is still finding its shape across the next several surfaces.
 
 ### Parallel tracks
 
@@ -842,6 +847,7 @@ P5 blocks on P4. It can run alongside P1, P2, P3, P0. After P5 ships, P6, P7, P8
 - `INFORMATION_ARCHITECTURE.md` (the foyer-return path on /sky).
 - `INTERACTION_DESIGN.md` (the strip's state transitions and durations).
 - `DESIGN_SYSTEM.md` (any new tokens introduced for the strip's regions).
+- `REACT_NORTH_STAR.md` (the chrome surface template's architectural shape — whether hook, wrapper, or folder convention — and the contract it enforces).
 
 ### Tests to land
 
@@ -1668,7 +1674,7 @@ P13 makes few architectural decisions; it documents decisions made earlier. The 
 
 ### Parallel tracks
 
-P13 cannot run alongside the visible phases that obligate spec updates — it depends on them. P13 can run alongside P14 (held register documentation) since both are doc-only.
+P13 cannot run alongside the visible phases that obligate spec updates — it depends on them. P13 can run alongside held-register maintenance, since both are doc-only.
 
 ### What stays held within P13
 
@@ -1688,96 +1694,87 @@ P13 *is* the spec reconciliation. Its scope is the spec-system itself.
 
 ---
 
-## P14 — Held but visible (no implementation; doc-only)
+## Held register (appendix; not a numbered phase)
 
-*Status:* **held-by-design**.
-*Pull condition:* not expected to begin. P14 is a register, not a phase to execute.
+*Previously numbered P14 and P15 in earlier drafts; demoted to an appendix on review. Numbered phases imply work in sequence; the held register is not work. It is a list of items the design has named that the plan is **explicitly not addressing** — so a downstream agent finds them documented, not silently absent.*
 
-### Scope
+The held register has two halves: items the design names as held but visible (we know they exist; we are not building them now); and items beyond the plan's horizon (we acknowledge them as outside what this plan can anticipate).
 
-P14 names the design's held items in a register that subsequent agents can find. The register includes:
+### Held but visible — design-named items the plan does not address
 
-- **Audio considerations.** When a Salon work requires audio, the audio surface lands. Until then, P14 holds the design's named coordinates: ambient drone, basin-settle pitch, drag noise, work-overlay hush. No implementation.
-- **Multi-visitor presence.** Could two visitors share a constellation in real time? Held. Not expected within Pass 2's commitments. Documented to ensure future proposals know the held state.
-- **Constellation patterns.** Editorially-named clusters (the Cathedral; the Ground; the Body of Water). Held until Danny names a pattern.
-- **The lower hemisphere.** Currently empty in the data layer. Held for: (a) audio-bearing works that want a different metaphorical neighborhood; (b) older works archived to the underworld; (c) intentionally empty as a felt-sense "the world has a back you don't visit."
+These items are committed in the design's vocabulary but expressly held; the plan does not include phases for them. If a pull arrives for any, a new phase enters the plan with the conventional anatomy.
+
+- **Offline-state visible affordance** (`S19 OfflineSky`). Originally in P3.6's first draft; held on review. The static-by-default deploy means most "offline" cases just keep working; the visible offline-state line was thin payoff for the detection complexity. Reactivates if a real visitor pull asks for the affordance.
+- **Audio considerations.** When a Salon work requires audio, the audio surface lands: ambient drone, basin-settle pitch, drag noise, work-overlay hush. Held until a Salon work requires it.
+- **Multi-visitor presence.** Could two visitors share a constellation in real time? Held; the design's *intimate place* commitment + the no-server-runtime commitment make this firm-held.
+- **Constellation patterns.** Editorially-named clusters (the Cathedral; the Ground; the Body of Water). Held until Danny names a pattern editorially. P12.7 (high-node-count) may surface this when corpus pulls.
+- **The lower hemisphere.** Currently empty in the data layer. Held for: audio-bearing works that want a different metaphorical neighborhood; older works archived to the underworld; intentionally empty as a felt-sense "the world has a back you don't visit."
 - **Multi-select / comparison surface.** Held; no use case has emerged.
 - **Voice / gaze input.** Held until interaction technology and visitor expectations are ready.
 - **The constellation in print.** A static print rendering for a folio. Held; the editorial moment to capture has not occurred.
 - **Cross-device session sync.** Held; would require server runtime which the deploy refuses.
 
-### Exit condition
+### Beyond the plan — outside the plan's anticipation
 
-P14 has no exit condition. It is a register that updates as held items either move to active phases (becoming P-something) or remain held.
+These items are *outside the plan's reach* — they are futures the current plan acknowledges but cannot meaningfully sequence.
 
-### Architectural decisions within this phase
+- **The next plan.** When this plan's active phases have shipped or been formally held, the next plan addresses what the audit-at-that-time names.
+- **A second medium.** Gallery installation; printed atlas; spoken word archive. Outside.
+- **Visitor authorship.** Could the constellation let visitors leave marks? Quiet annotations? Outside the plan to anticipate.
+- **Cross-corpus constellations.** Federation with other authorial sites? Outside; the *intimate place* commitment refuses this firmly.
+- **AI co-authorship surfaces.** Could the agentic surface that built /sky become a visible thread? *Transparency* names the strata as content; *visible-strata-as-interactive-feature* is outside.
 
-None. P14 makes no decisions; it preserves the design's held register.
+The held register is updated when items shift: a held item that pulls forward becomes a numbered phase; a numbered phase that's deemed not-pulling-foreseeably moves into the held register. Both moves are documented.
 
-### Parallel tracks
-
-P14 is documentation-only and does not interact with implementation tracks. It can update at any time when held items shift status (from held to active, or from active to held).
-
-### What stays held within P14
-
-By definition, everything in P14's scope stays held. The phase's job is to keep the held register legible.
-
-### Specs to reconcile
-
-- `BACKLOG.md` (held items in P14's register should be present in BACKLOG with trigger conditions).
-- `CONSTELLATION.md`'s held-questions section (cross-referenced).
-
-### Tests to land
-
-None. P14 has no implementation.
-
----
-
-## P15 — Beyond the plan
-
-*Status:* **held-by-design**.
-*Pull condition:* not expected. P15 names what is *outside the plan's reach* — futures the current plan does not even gesture at.
-
-### Scope
-
-P15 is the explicit horizon of *the plan does not know what comes next.* It names:
-
-- **The next plan.** When P0–P13 have shipped, the next plan addresses what the audit at that future time names. The plan is honest about its own time-bounded scope.
-- **A second medium.** The constellation could one day extend to other media (gallery installation; printed atlas; spoken word archive). P15 does not plan these; it names them as outside.
-- **Visitor authorship.** Could the constellation eventually let visitors leave marks? Quiet annotations? Held; not in P15's scope to plan.
-- **Cross-corpus constellations.** Could /sky federate with other authorial sites? Held; the design's *intimate place* commitment refuses this for now, but a future shift could revisit.
-- **AI co-authorship surfaces.** Could the agentic surface that built /sky (this plan was authored alongside Claude Code) become a visible thread the visitor can pull on? Held; the *transparency* commitment names the strata, but visible-strata-as-feature is not planned.
-- **The end of the plan.** When the plan completes (every active phase shipped, held register intact), the plan retires. Its replacement is whatever the next pull asks for.
-
-### Exit condition
-
-P15 has no exit condition. It is the horizon.
-
-### Architectural decisions within this phase
-
-None. P15 names futures that the current plan refuses to anticipate.
-
-### Parallel tracks
-
-P15 does not run; it is named.
-
-### What stays held within P15
-
-Everything. P15's job is to acknowledge that the plan is bounded, that the future exceeds the plan, and that this is correct.
-
-### Specs to reconcile
-
-None. P15 is acknowledgment, not commitment.
-
-### Tests to land
-
-None.
+The held register also obligates a single spec touchpoint: items here should also be present in `BACKLOG.md` with trigger conditions, so the backlog and the plan stay in agreement. `CONSTELLATION.md`'s held-questions section is the third co-resident; designers reading it see the same items.
 
 ---
 
 ## Cross-cutting concerns
 
-Concerns that span every phase and must be honored at each. A phase's exit condition implicitly includes these.
+Concerns that span every phase and must be honored at each. A phase's exit condition implicitly includes these. **Performance leads** because the gap between the design's commitments and the bundle ceiling is real and finite; every other discipline operates within performance's constraints, not alongside them.
+
+### Performance budget — the leading discipline
+
+Every phase that adds runtime work, bundle weight, or test count must respect the system's performance gates. These are not a final-phase audit; they are *exit conditions for every phase*.
+
+**Per-phase exit-condition addenda — every phase reports:**
+
+- **Bundle delta.** The phase's contribution to the all-pages JS bundle (gzipped). A phase that adds ≥ 1 KB names the addition, justifies it, and confirms the cumulative bundle stays ≤ ceiling.
+- **Long-task delta.** Whether the phase adds any long task (≥ 50 ms main-thread block) under interaction. The Playwright perf gate (`e2e/sky-performance.spec.ts`) must remain green; any new long task is a regression and a phase blocker.
+- **Lighthouse delta.** Lighthouse mobile score for /sky (and adjacent routes if affected). A drop in Performance, Accessibility, Best Practices, or SEO is a phase blocker. The current floor (whatever Lighthouse CI is configured to) is the threshold; a phase may raise it but must never lower it.
+- **Test runtime delta.** The vitest suite's runtime (currently ~11 s for 276 tests). Adding ~20–80 tests per phase will compound; if total runtime crosses ~30 s, the phase considers test sharding, slow-test promotion to integration, or assertion economy. Test runtime is *part of the development experience*; ignoring its growth is the slow death of CI.
+- **Frame budget.** Per-frame work in the navigation hook stays under ~0.5 ms during interaction. Each phase that adds tick-time work (active-state animation; per-frame DOM mutation; etc.) verifies against this budget on real devices, not just headless test browsers.
+- **Memory ceiling.** /sky's heap retention stays under ~25 MB after 30 s of interaction. Long-running sessions (P12 contemplative state) verify this with extended Playwright runs.
+
+**The bundle-ceiling prediction.** The all-pages bundle currently sits at 202.14 KB / 215 KB ceiling — a 12.86 KB headroom. Realistic additions:
+
+- P3.5 aesthetic refinement: ~1–2 KB (filter additions; minor SVG patterns)
+- P4 chrome substrate: ~3–6 KB (state machine; focus management; signal scaffolding)
+- P5 HorizonStrip skeleton: ~2–3 KB (component + states)
+- P6 facet filter: ~2–3 KB (chip atoms; predicate logic)
+- P7 search: ~3–5 KB (search index, possibly + ~10 KB if a library like FlexSearch is adopted)
+- P8 pin / panel: ~3–5 KB (panel + persistence)
+- P9 timescrubber: ~2–4 KB (scrubber + temporal manifest)
+- P10 radial echo: ~2–3 KB
+- P10.5 thread traversal: ~1–2 KB (mostly the existing geometry helpers)
+
+**Cumulative through P10.5: ~19–33 KB before optimization.** This crosses the 215 KB ceiling well before P10. Three honest mitigations:
+
+1. **Route-split /sky from the all-pages bundle.** /sky's chrome and physics code only the /sky visitor needs; visitors to other rooms shouldn't pay for it. The current bundle structure has /sky's code in the all-pages bundle by default. Splitting requires Vite-level configuration and may interact with TanStack Start's routing — not free. *Probable timing: P5–P6 era. The first chrome surface that pushes past the ceiling is the trigger.*
+2. **Lazy-load chrome after first paint.** The first frame of /sky doesn't need the search index or the time-scrubber's logic; load these after `requestIdleCallback` fires. Bundle stays addable; perceived load time stays fast. *Probable timing: P7 (search) and P9 (timescrubber) are the first phases this discipline matters for.*
+3. **Refuse certain features.** If route-splitting and lazy-loading don't yield enough headroom, *some committed surface gets reconsidered*. The architecture answer is to not ship the surface, not to silently bloat the bundle. (This option is the design's stress-test against the budget — the budget is a real constraint, not advisory.)
+
+**The route-split prediction is concrete: it will happen, probably between P6 and P7.** Each phase author after P5 should check whether their phase is the trigger; if so, route-splitting becomes part of the phase's scope.
+
+**Test-suite runtime budget.** The current 276 tests run in ~11 s. Projected additions (~20–80 per phase × ~16 phases) bring the count toward 600–800. At Pass 2's tests-per-second rate, that's 25–35 s. A 35 s test suite is friction on every commit; CI cost compounds. Disciplines:
+
+- **Co-location and assertion economy.** Tests next to their components; one assertion per concept; avoid redundant coverage.
+- **Vitest sharding.** When the suite reaches ~500 tests, consider `vitest --shard` configuration in CI.
+- **Promote slow integration tests to Playwright.** Vitest is fast for unit work; integration tests creating React component trees with router contexts can be slow. Move heavy ones to Playwright (which runs in parallel CI jobs).
+- **Performance tests separate.** The `e2e/sky-performance.spec.ts` already runs in its own pipeline. Keep this; vitest stays fast.
+
+**Performance work is continuous, not a final phase.** A phase that would degrade performance must include the optimization work to stay within budget — or the phase is incomplete. Performance is *the first commitment to every phase*, not a concluding audit.
 
 ### Accessibility discipline
 
@@ -1793,18 +1790,6 @@ Every phase ships with its accessibility commitments — not "accessibility adde
 - **Axe coverage.** Every phase that adds a visible component runs an axe assertion against it. Zero violations is the bar.
 
 The discipline is not a checklist applied to every phase; it is the foundation that every phase already lives within. A phase that violates it is incomplete by definition.
-
-### Performance budget
-
-Every phase that adds runtime work must respect the existing performance gates:
-
-- **Bundle ceiling.** All-pages JS at ≤ 215 KB gzipped (current floor; may rise with Pass 2 additions if justified). Each phase verifies its bundle delta against this ceiling. A phase that pushes past 215 KB must either: (a) raise the ceiling explicitly with a documented commit, (b) introduce a route-split for /sky-only code, or (c) defer.
-- **Long-task delta.** No long task ≥ 50 ms during interaction. The Playwright perf gate (`e2e/sky-performance.spec.ts`) runs against any phase that adds runtime work.
-- **Frame budget.** Per-frame DOM mutation work in the navigation hook stays under ~0.5 ms (P0–P3 contribute; chrome phases add their own work which must respect the same budget when chrome is open).
-- **Memory.** /sky's heap retention stays under ~25 MB after 30 s of interaction. Long-running sessions (P12 contemplative state) verify this.
-- **Lighthouse scores.** /sky's Lighthouse mobile score stays at the current floor. New animations or chrome must not regress LCP, CLS, or TBT past the budget.
-
-Performance work is **continuous**, not a final phase. A phase that would degrade performance must include the optimization work to stay within budget — or the phase is incomplete.
 
 ### Spec reconciliation as continuous work
 
@@ -1954,8 +1939,7 @@ The plan is done when:
 
 - All visible phases (P0 through P12) have shipped, OR have been formally moved to *held-by-design* with rationale documented.
 - P13 (spec reconciliation) is complete: every constellation-related spec describes the shipped state accurately.
-- P14 (held register) is up to date: items still held are documented with their trigger conditions.
-- P15 (beyond the plan) has been noted as the horizon: the plan acknowledges its own time-boundedness.
+- The held register (appendix) is up to date: items still held are documented with their trigger conditions; items beyond the plan's anticipation are acknowledged.
 
 Completion does *not* mean every committed surface has been built. It means every committed surface has been *resolved* — built or held with reason. A surface held forever is a legitimate completion of the plan's scope; the plan's job is to make the *resolution* legible, not to force every commitment into code.
 
