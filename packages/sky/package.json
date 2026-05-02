@@ -12,12 +12,17 @@
     }
   },
   "scripts": {
-    "harness": "vite",
+    "harness": "vite --config harness/vite.config.ts",
+    "harness:build": "vite build --config harness/vite.config.ts",
     "perf:probe": "node ../../scripts/check-sky-perf.mjs"
   },
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "@tanstack/react-router": "*"
+  },
+  "devDependencies": {
+    "vite": "^8.0.10",
+    "@vitejs/plugin-react": "^6.0.1"
   }
 }

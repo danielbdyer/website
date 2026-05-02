@@ -111,6 +111,8 @@ No images exist today. When they arrive (in works and possibly the Salon), the b
 
 **Today:** Lighthouse runs locally on request. No deployed monitoring.
 
+**Constellation perf harness:** `pnpm harness:sky` boots a standalone Vite app under `packages/sky/harness/` that mounts `<Constellation />` against synthetic graphs (small / production / heavy / extreme — number-keys swap them live). A perf overlay reads `requestAnimationFrame` intervals and `PerformanceObserver` long-tasks. `pnpm perf:sky` drives the harness headlessly via Chromium and fails the run if frame avg / p95 / long-task counts breach the thresholds in `scripts/check-sky-perf.mjs`. The harness exists so the constellation surface — the most paint-heavy thing on the site — has its own perf regression guard, separate from page-load Lighthouse.
+
 **On deploy:** a Lighthouse CI step should run against the production build and fail the build if any hard-limit target regresses. `DEPLOYMENT.md` (gap) will wire this.
 
 **After deploy:** Real User Monitoring (RUM) via a privacy-respecting provider (Plausible or similar) to track Web Vitals in the wild. No per-user tracking; aggregate metrics only.

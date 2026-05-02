@@ -37,6 +37,8 @@
     "test:smoke": "playwright test --grep @smoke",
     "test:e2e": "playwright test",
     "test:perf": "xvfb-run -a playwright test --grep @perf --project=desktop-chromium",
+    "perf:sky": "xvfb-run -a node ./scripts/check-sky-perf.mjs",
+    "harness:sky": "pnpm --filter @dby/sky harness",
     "e2e:serve": "python3 -m http.server 4317 --bind 127.0.0.1 -d dist/client",
     "e2e:build-and-serve": "pnpm build && pnpm e2e:serve",
     "e2e:install": "playwright install chromium",

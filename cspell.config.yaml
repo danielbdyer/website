@@ -15,6 +15,11 @@ ignorePaths:
   - playwright-report/**
   - test-results/**
   - src/app/routeTree.gen.ts
+  # The constellation perf harness emits a Vite dist/ next to the
+  # source — generated CSS/JS with hashed filenames isn't prose
+  # and shouldn't trip the spell guard. (`dist/**` only matches
+  # the top-level dist; the harness lives under packages/.)
+  - packages/**/dist/**
 words:
   # People + places named in works and content
   - Bouteneff
@@ -329,6 +334,11 @@ words:
   - fract
   - xxzz
   - xyxy
+
+  # Perf harness vocabulary
+  - synthesizable
+  - Synthesizable
+  - headlessly
 
 dictionaries:
   - en_US
