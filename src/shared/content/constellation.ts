@@ -138,12 +138,16 @@ export interface ConstellationGraph {
 // same output across builds and platforms.
 
 function hash(input: string): number {
-  let h = 2_166_136_261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.codePointAt(i) ?? 0;
-    h = Math.imul(h, 16_777_619);
-  }
-  return h >>> 0;
+  // FNV-1a (32-bit). Functional fold over the input's code points;
+  // identical bit-for-bit to the imperative form. Spread allocates
+  // an intermediate per call, but `hash` runs once per work-id at
+  // build time, not on the hot path.
+  return (
+    [...input].reduce(
+      (h, ch) => Math.imul(h ^ (ch.codePointAt(0) ?? 0), 16_777_619),
+      2_166_136_261,
+    ) >>> 0
+  );
 }
 
 // 2^32 - 1, the maximum value `hash()` can return. Inlined as a
@@ -215,32 +219,36 @@ function nodeKey(n: { room: Exclude<Room, 'foyer'>; slug: string }): string {
   return `${n.room}/${n.slug}`;
 }
 
+/**
+ * Pure pipeline that derives facet co-membership edges:
+ *   1. flatMap each node into one (facet, node) pair per facet
+ *   2. group those pairs by facet via Map.groupBy (ES2024)
+ *   3. sort each facet group by node key
+ *   4. flatMap the sorted group to one edge per unordered pair
+ *
+ * @bigO Time: O(F·N + Σ k_f² + Σ k_f log k_f) where F = facets/node,
+ *       N = nodes, k_f = nodes carrying facet f. The Σ k_f² (pair
+ *       emission) dominates once any facet attracts many works.
+ *       Don't reintroduce per-element clone-and-set or O(N) lookup
+ *       inside the inner flatMap.
+ *       Space: O(P) for the (facet, node) pair list, where P = Σ k_f.
+ */
 function deriveFacetEdges(nodes: readonly ConstellationNode[]): ConstellationEdge[] {
-  const edges: ConstellationEdge[] = [];
-  const facetGroups = new Map<Facet, ConstellationNode[]>();
-  for (const node of nodes) {
-    for (const facet of node.facets) {
-      const group = facetGroups.get(facet) ?? [];
-      group.push(node);
-      facetGroups.set(facet, group);
-    }
-  }
-  for (const [facet, group] of facetGroups) {
-    const sorted = group.toSorted((a, b) => nodeKey(a).localeCompare(nodeKey(b)));
-    for (let i = 0; i < sorted.length; i++) {
-      for (let j = i + 1; j < sorted.length; j++) {
-        const a = sorted[i]!;
-        const b = sorted[j]!;
-        edges.push({
-          facet,
-          hue: FACET_HUE[facet],
-          source: { room: a.room, slug: a.slug },
-          target: { room: b.room, slug: b.slug },
-        });
-      }
-    }
-  }
-  return edges;
+  const facetPairs = nodes.flatMap((node) => node.facets.map((facet) => [facet, node] as const));
+  const facetGroups = Map.groupBy(facetPairs, ([facet]) => facet);
+  return [...facetGroups].flatMap(([facet, entries]) => {
+    const sorted = entries
+      .map(([, node]) => node)
+      .toSorted((a, b) => nodeKey(a).localeCompare(nodeKey(b)));
+    return sorted.flatMap((a, i) =>
+      sorted.slice(i + 1).map((b) => ({
+        facet,
+        hue: FACET_HUE[facet],
+        source: { room: a.room, slug: a.slug },
+        target: { room: b.room, slug: b.slug },
+      })),
+    );
+  });
 }
 
 // ─── Public API ────────────────────────────────────────────────────

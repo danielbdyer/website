@@ -169,7 +169,7 @@ interface RenderLoopArgs {
 // on the latent sphere — not the raw pointer. The pool now lives
 // where the cursor lives, which means it stays anchored after a
 // flick releases (the cursor's spring carries the pool along) and
-// settles into the active basin when the navigation does.
+// settles into the active well when the navigation does.
 function startRenderLoop({ uniforms, renderer, mesh, canvas }: RenderLoopArgs): () => void {
   let raf = 0;
   let halted = false;

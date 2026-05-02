@@ -56,6 +56,19 @@ export function workCardTransitionName(room: Room, slug: string): string {
   return `work-card-${room}-${slug}`;
 }
 
+/** Sky star → overlay morph. Paired between the constellation's
+ *  Star anchor at /sky and the WorkOverlay panel at
+ *  /sky/{room}/{slug}. The same name on both elements lets the
+ *  View Transitions API morph the star's body+halo into the
+ *  overlay's frame on Open, and back on Close. The star must
+ *  suppress its own viewTransitionName while the overlay is open
+ *  for the morph to be unambiguous (same name on two elements in
+ *  one snapshot is undefined behavior); the suppression lives in
+ *  the Constellation organism via `useMatch`. */
+export function skyStarTransitionName(room: Room, slug: string): string {
+  return `sky-star-${room}-${slug}`;
+}
+
 /** Daystar — paired between the nav's theme-toggle icon (on every
  * route except /sky) and the constellation's celestial body (on
  * /sky). When the visitor navigates from any room into the sky, the

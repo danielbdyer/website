@@ -233,7 +233,7 @@ Compositions of atoms forming a cohesive unit (form field, search bar, card head
 
 ### Organisms
 
-Feature-level presentational components (nav bar, comment thread, data table, order summary). Composed from molecules and atoms. Receives ALL data and callbacks via props — uses a typed data object to flatten (e.g., `data: OrderSummaryData`). May own UI state (sort, expand, active tab). Never fetches data, never calls APIs, never imports from `hooks/` or `infrastructure/`. Maximum 7 props, 100 lines.
+Feature-level presentational components (nav bar, comment thread, data table, order summary). Composed from molecules and atoms. Receives ALL data and callbacks via props — uses a typed object **named for the domain it represents** (e.g., `work: WorkRecord`, `world: ConstellationWorld`, `comments: CommentThread`), never a generic `data` / `config` / `options` / `params` / `state` / `info` (the linter rejects these names; the script `scripts/check-component-shapes.mjs` enforces it). May own UI state (sort, expand, active tab). Never fetches data, never calls APIs, never imports from `hooks/` or `infrastructure/`. Maximum 7 props, 100 lines.
 
 ### Containers
 
@@ -597,6 +597,12 @@ Accessibility is not a feature. It is a constraint, like type safety.
 | No `any` | `tsconfig.json` strict mode |
 | Type coverage | TypeScript `strict: true`, `noUncheckedIndexedAccess: true` |
 | Component size limits | ESLint `max-lines-per-function` |
+| Per-tier prop count ceilings (5 atoms / 7 molecules / 7 organisms) + banned generic prop names (`data`, `config`, `options`, `params`, `state`, `info`) | `scripts/check-component-shapes.mjs`, run via `pnpm lint:component-shapes` |
+| FP discipline across `src/`: bans Array mutation (`push` / `splice` / `unshift` / `fill` / `pop` / `sort` / `reverse` / `copyWithin`), the `.filter().map()` / `.map().filter()` / `.map().flat()` double-traversal chains, all imperative loops (`for`, `for...in`, `while`, `do-while`, labeled), mutation operators (`++` / `--` / compound `+=` etc.), `delete`, `Object.assign(target, ...)`, sparse-array constructors (`Array(n)` / `new Array(n)`), and class declarations (functions and types only). Plus `prefer-object-spread`, `prefer-rest-params`, `prefer-spread`, `no-param-reassign` (with `props: true`). The hot-path tier (RAF integrator, WebGL render loop, DOM-mutation projector, signal store, per-frame physics) and the React error-boundary class are exempt explicitly | `eslint.config.js` §"FP discipline" + §"Hot-path exemption" + §"React error-boundary exemption" |
+| Type-import discipline (`import type`) and exhaustive-switch checks | `@typescript-eslint/consistent-type-imports`, `@typescript-eslint/switch-exhaustiveness-check` |
+| `@ts-expect-error` requires a description (8+ chars); `@ts-ignore` and `@ts-nocheck` are banned | `@typescript-eslint/ban-ts-comment` (custom config) |
+| `console.log` banned in `src/` (info/warn/error allowed at boundaries; tests exempt) | `no-console` |
+| Performance-relevant functions carry a `@bigO` JSDoc tag naming time + space + the contract future agents must honor (e.g. "Hot path: O(N) per RAF tick — don't reintroduce the per-element clone") | Convention; the hot-path files (`useConstellationNavigation.ts`, `skyProjector.ts`, `wellPhysics.ts`) and content-build derivers (`constellation.ts`, `wikilinks.ts`) are the canonical examples. New functions in those modules earn a `@bigO` tag at write time |
 | No unused variables/imports | ESLint + TypeScript |
 | Consistent naming | ESLint naming-convention rules |
 | Formatting | Prettier (on save and in CI) |

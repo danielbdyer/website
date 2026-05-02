@@ -40,6 +40,16 @@ export function ConstellationFilters() {
         />
       </filter>
 
+      {/* Brushstroke thread filter held back: an feTurbulence +
+          feDisplacementMap on every thread (currently 70+) inside
+          the 600s-rotating group forces the rasterizer to re-run
+          all filter calls every frame, dropping idle frame intervals
+          to ~270ms. The design's brushstroke commitment
+          (CONSTELLATION_DESIGN.md §"Materials") will return via
+          deterministic wobbly path geometry or a per-thread stroke
+          pattern — anything that doesn't re-rasterize per frame.
+          Documented here so the next pull lands in the right place. */}
+
       {/* Vespers bloom — what a thread passes through when its endpoint
           star is hovered or focused. A wider gaussian blur, a brightness
           boost via color matrix to push the pastel toward luminescence,
@@ -61,6 +71,23 @@ export function ConstellationFilters() {
           <feMergeNode in="SourceGraphic" />
         </feMerge>
       </filter>
+
+      {/* Polestar wash — a soft watercolor halo around the geometric
+          figure at world center. CONSTELLATION_DESIGN.md
+          §"Materials" + §"Aesthetic / Visual Tone" commit to
+          *watercolor washes* in title regions and around the
+          polestar; this is its first form. Renders as a radial
+          gradient inside the SVG so it composes with the
+          firmament's noise rather than sitting on top as chrome.
+          The bleed extends ~150 viewbox units beyond the polestar
+          figure (~200 short-edge), large enough to feel like the
+          page receiving the figure rather than the figure being
+          drawn on the page. */}
+      <radialGradient id="cn-polestar-wash" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="var(--accent-warm)" stopOpacity="0.18" />
+        <stop offset="40%" stopColor="var(--accent-warm)" stopOpacity="0.08" />
+        <stop offset="100%" stopColor="var(--accent-warm)" stopOpacity="0" />
+      </radialGradient>
     </defs>
   );
 }

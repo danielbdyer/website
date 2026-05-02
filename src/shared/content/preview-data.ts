@@ -98,20 +98,25 @@ function finalizePreviewWorks(
     });
   }
 
-  // First pass — render html with the wikilink extension. Also record
-  // outbound edges per work so we can invert into backlinks.
-  const outbound = new Map<string, WikilinkTarget[]>();
-  const withHtml = all.map((w) => {
-    const html = renderPreviewHtml(w, slugIndex);
-    const tokens = scanWikilinks(w.body);
-    const targets: WikilinkTarget[] = [];
-    for (const t of tokens) {
+  // First pass — render html with the wikilink extension and resolve
+  // each work's outbound wikilink targets. Both rendered html and
+  // resolved targets are derived in one pass; the latter is folded
+  // into the outbound map below without per-work mutation.
+  const enriched = all.map((w) => {
+    const targets = scanWikilinks(w.body).flatMap((t) => {
       const resolved = resolveWikilink(t, w.room, slugIndex);
-      if (resolved) targets.push(resolved.target);
-    }
-    if (targets.length > 0) outbound.set(slugIndexKey(w.room, w.slug), targets);
-    return { ...w, html };
+      return resolved ? [resolved.target] : [];
+    });
+    return { work: { ...w, html: renderPreviewHtml(w, slugIndex) }, targets };
   });
+  const withHtml = enriched.map(({ work }) => work);
+  const outbound = new Map<string, WikilinkTarget[]>(
+    enriched.flatMap(({ work, targets }) =>
+      targets.length > 0
+        ? [[slugIndexKey(work.room, work.slug), targets] as [string, WikilinkTarget[]]]
+        : [],
+    ),
+  );
 
   // Second pass — invert outbound to backlinks, attach.
   const dateLookup = (key: string) => {

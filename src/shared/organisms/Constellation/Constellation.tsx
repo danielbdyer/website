@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useMatch } from '@tanstack/react-router';
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
 import { Daystar } from '@/shared/atoms/Daystar/Daystar';
@@ -28,9 +29,6 @@ interface ConstellationProps {
   className?: string;
 }
 
-const isThreadActive = (activeKey: string | null, sourceKey: string, targetKey: string): boolean =>
-  activeKey === sourceKey || activeKey === targetKey;
-
 export function Constellation({ graph, fullViewport = false, className }: ConstellationProps) {
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
@@ -42,6 +40,25 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const titleId = 'constellation-title';
   const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
     useStarHoverState(null);
+  // The active star's facet hue, propagated to the companion group
+  // so CSS can mix the glyph's amber toward it by the per-tick
+  // --companion-claim factor the navigation hook writes. Null when
+  // no basin is settled — the glyph stays at-rest-no-active and
+  // reads as paper-amber.
+  const activeHue = activeKey
+    ? (nodes.find(({ key }) => key === activeKey)?.node.hue ?? null)
+    : null;
+  // Read the overlay route's params, when it's open. The matching
+  // star suppresses its viewTransitionName so the overlay panel
+  // (which carries the same name) has unambiguous ownership of
+  // that name across snapshots — the View Transitions API's
+  // morph plays cleanly star → panel on Open and panel → star on
+  // Close. shouldThrow:false because the overlay is optional;
+  // /sky alone is a valid state.
+  const overlayMatch = useMatch({ from: '/sky/$room/$slug', shouldThrow: false });
+  const overlayKey = overlayMatch
+    ? `${overlayMatch.params.room}/${overlayMatch.params.slug}`
+    : null;
   const navigableNodes = nodes.map(({ key, node }) => ({ key, unitPos: node.unitPosition }));
   const navigableEdges: NavigableEdge[] = edges.flatMap((edge) => {
     const source = positioned.get(edge.sourceKey);
@@ -82,16 +99,15 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">
             <Stage
-              edges={edges}
-              nodes={nodes}
-              activeKey={activeKey}
-              isThreadActive={isThreadActive}
-              onActivate={handleActivate}
-              onMouseLeave={handleMouseLeave}
-              onBlur={handleBlur}
-              onKeyDown={onKeyDown}
-              onKeyUp={onKeyUp}
-              dragHandlers={dragHandlers}
+              world={{ edges, nodes, activeKey, activeHue, overlayKey }}
+              interactions={{
+                onActivate: handleActivate,
+                onMouseLeave: handleMouseLeave,
+                onBlur: handleBlur,
+                onKeyDown,
+                onKeyUp,
+                dragHandlers,
+              }}
               glyphRef={glyphRef}
             />
           </g>

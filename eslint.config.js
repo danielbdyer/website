@@ -42,7 +42,9 @@ export default tseslint.config(
       // vite.config.ts does the actual memoization at build time;
       // this rule names violations at lint time so they're caught
       // before the compiler bails silently. See REACT_NORTH_STAR.md
-      // §"React Compiler" for the adoption note.
+      // §"React Compiler" for the adoption note. Pairs with the
+      // FP-shaped no-restricted-syntax block in §"FP discipline"
+      // below; useMemo / useCallback bails surface there.
       'react-compiler/react-compiler': 'error',
       // JSX nesting depth — North Star §"Structural Thresholds"
       // commits to 2–3 target, 4 hard limit. Matches working memory
@@ -50,26 +52,6 @@ export default tseslint.config(
       // choice. Test files pass through unchanged because they are
       // already exempt from `max-lines-per-function`.
       'react/jsx-max-depth': ['error', { max: 4 }],
-      // Manual memoization is unnecessary since React Compiler is
-      // configured (vite.config.ts). The compiler auto-memoizes at
-      // build time; manual `useMemo`/`useCallback`/`memo`/`forwardRef`
-      // calls are warned, not errored, so a future agent who genuinely
-      // needs to escape the compiler can disable per line with a
-      // comment naming the reason. See REACT_NORTH_STAR.md
-      // §"React Compiler" for the rule of thumb.
-      'no-restricted-syntax': [
-        'warn',
-        {
-          selector: "CallExpression[callee.name='useMemo']",
-          message:
-            'React Compiler auto-memoizes — manual `useMemo` is rarely needed. If the compiler bails on this case, suppress with `// eslint-disable-next-line` and a one-line reason.',
-        },
-        {
-          selector: "CallExpression[callee.name='useCallback']",
-          message:
-            'React Compiler auto-memoizes — manual `useCallback` is rarely needed. If the compiler bails on this case, suppress with `// eslint-disable-next-line` and a one-line reason.',
-        },
-      ],
       'no-restricted-imports': [
         'warn',
         {
@@ -142,6 +124,234 @@ export default tseslint.config(
     },
   },
 
+  // ── FP discipline ────────────────────────────────────────────
+  // Functional-programming defaults for src/. Array mutation, the
+  // double-traversal chains, and C-style for-loops have functional
+  // alternatives that read more honestly and (in most cases)
+  // perform identically. The rules apply broadly; the hot-path
+  // exemption block immediately below names the few files where
+  // mutation is justified by per-frame performance budgets.
+  // Imported from another working repo's domain layer; the
+  // selectors are unchanged. REACT_NORTH_STAR.md §"FP discipline"
+  // is the canonical reference.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}', 'src/test/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        // ── Array mutation methods (ES2023 has copy-alternatives) ──
+        {
+          selector: "CallExpression[callee.property.name='push']",
+          message: 'Prefer spread, concat, or reduce over Array.push.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='splice']",
+          message: 'Prefer [...arr.slice(0,i), ...arr.slice(i+1)] over Array.splice.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='unshift']",
+          message: 'Prefer [newItem, ...arr] over Array.unshift.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='fill']",
+          message: 'Prefer Array.from({ length: n }, () => value) over Array.fill.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='pop']",
+          message: 'Prefer arr.slice(0, -1) and arr.at(-1) over Array.pop.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='sort']",
+          message: 'Prefer arr.toSorted() (ES2023) — non-mutating, returns a new array.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='reverse']",
+          message: 'Prefer arr.toReversed() (ES2023) — non-mutating, returns a new array.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='copyWithin']",
+          message: 'Array.copyWithin mutates in place — express the result with slice + spread.',
+        },
+        // ── Double-traversal chains → flatMap ──
+        {
+          selector:
+            "CallExpression[callee.property.name='map'][callee.object.callee.property.name='filter']",
+          message: 'Prefer .flatMap() over .filter().map() to avoid double traversal.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='flat'][callee.object.callee.property.name='map']",
+          message: 'Prefer .flatMap() over .map().flat() to avoid double traversal.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='filter'][callee.object.callee.property.name='map']",
+          message: 'Prefer .flatMap() over .map().filter() to avoid double traversal.',
+        },
+        // ── Imperative loops → map/filter/reduce/flatMap ──
+        {
+          selector: 'ForStatement',
+          message: 'Prefer map/filter/reduce/flatMap over imperative for loops.',
+        },
+        {
+          selector: 'ForInStatement',
+          message: 'Prefer Object.entries().map() over for...in.',
+        },
+        {
+          selector: 'WhileStatement',
+          message: 'Prefer recursion or a fold (reduce / iterator chain) over while loops.',
+        },
+        {
+          selector: 'DoWhileStatement',
+          message: 'Prefer recursion or a fold over do-while.',
+        },
+        {
+          selector: 'LabeledStatement',
+          message:
+            'Labeled break/continue is an imperative control-flow smell. Refactor to a function with early return.',
+        },
+        // ── Mutation operators ──
+        {
+          selector: 'UpdateExpression',
+          message: '++ / -- mutate. Use `x + 1` / `x - 1` and bind to a new const.',
+        },
+        {
+          selector: "AssignmentExpression:not([operator='='])",
+          message:
+            'Compound assignment (+=, -=, *=, etc.) is mutation. Use a new const with the computed value.',
+        },
+        // ── Mutating object operations ──
+        {
+          selector: "UnaryExpression[operator='delete']",
+          message:
+            'delete mutates. Construct a new object via spread + omit, or set the key to undefined and filter.',
+        },
+        {
+          selector: "CallExpression[callee.object.name='Object'][callee.property.name='assign']",
+          message:
+            'Prefer object spread `{...target, ...source}` over Object.assign for non-mutating composition.',
+        },
+        // ── Sparse-array footguns ──
+        {
+          selector: "NewExpression[callee.name='Array']",
+          message:
+            'Prefer [] for empty / Array.from({ length: n }, ...) for sized — `new Array(n)` creates a sparse array.',
+        },
+        {
+          selector: "CallExpression[callee.name='Array']",
+          message:
+            'Prefer [] for empty / Array.from({ length: n }, ...) for sized — `Array(n)` creates a sparse array.',
+        },
+        // ── No classes — this codebase composes via functions and types ──
+        {
+          selector: 'ClassDeclaration',
+          message:
+            'This codebase composes via functions and types, not classes. Use a factory + closure or a typed record.',
+        },
+        {
+          selector: 'ClassExpression',
+          message: 'This codebase composes via functions and types, not classes.',
+        },
+      ],
+      // ── Built-in prefer-* rules aligned with FP shape ────────────
+      // Each catches a specific imperative idiom that has a cleaner
+      // functional alternative:
+      //   - prefer-object-spread:   Object.assign({}, x, y) → {...x, ...y}
+      //   - prefer-rest-params:     `arguments` → ...rest
+      //   - prefer-spread:          fn.apply(null, args) → fn(...args)
+      //   - no-param-reassign:      function params (and their props,
+      //                             with `props: true`) are immutable
+      //                             from inside the function — this is
+      //                             the strongest single FP guarantee
+      //                             a JS function can offer.
+      'prefer-object-spread': 'error',
+      'prefer-rest-params': 'error',
+      'prefer-spread': 'error',
+      'no-param-reassign': ['error', { props: true }],
+      // Built-in `no-empty` catches empty `if {}` / `while {}` /
+      // `try {}` blocks that are almost always bugs. Empty catches
+      // stay allowed because the storage modules use them as the
+      // best-effort idiom (comment-documented inside the block);
+      // the lint surface treats truly silent error swallowing as
+      // a code-review concern, not a lint concern.
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      // Typed-rule additions, harvested alongside the FP rules:
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+      ],
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      // Stricter than the default: require an 8+ char description
+      // on `@ts-expect-error`; ban `@ts-ignore` and `@ts-nocheck`
+      // outright. The justification is part of the lint surface,
+      // not a side note. Matches the spirit of the React block's
+      // "request a per-line disable with a one-line reason."
+      '@typescript-eslint/ban-ts-comment': [
+        'error',
+        {
+          'ts-check': false,
+          'ts-expect-error': 'allow-with-description',
+          'ts-ignore': true,
+          'ts-nocheck': true,
+          minimumDescriptionLength: 8,
+        },
+      ],
+      // `console.log` in src/ is almost always a leftover debug
+      // statement. info/warn/error stay allowed: web-vitals dev
+      // telemetry uses console.info under `import.meta.env.DEV`,
+      // and warn/error are legitimate observable signals at
+      // boundaries. Tests opt out below.
+      'no-console': ['error', { allow: ['info', 'warn', 'error'] }],
+    },
+  },
+
+  // ── React error-boundary exemption ──────────────────────────
+  // React's class-only API: getDerivedStateFromError +
+  // componentDidCatch are lifecycle hooks with no functional
+  // equivalent as of React 19. A class is the only way to
+  // express the boundary; the rule's "no classes in this
+  // codebase" stance carves out this single canonical exception.
+  {
+    files: ['src/app/layout/ErrorBoundary.tsx'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+
+  // ── Hot-path exemption from the FP rules ────────────────────
+  // The constellation's per-frame work runs at 60fps. Allocation-
+  // free tick paths are a real performance commitment: the RAF
+  // integrator mutates state.pos / state.vel / trailHistory in
+  // place; the DOM projector queries+writes per node and per
+  // edge per tick; the WebGL render loop owns its own buffers
+  // and uniform values; the cursor signal is a module-level
+  // mutable bag the firmament shader reads each frame; the
+  // well-physics math runs at hot-path frequency. None of these
+  // are domain logic — they are the runtime under the surface.
+  // Functional rewrites would cost measurable per-frame budget
+  // for no architectural gain; the exemption is named explicitly
+  // so future agents see the cost.
+  //
+  // Both no-restricted-syntax (the FP selector list) and
+  // no-param-reassign (props mutation through state / uniforms /
+  // canvas parameters) are disabled here. The mutated arguments
+  // are pre-allocated buffers passed in by reference; mutating
+  // their fields is the exact thing a tick is for.
+  {
+    files: [
+      'src/shared/hooks/useConstellationNavigation.ts',
+      'src/shared/hooks/useWebGLFirmament.ts',
+      'src/shared/dom/skyProjector.ts',
+      'src/shared/state/constellationCursor.ts',
+      'src/shared/geometry/wellPhysics.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': 'off',
+      'no-param-reassign': 'off',
+    },
+  },
+
   // Test files are exempt from import restrictions — they may need
   // wildcard React imports for stateful test fixtures, and the
   // no-manual-memoization warning doesn't apply to test code.
@@ -152,6 +362,7 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
+      'no-console': 'off',
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',

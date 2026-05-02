@@ -22,14 +22,14 @@ const FACET_ORDER: readonly Facet[] = [
 function parseFacetParam(raw: string): Facet[] {
   // Comma-separated multi-facet, deduplicated and ordered canonically so
   // the URL is the source of truth and the order in it doesn't matter.
-  const tokens = raw
-    .split(',')
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0);
-  const valid = tokens
-    .map((t) => facetSchema.safeParse(t))
-    .filter((r): r is { success: true; data: Facet } => r.success)
-    .map((r) => r.data);
+  const tokens = raw.split(',').flatMap((t) => {
+    const trimmed = t.trim();
+    return trimmed.length > 0 ? [trimmed] : [];
+  });
+  const valid = tokens.flatMap((t) => {
+    const result = facetSchema.safeParse(t);
+    return result.success ? [result.data] : [];
+  });
   const unique = new Set(valid);
   return FACET_ORDER.filter((f) => unique.has(f));
 }

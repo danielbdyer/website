@@ -67,12 +67,10 @@ export function parseWikilinkInner(inner: string): WikilinkToken | null {
 // for each `[[...]]` occurrence. Does NOT resolve against a slug index;
 // see `resolveWikilink` for that.
 export function scanWikilinks(body: string): WikilinkToken[] {
-  const out: WikilinkToken[] = [];
-  for (const match of body.matchAll(WIKILINK_RE)) {
+  return [...body.matchAll(WIKILINK_RE)].flatMap((match) => {
     const token = parseWikilinkInner(match[1]!);
-    if (token) out.push(token);
-  }
-  return out;
+    return token ? [token] : [];
+  });
 }
 
 // The slug index used to resolve wikilinks at build time. Keys are
@@ -99,35 +97,44 @@ export function resolveWikilink(
   return { target, display: token.display ?? target.title };
 }
 
-// Inversion: given an outbound graph (source key → target keys), produce
-// the backlink graph (target key → source refs). The source ref carries
-// the source work's room/slug/title so the receiving page can render
-// "Mentioned in [[work-a]]" by display name. Sorted newest-first by
-// `dateLookup(key)` per `GRAPH_AND_LINKING.md` §"Backlinks > Ordering".
+/**
+ * Inversion: given an outbound graph (source key → target keys),
+ * produce the backlink graph (target key → source refs). The source
+ * ref carries the source work's room/slug/title so the receiving
+ * page can render "Mentioned in [[work-a]]" by display name. Sorted
+ * newest-first by `dateLookup(key)` per `GRAPH_AND_LINKING.md`
+ * §"Backlinks > Ordering".
+ *
+ * @bigO Time: O(E + Σ k_t log k_t) where E = total outbound edges
+ *       and k_t = backlinks per target. Map.groupBy gives the
+ *       inversion in linear time; the per-target sort dominates
+ *       on heavily-linked targets.
+ *       Space: O(E) for the pair list and the resulting map.
+ */
 export function invertOutboundGraph(
   outbound: ReadonlyMap<string, readonly WikilinkTarget[]>,
   sources: ReadonlyMap<string, WikilinkTarget>,
   dateLookup: (key: string) => Date,
 ): ReadonlyMap<string, readonly WikilinkTarget[]> {
-  const acc = new Map<string, WikilinkTarget[]>();
-  for (const [sourceKey, targets] of outbound) {
+  // Build (targetKey, sourceRef) pairs, group via Map.groupBy
+  // (ES2024) in linear time, then sort each group newest-first.
+  // Pure functional pipeline; no per-target list mutation.
+  const pairs = [...outbound].flatMap(([sourceKey, targets]) => {
     const sourceRef = sources.get(sourceKey);
-    if (!sourceRef) continue;
-    for (const t of targets) {
-      const targetKey = slugIndexKey(t.room, t.slug);
-      const list = acc.get(targetKey) ?? [];
-      list.push(sourceRef);
-      acc.set(targetKey, list);
-    }
-  }
-  // Sort each list newest-first.
-  for (const [key, list] of acc) {
-    const sorted = list.toSorted((a, b) => {
-      const da = dateLookup(slugIndexKey(a.room, a.slug)).getTime();
-      const db = dateLookup(slugIndexKey(b.room, b.slug)).getTime();
-      return db - da;
-    });
-    acc.set(key, sorted);
-  }
-  return acc;
+    if (!sourceRef) return [];
+    return targets.map((t) => [slugIndexKey(t.room, t.slug), sourceRef] as const);
+  });
+  const grouped = Map.groupBy(pairs, ([targetKey]) => targetKey);
+  return new Map(
+    [...grouped].map(([key, entries]) => {
+      const sorted = entries
+        .map(([, ref]) => ref)
+        .toSorted((a, b) => {
+          const da = dateLookup(slugIndexKey(a.room, a.slug)).getTime();
+          const db = dateLookup(slugIndexKey(b.room, b.slug)).getTime();
+          return db - da;
+        });
+      return [key, sorted];
+    }),
+  );
 }

@@ -1,12 +1,18 @@
 import type { ConstellationHue } from '@/shared/content/constellation';
 import { cn } from '@/shared/utils/cn';
 
+/** Endpoints in the SVG's viewBox space. Bundled so the atom's
+ *  prop count stays inside the ≤5 ceiling REACT_NORTH_STAR.md
+ *  asks of atoms — geometry is one cohesive concern, not four. */
+export interface ThreadEndpoints {
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+}
+
 interface ThreadProps {
-  /** Endpoints in the SVG's viewBox space. */
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+  endpoints: ThreadEndpoints;
   /** The thread's hue, derived from the facet that joins the two stars. */
   hue: ConstellationHue;
   /** Stable identifier (e.g. "garden/small-weather|study/note|relation")
@@ -38,24 +44,32 @@ const HUE_CSS_VAR: Record<ConstellationHue, string> = {
 // information; stars carry navigation. CONSTELLATION.md §"Interaction
 // Vocabulary" makes this distinction explicit.
 
-export function Thread({ x1, y1, x2, y2, hue, id, active = false, className }: ThreadProps) {
+export function Thread({ endpoints, hue, id, active = false, className }: ThreadProps) {
   const colorVar = HUE_CSS_VAR[hue];
   return (
     <line
-      x1={x1}
-      y1={y1}
-      x2={x2}
-      y2={y2}
+      x1={endpoints.x1}
+      y1={endpoints.y1}
+      x2={endpoints.x2}
+      y2={endpoints.y2}
       stroke={colorVar}
       strokeWidth={active ? 1.1 : 0.45}
       strokeLinecap="round"
+      // CONSTELLATION_DESIGN.md §"Materials" wants brushstroke at
+      // rest — but the filter that produced it (feTurbulence +
+      // feDisplacementMap) re-runs per frame for every thread
+      // inside the 600s-rotating group, costing 270ms+ idle
+      // frames at 70 threads. Held until a non-filter approach
+      // lands (deterministic wobbly path geometry, or a stroke
+      // pattern). Active threads keep the vespers bloom — there
+      // are at most 1–2 at once so the cost is bounded.
       filter={active ? 'url(#cn-vespers-bloom)' : undefined}
       data-thread-id={id}
       data-hue={hue}
       data-active={active ? 'true' : undefined}
       aria-hidden="true"
       className={cn(
-        'constellation-thread pointer-events-none transition-all duration-200 ease-out',
+        'constellation-thread pointer-events-none',
         active ? 'opacity-95' : 'opacity-25',
         className,
       )}

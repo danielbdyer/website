@@ -409,20 +409,23 @@ body::before {
   }
 }
 
-@keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: 0.22;
-  }
-
-  50% {
-    opacity: 0.34;
-  }
-}
+/* The star-twinkle keyframes were held back: 16 halos with a
+   continuously-animating opacity, each carrying the watercolor
+   filter, inside the rotating group, forced per-frame rasterizer
+   work that compounded with the rotation cost into visible
+   stutter. The twinkle returns when there's a non-filter way to
+   express it (a tiny per-star CSS class swap, a static lighter
+   halo, an ambient WebGL noise contribution). */
 
 .constellation-rotates {
   transform-origin: 500px 500px;
   animation: constellation-spin 600s linear infinite;
+  /* Promote the rotating group to its own compositing layer so the
+     rotation transform happens on the GPU compositor without
+     repainting the rasterized children. With the at-rest twinkle
+     dropped, the children are stable inside the layer and the
+     filter results cache cleanly across frames. */
+  will-change: transform;
 }
 
 /* The navigation camera. Wraps the world (polestar + rotates layer)
@@ -447,17 +450,267 @@ body::before {
    tick by writing cx and cy attributes; this rule sets the visual
    character. A faint warm-amber dot with a soft halo via the same
    watercolor filter the stars use, so the glyph reads as kin to
-   the constellation rather than chrome on top of it. */
+   the constellation rather than chrome on top of it.
+
+   The fill is a continuous mix from amber (at-rest-no-active)
+   toward the active facet hue (settled into a well). The hook
+   writes --companion-claim (0–1) per frame from the geodesic
+   distance to the current well; the wrapping group's
+   data-active-hue resolves --companion-active-hue to the right
+   facet token. CONSTELLATION_DESIGN.md §"C1. CompanionGlyph"
+   names this as the *active hue shift* — the visitor's body
+   modulating toward the room they've stepped into. */
+.constellation-companion-group {
+  --trail-strength: 0;
+  --companion-active-hue: var(--accent-warm);
+}
+
+.constellation-companion-group[data-active-hue='warm'] {
+  --companion-active-hue: var(--accent-warm);
+}
+
+.constellation-companion-group[data-active-hue='rose'] {
+  --companion-active-hue: var(--accent-rose);
+}
+
+.constellation-companion-group[data-active-hue='violet'] {
+  --companion-active-hue: var(--accent-violet);
+}
+
+.constellation-companion-group[data-active-hue='gold'] {
+  --companion-active-hue: var(--accent-gold);
+}
+
 .constellation-companion {
-  fill: var(--accent-warm);
+  fill: color-mix(
+    in oklab,
+    var(--accent-warm),
+    var(--companion-active-hue) calc(var(--companion-claim, 0) * 100%)
+  );
   opacity: 0.55;
   filter: url('#cn-watercolor-halo');
   pointer-events: none;
   transition: opacity 200ms ease-out;
 }
 
+/* Ghost-decay trail — four circles trailing the cursor by one
+   frame each, with per-position base opacity ramps (0.40 / 0.30 /
+   0.20 / 0.10). The hook writes --trail-strength on the parent
+   group from the cursor's angular speed, so the trail is invisible
+   at rest, asserts itself during a flick or held-key acceleration,
+   and recedes as the cursor settles. The semiotic load is the
+   *trace* — *a footstep in sand; a breath on glass.* The hook also
+   re-positions each ghost via [data-companion-trail="N"] queries
+   per tick. */
+.constellation-companion-trail {
+  fill: var(--accent-warm);
+  filter: url('#cn-watercolor-halo');
+  pointer-events: none;
+}
+
+.constellation-companion-trail--0 {
+  opacity: calc(0.4 * var(--trail-strength, 0));
+}
+
+.constellation-companion-trail--1 {
+  opacity: calc(0.3 * var(--trail-strength, 0));
+}
+
+.constellation-companion-trail--2 {
+  opacity: calc(0.2 * var(--trail-strength, 0));
+}
+
+.constellation-companion-trail--3 {
+  opacity: calc(0.1 * var(--trail-strength, 0));
+}
+
+/* Reduced-motion: the trail's *trace* register is motion-bearing
+   by definition. Hide ghosts entirely so the visitor sees only the
+   live mark. The active hue shift naturally collapses too because
+   the navigation tick doesn't run in reduced-motion, leaving
+   --companion-claim at its default 0 (the glyph stays paper-amber).
+   Same destinations, different choreography. */
+@media (prefers-reduced-motion: reduce) {
+  .constellation-companion-trail {
+    opacity: 0;
+  }
+}
+
 .constellation-star__halo {
-  animation: star-twinkle 4.5s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1);
+  opacity: 0.22;
+  transition:
+    transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* star-twinkle keyframe animation removed — the per-frame
+     opacity oscillation on a filtered element inside the rotating
+     group was a major contributor to idle stutter. The transition
+     above still drives the halo claim on activate. */
+}
+
+/* Halo claim — when the cursor settles into this star's well, the
+   halo crescendos: a small scale growth (~6%) and an opacity rise
+   over ~400ms with the signature easing. The design's named
+   *halo claim* visual cue — *the room becoming attentive to you.*
+   The twinkle animation keeps running; the claim composes with it
+   rather than replacing. */
+.constellation-star[data-active='true'] .constellation-star__halo {
+  transform: scale(1.065);
+  opacity: 0.45;
+}
+
+/* Gold-as-attention overlay. Invisible at rest; rises to a soft
+   ring around the facet halo when the well claims. Gold is the
+   language of attention given (CONSTELLATION_DESIGN.md §"Light as
+   Medium" — *gold marks attention; facet hues mark category*). */
+.constellation-star__gold {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.94);
+  opacity: 0;
+  transition:
+    transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.constellation-star[data-active='true'] .constellation-star__gold {
+  transform: scale(1);
+  opacity: 0.42;
+}
+
+/* The whispered label — *"{title}"* in italic serif at meta size,
+   second-voice, low opacity. Hidden at rest; fades in over 400ms
+   when the basin claims. CONSTELLATION_DESIGN.md §"System Voice"
+   names this register: whispered narration, no period. */
+.constellation-star__label {
+  fill: var(--text-2);
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 400ms ease-out;
+}
+
+.constellation-star[data-active='true'] .constellation-star__label {
+  opacity: 0.85;
+}
+
+/* Behind-the-veil constellation — when the WorkOverlay is mounted
+   inside the /sky parent, the constellation continues to render
+   at reduced opacity. The slow rotation persists; the atmosphere
+   pool mutes; the companion glyph hides (the visitor's body is
+   inside the work now, not on the surface). CSS :has() queries
+   the parent for the overlay's presence and applies the veil; no
+   JS needed for the toggle. The 600ms fade with the signature
+   easing matches the View Transitions morph the panel plays
+   simultaneously, so the world dims as the star expands.
+   CONSTELLATION_DESIGN.md §"C12. WorkOverlay" names the *overlay
+   veil* visual cue and the *return-to-star* commitment. */
+.constellation,
+.webgl-firmament {
+  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.constellation-companion-group {
+  transition:
+    opacity 400ms ease-out,
+    transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sky-arrival:has(.work-overlay) .constellation {
+  opacity: 0.3;
+}
+
+.sky-arrival:has(.work-overlay) .webgl-firmament {
+  opacity: 0.5;
+}
+
+.sky-arrival:has(.work-overlay) .constellation-companion-group {
+  opacity: 0;
+}
+
+/* Thread vesper persistence — *the afterimage is information.*
+   When a thread goes inactive, opacity and stroke-width fade over
+   ~600ms (the vesper register), letting the visitor's eye carry
+   the connection forward as their attention moves on. Going active
+   is quicker (~200ms) so the bloom arrives with the cursor's
+   settle. CONSTELLATION_DESIGN.md §"C3. Thread" V3.A and
+   CONSTELLATION.md §"The Threads" both name this rhythm. */
+.constellation-thread {
+  transition:
+    opacity 600ms ease-out,
+    stroke-width 600ms ease-out;
+}
+
+.constellation-thread[data-active='true'] {
+  transition:
+    opacity 200ms ease-out,
+    stroke-width 200ms ease-out;
+}
+
+/* Polestar wash — the soft watercolor halo around the geometric
+   figure at world center. Renders inside the SVG via the
+   `cn-polestar-wash` radialGradient. The breathing animation
+   (30s opacity + scale oscillation) was held back on the perf
+   pass: animating opacity on a 484×484 element pulled into the
+   per-frame composite chain. The wash now reads as a static
+   ground; the constellation's rotation already gives the sky
+   its heartbeat. Reduced-motion respects the global pause. */
+.constellation-polestar-wash {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Work overlay typographic registers — the deck (an invitation,
+   not a summary) and the asterism divider that separates the
+   metadata band from the body. CONSTELLATION_DESIGN.md
+   §"Typographic Reading System" names the deck as italic-serif
+   at H2 size; §"Ornamental Vocabulary" names the asterism as
+   the typographic mark for *the page breathes between thoughts.*
+   Both render in second-voice — italic, low-weight, paper-warm —
+   so the reader's eye anchors to the heading and the body, with
+   the deck and the divider quietly framing them. */
+.work-overlay__deck {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 1.125rem;
+  line-height: 1.45;
+  color: var(--text-2);
+  margin-bottom: 1.25rem;
+  max-width: 36ch;
+}
+
+.work-overlay__asterism {
+  text-align: center;
+  font-size: 1.5rem;
+  letter-spacing: 0.5rem;
+  color: var(--accent-gold);
+  margin: 1.5rem 0 1.75rem;
+  opacity: 0.7;
+  user-select: none;
+}
+
+/* Inline link gold underline within the work overlay's body —
+   *the constellation's voice marking a connection.*
+   CONSTELLATION_DESIGN.md §"Light as Medium": *gold marks
+   attention; gold underlines mark the quiet thread within prose
+   that leads to another work.* Scoped to .work-overlay__body so
+   the close control and the back-into-the-sky link keep their
+   own quieter style; this is body-prose only. */
+.work-overlay__body a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--accent-gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-thickness 200ms ease-out;
+}
+
+.work-overlay__body a:hover,
+.work-overlay__body a:focus-visible {
+  text-decoration-thickness: 2px;
 }
 
 /* Parallax layers — each group translates by a multiplier of the

@@ -108,19 +108,18 @@ function computeBacklinks(
   slugIndex: SlugIndex,
   isProd: boolean,
 ): ReadonlyMap<string, readonly BacklinkRef[]> {
-  const outbound = new Map<string, WikilinkTarget[]>();
-  for (const w of staged) {
-    if (isProd && w.frontmatter.draft) continue;
-    const tokens = scanWikilinks(w.body);
-    const resolvedTargets: WikilinkTarget[] = [];
-    for (const token of tokens) {
-      const resolved = resolveWikilink(token, w.room, slugIndex);
-      if (resolved) resolvedTargets.push(resolved.target);
-    }
-    if (resolvedTargets.length > 0) {
-      outbound.set(slugIndexKey(w.room, w.slug), resolvedTargets);
-    }
-  }
+  const outbound = new Map<string, WikilinkTarget[]>(
+    staged.flatMap((w) => {
+      if (isProd && w.frontmatter.draft) return [];
+      const resolvedTargets = scanWikilinks(w.body).flatMap((token) => {
+        const resolved = resolveWikilink(token, w.room, slugIndex);
+        return resolved ? [resolved.target] : [];
+      });
+      return resolvedTargets.length > 0
+        ? [[slugIndexKey(w.room, w.slug), resolvedTargets] as [string, WikilinkTarget[]]]
+        : [];
+    }),
+  );
   const dateLookup = (key: string): Date => {
     const parts = key.split('/');
     const w = staged.find((s) => s.room === parts[0] && s.slug === parts[1]);
