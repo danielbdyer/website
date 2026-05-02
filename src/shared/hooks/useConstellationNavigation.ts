@@ -203,6 +203,12 @@ interface NavState {
    *  suspended for the duration. Any visitor input cancels — the
    *  visitor is never forced to watch. */
   demoDrift: DemoDrift | null;
+  /** Pending demo-drift setTimeout handle while the carpet roll
+   *  is still completing. Stored on the state so the input
+   *  handlers can clear it on first interaction; otherwise a
+   *  fast tap-and-release before DEMO_DELAY_MS could let the
+   *  drift kick in after the visitor already took control. */
+  demoTimeoutId: ReturnType<typeof setTimeout> | null;
 }
 
 // TRAIL_LENGTH and the trail-strength tuning live in
@@ -305,10 +311,19 @@ function setupCursorLifecycle(
   nodes: readonly NavigableNode[],
 ): () => void {
   const restored = readPersistedCursorPos();
-  let demoTimeout: ReturnType<typeof setTimeout> | null = null;
   if (restored) {
     applyRestoredCursor(state, restored);
-    if (!prefersReducedMotion()) ensureRunning(refs);
+    if (prefersReducedMotion()) {
+      // Reduced-motion: no integrator loop runs, so the DOM stars
+      // would stay at their initial Phase-B static projection
+      // while state.currentCamera reflects the restored
+      // camera — pointer hit-testing would then resolve to wrong
+      // nodes. Project once so the visual matches the restored
+      // state. (Codex review on PR #37 flagged this.)
+      projectScene(state, refs);
+    } else {
+      ensureRunning(refs);
+    }
   } else if (prefersReducedMotion()) {
     const node = demoTarget(state, nodes);
     if (node) {
@@ -318,11 +333,18 @@ function setupCursorLifecycle(
       state.cameraSurfacePos.x = node.unitPos.x;
       state.cameraSurfacePos.y = node.unitPos.y;
       state.cameraSurfacePos.z = node.unitPos.z;
+      state.currentCamera = orbitalCamera(node.unitPos);
+      state.currentBasis = cameraBasis(state.currentCamera);
       flipActive(state, node.key, refs.setActiveKey);
+      // Same reason as the restored branch above — the integrator
+      // doesn't run in reduced motion, so the DOM needs a single
+      // explicit projection.
+      projectScene(state, refs);
     }
   } else {
     const durationMs = hasVisitedBefore() ? DEMO_FAST_DURATION_MS : DEMO_FULL_DURATION_MS;
-    demoTimeout = setTimeout(() => {
+    state.demoTimeoutId = setTimeout(() => {
+      state.demoTimeoutId = null;
       if (state.demoDrift !== null || state.mode !== 'free') return;
       const node = demoTarget(state, nodes);
       if (!node) return;
@@ -334,7 +356,7 @@ function setupCursorLifecycle(
   globalThis.addEventListener?.('pagehide', persistOnHide);
   globalThis.addEventListener?.('visibilitychange', persistOnHide);
   return () => {
-    if (demoTimeout !== null) clearTimeout(demoTimeout);
+    cancelPendingDemo(state);
     globalThis.removeEventListener?.('pagehide', persistOnHide);
     globalThis.removeEventListener?.('visibilitychange', persistOnHide);
     persistCursorPos(state.pos);
@@ -596,10 +618,15 @@ function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): voi
   const state = refs.stateRef.current;
   const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
   if (!pt) return;
-  // First real interaction. Cancel any in-flight demo drift so the
-  // visitor's input wins immediately, and mark the visit so future
-  // sessions skip the full demo.
+  // First real interaction. Cancel any in-flight demo drift AND
+  // any pending demo-drift timeout so the visitor's input wins
+  // immediately. The pending-timeout cancel is the fix for the
+  // race the codex review flagged: a fast tap-and-release before
+  // DEMO_DELAY_MS would otherwise let the drift kick in 1.4s
+  // later, overriding control. Mark the visit so future sessions
+  // skip the full demo.
   state.demoDrift = null;
+  cancelPendingDemo(state);
   markVisited();
   state.mode = 'dragging';
   state.dragTarget = pt;
@@ -665,9 +692,10 @@ function handleKeyDown(refs: RuntimeRefs, e: KeyboardEvent): void {
   e.preventDefault();
   const state = refs.stateRef.current;
   // Same as pointerdown: any visitor input wins over an in-flight
-  // demo, and the visit is marked so future sessions skip the
-  // full demo.
+  // demo (and any pending demo-drift timeout), and the visit is
+  // marked so future sessions skip the full demo.
   state.demoDrift = null;
+  cancelPendingDemo(state);
   markVisited();
   if (!prefersReducedMotion()) {
     state.heldKeys.add(e.key);
@@ -728,7 +756,19 @@ function buildInitialState(): NavState {
     currentBasis: cameraBasis(initialCamera),
     trailHistory,
     demoDrift: null,
+    demoTimeoutId: null,
   };
+}
+
+/** Cancel a pending demo-drift timeout, if any. Called from the
+ *  input handlers and from the lifecycle cleanup so the
+ *  scheduled drift can't fire after the visitor has already
+ *  interacted (the race the codex review flagged on PR #37). */
+function cancelPendingDemo(state: NavState): void {
+  if (state.demoTimeoutId !== null) {
+    clearTimeout(state.demoTimeoutId);
+    state.demoTimeoutId = null;
+  }
 }
 
 export function useConstellationNavigation({
