@@ -409,20 +409,23 @@ body::before {
   }
 }
 
-@keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: 0.22;
-  }
-
-  50% {
-    opacity: 0.34;
-  }
-}
+/* The star-twinkle keyframes were held back: 16 halos with a
+   continuously-animating opacity, each carrying the watercolor
+   filter, inside the rotating group, forced per-frame rasterizer
+   work that compounded with the rotation cost into visible
+   stutter. The twinkle returns when there's a non-filter way to
+   express it (a tiny per-star CSS class swap, a static lighter
+   halo, an ambient WebGL noise contribution). */
 
 .constellation-rotates {
   transform-origin: 500px 500px;
   animation: constellation-spin 600s linear infinite;
+  /* Promote the rotating group to its own compositing layer so the
+     rotation transform happens on the GPU compositor without
+     repainting the rasterized children. With the at-rest twinkle
+     dropped, the children are stable inside the layer and the
+     filter results cache cleanly across frames. */
+  will-change: transform;
 }
 
 /* The navigation camera. Wraps the world (polestar + rotates layer)
@@ -541,7 +544,10 @@ body::before {
   transition:
     transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
-  animation: star-twinkle 4.5s ease-in-out infinite;
+  /* star-twinkle keyframe animation removed — the per-frame
+     opacity oscillation on a filtered element inside the rotating
+     group was a major contributor to idle stutter. The transition
+     above still drives the halo claim on activate. */
 }
 
 /* Halo claim — when the cursor settles into this star's well, the
@@ -646,27 +652,15 @@ body::before {
 
 /* Polestar wash — the soft watercolor halo around the geometric
    figure at world center. Renders inside the SVG via the
-   `cn-polestar-wash` radialGradient. The wash carries the
-   constellation's slow rotation so it doesn't read as static
-   chrome layered on top — it's a ground that breathes with the
-   sky. Reduced-motion respects the global animation pause. */
+   `cn-polestar-wash` radialGradient. The breathing animation
+   (30s opacity + scale oscillation) was held back on the perf
+   pass: animating opacity on a 484×484 element pulled into the
+   per-frame composite chain. The wash now reads as a static
+   ground; the constellation's rotation already gives the sky
+   its heartbeat. Reduced-motion respects the global pause. */
 .constellation-polestar-wash {
   transform-box: fill-box;
   transform-origin: center;
-  animation: polestar-wash-breathe 30s ease-in-out infinite;
-}
-
-@keyframes polestar-wash-breathe {
-  0%,
-  100% {
-    opacity: 0.85;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.04);
-  }
 }
 
 /* Work overlay typographic registers — the deck (an invitation,
