@@ -53,14 +53,14 @@ describe('Thread atom', () => {
     expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/pointer-events-none/);
   });
 
-  test('at rest, applies the brushstroke filter and reads as a quiet wisp', () => {
+  test('at rest, applies no filter and reads as a quiet wisp', () => {
     const { container } = render(withSvg(<Thread id="x|y|z" endpoints={endpoints()} hue="rose" />));
     const line = container.querySelector('line');
-    // CONSTELLATION_DESIGN.md §"Materials" commits to brushstroke
-    // threads — tapered, varied, hand-drawn — even at rest. The
-    // filter shifts the line's register toward paper without
-    // changing its geometry.
-    expect(line?.getAttribute('filter')).toBe('url(#cn-brushstroke-thread)');
+    // The brushstroke filter the design names was held back after
+    // a perf probe showed feTurbulence + feDisplacementMap on 70
+    // rotating threads triggers ~270ms idle frames. At-rest threads
+    // render as bare lines until a non-filter approach lands.
+    expect(line?.getAttribute('filter')).toBeNull();
     expect(line?.dataset.active).toBeUndefined();
     expect(line?.getAttribute('stroke-width')).toBe('0.45');
   });

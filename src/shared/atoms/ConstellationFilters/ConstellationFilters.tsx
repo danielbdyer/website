@@ -40,36 +40,15 @@ export function ConstellationFilters() {
         />
       </filter>
 
-      {/* Brushstroke thread — the at-rest filter applied to every
-          thread so connections read as *hand-drawn* rather than
-          mathematically straight. CONSTELLATION_DESIGN.md
-          §"Materials" commits to brushstroke threads (tapered,
-          varied, hand-drawn quality) — and the audit named the
-          current vector lines as drift from that promise. The
-          filter is two passes: a subtle low-frequency turbulence
-          map (slower wobble than the watercolor halo's, so the
-          line doesn't shimmer) and a small displacement that
-          nudges the stroke laterally by ~0.6 viewbox units. Light
-          touch — the geometry stays legible; the *register*
-          shifts toward paper. Active threads bypass this filter
-          and use `cn-vespers-bloom` instead — bloom dominates,
-          the brushstroke would compete with it. */}
-      <filter id="cn-brushstroke-thread" x="-20%" y="-20%" width="140%" height="140%">
-        <feTurbulence
-          type="fractalNoise"
-          baseFrequency="0.18"
-          numOctaves="2"
-          seed="7"
-          result="brushNoise"
-        />
-        <feDisplacementMap
-          in="SourceGraphic"
-          in2="brushNoise"
-          scale="0.6"
-          xChannelSelector="R"
-          yChannelSelector="G"
-        />
-      </filter>
+      {/* Brushstroke thread filter held back: an feTurbulence +
+          feDisplacementMap on every thread (currently 70+) inside
+          the 600s-rotating group forces the rasterizer to re-run
+          all filter calls every frame, dropping idle frame intervals
+          to ~270ms. The design's brushstroke commitment
+          (CONSTELLATION_DESIGN.md §"Materials") will return via
+          deterministic wobbly path geometry or a per-thread stroke
+          pattern — anything that doesn't re-rasterize per frame.
+          Documented here so the next pull lands in the right place. */}
 
       {/* Vespers bloom — what a thread passes through when its endpoint
           star is hovered or focused. A wider gaussian blur, a brightness

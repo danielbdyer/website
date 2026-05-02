@@ -55,7 +55,15 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
       stroke={colorVar}
       strokeWidth={active ? 1.1 : 0.45}
       strokeLinecap="round"
-      filter={active ? 'url(#cn-vespers-bloom)' : 'url(#cn-brushstroke-thread)'}
+      // CONSTELLATION_DESIGN.md §"Materials" wants brushstroke at
+      // rest — but the filter that produced it (feTurbulence +
+      // feDisplacementMap) re-runs per frame for every thread
+      // inside the 600s-rotating group, costing 270ms+ idle
+      // frames at 70 threads. Held until a non-filter approach
+      // lands (deterministic wobbly path geometry, or a stroke
+      // pattern). Active threads keep the vespers bloom — there
+      // are at most 1–2 at once so the cost is bounded.
+      filter={active ? 'url(#cn-vespers-bloom)' : undefined}
       data-thread-id={id}
       data-hue={hue}
       data-active={active ? 'true' : undefined}
