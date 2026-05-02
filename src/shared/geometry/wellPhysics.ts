@@ -52,10 +52,20 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-/** The closest node by geodesic distance, or null when nothing is
- *  within `maxRadians`. O(N) over the node list. Filters by dot
- *  product (cheap) before computing the geodesic (acos), since the
- *  two are monotonically related on the unit sphere. */
+/**
+ * The closest node by geodesic distance, or null when nothing is
+ * within `maxRadians`. Filters by dot product (cheap) before
+ * computing the geodesic (acos), since the two are monotonically
+ * related on the unit sphere — so the expensive call only runs for
+ * the eventual best match.
+ *
+ * @bigO Time: O(N) — single pass over the node list with one
+ *       multiply-add and one compare per node, plus exactly one
+ *       acos for the winner. Hot path: this runs once per RAF tick
+ *       from useConstellationNavigation.tick. Don't add a sort, a
+ *       second pass, or a per-node trig call.
+ *       Space: O(1).
+ */
 export function geodesicNearestNode(
   cursor: UnitVector3,
   nodes: readonly NavigableNode[],
@@ -76,12 +86,22 @@ export function geodesicNearestNode(
   return { key: bestKey, distance: Math.acos(clamp(bestDot, -1, 1)) };
 }
 
-/** Sum of tangent attractor forces at `pos` from every node within
- *  `influenceRadius` (radians). Each contribution is a unit tangent
- *  pointing toward the node, scaled by stiffness * shape(d) where
- *  shape is linear in geodesic distance and zero at the influence
- *  rim. The result is a tangent vector at `pos` — perpendicular to
- *  it by construction. */
+/**
+ * Sum of tangent attractor forces at `pos` from every node within
+ * `influenceRadius` (radians). Each contribution is a unit tangent
+ * pointing toward the node, scaled by stiffness * shape(d) where
+ * shape is linear in geodesic distance and zero at the influence
+ * rim. The result is a tangent vector at `pos` — perpendicular to
+ * it by construction.
+ *
+ * @bigO Time: O(N) — single pass, with the dot-product filter
+ *       (one multiply-add) gating the expensive acos / tangent
+ *       work. Hot path: runs once per RAF tick. Don't add a
+ *       distance-matrix precompute (the per-tick cursor moves;
+ *       the matrix would have to rebuild) or a per-node memoized
+ *       acos (already gated by the dot test).
+ *       Space: O(1) — fx/fy/fz accumulators only.
+ */
 export function sphericalWellForce(
   pos: UnitVector3,
   nodes: readonly NavigableNode[],

@@ -190,6 +190,27 @@ export default tseslint.config(
         { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
       ],
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      // Stricter than the default: require an 8+ char description
+      // on `@ts-expect-error`; ban `@ts-ignore` and `@ts-nocheck`
+      // outright. The justification is part of the lint surface,
+      // not a side note. Matches the spirit of the React block's
+      // "request a per-line disable with a one-line reason."
+      '@typescript-eslint/ban-ts-comment': [
+        'error',
+        {
+          'ts-check': false,
+          'ts-expect-error': 'allow-with-description',
+          'ts-ignore': true,
+          'ts-nocheck': true,
+          minimumDescriptionLength: 8,
+        },
+      ],
+      // `console.log` in src/ is almost always a leftover debug
+      // statement. info/warn/error stay allowed: web-vitals dev
+      // telemetry uses console.info under `import.meta.env.DEV`,
+      // and warn/error are legitimate observable signals at
+      // boundaries. Tests opt out below.
+      'no-console': ['error', { allow: ['info', 'warn', 'error'] }],
     },
   },
 
@@ -228,6 +249,7 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
+      'no-console': 'off',
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',

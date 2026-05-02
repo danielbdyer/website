@@ -66,11 +66,21 @@ export function projectToViewbox(
   };
 }
 
-/** Position every star's wrapper group via the data-node-key
- *  selector. Behind-camera points (theoretically possible if a node
- *  sits on the far side of the sphere from the current camera
- *  target) are hidden by a translate-far-offscreen trick rather
- *  than added complexity in the DOM. */
+/**
+ * Position every star's wrapper group via the data-node-key
+ * selector. Behind-camera points (theoretically possible if a node
+ * sits on the far side of the sphere from the current camera
+ * target) are hidden by a translate-far-offscreen trick rather
+ * than added complexity in the DOM.
+ *
+ * @bigO Time: O(N) per call (one querySelector + one matrix-multiply
+ *       + one setAttribute per node). Hot path: called once per
+ *       RAF tick. Don't accumulate a stars-by-key cache — the
+ *       camera moves every tick so the projection has to rerun
+ *       anyway, and the per-tick selector lookup is cheap on the
+ *       small node count Stage holds.
+ *       Space: O(1).
+ */
 export function projectStars(
   cameraGroup: SVGGElement,
   nodes: readonly NavigableNode[],
@@ -91,9 +101,16 @@ export function projectStars(
   }
 }
 
-/** Position every thread's endpoints via the data-thread-id
- *  selector. Threads connecting behind-camera endpoints render
- *  off-canvas through the same far-offscreen trick. */
+/**
+ * Position every thread's endpoints via the data-thread-id
+ * selector. Threads connecting behind-camera endpoints render
+ * off-canvas through the same far-offscreen trick.
+ *
+ * @bigO Time: O(E) per call (one querySelector + two matrix-
+ *       multiplies per edge). Hot path: called once per RAF tick
+ *       alongside projectStars.
+ *       Space: O(1).
+ */
 export function projectThreads(
   cameraGroup: SVGGElement,
   edges: readonly NavigableEdge[],
@@ -131,11 +148,17 @@ export function projectGlyph(
   return proj;
 }
 
-/** Position each trail ghost via [data-companion-trail="N"]. Ghosts
- *  inherit their opacity from CSS (`--trail-strength` multiplied
- *  by per-ghost base opacity) so the trail asserts itself only
- *  during fast travel. The query-per-tick is acceptable on this
- *  hot path; the count is fixed (TRAIL_LENGTH = 4). */
+/**
+ * Position each trail ghost via [data-companion-trail="N"]. Ghosts
+ * inherit their opacity from CSS (`--trail-strength` multiplied
+ * by per-ghost base opacity) so the trail asserts itself only
+ * during fast travel.
+ *
+ * @bigO Time: O(TRAIL_LENGTH) per call — fixed at 4. The
+ *       querySelector inside the loop is acceptable because the
+ *       count is small and the parent group is local.
+ *       Space: O(1).
+ */
 export function projectTrail(
   cameraGroup: SVGGElement,
   history: readonly UnitVector3[],

@@ -487,6 +487,21 @@ function advanceDemoDrift(state: NavState, now: number): void {
   if (t >= 1) state.demoDrift = null;
 }
 
+/**
+ * One RAF tick of the constellation's navigation: read input state,
+ * advance physics or demo drift, shift the trail, settle the active
+ * well, write style channels, slerp the camera, project the scene,
+ * apply yaw, and either schedule the next frame or rest.
+ *
+ * @bigO Time per tick: O(N + E) — dominated by sphericalWellForce
+ *       (N), geodesicNearestNode (N), projectStars (N),
+ *       projectThreads (E), projectTrail (constant), and the
+ *       constant-time camera/yaw work. Hot path: 60fps when
+ *       interactive. Don't introduce per-tick allocations or
+ *       per-tick non-bounded passes (e.g. an O(N²) similarity
+ *       check, an O(E) edge precompute that rebuilds each tick).
+ *       Space: O(1) per tick — every buffer is preallocated.
+ */
 function tick(now: number, refs: RuntimeRefs): void {
   const state = refs.stateRef.current;
   const dt = state.lastTime === 0 ? 0 : Math.min((now - state.lastTime) / 1000, MAX_DT_SECONDS);

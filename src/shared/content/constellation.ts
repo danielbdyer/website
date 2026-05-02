@@ -219,31 +219,27 @@ function nodeKey(n: { room: Exclude<Room, 'foyer'>; slug: string }): string {
   return `${n.room}/${n.slug}`;
 }
 
-/** Group an array of (facet, node) pairs into a partial map from
- *  facet to nodes. Uses an immutable reduce — each step returns a
- *  new map with one extra entry under the appropriate facet key.
- *  Build-time only; the ~O(F·N) shape is fine at the corpus's
- *  scale. */
-function groupByFacet(
-  pairs: readonly (readonly [Facet, ConstellationNode])[],
-): ReadonlyMap<Facet, readonly ConstellationNode[]> {
-  return pairs.reduce<Map<Facet, ConstellationNode[]>>((acc, [facet, node]) => {
-    const existing = acc.get(facet) ?? [];
-    return new Map(acc).set(facet, [...existing, node]);
-  }, new Map());
-}
-
+/**
+ * Pure pipeline that derives facet co-membership edges:
+ *   1. flatMap each node into one (facet, node) pair per facet
+ *   2. group those pairs by facet via Map.groupBy (ES2024)
+ *   3. sort each facet group by node key
+ *   4. flatMap the sorted group to one edge per unordered pair
+ *
+ * @bigO Time: O(F·N + Σ k_f² + Σ k_f log k_f) where F = facets/node,
+ *       N = nodes, k_f = nodes carrying facet f. The Σ k_f² (pair
+ *       emission) dominates once any facet attracts many works.
+ *       Don't reintroduce per-element clone-and-set or O(N) lookup
+ *       inside the inner flatMap.
+ *       Space: O(P) for the (facet, node) pair list, where P = Σ k_f.
+ */
 function deriveFacetEdges(nodes: readonly ConstellationNode[]): ConstellationEdge[] {
-  // Pure pipeline:
-  //   1. flatMap each node into one (facet, node) pair per facet.
-  //   2. group those pairs by facet via an immutable reduce.
-  //   3. for each facet group, sort the nodes by key and emit one
-  //      edge per unordered pair via nested flatMap + slice.
-  // Equivalent to the original O(F·N + Σ k_f²) imperative shape,
-  // expressed as a single fold + flatMap chain.
   const facetPairs = nodes.flatMap((node) => node.facets.map((facet) => [facet, node] as const));
-  return [...groupByFacet(facetPairs)].flatMap(([facet, group]) => {
-    const sorted = group.toSorted((a, b) => nodeKey(a).localeCompare(nodeKey(b)));
+  const facetGroups = Map.groupBy(facetPairs, ([facet]) => facet);
+  return [...facetGroups].flatMap(([facet, entries]) => {
+    const sorted = entries
+      .map(([, node]) => node)
+      .toSorted((a, b) => nodeKey(a).localeCompare(nodeKey(b)));
     return sorted.flatMap((a, i) =>
       sorted.slice(i + 1).map((b) => ({
         facet,

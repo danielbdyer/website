@@ -600,6 +600,9 @@ Accessibility is not a feature. It is a constraint, like type safety.
 | Per-tier prop count ceilings (5 atoms / 7 molecules / 7 organisms) + banned generic prop names (`data`, `config`, `options`, `params`, `state`, `info`) | `scripts/check-component-shapes.mjs`, run via `pnpm lint:component-shapes` |
 | FP discipline across `src/`: no Array `push` / `splice` / `unshift` / `fill` / `pop`, no `.filter().map()` / `.map().filter()` / `.map().flat()` chains, no C-style `for` loops, no `for...in`. The hot-path tier (RAF integrator, WebGL render loop, DOM-mutation projector, signal store, per-frame physics) is exempt explicitly — mutation there is a performance commitment, not a stylistic accident | `eslint.config.js` §"FP discipline" + §"Hot-path exemption" |
 | Type-import discipline (`import type`) and exhaustive-switch checks | `@typescript-eslint/consistent-type-imports`, `@typescript-eslint/switch-exhaustiveness-check` |
+| `@ts-expect-error` requires a description (8+ chars); `@ts-ignore` and `@ts-nocheck` are banned | `@typescript-eslint/ban-ts-comment` (custom config) |
+| `console.log` banned in `src/` (info/warn/error allowed at boundaries; tests exempt) | `no-console` |
+| Performance-relevant functions carry a `@bigO` JSDoc tag naming time + space + the contract future agents must honor (e.g. "Hot path: O(N) per RAF tick — don't reintroduce the per-element clone") | Convention; the hot-path files (`useConstellationNavigation.ts`, `skyProjector.ts`, `wellPhysics.ts`) and content-build derivers (`constellation.ts`, `wikilinks.ts`) are the canonical examples. New functions in those modules earn a `@bigO` tag at write time |
 | No unused variables/imports | ESLint + TypeScript |
 | Consistent naming | ESLint naming-convention rules |
 | Formatting | Prettier (on save and in CI) |

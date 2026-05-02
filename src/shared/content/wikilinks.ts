@@ -97,37 +97,44 @@ export function resolveWikilink(
   return { target, display: token.display ?? target.title };
 }
 
-// Inversion: given an outbound graph (source key → target keys), produce
-// the backlink graph (target key → source refs). The source ref carries
-// the source work's room/slug/title so the receiving page can render
-// "Mentioned in [[work-a]]" by display name. Sorted newest-first by
-// `dateLookup(key)` per `GRAPH_AND_LINKING.md` §"Backlinks > Ordering".
+/**
+ * Inversion: given an outbound graph (source key → target keys),
+ * produce the backlink graph (target key → source refs). The source
+ * ref carries the source work's room/slug/title so the receiving
+ * page can render "Mentioned in [[work-a]]" by display name. Sorted
+ * newest-first by `dateLookup(key)` per `GRAPH_AND_LINKING.md`
+ * §"Backlinks > Ordering".
+ *
+ * @bigO Time: O(E + Σ k_t log k_t) where E = total outbound edges
+ *       and k_t = backlinks per target. Map.groupBy gives the
+ *       inversion in linear time; the per-target sort dominates
+ *       on heavily-linked targets.
+ *       Space: O(E) for the pair list and the resulting map.
+ */
 export function invertOutboundGraph(
   outbound: ReadonlyMap<string, readonly WikilinkTarget[]>,
   sources: ReadonlyMap<string, WikilinkTarget>,
   dateLookup: (key: string) => Date,
 ): ReadonlyMap<string, readonly WikilinkTarget[]> {
-  // Build (targetKey, sourceRef) pairs from the outbound graph,
-  // group by targetKey via an immutable reduce, then sort each
-  // group newest-first by dateLookup. Pure functional pipeline;
-  // no per-target list mutation.
+  // Build (targetKey, sourceRef) pairs, group via Map.groupBy
+  // (ES2024) in linear time, then sort each group newest-first.
+  // Pure functional pipeline; no per-target list mutation.
   const pairs = [...outbound].flatMap(([sourceKey, targets]) => {
     const sourceRef = sources.get(sourceKey);
     if (!sourceRef) return [];
     return targets.map((t) => [slugIndexKey(t.room, t.slug), sourceRef] as const);
   });
-  const grouped = pairs.reduce<Map<string, WikilinkTarget[]>>((acc, [targetKey, ref]) => {
-    const existing = acc.get(targetKey) ?? [];
-    return new Map(acc).set(targetKey, [...existing, ref]);
-  }, new Map());
+  const grouped = Map.groupBy(pairs, ([targetKey]) => targetKey);
   return new Map(
-    [...grouped].map(([key, refs]) => [
-      key,
-      refs.toSorted((a, b) => {
-        const da = dateLookup(slugIndexKey(a.room, a.slug)).getTime();
-        const db = dateLookup(slugIndexKey(b.room, b.slug)).getTime();
-        return db - da;
-      }),
-    ]),
+    [...grouped].map(([key, entries]) => {
+      const sorted = entries
+        .map(([, ref]) => ref)
+        .toSorted((a, b) => {
+          const da = dateLookup(slugIndexKey(a.room, a.slug)).getTime();
+          const db = dateLookup(slugIndexKey(b.room, b.slug)).getTime();
+          return db - da;
+        });
+      return [key, sorted];
+    }),
   );
 }
