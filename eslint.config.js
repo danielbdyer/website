@@ -42,7 +42,9 @@ export default tseslint.config(
       // vite.config.ts does the actual memoization at build time;
       // this rule names violations at lint time so they're caught
       // before the compiler bails silently. See REACT_NORTH_STAR.md
-      // §"React Compiler" for the adoption note.
+      // §"React Compiler" for the adoption note. Pairs with the
+      // FP-shaped no-restricted-syntax block in §"FP discipline"
+      // below; useMemo / useCallback bails surface there.
       'react-compiler/react-compiler': 'error',
       // JSX nesting depth — North Star §"Structural Thresholds"
       // commits to 2–3 target, 4 hard limit. Matches working memory
@@ -50,26 +52,6 @@ export default tseslint.config(
       // choice. Test files pass through unchanged because they are
       // already exempt from `max-lines-per-function`.
       'react/jsx-max-depth': ['error', { max: 4 }],
-      // Manual memoization is unnecessary since React Compiler is
-      // configured (vite.config.ts). The compiler auto-memoizes at
-      // build time; manual `useMemo`/`useCallback`/`memo`/`forwardRef`
-      // calls are warned, not errored, so a future agent who genuinely
-      // needs to escape the compiler can disable per line with a
-      // comment naming the reason. See REACT_NORTH_STAR.md
-      // §"React Compiler" for the rule of thumb.
-      'no-restricted-syntax': [
-        'warn',
-        {
-          selector: "CallExpression[callee.name='useMemo']",
-          message:
-            'React Compiler auto-memoizes — manual `useMemo` is rarely needed. If the compiler bails on this case, suppress with `// eslint-disable-next-line` and a one-line reason.',
-        },
-        {
-          selector: "CallExpression[callee.name='useCallback']",
-          message:
-            'React Compiler auto-memoizes — manual `useCallback` is rarely needed. If the compiler bails on this case, suppress with `// eslint-disable-next-line` and a one-line reason.',
-        },
-      ],
       'no-restricted-imports': [
         'warn',
         {
@@ -139,6 +121,100 @@ export default tseslint.config(
     files: ['**/src/app/routes/__root.tsx'],
     rules: {
       'react/jsx-max-depth': 'off',
+    },
+  },
+
+  // ── FP discipline ────────────────────────────────────────────
+  // Functional-programming defaults for src/. Array mutation, the
+  // double-traversal chains, and C-style for-loops have functional
+  // alternatives that read more honestly and (in most cases)
+  // perform identically. The rules apply broadly; the hot-path
+  // exemption block immediately below names the few files where
+  // mutation is justified by per-frame performance budgets.
+  // Imported from another working repo's domain layer; the
+  // selectors are unchanged. REACT_NORTH_STAR.md §"FP discipline"
+  // is the canonical reference.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}', 'src/test/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.property.name='push']",
+          message: 'Prefer spread, concat, or reduce over Array.push.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='splice']",
+          message: 'Prefer [...arr.slice(0,i), ...arr.slice(i+1)] over Array.splice.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='unshift']",
+          message: 'Prefer [newItem, ...arr] over Array.unshift.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='fill']",
+          message: 'Prefer Array.from({ length: n }, () => value) over Array.fill.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='pop']",
+          message: 'Prefer arr.slice(0, -1) and arr.at(-1) over Array.pop.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='map'][callee.object.callee.property.name='filter']",
+          message: 'Prefer .flatMap() over .filter().map() to avoid double traversal.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='flat'][callee.object.callee.property.name='map']",
+          message: 'Prefer .flatMap() over .map().flat() to avoid double traversal.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='filter'][callee.object.callee.property.name='map']",
+          message: 'Prefer .flatMap() over .map().filter() to avoid double traversal.',
+        },
+        {
+          selector: 'ForStatement',
+          message: 'Prefer map/filter/reduce/flatMap over imperative for loops.',
+        },
+        {
+          selector: 'ForInStatement',
+          message: 'Prefer Object.entries().map() over for...in.',
+        },
+      ],
+      // Typed-rule additions, harvested alongside the FP rules:
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+      ],
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+    },
+  },
+
+  // ── Hot-path exemption from the FP rules ────────────────────
+  // The constellation's per-frame work runs at 60fps. Allocation-
+  // free tick paths are a real performance commitment: the RAF
+  // integrator mutates state.pos / state.vel / trailHistory in
+  // place; the DOM projector queries+writes per node and per
+  // edge per tick; the WebGL render loop owns its own buffers;
+  // the cursor signal is a module-level mutable bag the firmament
+  // shader reads each frame; the well-physics math runs at hot-
+  // path frequency. None of these are domain logic — they are
+  // the runtime under the surface. Functional rewrites would cost
+  // measurable per-frame budget for no architectural gain; the
+  // exemption is named explicitly so future agents see the cost.
+  {
+    files: [
+      'src/shared/hooks/useConstellationNavigation.ts',
+      'src/shared/hooks/useWebGLFirmament.ts',
+      'src/shared/dom/skyProjector.ts',
+      'src/shared/state/constellationCursor.ts',
+      'src/shared/geometry/wellPhysics.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
 

@@ -28,10 +28,10 @@ export function getDisplayWorkSync(room: Room, slug: string): DisplayWork | unde
 export function getDisplayWorksByFacetGroupedSync(
   facet: Facet,
 ): { room: Room; works: DisplayWork[] }[] {
-  return FACET_ROOM_ORDER.map((room) => ({
-    room,
-    works: getDisplayWorksByRoomSync(room).filter((work) => work.facets.includes(facet)),
-  })).filter((group) => group.works.length > 0);
+  return FACET_ROOM_ORDER.flatMap((room) => {
+    const works = getDisplayWorksByRoomSync(room).filter((work) => work.facets.includes(facet));
+    return works.length > 0 ? [{ room, works }] : [];
+  });
 }
 
 // Multi-facet view: every display work that carries *all* of the given
