@@ -2,9 +2,12 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { type CameraBasis } from '@/shared/geometry/camera';
 import { NORTH_POLE, sphericalToUnit, unitVector } from '@/shared/geometry/sphere';
 import {
+  easeOutCubic,
   flickAngularVelocity,
   geodesicNearestNode,
   geodesicNeighborInDirection,
+  hasVisitedBefore,
+  markVisited,
   persistCursorPos,
   readPersistedCursorPos,
   sphericalWellForce,
@@ -241,5 +244,50 @@ describe('cursor session persistence', () => {
   test('returns null when the schema is missing a coordinate', () => {
     globalThis.sessionStorage?.setItem('sky:cursor:pos', JSON.stringify({ x: 0, y: 0 }));
     expect(readPersistedCursorPos()).toBeNull();
+  });
+});
+
+describe('first-visit manifest', () => {
+  beforeEach(() => {
+    globalThis.localStorage?.removeItem('sky:visited');
+  });
+
+  afterEach(() => {
+    globalThis.localStorage?.removeItem('sky:visited');
+  });
+
+  test('returns false when no prior visit has been marked', () => {
+    expect(hasVisitedBefore()).toBe(false);
+  });
+
+  test('roundtrip — markVisited makes hasVisitedBefore return true', () => {
+    markVisited();
+    expect(hasVisitedBefore()).toBe(true);
+  });
+
+  test('returns false on a corrupt manifest value', () => {
+    globalThis.localStorage?.setItem('sky:visited', 'not-true');
+    expect(hasVisitedBefore()).toBe(false);
+  });
+});
+
+describe('easeOutCubic', () => {
+  test('boundary values land exactly at 0 and 1', () => {
+    expect(easeOutCubic(0)).toBeCloseTo(0, 9);
+    expect(easeOutCubic(1)).toBeCloseTo(1, 9);
+  });
+
+  test('crosses 0.5 before t=0.5 (ease-out shape)', () => {
+    // 1 - (1 - 0.4)^3 = 1 - 0.216 = 0.784 — comfortably past half.
+    expect(easeOutCubic(0.4)).toBeGreaterThan(0.5);
+  });
+
+  test('monotonically non-decreasing', () => {
+    let prev = -Infinity;
+    for (let i = 0; i <= 20; i++) {
+      const v = easeOutCubic(i / 20);
+      expect(v).toBeGreaterThanOrEqual(prev);
+      prev = v;
+    }
   });
 });

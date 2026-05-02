@@ -279,6 +279,12 @@ interface NavState {
    *  fixed at TRAIL_LENGTH so allocations never happen on the hot
    *  path. */
   trailHistory: MutableVec3[];
+  /** When non-null, the cursor is in the middle of an autonomous
+   *  drift (P2 first-visit demonstration). The tick reads from
+   *  this and slerps pos along the great-circle arc; physics is
+   *  suspended for the duration. Any visitor input cancels — the
+   *  visitor is never forced to watch. */
+  demoDrift: DemoDrift | null;
 }
 
 /** Number of ghost positions kept behind the cursor for the
@@ -292,6 +298,55 @@ const TRAIL_LENGTH = 4;
  *  drag that's just starting to coast doesn't paint a trail; a
  *  flick or a held-key acceleration does. */
 const TRAIL_FULL_SPEED_RAD = 3;
+
+// Demonstration drift — the visitor's first lesson. After the
+// carpet roll completes, the cursor drifts autonomously to the
+// nearest star, settles, the basin claims, the visitor learns
+// *the cursor is mine, and it can travel.* Reduced-motion snaps
+// to the same target without animation. Returning visitors
+// (localStorage shows a prior visit) get a shorter demo; in-
+// session returns (sessionStorage has a cursor) skip the demo
+// entirely. Q11 (drift-target choice) is closed: nearest by
+// geodesic distance from the polestar — most spatially honest;
+// teaches the physics by demonstrating settle into the closest
+// well. CONSTELLATION_DESIGN.md §"First-Visit Choreography".
+const DEMO_DELAY_MS = 1400;
+const DEMO_FULL_DURATION_MS = 600;
+const DEMO_FAST_DURATION_MS = 300;
+const VISIT_MANIFEST_KEY = 'sky:visited';
+
+interface DemoDrift {
+  readonly startPos: UnitVector3;
+  readonly target: UnitVector3;
+  readonly startTime: number;
+  readonly durationMs: number;
+}
+
+export function hasVisitedBefore(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(VISIT_MANIFEST_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function markVisited(): void {
+  try {
+    globalThis.localStorage?.setItem(VISIT_MANIFEST_KEY, 'true');
+  } catch {
+    // localStorage may be unavailable; visit manifest is best-effort.
+    // The visitor sees a demo on next visit anyway, which is honest.
+  }
+}
+
+/** Cubic ease-out — the design's signature easing
+ *  (cubic-bezier(0.23, 1, 0.32, 1)) reads as ease-out cubic in the
+ *  typical eye. Approximated here as 1 - (1-t)^3 for the demo
+ *  drift's slerp parameter. */
+export function easeOutCubic(t: number): number {
+  const u = 1 - t;
+  return 1 - u * u * u;
+}
 
 /** Build the orbital camera that places `surfacePos` near the
  *  image center. Camera sits at -ORBIT_DISTANCE * surfacePos,
@@ -396,6 +451,75 @@ export function readPersistedCursorPos(): UnitVector3 | null {
   } catch {
     return null;
   }
+}
+
+/** Pick the nearest node by geodesic distance, used as the demo's
+ *  drift target. Returns null on an empty graph. */
+function demoTarget(state: NavState, nodes: readonly NavigableNode[]): NavigableNode | null {
+  if (nodes.length === 0) return null;
+  const nearest = geodesicNearestNode(state.pos, nodes);
+  if (!nearest) return null;
+  return nodes.find((c) => c.key === nearest.key) ?? null;
+}
+
+/** Initialize the cursor's session lifecycle: restore from
+ *  sessionStorage if present, otherwise schedule a demonstration
+ *  drift after the carpet roll. Returns a cleanup that persists
+ *  the cursor and tears down listeners — composes inside the
+ *  hook's mount effect. */
+function setupCursorLifecycle(
+  state: NavState,
+  refs: RuntimeRefs,
+  nodes: readonly NavigableNode[],
+): () => void {
+  const restored = readPersistedCursorPos();
+  let demoTimeout: ReturnType<typeof setTimeout> | null = null;
+  if (restored) {
+    applyRestoredCursor(state, restored);
+    if (!prefersReducedMotion()) ensureRunning(refs);
+  } else if (prefersReducedMotion()) {
+    const node = demoTarget(state, nodes);
+    if (node) {
+      state.pos.x = node.unitPos.x;
+      state.pos.y = node.unitPos.y;
+      state.pos.z = node.unitPos.z;
+      state.cameraSurfacePos.x = node.unitPos.x;
+      state.cameraSurfacePos.y = node.unitPos.y;
+      state.cameraSurfacePos.z = node.unitPos.z;
+      flipActive(state, node.key, refs.setActiveKey);
+    }
+  } else {
+    const durationMs = hasVisitedBefore() ? DEMO_FAST_DURATION_MS : DEMO_FULL_DURATION_MS;
+    demoTimeout = setTimeout(() => {
+      if (state.demoDrift !== null || state.mode !== 'free') return;
+      const node = demoTarget(state, nodes);
+      if (!node) return;
+      startDemoDrift(state, node.unitPos, durationMs);
+      ensureRunning(refs);
+    }, DEMO_DELAY_MS);
+  }
+  const persistOnHide = () => persistCursorPos(state.pos);
+  globalThis.addEventListener?.('pagehide', persistOnHide);
+  globalThis.addEventListener?.('visibilitychange', persistOnHide);
+  return () => {
+    if (demoTimeout !== null) clearTimeout(demoTimeout);
+    globalThis.removeEventListener?.('pagehide', persistOnHide);
+    globalThis.removeEventListener?.('visibilitychange', persistOnHide);
+    persistCursorPos(state.pos);
+  };
+}
+
+/** Begin a demonstration drift toward `target` over `durationMs`.
+ *  Captures the current pos as the drift's startPos. Extracted from
+ *  the schedule effect so the React-Compiler immutability rule
+ *  doesn't flag inline state mutation in useEffect. */
+function startDemoDrift(state: NavState, target: UnitVector3, durationMs: number): void {
+  state.demoDrift = {
+    startPos: unitVector(state.pos.x, state.pos.y, state.pos.z),
+    target,
+    startTime: globalThis.performance.now(),
+    durationMs,
+  };
 }
 
 /** Apply a restored cursor position to the state. Mutates pos,
@@ -535,50 +659,36 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   );
 }
 
-function isAtRest(state: NavState, accel: Vec3): boolean {
-  if (state.mode !== 'free' || state.heldKeys.size > 0) return false;
-  const speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
-  if (speed2 > IDLE_VELOCITY_EPSILON * IDLE_VELOCITY_EPSILON) return false;
-  const accel2 = accel.x * accel.x + accel.y * accel.y + accel.z * accel.z;
-  return accel2 <= IDLE_ACCELERATION_EPSILON * IDLE_ACCELERATION_EPSILON;
-}
-
-function tick(now: number, refs: RuntimeRefs): void {
-  const state = refs.stateRef.current;
-  const dt = state.lastTime === 0 ? 0 : Math.min((now - state.lastTime) / 1000, MAX_DT_SECONDS);
-  state.lastTime = now;
-
+/** Integrate the navigation physics one tick: acceleration → tangent
+ *  velocity → step on the sphere. Mutates state.vel and state.pos in
+ *  place. The caller has already computed dt and decided physics
+ *  (vs. demo drift) is the right path. */
+function integratePhysics(state: NavState, refs: RuntimeRefs, dt: number): void {
   computeAccelerationInto(state, refs);
-  const accel = state.accelBuffer;
-
-  // Integrate tangent velocity; clamp magnitude.
-  state.vel.x += accel.x * dt;
-  state.vel.y += accel.y * dt;
-  state.vel.z += accel.z * dt;
-  let speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
+  state.vel.x += state.accelBuffer.x * dt;
+  state.vel.y += state.accelBuffer.y * dt;
+  state.vel.z += state.accelBuffer.z * dt;
+  const speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
   if (speed2 > MAX_ANGULAR_VELOCITY * MAX_ANGULAR_VELOCITY) {
     const scale = MAX_ANGULAR_VELOCITY / Math.sqrt(speed2);
     state.vel.x *= scale;
     state.vel.y *= scale;
     state.vel.z *= scale;
   }
-
-  // Re-tangent: numerical drift accumulates a tiny radial component.
-  // Project velocity back onto the tangent plane at the current pos.
+  // Re-tangent against radial drift before stepping.
   const dotVP = state.vel.x * state.pos.x + state.vel.y * state.pos.y + state.vel.z * state.pos.z;
   state.vel.x -= dotVP * state.pos.x;
   state.vel.y -= dotVP * state.pos.y;
   state.vel.z -= dotVP * state.pos.z;
-
-  // Step on the sphere: small tangent step + re-normalize.
   const next = stepOnSphere(state.pos, state.vel, dt);
   state.pos.x = next.x;
   state.pos.y = next.y;
   state.pos.z = next.z;
+}
 
-  // Shift the ghost-decay trail history. The newest entry (index 0)
-  // becomes the just-updated pos; older entries slide back. In-place
-  // mutation keeps the hot path allocation-free.
+/** Slide the trail history forward one step: index 0 receives the
+ *  current pos; older entries shift down. Allocation-free. */
+function shiftTrailHistory(state: NavState): void {
   const tr = state.trailHistory;
   for (let i = tr.length - 1; i >= 1; i--) {
     tr[i]!.x = tr[i - 1]!.x;
@@ -588,6 +698,67 @@ function tick(now: number, refs: RuntimeRefs): void {
   tr[0]!.x = state.pos.x;
   tr[0]!.y = state.pos.y;
   tr[0]!.z = state.pos.z;
+}
+
+/** Write the per-frame CSS variables the companion glyph reads:
+ *    --companion-claim — 0 at rest, 1 at well center.
+ *    --trail-strength  — 0 at rest, 1 at fast travel. */
+function writeGlyphChannels(glyph: SVGCircleElement | null, claim: number, speed: number): void {
+  if (!glyph) return;
+  glyph.style.setProperty('--companion-claim', claim.toFixed(3));
+  const trailStrength = clamp(speed / TRAIL_FULL_SPEED_RAD, 0, 1);
+  const parent = glyph.parentElement as SVGElement | HTMLElement | null;
+  parent?.style.setProperty('--trail-strength', trailStrength.toFixed(3));
+}
+
+function isAtRest(state: NavState, accel: Vec3): boolean {
+  if (state.mode !== 'free' || state.heldKeys.size > 0) return false;
+  if (state.demoDrift !== null) return false;
+  const speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
+  if (speed2 > IDLE_VELOCITY_EPSILON * IDLE_VELOCITY_EPSILON) return false;
+  const accel2 = accel.x * accel.x + accel.y * accel.y + accel.z * accel.z;
+  return accel2 <= IDLE_ACCELERATION_EPSILON * IDLE_ACCELERATION_EPSILON;
+}
+
+/** Advance an in-flight demo drift by one tick. The cursor slerps
+ *  along the great-circle arc from the drift's startPos to its
+ *  target, eased by easeOutCubic on the parameter t. Velocity is
+ *  zero throughout (no integration). When t reaches 1, the drift
+ *  completes and demoDrift is cleared. The visitor's first lesson
+ *  in *the cursor is mine, and it can travel.* */
+function advanceDemoDrift(state: NavState, now: number): void {
+  const drift = state.demoDrift;
+  if (!drift) return;
+  const t = Math.min(1, Math.max(0, (now - drift.startTime) / drift.durationMs));
+  const eased = easeOutCubic(t);
+  const next = slerp(drift.startPos, drift.target, eased);
+  state.pos.x = next.x;
+  state.pos.y = next.y;
+  state.pos.z = next.z;
+  state.vel.x = 0;
+  state.vel.y = 0;
+  state.vel.z = 0;
+  if (t >= 1) state.demoDrift = null;
+}
+
+function tick(now: number, refs: RuntimeRefs): void {
+  const state = refs.stateRef.current;
+  const dt = state.lastTime === 0 ? 0 : Math.min((now - state.lastTime) / 1000, MAX_DT_SECONDS);
+  state.lastTime = now;
+
+  // Demonstration drift suspends the physics integrator and slerps
+  // along its predetermined arc. Acceleration is still computed (so
+  // isAtRest's accel check remains honest) but doesn't drive pos.
+  if (state.demoDrift !== null) {
+    advanceDemoDrift(state, now);
+    computeAccelerationInto(state, refs);
+  } else {
+    integratePhysics(state, refs, dt);
+  }
+  const accel = state.accelBuffer;
+  const speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
+
+  shiftTrailHistory(state);
 
   // Re-tangent velocity to the new position too.
   const dotVP2 = state.vel.x * state.pos.x + state.vel.y * state.pos.y + state.vel.z * state.pos.z;
@@ -598,23 +769,8 @@ function tick(now: number, refs: RuntimeRefs): void {
   const nearest = geodesicNearestNode(state.pos, refs.nodesRef.current, WELL_RADIUS_RAD);
   if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
 
-  // Write the per-frame style channels the companion glyph reads
-  // for its visible state:
-  //   --companion-claim — 0 at rest / off-well, 1 at well center.
-  //     CSS color-mixes amber toward the active facet hue by this
-  //     factor, honoring the design's continuous-modulation intent.
-  //   --trail-strength  — 0 at rest, 1 at fast travel. CSS multiplies
-  //     each ghost's base opacity by this so the trail asserts itself
-  //     only during real motion.
-  const glyph = refs.glyphRef.current;
-  if (glyph) {
-    const claim = nearest ? 1 - clamp(nearest.distance / WELL_RADIUS_RAD, 0, 1) : 0;
-    glyph.style.setProperty('--companion-claim', claim.toFixed(3));
-    const speed = Math.hypot(state.vel.x, state.vel.y, state.vel.z);
-    const trailStrength = clamp(speed / TRAIL_FULL_SPEED_RAD, 0, 1);
-    const parent = glyph.parentElement as SVGElement | HTMLElement | null;
-    parent?.style.setProperty('--trail-strength', trailStrength.toFixed(3));
-  }
+  const claim = nearest ? 1 - clamp(nearest.distance / WELL_RADIUS_RAD, 0, 1) : 0;
+  writeGlyphChannels(refs.glyphRef.current, claim, Math.sqrt(speed2));
 
   // Slerp the camera's surface point toward the cursor with a
   // damped catch-up rate. The camera *trails* the cursor: when the
@@ -645,7 +801,8 @@ function tick(now: number, refs: RuntimeRefs): void {
     applyCameraYaw(refs.cameraRef.current, yaw);
   }
 
-  speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
+  // speed2 above is the post-step magnitude; vel hasn't been mutated
+  // since, so it's the right value to gate the rest check on.
   if (
     state.mode === 'free' &&
     state.heldKeys.size === 0 &&
@@ -678,6 +835,11 @@ function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): voi
   const state = refs.stateRef.current;
   const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
   if (!pt) return;
+  // First real interaction. Cancel any in-flight demo drift so the
+  // visitor's input wins immediately, and mark the visit so future
+  // sessions skip the full demo.
+  state.demoDrift = null;
+  markVisited();
   state.mode = 'dragging';
   state.dragTarget = pt;
   state.pointerId = e.pointerId;
@@ -769,6 +931,11 @@ function handleKeyDown(refs: RuntimeRefs, e: KeyboardEvent): void {
   if (!ARROW_KEYS.has(e.key)) return;
   e.preventDefault();
   const state = refs.stateRef.current;
+  // Same as pointerdown: any visitor input wins over an in-flight
+  // demo, and the visit is marked so future sessions skip the
+  // full demo.
+  state.demoDrift = null;
+  markVisited();
   if (!prefersReducedMotion()) {
     state.heldKeys.add(e.key);
     ensureRunning(refs);
@@ -827,6 +994,7 @@ function buildInitialState(): NavState {
     currentCamera: initialCamera,
     currentBasis: cameraBasis(initialCamera),
     trailHistory,
+    demoDrift: null,
   };
 }
 
@@ -878,39 +1046,16 @@ export function useConstellationNavigation({
   // so the saved value tracks live state.
   useEffect(() => {
     const state = stateRef.current;
-    const restored = readPersistedCursorPos();
-    if (restored) {
-      applyRestoredCursor(state, restored);
-      // Kick a tick so projectScene runs against the restored
-      // camera. First frame's dt = 0 (no integration); the loop
-      // continues from there and the well-attractor force smooths
-      // the cursor into whatever well it lands within. Build a
-      // local kickRefs from the stable inputs so the effect's deps
-      // stay narrow and the on-mount intent holds.
-      if (!prefersReducedMotion()) {
-        const kickRefs: RuntimeRefs = {
-          stateRef,
-          nodesRef,
-          edgesRef,
-          cameraRef,
-          glyphRef,
-          viewboxSize,
-          setActiveKey,
-        };
-        ensureRunning(kickRefs);
-      }
-    }
-    const persistOnHide = () => persistCursorPos(state.pos);
-    globalThis.addEventListener?.('pagehide', persistOnHide);
-    globalThis.addEventListener?.('visibilitychange', persistOnHide);
-    return () => {
-      globalThis.removeEventListener?.('pagehide', persistOnHide);
-      globalThis.removeEventListener?.('visibilitychange', persistOnHide);
-      // Final persist on unmount for SPA-style route changes that
-      // don't fire pagehide (TanStack Router transitions through
-      // the work overlay).
-      persistCursorPos(state.pos);
+    const lifecycleRefs: RuntimeRefs = {
+      stateRef,
+      nodesRef,
+      edgesRef,
+      cameraRef,
+      glyphRef,
+      viewboxSize,
+      setActiveKey,
     };
+    return setupCursorLifecycle(state, lifecycleRefs, nodesRef.current);
   }, [cameraRef, glyphRef, viewboxSize, setActiveKey]);
 
   return {
