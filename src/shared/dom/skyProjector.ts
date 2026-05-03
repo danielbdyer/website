@@ -76,6 +76,34 @@ export function projectToViewbox(
  *  the other moves with it. */
 const ROTATION_PERIOD_MS = 600_000;
 
+/** A cached lookup map from data-node-key / data-thread-id to the
+ *  rendered SVG element. The hook builds this once on mount + on
+ *  graph change (the only times the underlying DOM identity shifts);
+ *  the per-frame projectors look up by .get() rather than re-running
+ *  cameraGroup.querySelector on every node and every edge. On the
+ *  heavy fixture (40 stars + 469 threads × 60fps ≈ 30 thousand
+ *  selectors per second) this is the difference between a smooth
+ *  iPhone interaction and a stuttering one. */
+export type ElementCache = ReadonlyMap<string, Element>;
+
+/** Build the lookup map for a node/edge collection. Re-call when the
+ *  DOM identity of the children changes (i.e. when the underlying
+ *  graph changes); React keeps element identity stable for the same
+ *  key, so the cache stays valid across re-renders driven by
+ *  hover/active-state changes. */
+export function buildElementCache(
+  cameraGroup: SVGGElement,
+  selectorAttr: 'data-node-key' | 'data-thread-id',
+  keys: readonly string[],
+): ElementCache {
+  const cache = new Map<string, Element>();
+  for (const key of keys) {
+    const el = cameraGroup.querySelector(`[${selectorAttr}="${key}"]`);
+    if (el) cache.set(key, el);
+  }
+  return cache;
+}
+
 /**
  * Position every star's wrapper group via the data-node-key
  * selector. Behind-camera points (theoretically possible if a node
@@ -93,18 +121,20 @@ const ROTATION_PERIOD_MS = 600_000;
  * SVG and shader within a single frame of each other — invisible
  * at 0.6°/sec rotation.
  *
- * @bigO Time: O(N) per call (one querySelector + one matrix-multiply
- *       + one setAttribute + one buffer write per node, plus one
- *       sin/cos at the head of the call). Hot path: called once
- *       per RAF tick. Don't accumulate a stars-by-key cache — the
- *       camera moves every tick so the projection has to rerun
- *       anyway, and the per-tick selector lookup is cheap on the
- *       small node count Stage holds.
- *       Space: O(1).
+ * @bigO Time: O(N) per call (one cache.get + one matrix-multiply +
+ *       one setAttribute + one buffer write per node, plus one
+ *       sin/cos at the head of the call). The cache argument is the
+ *       hook's ElementCache, populated once on graph change; falling
+ *       back to querySelector on cache miss keeps the path correct
+ *       across the single transient frame between a graph edit and
+ *       the cache rebuild. Hot path: called once per RAF tick.
+ *       Space: O(1) per call (the cache itself is O(N), held by the
+ *       hook, not allocated here).
  */
 export function projectStars(
   cameraGroup: SVGGElement,
   nodes: readonly NavigableNode[],
+  cache: ElementCache,
   camera: Camera,
   basis: CameraBasis,
   viewboxSize: number,
@@ -115,7 +145,11 @@ export function projectStars(
   const sinR = Math.sin(rotation);
   let i = 0;
   for (const node of nodes) {
-    const el = cameraGroup.querySelector(`[data-node-key="${node.key}"]`);
+    // Cache miss falls back to a live querySelector so a stale cache
+    // (a graph change the hook hasn't seen yet) degrades to slow
+    // rather than to broken. The fallback path runs only on the
+    // tick after a graph change and is single-frame transient.
+    const el = cache.get(node.key) ?? cameraGroup.querySelector(`[data-node-key="${node.key}"]`);
     if (!el) {
       i += 1;
       continue;
@@ -148,20 +182,24 @@ export function projectStars(
  * selector. Threads connecting behind-camera endpoints render
  * off-canvas through the same far-offscreen trick.
  *
- * @bigO Time: O(E) per call (one querySelector + two matrix-
- *       multiplies per edge). Hot path: called once per RAF tick
- *       alongside projectStars.
- *       Space: O(1).
+ * @bigO Time: O(E) per call (one cache.get + two matrix-multiplies
+ *       per edge). The cache argument is the hook's ElementCache,
+ *       populated once on graph change. Hot path: called once per
+ *       RAF tick alongside projectStars. Edge count dominates star
+ *       count once a corpus has crossed ~10 facet-sharing works,
+ *       so this is the per-frame cost that grows fastest.
+ *       Space: O(1) per call.
  */
 export function projectThreads(
   cameraGroup: SVGGElement,
   edges: readonly NavigableEdge[],
+  cache: ElementCache,
   camera: Camera,
   basis: CameraBasis,
   viewboxSize: number,
 ): void {
   for (const edge of edges) {
-    const el = cameraGroup.querySelector(`[data-thread-id="${edge.id}"]`);
+    const el = cache.get(edge.id) ?? cameraGroup.querySelector(`[data-thread-id="${edge.id}"]`);
     if (!el) continue;
     const ps = projectToViewbox(edge.sourcePos, camera, basis, viewboxSize);
     const pt = projectToViewbox(edge.targetPos, camera, basis, viewboxSize);

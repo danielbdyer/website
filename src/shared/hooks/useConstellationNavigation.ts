@@ -6,11 +6,13 @@ import {
   TRAIL_LENGTH,
   applyCameraYaw,
   broadcastCursorToFirmament,
+  buildElementCache,
   projectGlyph,
   projectStars,
   projectThreads,
   projectTrail,
   writeGlyphChannels,
+  type ElementCache,
   type NavigableEdge,
 } from '@/shared/dom/skyProjector';
 import {
@@ -278,6 +280,8 @@ interface RuntimeRefs {
   readonly stateRef: RefObject<NavState>;
   readonly nodesRef: RefObject<readonly NavigableNode[]>;
   readonly edgesRef: RefObject<readonly NavigableEdge[]>;
+  readonly starsCacheRef: RefObject<ElementCache>;
+  readonly threadsCacheRef: RefObject<ElementCache>;
   readonly cameraRef: RefObject<SVGGElement | null>;
   readonly glyphRef: RefObject<SVGCircleElement | null>;
   readonly viewboxSize: number;
@@ -431,8 +435,22 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   if (!cameraGroup) return;
   const { currentCamera: camera, currentBasis: basis } = state;
   const viewboxSize = refs.viewboxSize;
-  projectStars(cameraGroup, refs.nodesRef.current, camera, basis, viewboxSize);
-  projectThreads(cameraGroup, refs.edgesRef.current, camera, basis, viewboxSize);
+  projectStars(
+    cameraGroup,
+    refs.nodesRef.current,
+    refs.starsCacheRef.current,
+    camera,
+    basis,
+    viewboxSize,
+  );
+  projectThreads(
+    cameraGroup,
+    refs.edgesRef.current,
+    refs.threadsCacheRef.current,
+    camera,
+    basis,
+    viewboxSize,
+  );
   const cursorProj = projectGlyph(refs.glyphRef.current, state.pos, camera, basis, viewboxSize);
   projectTrail(cameraGroup, state.trailHistory, camera, basis, viewboxSize);
   broadcastCursorToFirmament(cursorProj, viewboxSize);
@@ -782,14 +800,36 @@ export function useConstellationNavigation({
   const stateRef = useRef<NavState>(buildInitialState());
   const nodesRef = useRef<readonly NavigableNode[]>(nodes);
   const edgesRef = useRef<readonly NavigableEdge[]>(edges);
+  // Element-lookup caches the projector reads each RAF tick. Built
+  // once on mount + whenever the underlying graph identity changes;
+  // React keeps DOM-element identity stable for the same key, so the
+  // cache stays valid across renders triggered by hover / active-state
+  // / overlay open. Dropping ~30k querySelector calls per second on
+  // the heavy fixture is what makes this feel iPhone-native.
+  const starsCacheRef = useRef<ElementCache>(new Map());
+  const threadsCacheRef = useRef<ElementCache>(new Map());
 
   useEffect(() => {
     nodesRef.current = nodes;
-  }, [nodes]);
+    if (cameraRef.current) {
+      starsCacheRef.current = buildElementCache(
+        cameraRef.current,
+        'data-node-key',
+        nodes.map((n) => n.key),
+      );
+    }
+  }, [nodes, cameraRef]);
 
   useEffect(() => {
     edgesRef.current = edges;
-  }, [edges]);
+    if (cameraRef.current) {
+      threadsCacheRef.current = buildElementCache(
+        cameraRef.current,
+        'data-thread-id',
+        edges.map((e) => e.id),
+      );
+    }
+  }, [edges, cameraRef]);
 
   useEffect(() => {
     const state = stateRef.current;
@@ -804,6 +844,8 @@ export function useConstellationNavigation({
     stateRef,
     nodesRef,
     edgesRef,
+    starsCacheRef,
+    threadsCacheRef,
     cameraRef,
     glyphRef,
     viewboxSize,
@@ -823,6 +865,8 @@ export function useConstellationNavigation({
       stateRef,
       nodesRef,
       edgesRef,
+      starsCacheRef,
+      threadsCacheRef,
       cameraRef,
       glyphRef,
       viewboxSize,

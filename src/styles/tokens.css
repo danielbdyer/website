@@ -417,6 +417,23 @@ body::before {
    express it (a tiny per-star CSS class swap, a static lighter
    halo, an ambient WebGL noise contribution). */
 
+/* The constellation SVG is the navigable surface itself. iOS Safari
+   defaults vertical swipes to pull-to-refresh / scroll, which steals
+   the gesture before our pointer handlers see it; horizontal swipes
+   to back-navigation. `touch-action: none` tells the browser the
+   surface owns every touch that begins inside it — pointer events
+   bubble up cleanly to the navigation hook for drag, flick, and
+   star-tap. Pinch-zoom and double-tap-zoom go too; they were
+   never useful here (the constellation has its own gravity).
+   `user-select: none` keeps long-press from triggering the iOS
+   text-select callout on the daystar SVG numbers. WorkOverlay is
+   rendered via Outlet at the route level (sibling, not descendant),
+   so its scroll behavior is unaffected. */
+.constellation {
+  touch-action: none;
+  user-select: none;
+}
+
 .constellation-rotates {
   transform-origin: 500px 500px;
   animation: constellation-spin 600s linear infinite;

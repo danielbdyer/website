@@ -177,13 +177,17 @@ const FRAGMENT_SHADER = /* glsl */ `
     vec2 fragP = cursorSpace(vUv);
     vec2 cursorP = uCursor * vec2(uAspect, 1.0);
 
-    // Noise at two octaves, drifting slowly. The drift is bounded by
-    // a low time multiplier so the motion is felt rather than seen
-    // — a sky breathing, not a sky scrolling.
+    // Noise at one octave, drifting slowly. The first form ran a
+    // second octave (snoise(p * 2.3) * 0.25) for finer paper grain,
+    // but mobile GPUs spend most of their per-pixel budget on
+    // simplex's dot products and permutes — and the SVG firmament
+    // beneath this layer carries its own feTurbulence grain at the
+    // finer frequency, so the second octave was almost entirely
+    // re-stating what the SVG already paints. Single-octave noise
+    // here saves ~80 ops per pixel without losing visible texture.
     float t = uTime * 0.05;
     vec2 p = vUv * 4.0 + vec2(t, t * 0.7);
-    float n = snoise(p) * 0.5 + snoise(p * 2.3) * 0.25;
-    n = n * 0.5 + 0.5;
+    float n = snoise(p) * 0.5 + 0.5;
 
     // Cursor pool — the visitor's attention as a held lamp. Squared
     // smoothstep gives the rotund profile rather than a linear ramp
@@ -462,9 +466,20 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
   });
   const mesh = new Mesh(gl, { geometry, program });
 
+  // Coarse-pointer devices (phones, tablets) get a smaller canvas
+  // backing store. The CSS sizing stays the same — the browser
+  // scales the canvas up to fill the container — so the visual hit
+  // is the soft blur of scaling, which lands almost invisibly on
+  // a layer that's already watercolor-soft. The compute hit is real:
+  // 0.6× per axis = 36% the pixel count = ~3× the GPU headroom on
+  // an iPhone. Hover-capable devices keep the full backing store
+  // because they tend to have actual GPUs and benefit from the
+  // sharper halo edges.
+  const isCoarsePointer = globalThis.matchMedia?.('(pointer: coarse)').matches ?? false;
+  const backingScale = isCoarsePointer ? 0.6 : 1;
   const resize = () => {
     const rect = container.getBoundingClientRect();
-    renderer.setSize(rect.width || 1, rect.height || 1);
+    renderer.setSize((rect.width || 1) * backingScale, (rect.height || 1) * backingScale);
   };
   resize();
 
