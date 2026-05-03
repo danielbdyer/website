@@ -332,6 +332,10 @@ words:
   - mediump
   - snoise
   - fract
+  - Halton
+  - Lissajous
+  - Hevelius
+  - Beziers
   - xxzz
   - xyxy
 

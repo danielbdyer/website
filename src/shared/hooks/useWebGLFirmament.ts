@@ -1,5 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
+import {
+  ATMOSPHERIC_STAR_CAPACITY,
+  STAR_STRIDE,
+  getAtmosphericScene,
+} from '@/shared/state/atmosphericScene';
 
 // Inline GLSL — embedded at build time via the JS bundler. Splitting
 // shader code into separate .glsl files would require a Vite raw-text
@@ -24,25 +29,38 @@ const VERTEX_SHADER = /* glsl */ `
 `;
 
 // Fragment shader — paints a continuous, cursor-aware atmospheric
-// layer over the SVG firmament. Capability that SVG filters cannot
-// deliver:
+// layer over the SVG firmament. Five contributions composed:
 //
-//  - Continuous procedural noise via simplex (the standard Ashima
-//    Arts WebGL implementation) sampled at a slow drift, so the
-//    paper-grain breathes rather than sitting frozen as feTurbulence
-//    does.
-//  - A cursor-following luminous "pool of attention" — areas near
-//    the visitor's gaze brighten softly, like cupping a hand over a
-//    candle. Fades with a smoothstep so the boundary is honest weather,
-//    not a hard edge.
-//  - Theme-aware tone via `uTheme` mixed between warm (light) and cool
-//    (dark) palettes. The theme transition's 500ms crossfade animates
-//    the uniform on toggle.
+//   1. Procedural simplex noise drifting slowly, layered at two
+//      octaves, for the paper-grain weather. The drift is bounded
+//      by a low time multiplier so the motion is felt rather than
+//      seen — a sky breathing, not a sky scrolling.
+//   2. A cursor-following luminous "pool of attention" — areas near
+//      the visitor's gaze brighten softly, like cupping a hand
+//      over a candle. Squared-falloff for the rotund profile
+//      (CONSTELLATION.md §"Pass 2 Phase E").
+//   3. Per-star halos at the projected screen positions broadcast
+//      by the skyProjector. Each halo breathes on a sinusoidal
+//      twinkle with a per-star phase so adjacent stars desync
+//      (CONSTELLATION.md §"What's held — twinkle that breathes").
+//      The rotation around viewport center matches the SVG
+//      .constellation-rotates 600s spin so halos stay anchored
+//      to their stars without forcing JS to drive the rotation.
+//   4. A polestar wash at viewport center, breathing on a long
+//      tidal cycle (~14s) — the "slow tidal swell at the center
+//      of the sky" the held vision named. Composed additively
+//      below the stars.
+//   5. A handful of drifting motes — small additive sparkles on
+//      slow sinusoidal paths, the atmospheric layer's quiet life
+//      between hovers (CONSTELLATION_HORIZON.md §"Layer 1 —
+//      drifting motes").
 //
 // All output is additive — `gl_FragColor` is composited via the
 // canvas's `mix-blend-mode: soft-light` so it deepens the SVG layer
 // rather than replacing it. If WebGL is unavailable, the canvas
 // doesn't render and the SVG firmament is still complete.
+
+const STAR_CAPACITY_GLSL = String(ATMOSPHERIC_STAR_CAPACITY);
 
 const FRAGMENT_SHADER = /* glsl */ `
   precision mediump float;
@@ -51,6 +69,17 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform vec2 uCursor;       // [-1, 1] normalized cursor offset
   uniform float uTheme;       // 0 = light, 1 = dark
   uniform float uActive;      // 1 if cursor is over the surface, 0 otherwise
+  uniform float uAspect;      // canvas width / height — keeps halos round
+  // Per-star data: vec4(x, y, hueIndex, phase). x/y are *post-rotation*
+  // cursor-space [-1, 1] — skyProjector applies the constellation's
+  // 600s spin once per frame on CPU so this shader avoids 40+ trig
+  // calls per pixel. hueIndex 0..3 indexes uHuePalette; phase in
+  // seconds.
+  uniform vec4 uStarData[${STAR_CAPACITY_GLSL}];
+  uniform int uStarCount;
+  uniform vec3 uHuePalette[4];
+
+  const float TWO_PI = 6.28318530718;
 
   // Simplex 2D noise — Ashima Arts, public domain.
   vec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x, 289.0);}
@@ -79,44 +108,143 @@ const FRAGMENT_SHADER = /* glsl */ `
     return 130.0 * dot(m, g);
   }
 
+  // Aspect-corrected fragment position in cursor-space [-1, 1]. The
+  // shader's pool, halos, motes, and polestar wash all measure
+  // distance through this so a circular falloff renders as a circle
+  // on screen rather than as an ellipse on a non-square viewport.
+  vec2 cursorSpace(vec2 uv) {
+    return (uv * 2.0 - 1.0) * vec2(uAspect, 1.0);
+  }
+
+  // Per-star halo contribution. Each star paints a soft additive
+  // disc at its (already-rotated) cursor-space position, sinusoidally
+  // breathing with a per-star phase so the starfield reads as alive
+  // even when the visitor sits still. Star positions arrive
+  // post-rotation from skyProjector, so the loop body stays cheap
+  // — no trig per pixel per star.
+  //
+  // Hue resolution: WebGL 2 (which ogl targets) supports dynamic
+  // indexing into uniform arrays in fragment shaders, so the palette
+  // lookup is a direct array index — much cheaper than the four-step
+  // mix selector this loop used in its first form.
+  vec4 starHalos(vec2 fragP) {
+    vec3 color = vec3(0.0);
+    float alpha = 0.0;
+    // Hevelius-register gold-cream that the halos paint with. Mixed
+    // with the per-star facet hue so each star carries its category
+    // as a faint accent inside the dominant warm. The hue mix is
+    // applied once per star (not once per pixel per star) by
+    // pre-multiplying into the color contribution.
+    vec3 cream = vec3(0.97, 0.85, 0.55);
+    for (int i = 0; i < ${STAR_CAPACITY_GLSL}; i++) {
+      if (i >= uStarCount) break;
+      vec4 d = uStarData[i];
+      vec2 starP = d.xy * vec2(uAspect, 1.0);
+      float dist = distance(fragP, starP);
+      // Single-zone falloff. The two-zone (outer + inner core) form
+      // doubled per-pixel cost on this layer; the SVG body atom
+      // beneath carries the bright center natively, so the shader
+      // contribution focuses on the warm lamp around it.
+      float halo = smoothstep(0.20, 0.02, dist);
+      // Twinkle: slow breath modulated by per-star phase. Bounded
+      // [0.78, 1.0] so a star never disappears entirely.
+      float twinkle = 0.78 + 0.22 * sin(uTime * 0.9 + d.w);
+      vec3 hue = uHuePalette[int(d.z)];
+      vec3 starColor = mix(cream, hue, 0.22);
+      color += starColor * halo * twinkle * 0.95;
+      alpha += halo * twinkle * 0.85;
+    }
+    return vec4(color, alpha);
+  }
+
+  // Drifting motes — four small additive sparkles on slow Lissajous
+  // paths. Each mote breathes on its own phase so the motion reads
+  // as a small living atmosphere rather than four identical pulses.
+  vec4 driftingMotes(vec2 fragP) {
+    vec3 color = vec3(0.0);
+    float alpha = 0.0;
+    for (int i = 0; i < 4; i++) {
+      float fi = float(i);
+      float phase = fi * 1.7;
+      vec2 motePos = vec2(
+        sin(uTime * 0.07 + phase) * 0.65,
+        cos(uTime * 0.05 + phase * 1.3) * 0.4
+      );
+      float dist = distance(fragP, motePos);
+      float mote = smoothstep(0.06, 0.0, dist);
+      float pulse = 0.5 + 0.5 * sin(uTime * 0.6 + phase * 2.0);
+      color += vec3(0.9, 0.85, 0.7) * mote * pulse * 0.18;
+      alpha += mote * pulse * 0.18;
+    }
+    return vec4(color, alpha);
+  }
+
   void main() {
-    // Noise at two octaves, drifting slowly. The drift is bounded by
-    // a low time multiplier so the motion is felt rather than seen
-    // — a sky breathing, not a sky scrolling.
+    // Aspect-corrected cursor-space position. The polestar sits at
+    // the origin under the orbital camera (the projector rotates
+    // every other point around it), so the shader paints centered
+    // contributions at vec2(0.0).
+    vec2 fragP = cursorSpace(vUv);
+    vec2 cursorP = uCursor * vec2(uAspect, 1.0);
+
+    // Noise at one octave, drifting slowly. The first form ran a
+    // second octave (snoise(p * 2.3) * 0.25) for finer paper grain,
+    // but mobile GPUs spend most of their per-pixel budget on
+    // simplex's dot products and permutes — and the SVG firmament
+    // beneath this layer carries its own feTurbulence grain at the
+    // finer frequency, so the second octave was almost entirely
+    // re-stating what the SVG already paints. Single-octave noise
+    // here saves ~80 ops per pixel without losing visible texture.
     float t = uTime * 0.05;
     vec2 p = vUv * 4.0 + vec2(t, t * 0.7);
-    float n = snoise(p) * 0.5 + snoise(p * 2.3) * 0.25;
-    n = n * 0.5 + 0.5;
+    float n = snoise(p) * 0.5 + 0.5;
 
-    // Cursor pool — a soft luminous disc that follows the visitor's
-    // sphere-surface position (driven by the navigation cursor, not
-    // the raw pointer). smoothstep gives the falloff; squaring it
-    // gives a slightly rotund (bulb-like) profile rather than a
-    // linear ramp, so the pool feels held rather than flat — the
-    // Galaxy hint Pass 2 is reaching for. uActive gates the pool
-    // to zero when the cursor is outside the surface.
-    vec2 cursorUv = uCursor * 0.5 + 0.5;
-    float dist = distance(vUv, cursorUv);
-    float poolBase = smoothstep(0.55, 0.0, dist);
+    // Cloud nebulae — REUSE the existing noise sample, re-mapped
+    // against a high-pass smoothstep so the high-noise patches read
+    // as cloud shapes. Adds zero extra snoise calls (a true second
+    // octave doubled xvfb's frame budget); the visual is slightly
+    // less independent from the paper-grain than a true second
+    // octave would be, but the patches still read as nebula weather
+    // tinted blue-purple against the warm theme tone.
+    float cloudMask = smoothstep(0.55, 0.92, n);
+    vec3 cloudColor = mix(vec3(0.45, 0.4, 0.6), vec3(0.7, 0.55, 0.5), n);
+    vec3 cloud = cloudColor * cloudMask * 0.4;
+    float cloudAlpha = cloudMask * 0.28;
+
+    // Cursor pool — the visitor's attention as a held lamp. Squared
+    // smoothstep gives the rotund profile rather than a linear ramp
+    // so the pool feels held rather than flat.
+    float poolBase = smoothstep(0.7, 0.0, distance(fragP, cursorP));
     float pool = poolBase * poolBase * uActive * 0.45;
 
-    // Theme palette — warm-glow in light mode, cool-silver in dark.
-    vec3 lightTone = vec3(0.95, 0.85, 0.65);
-    vec3 darkTone  = vec3(0.55, 0.6, 0.85);
+    // Polestar wash — the slow tidal swell at the center of the
+    // sky. Long breath cycle (~14s); larger radius than the cursor
+    // pool so it reads as the sky's center rather than a spot.
+    // Brighter than the first form: this is the iconic moment of
+    // the sky, and the Hevelius reference's polestar is unmistakable.
+    float polestarBreath = 0.7 + 0.3 * sin(uTime * (TWO_PI / 14.0));
+    float polestarBase = smoothstep(0.55, 0.05, length(fragP));
+    float polestarWash = polestarBase * polestarBreath * 0.55;
+
+    // Theme palette — warm-amber gold in light mode, deeper warm-amber
+    // in dark mode (with a hint of horizon warmth so the night sky
+    // doesn't read as cold). The Hevelius reference is a warm sky
+    // either way; the difference between modes is brightness, not hue.
+    vec3 lightTone = vec3(0.95, 0.85, 0.62);
+    vec3 darkTone  = vec3(0.92, 0.78, 0.48);
     vec3 tone = mix(lightTone, darkTone, uTheme);
 
-    // Saturation boost in the pool — pushes the tone toward a richer
-    // chroma where the visitor's attention sits. Computed as a soft
-    // shift away from the noise's mid-grey toward the saturated
-    // tone; pool * 0.35 keeps the boost subtle.
     vec3 saturatedTone = tone + (tone - vec3(0.5)) * 0.4;
     vec3 baseTone = mix(tone, saturatedTone, pool * 0.35);
 
-    // Composite: the noise gives texture; the pool gives focus. The
-    // theme tone shifts the whole layer warm or cool; the pool both
-    // brightens and saturates near the cursor.
-    vec3 color = baseTone * (n * 0.18 + pool);
-    float alpha = (n * 0.12) + pool * 0.7;
+    // Composite layers in order: noise + pool + polestar + halos +
+    // motes. Each contribution's alpha accumulates into the canvas
+    // alpha so the soft-light blend underneath knows where the
+    // atmospheric layer is asserting itself.
+    vec4 halos = starHalos(fragP);
+    vec4 motes = driftingMotes(fragP);
+    vec3 color = baseTone * (n * 0.18 + pool + polestarWash) + cloud + halos.rgb + motes.rgb;
+    float alpha = (n * 0.12) + pool * 0.7 + polestarWash * 0.55 + cloudAlpha + halos.a + motes.a;
 
     // Vignette — a vignette/painted sense of attention, not a
     // photographic darkening. Centered distance maps via smoothstep
@@ -124,9 +252,7 @@ const FRAGMENT_SHADER = /* glsl */ `
     // than hard-clipping. Multiplies into both the color and the
     // alpha so the WebGL contribution simply *recedes* at the edges
     // and the SVG firmament beneath becomes the final paint there.
-    // Concentrates attention toward the polestar at the center.
-    vec2 centered = vUv - 0.5;
-    float vignetteDist = length(centered) * 1.4;
+    float vignetteDist = length(fragP) * 0.78;
     float vignette = smoothstep(0.95, 0.35, vignetteDist);
     color *= vignette;
     alpha *= vignette;
@@ -149,6 +275,10 @@ interface UniformsShape {
   uTime: { value: number | readonly number[] };
   uCursor: { value: number | readonly number[] };
   uActive: { value: number | readonly number[] };
+  uAspect: { value: number | readonly number[] };
+  uStarData: { value: readonly number[] | Float32Array | readonly (readonly number[])[] };
+  uStarCount: { value: number };
+  uHuePalette: { value: readonly (readonly number[])[] };
 }
 interface RenderLoopArgs {
   uniforms: UniformsShape;
@@ -157,6 +287,10 @@ interface RenderLoopArgs {
   canvas: HTMLCanvasElement;
 }
 
+// One vec4 buffer big enough for the capacity. Reused across frames
+// to avoid per-frame allocation in the render loop.
+const starUniformBuffer: number[] = Array.from({ length: ATMOSPHERIC_STAR_CAPACITY * 4 }, () => 0);
+
 // Drives the rAF render loop, with a try/catch around the per-frame
 // work so a GPU-context loss or ogl-internal throw halts the loop
 // (and hides the canvas) rather than escaping as a recurring
@@ -164,23 +298,32 @@ interface RenderLoopArgs {
 // unmount. Extracted so initWebGL stays under the 80-line ceiling
 // per REACT_NORTH_STAR.md §"Threshold System".
 //
-// Reads the navigation cursor signal each frame so the firmament's
-// luminous pool of attention follows the visitor's surface position
-// on the latent sphere — not the raw pointer. The pool now lives
-// where the cursor lives, which means it stays anchored after a
-// flick releases (the cursor's spring carries the pool along) and
-// settles into the active well when the navigation does.
+// Reads two shared signals each frame:
+//
+//   - `constellationCursor` for the luminous pool's anchor point
+//     (the visitor's surface position on the latent sphere).
+//   - `atmosphericScene` for the per-star data the projector
+//     broadcasts on the same RAF cadence — positions arrive
+//     post-rotation, so the shader paints them directly without
+//     the per-pixel trig the in-fragment rotation cost.
 function startRenderLoop({ uniforms, renderer, mesh, canvas }: RenderLoopArgs): () => void {
   let raf = 0;
   let halted = false;
-  const startTime = performance.now();
   const tick = () => {
     if (halted) return;
     try {
-      uniforms.uTime.value = (performance.now() - startTime) / 1000;
+      const now = performance.now();
+      uniforms.uTime.value = now / 1000;
       const cursor = getConstellationCursor();
       uniforms.uCursor.value = [cursor.x, cursor.y];
       uniforms.uActive.value = cursor.active ? 1 : 0;
+      const scene = getAtmosphericScene();
+      copyStarBuffer(scene.buffer);
+      uniforms.uStarData.value = starUniformBuffer;
+      uniforms.uStarCount.value = scene.count;
+      const w = canvas.width;
+      const h = canvas.height;
+      uniforms.uAspect.value = h > 0 ? w / h : 1;
       renderer.render({ scene: mesh });
     } catch {
       halted = true;
@@ -196,14 +339,25 @@ function startRenderLoop({ uniforms, renderer, mesh, canvas }: RenderLoopArgs): 
   };
 }
 
+/** Copy the projector's interleaved Float32Array into the plain-
+ *  array buffer ogl's uniform setter expects. ogl reads vec4
+ *  uniform-array values as nested `[[x,y,z,w], ...]` OR as a flat
+ *  `[x,y,z,w, x,y,z,w, ...]`; the flat form is what the WebGL
+ *  driver eventually wants and matches the shader's stride. */
+function copyStarBuffer(src: Float32Array): void {
+  for (let i = 0; i < ATMOSPHERIC_STAR_CAPACITY * STAR_STRIDE; i += 1) {
+    starUniformBuffer[i] = src[i] ?? 0;
+  }
+}
+
 // Sets up an ogl-driven WebGL canvas inside the given container,
 // running the fragment shader above with cursor + theme uniforms.
 // The hook handles: canvas creation, shader compilation, animation
-// loop, resize observer, theme observation, cursor tracking, and
-// cleanup. If WebGL is unsupported or any of the fallback gates is
-// active (Save-Data, reduced-motion, no JS), the hook does not
-// initialize and the container stays empty — the SVG firmament
-// already provides the baseline.
+// loop, resize observer, theme observation, hue palette resolution,
+// cursor tracking, and cleanup. If WebGL is unsupported or any of
+// the fallback gates is active (Save-Data, reduced-motion, no JS),
+// the hook does not initialize and the container stays empty — the
+// SVG firmament already provides the baseline.
 export function useWebGLFirmament(containerRef: React.RefObject<HTMLDivElement | null>) {
   const handlesRef = useRef<FirmamentHandles | null>(null);
 
@@ -249,6 +403,34 @@ function shouldRenderWebGL(): boolean {
   return true;
 }
 
+/** Read the four facet hues from the document root's CSS custom
+ *  properties and convert to linear-RGB triples. The shader receives
+ *  these as `uHuePalette[4]`, indexed by each star's hue field
+ *  (0=warm, 1=rose, 2=violet, 3=gold). Re-resolved on theme change
+ *  via the existing MutationObserver so the dark / light hues both
+ *  speak in their own register. */
+function resolveHuePalette(): readonly (readonly number[])[] {
+  const styles = getComputedStyle(document.documentElement);
+  return ['warm', 'rose', 'violet', 'gold'].map((name) => {
+    const hex = styles.getPropertyValue(`--accent-${name}`).trim();
+    return hexToRgb(hex);
+  });
+}
+
+/** sRGB hex → linear-RGB triple. The shader's soft-light blend
+ *  expects values in [0, 1]; gamma correction is approximated as a
+ *  squared sRGB ramp (the simplest correction; the soft-light blend
+ *  is forgiving). Falls back to a safe paper-warm if the property
+ *  is missing or malformed (no /sky should ever paint magenta). */
+function hexToRgb(hex: string): readonly number[] {
+  const cleaned = hex.replace('#', '');
+  if (cleaned.length !== 6) return [0.78, 0.46, 0.3];
+  const r = Number.parseInt(cleaned.slice(0, 2), 16) / 255;
+  const g = Number.parseInt(cleaned.slice(2, 4), 16) / 255;
+  const b = Number.parseInt(cleaned.slice(4, 6), 16) / 255;
+  return [r * r, g * g, b * b];
+}
+
 async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | null> {
   // Probe WebGL availability with our own canvas before letting ogl
   // try. ogl's Renderer constructor calls
@@ -289,6 +471,11 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
   container.append(canvas);
 
   const geometry = new Triangle(gl);
+  const initialPalette = resolveHuePalette();
+  const initialStarBuffer = Array.from(
+    { length: ATMOSPHERIC_STAR_CAPACITY * STAR_STRIDE },
+    () => 0,
+  );
   const program = new Program(gl, {
     vertex: VERTEX_SHADER,
     fragment: FRAGMENT_SHADER,
@@ -297,34 +484,46 @@ async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | 
       uCursor: { value: [0, 0] },
       uTheme: { value: document.documentElement.classList.contains('dk') ? 1 : 0 },
       uActive: { value: 0 },
+      uAspect: { value: 1 },
+      uStarData: { value: initialStarBuffer },
+      uStarCount: { value: 0 },
+      uHuePalette: { value: initialPalette },
     },
     transparent: true,
   });
   const mesh = new Mesh(gl, { geometry, program });
 
+  // Coarse-pointer devices (phones, tablets) get a smaller canvas
+  // backing store. The CSS sizing stays the same — the browser
+  // scales the canvas up to fill the container — so the visual hit
+  // is the soft blur of scaling, which lands almost invisibly on
+  // a layer that's already watercolor-soft. The compute hit is real:
+  // 0.6× per axis = 36% the pixel count = ~3× the GPU headroom on
+  // an iPhone. Hover-capable devices keep the full backing store
+  // because they tend to have actual GPUs and benefit from the
+  // sharper halo edges.
+  const isCoarsePointer = globalThis.matchMedia?.('(pointer: coarse)').matches ?? false;
+  const backingScale = isCoarsePointer ? 0.6 : 1;
   const resize = () => {
     const rect = container.getBoundingClientRect();
-    renderer.setSize(rect.width || 1, rect.height || 1);
+    renderer.setSize((rect.width || 1) * backingScale, (rect.height || 1) * backingScale);
   };
   resize();
 
   // ogl's uniform map is loosely typed. The shader's uniforms are
   // declared above with known shapes; this typed view makes the
   // mutations explicit and lint-safe without changing behavior.
-  const uniforms = program.uniforms as Record<
-    'uTime' | 'uCursor' | 'uTheme' | 'uActive',
-    { value: number | readonly number[] }
-  >;
-
-  // Cursor + active state are no longer driven by raw pointer
-  // events; the navigation hook writes the visitor's sphere-
-  // surface cursor to the constellationCursor signal, which the
-  // render loop reads each frame. This means the luminous pool
-  // follows the visitor's *intent* (where they are on the latent
-  // sphere) rather than the device pointer's screen position.
+  const uniforms = program.uniforms as unknown as UniformsShape & {
+    uTheme: { value: number };
+    uHuePalette: { value: readonly (readonly number[])[] };
+  };
 
   const themeObserver = new MutationObserver(() => {
     uniforms.uTheme.value = document.documentElement.classList.contains('dk') ? 1 : 0;
+    // Hue tokens differ between themes (tokens.css §"theme-light",
+    // §"theme-dark"). Re-resolve on toggle so each star paints in
+    // the palette its theme commits to.
+    uniforms.uHuePalette.value = resolveHuePalette();
   });
   themeObserver.observe(document.documentElement, {
     attributes: true,

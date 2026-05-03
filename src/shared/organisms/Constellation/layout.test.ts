@@ -27,6 +27,7 @@ const NODE_A: ConstellationNode = {
   unitPosition: projectToSphere(135, 0.6),
   hue: 'gold',
   twinklePhase: 1.2,
+  magnitude: 1,
 };
 
 const NODE_B: ConstellationNode = {

@@ -51,19 +51,19 @@ export function ConstellationFilters() {
           Documented here so the next pull lands in the right place. */}
 
       {/* Vespers bloom — what a thread passes through when its endpoint
-          star is hovered or focused. A wider gaussian blur, a brightness
-          boost via color matrix to push the pastel toward luminescence,
-          and a slight outward feMorphology dilate so the line gains
-          presence rather than just opacity. The afterimage / fade-tail
-          is the rect-level CSS transition (200ms), not the filter.
-          When the thread is at rest the filter does not apply — the
-          atom toggles `data-active` and CSS gates the filter. */}
-      <filter id="cn-vespers-bloom" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="bloomed" />
+          star is hovered or focused. Wider blur than the first form
+          so the dashed stroke softens into a wisp rather than reading
+          as a hard line; the brightness boost still pushes the pastel
+          toward luminescence. Active threads use stroke-dasharray for
+          a stitched character, which combined with this blur reads as
+          a soft thread of light rather than a geometric edge. The
+          afterimage is the rect-level CSS transition (200ms). */}
+      <filter id="cn-vespers-bloom" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2.4" result="bloomed" />
         <feColorMatrix
           in="bloomed"
           type="matrix"
-          values="1.15 0 0 0 0  0 1.15 0 0 0  0 0 1.15 0 0  0 0 0 1.4 0"
+          values="1.2 0 0 0 0  0 1.2 0 0 0  0 0 1.2 0 0  0 0 0 1.6 0"
           result="brightened"
         />
         <feMerge>
@@ -87,6 +87,35 @@ export function ConstellationFilters() {
         <stop offset="0%" stopColor="var(--accent-warm)" stopOpacity="0.18" />
         <stop offset="40%" stopColor="var(--accent-warm)" stopOpacity="0.08" />
         <stop offset="100%" stopColor="var(--accent-warm)" stopOpacity="0" />
+      </radialGradient>
+
+      {/* Star halo gradient — a soft warm-amber falloff for each
+          star's halo. SVG radial gradients are GPU-composited and
+          essentially free per element; the watercolor filter that
+          previously carried the halo's soft edge re-rasterized 16
+          star halos every frame inside the rotating compositor
+          layer, costing ~7-15ms per frame at the supersized radii
+          the Hevelius register asks for. The gradient's edge isn't
+          paper-bleed organic — it's mathematically circular — but
+          the soft-light blend mode the firmament composites under
+          softens that into something paper-like enough at this
+          scale. The watercolor filter itself stays for the
+          companion glyph or any other surface that wants the
+          paper-water character at small scale. */}
+      <radialGradient id="cn-star-halo" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="var(--star-halo)" stopOpacity="1" />
+        <stop offset="55%" stopColor="var(--star-halo)" stopOpacity="0.55" />
+        <stop offset="100%" stopColor="var(--star-halo)" stopOpacity="0" />
+      </radialGradient>
+
+      {/* Star tint gradient — the per-facet outer wash. Same
+          GPU-compositor cheap as the halo gradient. Slightly
+          different falloff curve so the tint reads as the soft
+          glow at the edge rather than a second halo. */}
+      <radialGradient id="cn-star-tint" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="currentColor" stopOpacity="0.6" />
+        <stop offset="60%" stopColor="currentColor" stopOpacity="0.18" />
+        <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
       </radialGradient>
     </defs>
   );

@@ -10,6 +10,7 @@ import { useConstellationParallax } from '@/shared/hooks/useConstellationParalla
 import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
 import { useConstellationNavigation } from '@/shared/hooks/useConstellationNavigation';
 import type { NavigableEdge } from '@/shared/hooks/useConstellationNavigation';
+import { useAtmosphericStarMetadata } from '@/shared/hooks/useAtmosphericStarMetadata';
 import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
 import {
@@ -19,6 +20,40 @@ import {
   resolveEdges,
   skyTitle,
 } from './layout';
+import type { PointerEvent } from 'react';
+
+interface DragHandlerSet {
+  readonly onPointerDown: (e: PointerEvent<SVGElement>) => void;
+  readonly onPointerMove: (e: PointerEvent<SVGElement>) => void;
+  readonly onPointerUp: (e: PointerEvent<SVGElement>) => void;
+  readonly onPointerCancel: (e: PointerEvent<SVGElement>) => void;
+}
+
+/** Transparent rect filling the constellation viewBox so empty
+ *  space has a hit target for trackball gestures. SVG groups don't
+ *  receive pointer events on their empty interior; without this
+ *  rect the drag could only initiate from a star. The rect sits
+ *  OUTSIDE the rotating compositor layer (a sibling of the
+ *  camera/parallax-sky group, not a child) — putting it inside
+ *  expanded the rotating layer's bounding box to the full viewport
+ *  and re-rasterized that whole region every frame. Stars paint
+ *  after this rect in document order, so taps on stars still hit
+ *  the star's `<a>` for navigation; only empty-space gestures land
+ *  here. */
+function DragSurface({ dragHandlers }: { dragHandlers: DragHandlerSet }) {
+  return (
+    <rect
+      x="0"
+      y="0"
+      width={VIEWBOX}
+      height={VIEWBOX}
+      fill="transparent"
+      aria-hidden="true"
+      className="constellation-drag-surface"
+      {...dragHandlers}
+    />
+  );
+}
 
 interface ConstellationProps {
   graph: ConstellationGraph;
@@ -33,7 +68,6 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const cameraRef = useRef<SVGGElement | null>(null);
-  const glyphRef = useRef<SVGCircleElement | null>(null);
   const positioned = buildPositionedMap(graph);
   const edges = resolveEdges(graph.edges, positioned);
   const nodes = buildRenderableNodes(graph.nodes, positioned);
@@ -59,7 +93,12 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const overlayKey = overlayMatch
     ? `${overlayMatch.params.room}/${overlayMatch.params.slug}`
     : null;
-  const navigableNodes = nodes.map(({ key, node }) => ({ key, unitPos: node.unitPosition }));
+  const navigableNodes = nodes.map(({ key, node }) => ({
+    key,
+    unitPos: node.unitPosition,
+    magnitude: node.magnitude,
+  }));
+  useAtmosphericStarMetadata(nodes);
   const navigableEdges: NavigableEdge[] = edges.flatMap((edge) => {
     const source = positioned.get(edge.sourceKey);
     const target = positioned.get(edge.targetKey);
@@ -72,7 +111,6 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
     viewboxSize: VIEWBOX,
     setActiveKey,
     cameraRef,
-    glyphRef,
   });
 
   return (
@@ -96,6 +134,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
           <Firmament size={VIEWBOX} />
           <Daystar cx={500} cy={240} />
         </g>
+        <DragSurface dragHandlers={dragHandlers} />
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">
             <Stage
@@ -106,9 +145,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
                 onBlur: handleBlur,
                 onKeyDown,
                 onKeyUp,
-                dragHandlers,
               }}
-              glyphRef={glyphRef}
             />
           </g>
         </g>

@@ -53,25 +53,24 @@ describe('Thread atom', () => {
     expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/pointer-events-none/);
   });
 
-  test('at rest, applies no filter and reads as a quiet wisp', () => {
+  test('at rest, threads carry a quiet dotted stitch — visible but faint', () => {
     const { container } = render(withSvg(<Thread id="x|y|z" endpoints={endpoints()} hue="rose" />));
     const line = container.querySelector('line');
-    // The brushstroke filter the design names was held back after
-    // a perf probe showed feTurbulence + feDisplacementMap on 70
-    // rotating threads triggers ~270ms idle frames. At-rest threads
-    // render as bare lines until a non-filter approach lands.
     expect(line?.getAttribute('filter')).toBeNull();
     expect(line?.dataset.active).toBeUndefined();
     expect(line?.getAttribute('stroke-width')).toBe('0.45');
+    expect(line?.getAttribute('stroke-dasharray')).toBe('1 4');
+    expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/opacity-15/);
   });
 
-  test('when active, applies the vespers bloom filter and a wider stroke', () => {
+  test('when active, applies the vespers bloom + dashed stroke for a soft thread feel', () => {
     const { container } = render(
       withSvg(<Thread id="x|y|z" endpoints={endpoints()} hue="rose" active />),
     );
     const line = container.querySelector('line');
     expect(line?.getAttribute('filter')).toBe('url(#cn-vespers-bloom)');
     expect(line?.dataset.active).toBe('true');
-    expect(line?.getAttribute('stroke-width')).toBe('1.1');
+    expect(line?.getAttribute('stroke-width')).toBe('1.4');
+    expect(line?.getAttribute('stroke-dasharray')).toBe('3 5');
   });
 });

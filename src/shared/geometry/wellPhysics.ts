@@ -30,6 +30,12 @@ import {
 export interface NavigableNode {
   readonly key: string;
   readonly unitPos: UnitVector3;
+  /** Per-star scale magnitude. The projector composes this with the
+   *  depth-driven scale factor so stars carry visual hierarchy: some
+   *  bright "named" stars at ~1.4×, most quieter at ~0.8-1.0×.
+   *  Defaults to 1 if absent. Stable per slug — derived from the
+   *  same hash that drives the twinkle phase. */
+  readonly magnitude?: number;
 }
 
 /** Force-field constants in spherical units. Position is a unit

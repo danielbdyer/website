@@ -1,23 +1,29 @@
-import type { KeyboardEvent, PointerEvent, RefObject, SyntheticEvent, FocusEvent } from 'react';
+import type { KeyboardEvent, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
+import { BackgroundStarfield } from '@/shared/atoms/BackgroundStarfield/BackgroundStarfield';
+import { Horizon } from '@/shared/atoms/Horizon/Horizon';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
 import { Star, type StarWork } from '@/shared/molecules/Star/Star';
 import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
-import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
+import { SPHERE_VIEWBOX_RADIUS_FACTOR } from '@/shared/dom/skyProjector';
+import { ROOM_LABEL, type RenderableNode, type ResolvedEdge, VIEWBOX } from './layout';
 
 // The inside of the navigation camera. Extracted from Constellation
 // so the JSX depth at each layer fits the project's max-4 ceiling
 // without flattening the structural meaning of the tree (Polestar
 // alongside the rotates layer, threads and stars as sibling groups
 // inside it).
-
-interface DragHandlers {
-  readonly onPointerDown: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerMove: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerUp: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerCancel: (e: PointerEvent<SVGGElement>) => void;
-}
+//
+// Drag handlers DO NOT live on Stage's inner star group — they live
+// on a transparent capture surface at the SVG root, sibling of the
+// rotating layer. Putting them inside the rotating compositor layer
+// expanded the layer's bounding box (the transparent capture rect
+// has to fill the viewport so empty-space gestures register) and
+// re-rasterized that whole region every frame, doubling the per-
+// frame paint cost on small fixtures. Stage keeps only the
+// hover/focus handlers — those naturally fire on per-star elements
+// where the rotating layer is the right home.
 
 /** The constellation's observable world — what Stage paints. The
  *  edges + nodes are the structural graph; activeKey + activeHue
@@ -32,32 +38,27 @@ export interface ConstellationWorld {
   readonly overlayKey: string | null;
 }
 
-/** Interaction handlers Stage forwards to its inner star group.
- *  Each comes from the hover-state hook or the navigation hook;
- *  Stage doesn't own any of them. */
+/** Interaction handlers Stage forwards to its inner star group —
+ *  hover and focus only. Drag handlers live at the SVG root on a
+ *  separate transparent capture surface, not here. */
 export interface StageInteractions {
   readonly onActivate: (e: SyntheticEvent<Element>) => void;
   readonly onMouseLeave: () => void;
   readonly onBlur: (e: FocusEvent<Element>) => void;
   readonly onKeyDown: (e: KeyboardEvent) => void;
   readonly onKeyUp: (e: KeyboardEvent) => void;
-  readonly dragHandlers: DragHandlers;
 }
 
 interface StageProps {
   world: ConstellationWorld;
   interactions: StageInteractions;
-  /** The companion glyph — a small mote at the cursor's projected
-   *  screen position. The navigation hook updates its cx/cy each
-   *  RAF tick. Sibling of the rotates layer so the slow background
-   *  rotation doesn't drag it around. */
-  glyphRef: RefObject<SVGCircleElement | null>;
 }
 
-/** A thread is "active" when one of its endpoints is the cursor's
- *  current basin claim. CSS uses data-active to drive the
- *  vespers bloom; the predicate is pure and stays at module scope
- *  rather than as a Stage prop. */
+/** A thread is "active" when one of its endpoints is the star the
+ *  camera has settled on (nearest to screen center after motion
+ *  stops). CSS uses data-active to drive the vespers bloom; the
+ *  predicate is pure and stays at module scope rather than as a
+ *  Stage prop. */
 function isThreadActive(activeKey: string | null, sourceKey: string, targetKey: string): boolean {
   return activeKey === sourceKey || activeKey === targetKey;
 }
@@ -73,57 +74,47 @@ function starWorkFor(node: RenderableNode['node']): StarWork {
   };
 }
 
-// Number of ghost positions trailing the cursor. Mirrors TRAIL_LENGTH
-// in useConstellationNavigation; the hook positions each ghost's
-// cx/cy by querying [data-companion-trail="N"] each frame.
-const TRAIL_LENGTH = 4;
+/** Five concentric rings at increasing fractions of the sphere
+ *  silhouette radius — the armillary armature the Hevelius plates
+ *  carry as the celestial coordinate system. Inner rings tighter to
+ *  the polestar, outer rings near (but inside) the sphere boundary.
+ *  Each ring is dashed gold-cream at low opacity, fainter as it
+ *  expands outward so the visual emphasis stays at the center. */
+const RING_FRACTIONS = [0.18, 0.32, 0.5, 0.68, 0.88] as const;
 
-interface CompanionGroupProps {
-  glyphRef: RefObject<SVGCircleElement | null>;
-  activeHue: ConstellationHue | null;
+interface ArmillaryRingsProps {
+  cx: number;
+  cy: number;
+  sphereRadius: number;
 }
 
-// The visitor's surface position plus its ghost-decay trail. Trail
-// circles render before the glyph so the live mark paints on top.
-// The navigation hook positions each per RAF tick via data-companion
-// / data-companion-trail queries; CSS handles the visual register
-// (paper-amber by default, mixed toward the active facet hue by
-// --companion-claim, ghosts modulated by --trail-strength).
-// aria-hidden because keyboard / screen-reader focus moves through
-// the addressable star anchors, not this visual marker.
-function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
+function ArmillaryRings({ cx, cy, sphereRadius }: ArmillaryRingsProps) {
   return (
-    <g
-      data-companion-group
-      data-active-hue={activeHue ?? 'warm'}
-      aria-hidden="true"
-      className="constellation-companion-group"
-    >
-      {Array.from({ length: TRAIL_LENGTH }, (_, i) => (
+    <g aria-hidden="true" className="constellation-armillary pointer-events-none">
+      {RING_FRACTIONS.map((fraction, i) => (
         <circle
-          key={i}
-          data-companion-trail={i}
-          cx={500}
-          cy={500}
-          r={3.5}
-          className={`constellation-companion-trail constellation-companion-trail--${i}`}
+          key={fraction}
+          cx={cx}
+          cy={cy}
+          r={sphereRadius * fraction}
+          fill="none"
+          stroke="var(--polestar-rays)"
+          strokeWidth="0.4"
+          strokeDasharray="1.5 5"
+          strokeOpacity={0.45 - i * 0.06}
         />
       ))}
-      <circle
-        ref={glyphRef}
-        cx={500}
-        cy={500}
-        r={3.5}
-        className="constellation-companion"
-        data-companion="true"
-      />
     </g>
   );
 }
 
-export function Stage({ world, interactions, glyphRef }: StageProps) {
+export function Stage({ world, interactions }: StageProps) {
   const { edges, nodes, activeKey, activeHue, overlayKey } = world;
-  const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp, dragHandlers } = interactions;
+  const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp } = interactions;
+  // activeHue still rides through Stage so the polestar wash can take
+  // a faint tint from the active facet — kept as data-attribute on
+  // the rotates layer, where CSS can read it without re-rendering.
+  const sphereRadius = VIEWBOX * SPHERE_VIEWBOX_RADIUS_FACTOR;
   return (
     <>
       {/* Watercolor wash — soft halo of paper-warm light around
@@ -137,14 +128,42 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
       <circle
         cx={500}
         cy={500}
-        r={220}
+        r={sphereRadius * 0.85}
         fill="url(#cn-polestar-wash)"
         aria-hidden="true"
         className="constellation-polestar-wash pointer-events-none"
       />
+      {/* Concentric armillary rings — five dashed circles emanating
+          from the polestar at increasing radii. The Hevelius
+          reference plates carry exactly this armature: an
+          armillary's coordinate system, faint gold lines that read
+          as the celestial scaffolding under the stars. Static at
+          viewbox center (the polestar doesn't move under camera
+          rotation), so the armature stays anchored. */}
+      <ArmillaryRings cx={500} cy={500} sphereRadius={sphereRadius} />
+      {/* Sphere boundary ring — a faint stroke-only circle at the
+          sphere's projected silhouette radius. Marks the backing
+          shape so rotating stars read as orbiting a globe rather
+          than as scattered points moving through space. */}
+      <circle
+        cx={500}
+        cy={500}
+        r={sphereRadius}
+        fill="none"
+        stroke="var(--star-halo)"
+        strokeWidth="0.6"
+        strokeOpacity="0.22"
+        aria-hidden="true"
+        className="constellation-sphere-edge pointer-events-none"
+      />
       <Polestar cx={500} cy={500} />
-      <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
-      <g className="constellation-rotates">
+      <g className="constellation-rotates" data-active-hue={activeHue ?? 'warm'}>
+        {/* Background starfield — decorative pinpricks of light
+            distributed across the unit sphere via Fibonacci spiral.
+            Renders BEFORE threads + named stars so it sits behind
+            them in z-order. The projector positions each via the
+            data-bg-id selector each RAF tick. */}
+        <BackgroundStarfield />
         <g aria-hidden="true">
           {edges.map((edge) => (
             <Thread
@@ -163,15 +182,15 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
           onBlur={onBlur}
           onKeyDown={onKeyDown}
           onKeyUp={onKeyUp}
-          {...dragHandlers}
         >
           {nodes.map(({ node, pos, key }) => (
             // Wrapping group's transform places the star at its
             // projected viewbox position. The hook overwrites this
-            // attribute each RAF tick when the camera orbits; the
-            // initial value here is the Phase B static projection
-            // so first paint matches the rest of the scene before
-            // the loop wakes up.
+            // attribute each RAF tick when the camera orbits, also
+            // applying a depth-driven scale so the back hemisphere
+            // recedes; the initial value here is the static
+            // projection so first paint matches the rest of the
+            // scene before the loop wakes up.
             <g key={key} data-node-key={key} transform={`translate(${pos.x} ${pos.y})`}>
               <Star
                 work={starWorkFor(node)}
@@ -185,6 +204,13 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
           ))}
         </g>
       </g>
+      {/* Horizon — mountain silhouette + warm horizon glow at the
+          bottom of the viewport, OUTSIDE the rotating layer so it
+          stays anchored. The sphere appears to rise from behind
+          the mountains; back-hemisphere stars fade away into the
+          horizon mass. The Hevelius reference's celestial dome
+          rising from the earth, made literal. */}
+      <Horizon />
     </>
   );
 }

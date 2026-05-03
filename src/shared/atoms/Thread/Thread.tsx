@@ -45,24 +45,34 @@ const HUE_CSS_VAR: Record<ConstellationHue, string> = {
 // Vocabulary" makes this distinction explicit.
 
 export function Thread({ endpoints, hue, id, active = false, className }: ThreadProps) {
-  const colorVar = HUE_CSS_VAR[hue];
+  // Stroke is always the gold-cream thread warmth (the Hevelius
+  // register's constellation-line color); the facet hue still
+  // travels via data-hue so a future highlighting pass can lift
+  // it without rewiring the atom. At rest threads are visible —
+  // CONSTELLATION_DESIGN.md §"The Threads" calls them wisps; the
+  // first form rendered them invisibly until hover, which made the
+  // sky read as disconnected points rather than a constellation.
+  // At rest: a quiet dotted thread (dasharray "1 4") at low opacity
+  // — barely visible, but present, so the constellation reads as a
+  // constellation rather than as scattered unrelated points. The
+  // Hevelius reference plates carry exactly this register: faint
+  // gold-cream connecting lines that you read once you look closely.
+  //
+  // When active: a longer-dashed stitched stroke softened by the
+  // vespers-bloom filter so the line reads as a wisp of light. The
+  // dashes blur into a continuous-but-soft glow under the bloom;
+  // without the bloom they read as a stitched thread; together they
+  // read as both — a thread of light.
   return (
     <line
       x1={endpoints.x1}
       y1={endpoints.y1}
       x2={endpoints.x2}
       y2={endpoints.y2}
-      stroke={colorVar}
-      strokeWidth={active ? 1.1 : 0.45}
+      stroke="var(--thread-warmth)"
+      strokeWidth={active ? 1.4 : 0.45}
       strokeLinecap="round"
-      // CONSTELLATION_DESIGN.md §"Materials" wants brushstroke at
-      // rest — but the filter that produced it (feTurbulence +
-      // feDisplacementMap) re-runs per frame for every thread
-      // inside the 600s-rotating group, costing 270ms+ idle
-      // frames at 70 threads. Held until a non-filter approach
-      // lands (deterministic wobbly path geometry, or a stroke
-      // pattern). Active threads keep the vespers bloom — there
-      // are at most 1–2 at once so the cost is bounded.
+      strokeDasharray={active ? '3 5' : '1 4'}
       filter={active ? 'url(#cn-vespers-bloom)' : undefined}
       data-thread-id={id}
       data-hue={hue}
@@ -70,9 +80,17 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
       aria-hidden="true"
       className={cn(
         'constellation-thread pointer-events-none',
-        active ? 'opacity-95' : 'opacity-25',
+        active ? 'opacity-70' : 'opacity-15',
         className,
       )}
     />
   );
 }
+
+// Imported but no longer referenced inside the component — the stroke
+// is read directly from the --thread-warmth token. Kept around because
+// removing the type-erasure of the union value is not free and the
+// static map is still informative documentation of what each facet
+// could mean here. If a future highlight pass needs it, the lookup
+// is one line away.
+void HUE_CSS_VAR;
