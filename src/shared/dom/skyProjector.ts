@@ -37,7 +37,15 @@ interface ScreenProj {
 
 /** Project a 3D unit-sphere position into viewbox coords. Helper
  *  shared by every per-frame DOM-mutation path. SVG +Y grows down,
- *  screen +Y grows up — the negation handles the convention shift. */
+ *  screen +Y grows up — the negation handles the convention shift.
+ *
+ *  The radius factor (0.36) leaves margin around the sphere's
+ *  silhouette so the visitor can read the backing shape — the
+ *  globe sits inside the frame rather than cropping at the
+ *  edges. Pair with the sphere-boundary ring in Stage which
+ *  marks the silhouette at the same projected radius. */
+const SPHERE_PROJECTION_RADIUS_FACTOR = 0.36;
+
 export function projectToViewbox(
   point: UnitVector3,
   camera: Camera,
@@ -46,13 +54,19 @@ export function projectToViewbox(
 ): ScreenProj {
   const proj = project(point, camera, basis, 1);
   const center = viewboxSize / 2;
-  const radius = viewboxSize * 0.44;
+  const radius = viewboxSize * SPHERE_PROJECTION_RADIUS_FACTOR;
   return {
     x: center + proj.screenX * radius,
     y: center - proj.screenY * radius,
     inFront: proj.inFront,
   };
 }
+
+/** The sphere's projected silhouette radius in viewbox units. The
+ *  Stage paints a faint ring at this radius so the visitor reads
+ *  the backing globe — without it, the rotating stars look like
+ *  scattered points without context. */
+export const SPHERE_VIEWBOX_RADIUS_FACTOR = SPHERE_PROJECTION_RADIUS_FACTOR;
 
 /** Period of the SVG's CSS-driven `.constellation-rotates` 600s spin
  *  in milliseconds. The projector reads the wall clock to compute

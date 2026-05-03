@@ -62,13 +62,14 @@ describe('Thread atom', () => {
     expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/opacity-0(?!\d)/);
   });
 
-  test('when active, applies the vespers bloom filter and a wider stroke', () => {
+  test('when active, applies the vespers bloom + dashed stroke for a soft thread feel', () => {
     const { container } = render(
       withSvg(<Thread id="x|y|z" endpoints={endpoints()} hue="rose" active />),
     );
     const line = container.querySelector('line');
     expect(line?.getAttribute('filter')).toBe('url(#cn-vespers-bloom)');
     expect(line?.dataset.active).toBe('true');
-    expect(line?.getAttribute('stroke-width')).toBe('1.2');
+    expect(line?.getAttribute('stroke-width')).toBe('1.4');
+    expect(line?.getAttribute('stroke-dasharray')).toBe('3 5');
   });
 });

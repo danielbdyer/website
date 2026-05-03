@@ -23,6 +23,22 @@ const HUE_VAR: Record<ConstellationHue, string> = {
   gold: 'var(--accent-gold)',
 };
 
+/** Quadratic-Bezier path for a 4-point sparkle star. Cardinal points
+ *  sit at radius OUTER; the curves dip inward toward INNER between
+ *  each pair of points, giving the canonical sparkle silhouette —
+ *  pointed at N/E/S/W with concave curves between. Drawn once as a
+ *  static string since every star renders with the same shape. */
+const STAR_OUTER = 9;
+const STAR_INNER = 2.4;
+const SPARKLE_STAR_PATH = [
+  `M 0,${-STAR_OUTER}`,
+  `Q ${STAR_INNER},${-STAR_INNER} ${STAR_OUTER},0`,
+  `Q ${STAR_INNER},${STAR_INNER} 0,${STAR_OUTER}`,
+  `Q ${-STAR_INNER},${STAR_INNER} ${-STAR_OUTER},0`,
+  `Q ${-STAR_INNER},${-STAR_INNER} 0,${-STAR_OUTER}`,
+  'Z',
+].join(' ');
+
 // The bare visual mark of a star — gold-cream body + warm halo +
 // cross-burst spike rays + facet-tinted outer glow + hit target.
 // All five elements render at (0, 0); the parent group's `transform`
@@ -69,18 +85,26 @@ export function StarMark({ hue, isPreview = false, twinkleDelay }: StarMarkProps
         fill="url(#cn-star-halo)"
         className="constellation-star__halo pointer-events-none"
       />
-      {/* Bright cream-gold body — the star itself. */}
-      <circle
-        r={5}
+      {/* Bright cream-gold body — a 4-point sparkle star. Quadratic
+          Bezier curves dip inward between cardinal points so the
+          shape reads as a real star glyph, not a circle. The path's
+          outer reach is OUTER (cardinal point radius); the inner
+          concave valleys sit at INNER. Pairs with the spike rays
+          beyond — the star's points sit just inside the rays' inner
+          ends, so the rays read as light flares extending from the
+          star's tips. */}
+      <path
+        d={SPARKLE_STAR_PATH}
         fill="var(--star-cream)"
         opacity={isPreview ? 0.55 : 1}
         data-twinkle-phase={twinkleDelay}
         className="constellation-star__body"
       />
-      {/* Cross-burst spike rays — the iconic Hevelius mark. */}
+      {/* Cross-burst spike rays — light flares extending from the
+          star's cardinal points outward into the surrounding sky. */}
       <g className="constellation-star__spikes pointer-events-none" data-hue={hue}>
-        <line x1={-18} y1={0} x2={18} y2={0} />
-        <line x1={0} y1={-18} x2={0} y2={18} />
+        <line x1={-22} y1={0} x2={22} y2={0} />
+        <line x1={0} y1={-22} x2={0} y2={22} />
       </g>
       {/* Hit target — large enough for thumb taps on iPhone. */}
       <circle r={30} fill="transparent" className="constellation-star__hit" />

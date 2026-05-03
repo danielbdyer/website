@@ -25,14 +25,24 @@ describe('StarMark atom', () => {
 
   test('twinkleDelay flows to the body as data-twinkle-phase for the WebGL halo broadcast', () => {
     const { container } = render(withSvg(<StarMark hue="warm" twinkleDelay={2.7} />));
-    const body = container.querySelector<SVGCircleElement>('.constellation-star__body');
+    const body = container.querySelector<SVGPathElement>('.constellation-star__body');
     expect(body?.dataset.twinklePhase).toBe('2.7');
   });
 
   test('preview works render a quieter body', () => {
     const { container } = render(withSvg(<StarMark hue="warm" isPreview />));
-    const body = container.querySelector<SVGCircleElement>('.constellation-star__body');
+    const body = container.querySelector<SVGPathElement>('.constellation-star__body');
     expect(body?.getAttribute('opacity')).toBe('0.55');
+  });
+
+  test('the body renders as a 4-point sparkle path (quadratic Beziers, not a circle)', () => {
+    const { container } = render(withSvg(<StarMark hue="warm" />));
+    const body = container.querySelector<SVGPathElement>('.constellation-star__body');
+    expect(body?.tagName.toLowerCase()).toBe('path');
+    // Path data starts with a move to the top point and uses Q (quadratic) curves.
+    const d = body?.getAttribute('d') ?? '';
+    expect(d).toMatch(/^M /);
+    expect(d).toMatch(/ Q /);
   });
 
   test('the outer tint carries the facet hue via currentColor on the gradient', () => {

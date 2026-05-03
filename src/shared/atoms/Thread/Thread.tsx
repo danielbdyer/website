@@ -52,6 +52,18 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
   // CONSTELLATION_DESIGN.md §"The Threads" calls them wisps; the
   // first form rendered them invisibly until hover, which made the
   // sky read as disconnected points rather than a constellation.
+  // At rest: invisible. The constellation reads as scattered points
+  // of light, not as a graph diagram. Threads stay in the DOM so the
+  // hover bloom can still light them briefly when a star is focused
+  // — connection becomes a found thing, not a declared one.
+  //
+  // When active: a stitched stroke (stroke-dasharray) softened by
+  // the wider vespers-bloom filter so the line reads as a wisp of
+  // light rather than a hard geometric edge. The dashes blur into a
+  // continuous-but-soft glow under the bloom; without the bloom they
+  // read as a stitched thread; together they read as both — a thread
+  // of light. CONSTELLATION_DESIGN.md §"Materials — brushstroke
+  // thread" names the intent; this is its first form.
   return (
     <line
       x1={endpoints.x1}
@@ -59,29 +71,17 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
       x2={endpoints.x2}
       y2={endpoints.y2}
       stroke="var(--thread-warmth)"
-      strokeWidth={active ? 1.2 : 0.55}
+      strokeWidth={active ? 1.4 : 0.55}
       strokeLinecap="round"
-      // The brushstroke filter is held — feTurbulence inside the
-      // rotating group re-runs the rasterizer for every thread every
-      // frame at ~270ms idle for 70 threads. The held intent
-      // (paint-grain on threads at rest) returns via deterministic
-      // wobbly geometry or a per-thread stroke pattern. Active
-      // threads keep the vespers bloom — there are at most 1–2 at once.
+      strokeDasharray={active ? '3 5' : undefined}
       filter={active ? 'url(#cn-vespers-bloom)' : undefined}
       data-thread-id={id}
       data-hue={hue}
       data-active={active ? 'true' : undefined}
       aria-hidden="true"
-      // At rest: invisible. The constellation reads as scattered
-      // points of light, not as a graph diagram. The held intent
-      // (visible-at-rest connection lines per the design doc's
-      // "wisps" register) was making the surface feel like a
-      // wireframe-globe. Threads stay in the DOM so the hover
-      // bloom can still light them briefly when a star is focused
-      // — connection becomes a found thing, not a declared one.
       className={cn(
         'constellation-thread pointer-events-none',
-        active ? 'opacity-95' : 'opacity-0',
+        active ? 'opacity-70' : 'opacity-0',
         className,
       )}
     />

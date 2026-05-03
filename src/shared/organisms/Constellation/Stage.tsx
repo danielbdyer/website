@@ -4,7 +4,8 @@ import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
 import { Star, type StarWork } from '@/shared/molecules/Star/Star';
 import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
-import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
+import { SPHERE_VIEWBOX_RADIUS_FACTOR } from '@/shared/dom/skyProjector';
+import { ROOM_LABEL, type RenderableNode, type ResolvedEdge, VIEWBOX } from './layout';
 
 // The inside of the navigation camera. Extracted from Constellation
 // so the JSX depth at each layer fits the project's max-4 ceiling
@@ -77,6 +78,7 @@ export function Stage({ world, interactions }: StageProps) {
   // activeHue still rides through Stage so the polestar wash can take
   // a faint tint from the active facet — kept as data-attribute on
   // the rotates layer, where CSS can read it without re-rendering.
+  const sphereRadius = VIEWBOX * SPHERE_VIEWBOX_RADIUS_FACTOR;
   return (
     <>
       {/* Watercolor wash — soft halo of paper-warm light around
@@ -90,10 +92,27 @@ export function Stage({ world, interactions }: StageProps) {
       <circle
         cx={500}
         cy={500}
-        r={220}
+        r={sphereRadius * 0.85}
         fill="url(#cn-polestar-wash)"
         aria-hidden="true"
         className="constellation-polestar-wash pointer-events-none"
+      />
+      {/* Sphere boundary ring — a faint stroke-only circle at the
+          sphere's projected silhouette radius. Marks the backing
+          shape so rotating stars read as orbiting a globe rather
+          than as scattered points moving through space. Static
+          (the sphere doesn't move under camera rotation; only the
+          stars do), so the ring stays at a fixed viewbox radius. */}
+      <circle
+        cx={500}
+        cy={500}
+        r={sphereRadius}
+        fill="none"
+        stroke="var(--star-halo)"
+        strokeWidth="0.6"
+        strokeOpacity="0.22"
+        aria-hidden="true"
+        className="constellation-sphere-edge pointer-events-none"
       />
       <Polestar cx={500} cy={500} />
       <g className="constellation-rotates" data-active-hue={activeHue ?? 'warm'}>
