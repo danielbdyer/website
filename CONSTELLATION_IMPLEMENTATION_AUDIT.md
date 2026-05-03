@@ -131,12 +131,20 @@ For each `Cx` from `CONSTELLATION_DESIGN.md` §"Component Library". Anatomy part
 - Active brightening on hover/travel: **partial** (stroke width and filter change on `active`; full bloom and travel-along visualization absent).
 - States: `default`, `endpoint-active` present; `both-endpoints-active`, `traveling-along`, `dimmed-by-filter`, `behind-camera` **absent**.
 
-### C4. AtmospherePool — **present**
+### C4. AtmospherePool — **present** (extended)
 
 - WebGL pool follows constellation cursor signal (Phase E).
 - Squared-falloff rotund profile: **present**.
 - Saturation boost in pool zone: **present**.
+- Per-star halos with breathing twinkle (per-star phase): **present**.
+- Polestar wash with slow tidal swell (~14s breath): **present**.
+- Drifting motes (four, on slow Lissajous paths): **present**.
+- Aspect-corrected falloff so circular halos render as circles: **present**.
+- Theme-aware tone via `uTheme` mix; palette re-resolved on theme toggle: **present**.
+- Cross-loop coordination: skyProjector writes post-rotation positions to a shared `atmosphericScene` signal each RAF tick; the shader reads them on its own RAF without coupling lifetimes — same pattern as `constellationCursor`.
 - *Twin pools* / *no pool* / *polaroid* variants: **held**.
+- Cursor-responsive twinkle modulation (twinkle intensity reading cursor proximity): **held**.
+- Depth-aware shader parallax (multiple atmospheric layers at different depths): **held**.
 
 ### C5. Polestar — **present**
 
@@ -213,6 +221,9 @@ Cross-cutting behaviors not tied to a single component.
 | Per-frame DOM re-projection of stars + threads | **present** | `projectScene` mutates transform / x1y1x2y2 attrs each tick. |
 | Companion glyph at cursor's projected position | **present** | DOM mutation of `<circle data-companion>` cx/cy each tick. |
 | WebGL atmosphere following cursor signal | **present** | `constellationCursor` shared signal; firmament reads each frame. |
+| Per-star halos with breathing twinkle in WebGL | **present** | `atmosphericScene` shared signal; skyProjector writes post-rotation positions per RAF tick; shader paints additive halos with sin(uTime + phase) twinkle. |
+| Polestar wash with slow tidal breath | **present** | Shader paints a vUv=center radial wash on a ~14s sin cycle. |
+| Drifting motes (four, slow Lissajous) | **present** | Shader-resident; cheap. |
 | Camera yaw flourish from velocity | **present** | `applyCameraYaw` writes `--cam-yaw` CSS variable. |
 | Slow background rotation (600s/cycle) | **present** | `constellation-rotates` CSS animation. |
 | First-visit Demonstration drift | **absent** | No autonomous cursor motion on arrival. |
@@ -280,7 +291,7 @@ How the current implementation matches the named aesthetic register.
 
 - **Genre — library-of-the-cosmos.** Partial. The constellation surface paints with paper grain, watercolor halos, and slow rotation, all of which sit in the right neighborhood. The astronomical-romantic register is felt. What's missing: the *folio plate* density (chrome and ornamental marks haven't yet had their pass), and the working-page rhythm (numbered sections with eight-point star numerals, asterism dividers) which only exists in design references, not the implementation.
 - **Materials.**
-  - Paper grain: **present** (WebGL noise + SVG firmament).
+  - Paper grain: **present** (continuous WebGL simplex noise that drifts slowly + SVG `feTurbulence` firmament beneath).
   - Watercolor halo: **present** (`cn-watercolor-halo` filter).
   - Brushstroke thread: **partial** (threads are tapered SVG lines, not brushstroke-textured; the *hand-drawn* register is approximate).
   - Atmosphere pool: **present**.

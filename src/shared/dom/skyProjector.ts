@@ -17,6 +17,7 @@ import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import { project } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { setConstellationCursor } from '@/shared/state/constellationCursor';
+import { setAtmosphericStarPosition } from '@/shared/state/atmosphericScene';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 
 /** Number of ghost positions trailing the cursor for the companion
@@ -66,6 +67,15 @@ export function projectToViewbox(
   };
 }
 
+/** Period of the SVG's CSS-driven `.constellation-rotates` 600s spin
+ *  in milliseconds. The projector reads the wall clock to compute
+ *  the same rotation angle CSS is currently applying and pre-rotates
+ *  the broadcast positions so the shader can paint without doing
+ *  the rotation per-pixel. Keeping the periods paired here and in
+ *  tokens.css §"constellation-spin" is load-bearing: if one moves
+ *  the other moves with it. */
+const ROTATION_PERIOD_MS = 600_000;
+
 /**
  * Position every star's wrapper group via the data-node-key
  * selector. Behind-camera points (theoretically possible if a node
@@ -73,9 +83,20 @@ export function projectToViewbox(
  * target) are hidden by a translate-far-offscreen trick rather
  * than added complexity in the DOM.
  *
+ * Each star's *post-rotation* normalized cursor-space position is
+ * also broadcast to the atmospheric scene buffer. The SVG transform
+ * itself stays pre-rotation (CSS handles the rotation cheaply on
+ * the GPU compositor); the broadcast applies the same rotation
+ * angle on the CPU once per frame, so the shader receives positions
+ * already rotated and avoids 40+ trig calls per pixel. Wall-clock
+ * sync (vs. coupling the two paths to a shared loop) keeps the
+ * SVG and shader within a single frame of each other — invisible
+ * at 0.6°/sec rotation.
+ *
  * @bigO Time: O(N) per call (one querySelector + one matrix-multiply
- *       + one setAttribute per node). Hot path: called once per
- *       RAF tick. Don't accumulate a stars-by-key cache — the
+ *       + one setAttribute + one buffer write per node, plus one
+ *       sin/cos at the head of the call). Hot path: called once
+ *       per RAF tick. Don't accumulate a stars-by-key cache — the
  *       camera moves every tick so the projection has to rerun
  *       anyway, and the per-tick selector lookup is cheap on the
  *       small node count Stage holds.
@@ -88,9 +109,17 @@ export function projectStars(
   basis: CameraBasis,
   viewboxSize: number,
 ): void {
+  const center = viewboxSize / 2;
+  const rotation = ((performance.now() % ROTATION_PERIOD_MS) / ROTATION_PERIOD_MS) * Math.PI * 2;
+  const cosR = Math.cos(rotation);
+  const sinR = Math.sin(rotation);
+  let i = 0;
   for (const node of nodes) {
     const el = cameraGroup.querySelector(`[data-node-key="${node.key}"]`);
-    if (!el) continue;
+    if (!el) {
+      i += 1;
+      continue;
+    }
     const proj = projectToViewbox(node.unitPos, camera, basis, viewboxSize);
     el.setAttribute(
       'transform',
@@ -98,6 +127,19 @@ export function projectStars(
         ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)})`
         : 'translate(-9999 -9999)',
     );
+    // Broadcast to the WebGL firmament. Behind-camera nodes get
+    // far-offscreen normalized coords (the shader's halo falloff
+    // zeros at any distance > ~0.5 in cursor-space, so a value of
+    // ±20 paints nothing). The SVG y-axis flip (+y down → +y up)
+    // is folded into the rotation by negating dy first.
+    if (proj.inFront) {
+      const dx = (proj.x - center) / center;
+      const dy = -(proj.y - center) / center;
+      setAtmosphericStarPosition(i, dx * cosR - dy * sinR, dx * sinR + dy * cosR);
+    } else {
+      setAtmosphericStarPosition(i, 20, 20);
+    }
+    i += 1;
   }
 }
 

@@ -356,6 +356,7 @@ export default tseslint.config(
       'src/shared/hooks/useWebGLFirmament.ts',
       'src/shared/dom/skyProjector.ts',
       'src/shared/state/constellationCursor.ts',
+      'src/shared/state/atmosphericScene.ts',
       'src/shared/geometry/wellPhysics.ts',
     ],
     rules: {

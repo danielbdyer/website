@@ -10,6 +10,7 @@ import { useConstellationParallax } from '@/shared/hooks/useConstellationParalla
 import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
 import { useConstellationNavigation } from '@/shared/hooks/useConstellationNavigation';
 import type { NavigableEdge } from '@/shared/hooks/useConstellationNavigation';
+import { useAtmosphericStarMetadata } from '@/shared/hooks/useAtmosphericStarMetadata';
 import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
 import {
@@ -60,6 +61,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
     ? `${overlayMatch.params.room}/${overlayMatch.params.slug}`
     : null;
   const navigableNodes = nodes.map(({ key, node }) => ({ key, unitPos: node.unitPosition }));
+  useAtmosphericStarMetadata(nodes);
   const navigableEdges: NavigableEdge[] = edges.flatMap((edge) => {
     const source = positioned.get(edge.sourceKey);
     const target = positioned.get(edge.targetKey);
