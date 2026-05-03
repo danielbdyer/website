@@ -48,31 +48,37 @@ export function StarMark({ hue, isPreview = false, twinkleDelay }: StarMarkProps
   // rays per-star). Cheap to keep.
   return (
     <>
+      {/* Outer facet tint — a wide, soft, low-opacity disc carrying
+          the work's category color. Plain (no watercolor filter):
+          SVG filters scale cost with their region; growing the tint
+          radius made the filter contribution doubled per-frame work
+          on the rotating compositor layer. The tint at low opacity
+          (0.18) reads as a soft glow without the paper-bleed edge —
+          the halo beneath carries the watercolor character. */}
       <circle
-        r={5.4}
+        r={9}
         fill={tintVar}
         opacity={0.18}
-        filter="url(#cn-watercolor-halo)"
         className="constellation-star__tint pointer-events-none"
       />
       <circle
-        r={4.2}
+        r={5.4}
         fill="var(--star-halo)"
         filter="url(#cn-watercolor-halo)"
         className="constellation-star__halo pointer-events-none"
       />
       <circle
-        r={2.2}
+        r={3.2}
         fill="var(--star-cream)"
         opacity={isPreview ? 0.55 : 1}
         data-twinkle-phase={twinkleDelay}
         className="constellation-star__body"
       />
       <g className="constellation-star__spikes pointer-events-none" data-hue={hue}>
-        <line x1={-7} y1={0} x2={7} y2={0} />
-        <line x1={0} y1={-7} x2={0} y2={7} />
+        <line x1={-11} y1={0} x2={11} y2={0} />
+        <line x1={0} y1={-11} x2={0} y2={11} />
       </g>
-      <circle r={14} fill="transparent" className="constellation-star__hit" />
+      <circle r={22} fill="transparent" className="constellation-star__hit" />
     </>
   );
 }

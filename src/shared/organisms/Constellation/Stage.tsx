@@ -1,4 +1,4 @@
-import type { KeyboardEvent, PointerEvent, SyntheticEvent, FocusEvent } from 'react';
+import type { KeyboardEvent, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
@@ -11,13 +11,16 @@ import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 // without flattening the structural meaning of the tree (Polestar
 // alongside the rotates layer, threads and stars as sibling groups
 // inside it).
-
-interface DragHandlers {
-  readonly onPointerDown: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerMove: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerUp: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerCancel: (e: PointerEvent<SVGGElement>) => void;
-}
+//
+// Drag handlers DO NOT live on Stage's inner star group — they live
+// on a transparent capture surface at the SVG root, sibling of the
+// rotating layer. Putting them inside the rotating compositor layer
+// expanded the layer's bounding box (the transparent capture rect
+// has to fill the viewport so empty-space gestures register) and
+// re-rasterized that whole region every frame, doubling the per-
+// frame paint cost on small fixtures. Stage keeps only the
+// hover/focus handlers — those naturally fire on per-star elements
+// where the rotating layer is the right home.
 
 /** The constellation's observable world — what Stage paints. The
  *  edges + nodes are the structural graph; activeKey + activeHue
@@ -32,16 +35,15 @@ export interface ConstellationWorld {
   readonly overlayKey: string | null;
 }
 
-/** Interaction handlers Stage forwards to its inner star group.
- *  Each comes from the hover-state hook or the navigation hook;
- *  Stage doesn't own any of them. */
+/** Interaction handlers Stage forwards to its inner star group —
+ *  hover and focus only. Drag handlers live at the SVG root on a
+ *  separate transparent capture surface, not here. */
 export interface StageInteractions {
   readonly onActivate: (e: SyntheticEvent<Element>) => void;
   readonly onMouseLeave: () => void;
   readonly onBlur: (e: FocusEvent<Element>) => void;
   readonly onKeyDown: (e: KeyboardEvent) => void;
   readonly onKeyUp: (e: KeyboardEvent) => void;
-  readonly dragHandlers: DragHandlers;
 }
 
 interface StageProps {
@@ -71,7 +73,7 @@ function starWorkFor(node: RenderableNode['node']): StarWork {
 
 export function Stage({ world, interactions }: StageProps) {
   const { edges, nodes, activeKey, activeHue, overlayKey } = world;
-  const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp, dragHandlers } = interactions;
+  const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp } = interactions;
   // activeHue still rides through Stage so the polestar wash can take
   // a faint tint from the active facet — kept as data-attribute on
   // the rotates layer, where CSS can read it without re-rendering.
@@ -113,7 +115,6 @@ export function Stage({ world, interactions }: StageProps) {
           onBlur={onBlur}
           onKeyDown={onKeyDown}
           onKeyUp={onKeyUp}
-          {...dragHandlers}
         >
           {nodes.map(({ node, pos, key }) => (
             // Wrapping group's transform places the star at its

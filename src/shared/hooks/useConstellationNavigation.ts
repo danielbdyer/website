@@ -366,7 +366,7 @@ function pruneSamples(samples: AngleSample[], now: number, windowMs: number): vo
   while (samples.length > 0 && samples[0]!.time < cutoff) samples.shift();
 }
 
-function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void {
+function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGElement>): void {
   const state = refs.stateRef.current;
   state.mode = 'dragging';
   state.pointerId = e.pointerId;
@@ -380,7 +380,7 @@ function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): voi
   if (!prefersReducedMotion()) ensureRunning(refs);
 }
 
-function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void {
+function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGElement>): void {
   const state = refs.stateRef.current;
   if (state.mode !== 'dragging' || state.pointerId !== e.pointerId || !state.lastPointer) return;
   const dx = e.clientX - state.lastPointer.x;
@@ -413,7 +413,7 @@ function computeFlickVelocity(samples: readonly AngleSample[]): { yaw: number; p
   };
 }
 
-function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void {
+function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGElement>): void {
   const state = refs.stateRef.current;
   if (state.pointerId !== e.pointerId) return;
   if (!prefersReducedMotion()) {
@@ -570,10 +570,10 @@ export function useConstellationNavigation({
 
   return {
     dragHandlers: {
-      onPointerDown: (e: PointerEvent<SVGGElement>) => handlePointerDown(refs, e),
-      onPointerMove: (e: PointerEvent<SVGGElement>) => handlePointerMove(refs, e),
-      onPointerUp: (e: PointerEvent<SVGGElement>) => handlePointerUp(refs, e),
-      onPointerCancel: (e: PointerEvent<SVGGElement>) => handlePointerUp(refs, e),
+      onPointerDown: (e: PointerEvent<SVGElement>) => handlePointerDown(refs, e),
+      onPointerMove: (e: PointerEvent<SVGElement>) => handlePointerMove(refs, e),
+      onPointerUp: (e: PointerEvent<SVGElement>) => handlePointerUp(refs, e),
+      onPointerCancel: (e: PointerEvent<SVGElement>) => handlePointerUp(refs, e),
     },
     onKeyDown: (e: KeyboardEvent) => handleKeyDown(refs, e),
     onKeyUp: (e: KeyboardEvent) => handleKeyUp(refs, e),

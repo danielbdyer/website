@@ -20,6 +20,40 @@ import {
   resolveEdges,
   skyTitle,
 } from './layout';
+import type { PointerEvent } from 'react';
+
+interface DragHandlerSet {
+  readonly onPointerDown: (e: PointerEvent<SVGElement>) => void;
+  readonly onPointerMove: (e: PointerEvent<SVGElement>) => void;
+  readonly onPointerUp: (e: PointerEvent<SVGElement>) => void;
+  readonly onPointerCancel: (e: PointerEvent<SVGElement>) => void;
+}
+
+/** Transparent rect filling the constellation viewBox so empty
+ *  space has a hit target for trackball gestures. SVG groups don't
+ *  receive pointer events on their empty interior; without this
+ *  rect the drag could only initiate from a star. The rect sits
+ *  OUTSIDE the rotating compositor layer (a sibling of the
+ *  camera/parallax-sky group, not a child) — putting it inside
+ *  expanded the rotating layer's bounding box to the full viewport
+ *  and re-rasterized that whole region every frame. Stars paint
+ *  after this rect in document order, so taps on stars still hit
+ *  the star's `<a>` for navigation; only empty-space gestures land
+ *  here. */
+function DragSurface({ dragHandlers }: { dragHandlers: DragHandlerSet }) {
+  return (
+    <rect
+      x="0"
+      y="0"
+      width={VIEWBOX}
+      height={VIEWBOX}
+      fill="transparent"
+      aria-hidden="true"
+      className="constellation-drag-surface"
+      {...dragHandlers}
+    />
+  );
+}
 
 interface ConstellationProps {
   graph: ConstellationGraph;
@@ -96,6 +130,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
           <Firmament size={VIEWBOX} />
           <Daystar cx={500} cy={240} />
         </g>
+        <DragSurface dragHandlers={dragHandlers} />
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">
             <Stage
@@ -106,7 +141,6 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
                 onBlur: handleBlur,
                 onKeyDown,
                 onKeyUp,
-                dragHandlers,
               }}
             />
           </g>

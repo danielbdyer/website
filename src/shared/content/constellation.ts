@@ -162,11 +162,6 @@ function unitOffset(seed: string): number {
   return hash(seed) / UINT32_MAX;
 }
 
-// Within a 90° sector the work spreads across [-35°, +35°] from the
-// sector center, leaving a small gap to neighboring sectors so the
-// rooms read as adjacent rather than seamless.
-const SECTOR_HALF_SPREAD = 35;
-
 // Twinkle phase ceiling — the upper bound on each star's halo
 // animation-delay. Matches the CSS `star-twinkle` keyframe duration
 // in tokens.css so a phase value in [0, ceiling) puts each star at a
@@ -174,11 +169,58 @@ const SECTOR_HALF_SPREAD = 35;
 // changes too — the value is paired, not free.
 const TWINKLE_DURATION_SECONDS = 4.5;
 
-// Radius lives in [0.45, 0.92] — never at the polestar (the center is
-// reserved for the geometric figure's eventual ascension) and never at
-// the rim (the horizon stays a clean edge).
-const RADIUS_MIN = 0.45;
-const RADIUS_MAX = 0.92;
+// Within a 90° room sector, stars cluster in a narrower band so the
+// constellation reads as a constellation (legible groupings) rather
+// than a scattered disk. The previous spread (±35°) felt too entropic
+// against the per-room sector geometry; ±20° clusters tighter while
+// still leaving room to walk through the per-room directions.
+const SECTOR_HALF_SPREAD = 20;
+const RADIUS_MIN = 0.55;
+const RADIUS_MAX = 0.87;
+
+// ─── Halton-stratified placement ──────────────────────────────────
+//
+// Hash-uniform placement (the first form) gave each star a random-
+// looking position within the sector. Visually that read as
+// "scattered points" — entropic, in the user's word. A Halton
+// low-discrepancy sequence gives the equidistant-with-organic-
+// variance feel the Hevelius reference plates carry: stars look
+// methodically placed without the rigidity of a grid.
+//
+// The stability commitment ("adding a new work never moves the
+// existing stars" — CONSTELLATION.md §"What Shipped (First Form)")
+// is honored by precomputing a fixed pool of slot positions and
+// hashing each work to an index in that pool. New works pick
+// previously-unused slots; existing works keep their slots; no
+// motion across builds. A small per-star jitter on top adds the
+// organic variance.
+
+const SLOTS_PER_SECTOR = 32;
+
+/** Halton low-discrepancy sequence at a given index and prime base.
+ *  Halton(N, 2) and Halton(N, 3) together give a 2D point in [0, 1]²
+ *  whose distribution against neighboring N-values is more uniform
+ *  than uniform random — the canonical "equidistant without grid
+ *  artifacts" pattern. Used here once at module load to precompute
+ *  the per-sector slot positions. */
+function halton(index: number, base: number, fraction = 1 / base, acc = 0): number {
+  if (index <= 0) return acc;
+  return halton(Math.floor(index / base), base, fraction / base, acc + fraction * (index % base));
+}
+
+interface SectorSlot {
+  readonly angleOffsetDeg: number;
+  readonly radius: number;
+}
+
+const SECTOR_SLOTS: readonly SectorSlot[] = Array.from({ length: SLOTS_PER_SECTOR }, (_, i) => {
+  const angleT = halton(i + 1, 2);
+  const radiusT = halton(i + 1, 3);
+  return {
+    angleOffsetDeg: (angleT - 0.5) * 2 * SECTOR_HALF_SPREAD,
+    radius: RADIUS_MIN + radiusT * (RADIUS_MAX - RADIUS_MIN),
+  };
+});
 
 interface NodePlacement {
   readonly angleDeg: number;
@@ -186,18 +228,24 @@ interface NodePlacement {
   readonly unitPosition: UnitVector3;
 }
 
-// Pure pipeline: a (room, slug) determines a 2D disk position, and
-// the 2D disk position determines the 3D unit-sphere position via
-// the upper-hemisphere projection. The disk values stay authoritative
-// for today's renderer; the unitPosition rides alongside as the
-// future-form 3D coord, derived deterministically from the same
-// inputs.
+/** Place a node by hashing its (room, slug) into one of the
+ *  precomputed Halton slots within the room's sector, plus a
+ *  small per-star jitter for organic variance. Stable per slug
+ *  across builds. Two works in the same room with hash collisions
+ *  on the slot index would visually read as a close pair — the
+ *  jitter offsets them slightly so the overlap is never exact;
+ *  with 4 stars per sector and 32 slots, collisions are rare
+ *  (~6%) and aesthetically acceptable when they happen. */
 function placeNode(room: Exclude<Room, 'foyer'>, slug: string): NodePlacement {
   const sectorCenter = ROOM_SECTOR_DEG[room];
-  const angleOffset = (unitOffset(`${room}/${slug}/angle`) - 0.5) * 2 * SECTOR_HALF_SPREAD;
-  const radiusT = unitOffset(`${room}/${slug}/radius`);
-  const radius = RADIUS_MIN + radiusT * (RADIUS_MAX - RADIUS_MIN);
-  const angleDeg = (sectorCenter + angleOffset + 360) % 360;
+  const slotIndex = hash(`${room}/${slug}/slot`) % SLOTS_PER_SECTOR;
+  const slot = SECTOR_SLOTS[slotIndex];
+  const baseAngleOffset = slot ? slot.angleOffsetDeg : 0;
+  const baseRadius = slot ? slot.radius : (RADIUS_MIN + RADIUS_MAX) / 2;
+  const angleJitter = (unitOffset(`${room}/${slug}/angleJ`) - 0.5) * 4;
+  const radiusJitter = (unitOffset(`${room}/${slug}/radiusJ`) - 0.5) * 0.04;
+  const angleDeg = (sectorCenter + baseAngleOffset + angleJitter + 360) % 360;
+  const radius = Math.min(0.92, Math.max(0.5, baseRadius + radiusJitter));
   const unitPosition = diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
   return { angleDeg, radius, unitPosition };
 }
