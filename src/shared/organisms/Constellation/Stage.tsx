@@ -1,6 +1,7 @@
 import type { KeyboardEvent, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
 import { BackgroundStarfield } from '@/shared/atoms/BackgroundStarfield/BackgroundStarfield';
+import { Horizon } from '@/shared/atoms/Horizon/Horizon';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
 import { Star, type StarWork } from '@/shared/molecules/Star/Star';
@@ -203,6 +204,13 @@ export function Stage({ world, interactions }: StageProps) {
           ))}
         </g>
       </g>
+      {/* Horizon — mountain silhouette + warm horizon glow at the
+          bottom of the viewport, OUTSIDE the rotating layer so it
+          stays anchored. The sphere appears to rise from behind
+          the mountains; back-hemisphere stars fade away into the
+          horizon mass. The Hevelius reference's celestial dome
+          rising from the earth, made literal. */}
+      <Horizon />
     </>
   );
 }

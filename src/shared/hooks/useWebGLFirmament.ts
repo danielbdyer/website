@@ -199,6 +199,18 @@ const FRAGMENT_SHADER = /* glsl */ `
     vec2 p = vUv * 4.0 + vec2(t, t * 0.7);
     float n = snoise(p) * 0.5 + 0.5;
 
+    // Cloud nebulae — REUSE the existing noise sample, re-mapped
+    // against a high-pass smoothstep so the high-noise patches read
+    // as cloud shapes. Adds zero extra snoise calls (a true second
+    // octave doubled xvfb's frame budget); the visual is slightly
+    // less independent from the paper-grain than a true second
+    // octave would be, but the patches still read as nebula weather
+    // tinted blue-purple against the warm theme tone.
+    float cloudMask = smoothstep(0.55, 0.92, n);
+    vec3 cloudColor = mix(vec3(0.45, 0.4, 0.6), vec3(0.7, 0.55, 0.5), n);
+    vec3 cloud = cloudColor * cloudMask * 0.4;
+    float cloudAlpha = cloudMask * 0.28;
+
     // Cursor pool — the visitor's attention as a held lamp. Squared
     // smoothstep gives the rotund profile rather than a linear ramp
     // so the pool feels held rather than flat.
@@ -231,8 +243,8 @@ const FRAGMENT_SHADER = /* glsl */ `
     // atmospheric layer is asserting itself.
     vec4 halos = starHalos(fragP);
     vec4 motes = driftingMotes(fragP);
-    vec3 color = baseTone * (n * 0.18 + pool + polestarWash) + halos.rgb + motes.rgb;
-    float alpha = (n * 0.12) + pool * 0.7 + polestarWash * 0.55 + halos.a + motes.a;
+    vec3 color = baseTone * (n * 0.18 + pool + polestarWash) + cloud + halos.rgb + motes.rgb;
+    float alpha = (n * 0.12) + pool * 0.7 + polestarWash * 0.55 + cloudAlpha + halos.a + motes.a;
 
     // Vignette — a vignette/painted sense of attention, not a
     // photographic darkening. Centered distance maps via smoothstep
