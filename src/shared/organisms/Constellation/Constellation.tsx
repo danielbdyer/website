@@ -34,7 +34,6 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const cameraRef = useRef<SVGGElement | null>(null);
-  const glyphRef = useRef<SVGCircleElement | null>(null);
   const positioned = buildPositionedMap(graph);
   const edges = resolveEdges(graph.edges, positioned);
   const nodes = buildRenderableNodes(graph.nodes, positioned);
@@ -74,7 +73,6 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
     viewboxSize: VIEWBOX,
     setActiveKey,
     cameraRef,
-    glyphRef,
   });
 
   return (
@@ -110,7 +108,6 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
                 onKeyUp,
                 dragHandlers,
               }}
-              glyphRef={glyphRef}
             />
           </g>
         </g>

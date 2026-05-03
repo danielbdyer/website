@@ -1,11 +1,11 @@
 // The DOM-mutation layer for the constellation surface.
 //
 // The navigation hook owns physics + state; this module owns the
-// per-frame writes to the SVG: positioning stars, threads, the
-// companion glyph, the trail ghosts, and the camera yaw, plus the
-// CSS-variable channels the glyph reads (--companion-claim,
-// --trail-strength). Each function is small, has a narrow data
-// dependency, and never reaches into navigation state.
+// per-frame writes to the SVG: positioning stars, threads, and
+// scaling each star by its depth so the back hemisphere falls
+// away from the visitor as the camera rotates around the globe.
+// Each function is small, has a narrow data dependency, and never
+// reaches into navigation state.
 //
 // CONSTELLATION_HORIZON.md §"Layer 3: Structural" names the
 // commitment: every star is a real DOM `<a>` with focus, aria,
@@ -16,21 +16,8 @@
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import { project } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
-import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import { setAtmosphericStarPosition } from '@/shared/state/atmosphericScene';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
-
-/** Number of ghost positions trailing the cursor for the companion
- *  glyph's fade-tail. Stage renders this many trail circles; the
- *  hook holds an equal-length history of past positions. Both
- *  sides must agree on the count, so it lives here as the single
- *  source of truth. */
-export const TRAIL_LENGTH = 4;
-
-/** Angular speed (rad/s) at which --trail-strength reaches 1. The
- *  trail asserts itself only during real motion; this constant
- *  tunes the threshold. */
-export const TRAIL_FULL_SPEED_RAD = 3;
 
 /** An edge in the navigable scene. The hook re-projects each
  *  endpoint per frame and writes the line element's x1/y1/x2/y2
@@ -104,12 +91,45 @@ export function buildElementCache(
   return cache;
 }
 
+/** Depth-driven scale + opacity for the trackball's 3D-globe feel.
+ *  A star on the near hemisphere (dot ≈ 1) renders at full scale and
+ *  opacity; a star on the far hemisphere (dot ≈ -1) shrinks toward
+ *  ~0.5× and fades toward ~0.15. Computed on the CPU once per star
+ *  per frame and written as a CSS variable on the wrapper group so
+ *  CSS handles the visual cascade — atom CSS combines depth with
+ *  active/hover/preview state without the projector knowing about
+ *  any of them. */
+const NEAR_SCALE = 1;
+const FAR_SCALE = 0.45;
+const NEAR_OPACITY = 1;
+const FAR_OPACITY = 0.18;
+
+interface DepthVisuals {
+  readonly scale: number;
+  readonly opacity: number;
+}
+
+function depthVisuals(starPos: UnitVector3, cameraDirection: UnitVector3): DepthVisuals {
+  // Front-facing factor = dot product of star position with the
+  // camera-look-at direction. +1 = directly in front (closest); -1 =
+  // directly behind (farthest, on the back hemisphere from the visitor).
+  const dot =
+    starPos.x * cameraDirection.x + starPos.y * cameraDirection.y + starPos.z * cameraDirection.z;
+  const t = (dot + 1) / 2;
+  return {
+    scale: FAR_SCALE + (NEAR_SCALE - FAR_SCALE) * t,
+    opacity: FAR_OPACITY + (NEAR_OPACITY - FAR_OPACITY) * t,
+  };
+}
+
 /**
  * Position every star's wrapper group via the data-node-key
- * selector. Behind-camera points (theoretically possible if a node
- * sits on the far side of the sphere from the current camera
- * target) are hidden by a translate-far-offscreen trick rather
- * than added complexity in the DOM.
+ * selector, scaled and faded by its depth on the latent sphere
+ * (the dot product of the star's unit position with the camera's
+ * look-at direction). Behind-camera points (theoretically possible
+ * if a node sits on the far side of the sphere from the current
+ * camera target) are hidden by a translate-far-offscreen trick
+ * rather than added complexity in the DOM.
  *
  * Each star's *post-rotation* normalized cursor-space position is
  * also broadcast to the atmospheric scene buffer. The SVG transform
@@ -122,12 +142,13 @@ export function buildElementCache(
  * at 0.6°/sec rotation.
  *
  * @bigO Time: O(N) per call (one cache.get + one matrix-multiply +
- *       one setAttribute + one buffer write per node, plus one
- *       sin/cos at the head of the call). The cache argument is the
- *       hook's ElementCache, populated once on graph change; falling
- *       back to querySelector on cache miss keeps the path correct
- *       across the single transient frame between a graph edit and
- *       the cache rebuild. Hot path: called once per RAF tick.
+ *       two setAttribute + one setProperty + one buffer write per
+ *       node, plus one sin/cos at the head of the call). The cache
+ *       argument is the hook's ElementCache, populated once on graph
+ *       change; falling back to querySelector on cache miss keeps
+ *       the path correct across the single transient frame between a
+ *       graph edit and the cache rebuild. Hot path: called once per
+ *       RAF tick.
  *       Space: O(1) per call (the cache itself is O(N), held by the
  *       hook, not allocated here).
  */
@@ -143,6 +164,15 @@ export function projectStars(
   const rotation = ((performance.now() % ROTATION_PERIOD_MS) / ROTATION_PERIOD_MS) * Math.PI * 2;
   const cosR = Math.cos(rotation);
   const sinR = Math.sin(rotation);
+  // Camera-look-at direction = -forward (forward points from camera
+  // toward target; the visitor's gaze direction is the opposite).
+  // The depth dot product uses this so that a star at the look-at
+  // surface point reads as fully foreground.
+  const camDir: UnitVector3 = {
+    x: -basis.forward.x,
+    y: -basis.forward.y,
+    z: -basis.forward.z,
+  };
   let i = 0;
   for (const node of nodes) {
     // Cache miss falls back to a live querySelector so a stale cache
@@ -155,12 +185,17 @@ export function projectStars(
       continue;
     }
     const proj = projectToViewbox(node.unitPos, camera, basis, viewboxSize);
+    const visuals = depthVisuals(node.unitPos, camDir);
     el.setAttribute(
       'transform',
       proj.inFront
-        ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)})`
+        ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)}) scale(${visuals.scale.toFixed(3)})`
         : 'translate(-9999 -9999)',
     );
+    // Opacity flows through a CSS variable so atom CSS can combine
+    // depth with state (active brighten, preview dim, etc.) without
+    // this layer knowing about any of them.
+    (el as SVGGElement).style.setProperty('--star-depth-opacity', visuals.opacity.toFixed(3));
     // Broadcast to the WebGL firmament. Behind-camera nodes get
     // far-offscreen normalized coords (the shader's halo falloff
     // zeros at any distance > ~0.5 in cursor-space, so a value of
@@ -208,84 +243,4 @@ export function projectThreads(
     el.setAttribute('x2', pt.x.toFixed(2));
     el.setAttribute('y2', pt.y.toFixed(2));
   }
-}
-
-/** Position the companion glyph at the cursor's projected screen
- *  position. Returns the projection so the caller can broadcast
- *  the normalized cursor to the firmament shader. */
-export function projectGlyph(
-  glyph: SVGCircleElement | null,
-  cursorPos: UnitVector3,
-  camera: Camera,
-  basis: CameraBasis,
-  viewboxSize: number,
-): ScreenProj {
-  const proj = projectToViewbox(cursorPos, camera, basis, viewboxSize);
-  if (glyph && proj.inFront) {
-    glyph.setAttribute('cx', proj.x.toFixed(2));
-    glyph.setAttribute('cy', proj.y.toFixed(2));
-  }
-  return proj;
-}
-
-/**
- * Position each trail ghost via [data-companion-trail="N"]. Ghosts
- * inherit their opacity from CSS (`--trail-strength` multiplied
- * by per-ghost base opacity) so the trail asserts itself only
- * during fast travel.
- *
- * @bigO Time: O(TRAIL_LENGTH) per call — fixed at 4. The
- *       querySelector inside the loop is acceptable because the
- *       count is small and the parent group is local.
- *       Space: O(1).
- */
-export function projectTrail(
-  cameraGroup: SVGGElement,
-  history: readonly UnitVector3[],
-  camera: Camera,
-  basis: CameraBasis,
-  viewboxSize: number,
-): void {
-  let i = 0;
-  for (const entry of history) {
-    const trailEl = cameraGroup.querySelector(`[data-companion-trail="${i}"]`);
-    i += 1;
-    if (!trailEl) continue;
-    const proj = projectToViewbox(entry, camera, basis, viewboxSize);
-    trailEl.setAttribute('cx', proj.inFront ? proj.x.toFixed(2) : (-9999).toString());
-    trailEl.setAttribute('cy', proj.inFront ? proj.y.toFixed(2) : (-9999).toString());
-  }
-}
-
-/** Hand the cursor's normalized screen position to the WebGL
- *  firmament so its luminous pool of attention follows the
- *  visitor's surface position rather than the raw pointer.
- *  Normalize: viewbox center → 0, edges → ±1; flip Y for shader
- *  space (shader convention is +y up, SVG is +y down). */
-export function broadcastCursorToFirmament(proj: ScreenProj, viewboxSize: number): void {
-  const center = viewboxSize / 2;
-  setConstellationCursor((proj.x - center) / center, -(proj.y - center) / center, proj.inFront);
-}
-
-/** Write the per-frame style channels the companion glyph reads:
- *    --companion-claim — 0 at rest / off-well, 1 at well center.
- *    --trail-strength  — 0 at rest, 1 at fast travel. */
-export function writeGlyphChannels(
-  glyph: SVGCircleElement | null,
-  claim: number,
-  speed: number,
-): void {
-  if (!glyph) return;
-  glyph.style.setProperty('--companion-claim', claim.toFixed(3));
-  const strength = Math.max(0, Math.min(1, speed / TRAIL_FULL_SPEED_RAD));
-  const parent = glyph.parentElement as SVGElement | HTMLElement | null;
-  parent?.style.setProperty('--trail-strength', strength.toFixed(3));
-}
-
-/** Camera yaw flourish driven by the cursor's screen-space
- *  x-velocity. Bounded so it never reads as tilt. Phase D2's
- *  retired screen-space pan replaced by orbital camera; yaw is
- *  the small remnant. */
-export function applyCameraYaw(el: SVGGElement, yaw: number): void {
-  el.style.setProperty('--cam-yaw', yaw.toFixed(2));
 }

@@ -1,4 +1,4 @@
-import type { KeyboardEvent, PointerEvent, RefObject, SyntheticEvent, FocusEvent } from 'react';
+import type { KeyboardEvent, PointerEvent, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
@@ -47,17 +47,13 @@ export interface StageInteractions {
 interface StageProps {
   world: ConstellationWorld;
   interactions: StageInteractions;
-  /** The companion glyph — a small mote at the cursor's projected
-   *  screen position. The navigation hook updates its cx/cy each
-   *  RAF tick. Sibling of the rotates layer so the slow background
-   *  rotation doesn't drag it around. */
-  glyphRef: RefObject<SVGCircleElement | null>;
 }
 
-/** A thread is "active" when one of its endpoints is the cursor's
- *  current basin claim. CSS uses data-active to drive the
- *  vespers bloom; the predicate is pure and stays at module scope
- *  rather than as a Stage prop. */
+/** A thread is "active" when one of its endpoints is the star the
+ *  camera has settled on (nearest to screen center after motion
+ *  stops). CSS uses data-active to drive the vespers bloom; the
+ *  predicate is pure and stays at module scope rather than as a
+ *  Stage prop. */
 function isThreadActive(activeKey: string | null, sourceKey: string, targetKey: string): boolean {
   return activeKey === sourceKey || activeKey === targetKey;
 }
@@ -73,57 +69,12 @@ function starWorkFor(node: RenderableNode['node']): StarWork {
   };
 }
 
-// Number of ghost positions trailing the cursor. Mirrors TRAIL_LENGTH
-// in useConstellationNavigation; the hook positions each ghost's
-// cx/cy by querying [data-companion-trail="N"] each frame.
-const TRAIL_LENGTH = 4;
-
-interface CompanionGroupProps {
-  glyphRef: RefObject<SVGCircleElement | null>;
-  activeHue: ConstellationHue | null;
-}
-
-// The visitor's surface position plus its ghost-decay trail. Trail
-// circles render before the glyph so the live mark paints on top.
-// The navigation hook positions each per RAF tick via data-companion
-// / data-companion-trail queries; CSS handles the visual register
-// (paper-amber by default, mixed toward the active facet hue by
-// --companion-claim, ghosts modulated by --trail-strength).
-// aria-hidden because keyboard / screen-reader focus moves through
-// the addressable star anchors, not this visual marker.
-function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
-  return (
-    <g
-      data-companion-group
-      data-active-hue={activeHue ?? 'warm'}
-      aria-hidden="true"
-      className="constellation-companion-group"
-    >
-      {Array.from({ length: TRAIL_LENGTH }, (_, i) => (
-        <circle
-          key={i}
-          data-companion-trail={i}
-          cx={500}
-          cy={500}
-          r={3.5}
-          className={`constellation-companion-trail constellation-companion-trail--${i}`}
-        />
-      ))}
-      <circle
-        ref={glyphRef}
-        cx={500}
-        cy={500}
-        r={3.5}
-        className="constellation-companion"
-        data-companion="true"
-      />
-    </g>
-  );
-}
-
-export function Stage({ world, interactions, glyphRef }: StageProps) {
+export function Stage({ world, interactions }: StageProps) {
   const { edges, nodes, activeKey, activeHue, overlayKey } = world;
   const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp, dragHandlers } = interactions;
+  // activeHue still rides through Stage so the polestar wash can take
+  // a faint tint from the active facet — kept as data-attribute on
+  // the rotates layer, where CSS can read it without re-rendering.
   return (
     <>
       {/* Watercolor wash — soft halo of paper-warm light around
@@ -143,8 +94,7 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
         className="constellation-polestar-wash pointer-events-none"
       />
       <Polestar cx={500} cy={500} />
-      <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
-      <g className="constellation-rotates">
+      <g className="constellation-rotates" data-active-hue={activeHue ?? 'warm'}>
         <g aria-hidden="true">
           {edges.map((edge) => (
             <Thread
@@ -168,10 +118,11 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
           {nodes.map(({ node, pos, key }) => (
             // Wrapping group's transform places the star at its
             // projected viewbox position. The hook overwrites this
-            // attribute each RAF tick when the camera orbits; the
-            // initial value here is the Phase B static projection
-            // so first paint matches the rest of the scene before
-            // the loop wakes up.
+            // attribute each RAF tick when the camera orbits, also
+            // applying a depth-driven scale so the back hemisphere
+            // recedes; the initial value here is the static
+            // projection so first paint matches the rest of the
+            // scene before the loop wakes up.
             <g key={key} data-node-key={key} transform={`translate(${pos.x} ${pos.y})`}>
               <Star
                 work={starWorkFor(node)}
