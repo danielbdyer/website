@@ -48,37 +48,42 @@ export function StarMark({ hue, isPreview = false, twinkleDelay }: StarMarkProps
   // rays per-star). Cheap to keep.
   return (
     <>
-      {/* Outer facet tint — a wide, soft, low-opacity disc carrying
-          the work's category color. Plain (no watercolor filter):
-          SVG filters scale cost with their region; growing the tint
-          radius made the filter contribution doubled per-frame work
-          on the rotating compositor layer. The tint at low opacity
-          (0.18) reads as a soft glow without the paper-bleed edge —
-          the halo beneath carries the watercolor character. */}
+      {/* Outer facet tint — wide soft disc carrying the work's
+          category color via a radial gradient on currentColor. The
+          gradient's center → edge falloff gives the tint a paper-
+          glow character without an SVG filter. Style sets
+          currentColor to the facet token so the gradient picks it
+          up cleanly. */}
       <circle
-        r={9}
-        fill={tintVar}
-        opacity={0.18}
+        r={15}
+        fill="url(#cn-star-tint)"
+        style={{ color: tintVar }}
         className="constellation-star__tint pointer-events-none"
       />
+      {/* Warm-amber halo — the held-lamp glow. Radial gradient is
+          GPU-composited and essentially free per element;
+          watercolor filter retired here for perf at the supersized
+          radii the Hevelius register asks for. */}
       <circle
-        r={5.4}
-        fill="var(--star-halo)"
-        filter="url(#cn-watercolor-halo)"
+        r={10}
+        fill="url(#cn-star-halo)"
         className="constellation-star__halo pointer-events-none"
       />
+      {/* Bright cream-gold body — the star itself. */}
       <circle
-        r={3.2}
+        r={5}
         fill="var(--star-cream)"
         opacity={isPreview ? 0.55 : 1}
         data-twinkle-phase={twinkleDelay}
         className="constellation-star__body"
       />
+      {/* Cross-burst spike rays — the iconic Hevelius mark. */}
       <g className="constellation-star__spikes pointer-events-none" data-hue={hue}>
-        <line x1={-11} y1={0} x2={11} y2={0} />
-        <line x1={0} y1={-11} x2={0} y2={11} />
+        <line x1={-18} y1={0} x2={18} y2={0} />
+        <line x1={0} y1={-18} x2={0} y2={18} />
       </g>
-      <circle r={22} fill="transparent" className="constellation-star__hit" />
+      {/* Hit target — large enough for thumb taps on iPhone. */}
+      <circle r={30} fill="transparent" className="constellation-star__hit" />
     </>
   );
 }

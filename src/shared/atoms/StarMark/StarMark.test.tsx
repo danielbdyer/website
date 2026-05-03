@@ -16,10 +16,11 @@ describe('StarMark atom', () => {
     expect(container.querySelector('.constellation-star__hit')).not.toBeNull();
   });
 
-  test('the halo passes through the watercolor filter for soft pigment edges', () => {
+  test('the halo paints via the GPU-cheap radial-gradient (no SVG filter)', () => {
     const { container } = render(withSvg(<StarMark hue="warm" />));
     const halo = container.querySelector('.constellation-star__halo');
-    expect(halo?.getAttribute('filter')).toBe('url(#cn-watercolor-halo)');
+    expect(halo?.getAttribute('fill')).toBe('url(#cn-star-halo)');
+    expect(halo?.getAttribute('filter')).toBeNull();
   });
 
   test('twinkleDelay flows to the body as data-twinkle-phase for the WebGL halo broadcast', () => {
@@ -34,9 +35,10 @@ describe('StarMark atom', () => {
     expect(body?.getAttribute('opacity')).toBe('0.55');
   });
 
-  test('the outer tint carries the facet hue so category remains legible', () => {
+  test('the outer tint carries the facet hue via currentColor on the gradient', () => {
     const { container } = render(withSvg(<StarMark hue="violet" />));
     const tint = container.querySelector<SVGCircleElement>('.constellation-star__tint');
-    expect(tint?.getAttribute('fill')).toBe('var(--accent-violet)');
+    expect(tint?.getAttribute('fill')).toBe('url(#cn-star-tint)');
+    expect(tint?.style.color).toBe('var(--accent-violet)');
   });
 });

@@ -88,6 +88,35 @@ export function ConstellationFilters() {
         <stop offset="40%" stopColor="var(--accent-warm)" stopOpacity="0.08" />
         <stop offset="100%" stopColor="var(--accent-warm)" stopOpacity="0" />
       </radialGradient>
+
+      {/* Star halo gradient — a soft warm-amber falloff for each
+          star's halo. SVG radial gradients are GPU-composited and
+          essentially free per element; the watercolor filter that
+          previously carried the halo's soft edge re-rasterized 16
+          star halos every frame inside the rotating compositor
+          layer, costing ~7-15ms per frame at the supersized radii
+          the Hevelius register asks for. The gradient's edge isn't
+          paper-bleed organic — it's mathematically circular — but
+          the soft-light blend mode the firmament composites under
+          softens that into something paper-like enough at this
+          scale. The watercolor filter itself stays for the
+          companion glyph or any other surface that wants the
+          paper-water character at small scale. */}
+      <radialGradient id="cn-star-halo" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="var(--star-halo)" stopOpacity="1" />
+        <stop offset="55%" stopColor="var(--star-halo)" stopOpacity="0.55" />
+        <stop offset="100%" stopColor="var(--star-halo)" stopOpacity="0" />
+      </radialGradient>
+
+      {/* Star tint gradient — the per-facet outer wash. Same
+          GPU-compositor cheap as the halo gradient. Slightly
+          different falloff curve so the tint reads as the soft
+          glow at the edge rather than a second halo. */}
+      <radialGradient id="cn-star-tint" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="currentColor" stopOpacity="0.6" />
+        <stop offset="60%" stopColor="currentColor" stopOpacity="0.18" />
+        <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+      </radialGradient>
     </defs>
   );
 }

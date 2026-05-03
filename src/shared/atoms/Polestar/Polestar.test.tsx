@@ -13,14 +13,6 @@ describe('Polestar atom', () => {
     expect(group).not.toBeNull();
   });
 
-  test('composes the geometric figure: two rects, four corner diagonals, central circle', () => {
-    const { container } = render(withSvg(<Polestar cx={500} cy={500} />));
-    expect(container.querySelectorAll('rect').length).toBe(2);
-    // 8 ray spikes + 4 corner diagonals = 12 lines total
-    expect(container.querySelectorAll('line').length).toBe(12);
-    expect(container.querySelectorAll('circle').length).toBe(1);
-  });
-
   test('the eight ray burst sits inside its own group for theming', () => {
     const { container } = render(withSvg(<Polestar cx={500} cy={500} />));
     const rays = container.querySelector('.constellation-polestar__rays');
@@ -28,18 +20,21 @@ describe('Polestar atom', () => {
     expect(rays?.querySelectorAll('line').length).toBe(8);
   });
 
-  test('positions the outer rect symmetrically around the center', () => {
-    const { container } = render(withSvg(<Polestar cx={500} cy={500} half={60} />));
-    const outerRect = container.querySelector('rect');
-    expect(outerRect?.getAttribute('x')).toBe('440');
-    expect(outerRect?.getAttribute('y')).toBe('440');
-    expect(outerRect?.getAttribute('width')).toBe('120');
+  test('the central body reuses the star halo gradient so the polestar reads as kin to the other stars', () => {
+    const { container } = render(withSvg(<Polestar cx={500} cy={500} />));
+    const body = container.querySelector('.constellation-polestar__body');
+    expect(body).not.toBeNull();
+    const haloFills = [...container.querySelectorAll('.constellation-polestar__body circle')].map(
+      (c) => c.getAttribute('fill'),
+    );
+    expect(haloFills).toContain('url(#cn-star-halo)');
   });
 
-  test('the central circle is the geometric figure’s ornament', () => {
+  test('the rays radiate from the given center', () => {
     const { container } = render(withSvg(<Polestar cx={500} cy={500} half={60} />));
-    const circle = container.querySelector('circle');
-    expect(circle?.getAttribute('cx')).toBe('500');
-    expect(circle?.getAttribute('cy')).toBe('500');
+    const rays = container.querySelectorAll('.constellation-polestar__rays line');
+    // Cardinal N spike: x1 == cx, y1 < cy
+    const cardinalN = rays[0];
+    expect(cardinalN?.getAttribute('x1')).toBe('500');
   });
 });

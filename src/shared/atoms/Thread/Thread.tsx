@@ -72,9 +72,16 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
       data-hue={hue}
       data-active={active ? 'true' : undefined}
       aria-hidden="true"
+      // At rest: invisible. The constellation reads as scattered
+      // points of light, not as a graph diagram. The held intent
+      // (visible-at-rest connection lines per the design doc's
+      // "wisps" register) was making the surface feel like a
+      // wireframe-globe. Threads stay in the DOM so the hover
+      // bloom can still light them briefly when a star is focused
+      // — connection becomes a found thing, not a declared one.
       className={cn(
         'constellation-thread pointer-events-none',
-        active ? 'opacity-95' : 'opacity-55',
+        active ? 'opacity-95' : 'opacity-0',
         className,
       )}
     />

@@ -53,16 +53,13 @@ describe('Thread atom', () => {
     expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/pointer-events-none/);
   });
 
-  test('at rest, applies no filter and reads as a quiet wisp', () => {
+  test('at rest, threads are invisible — the constellation is points of light, not a graph', () => {
     const { container } = render(withSvg(<Thread id="x|y|z" endpoints={endpoints()} hue="rose" />));
     const line = container.querySelector('line');
-    // The brushstroke filter the design names was held back after
-    // a perf probe showed feTurbulence + feDisplacementMap on 70
-    // rotating threads triggers ~270ms idle frames. At-rest threads
-    // render as bare lines until a non-filter approach lands.
     expect(line?.getAttribute('filter')).toBeNull();
     expect(line?.dataset.active).toBeUndefined();
     expect(line?.getAttribute('stroke-width')).toBe('0.55');
+    expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/opacity-0(?!\d)/);
   });
 
   test('when active, applies the vespers bloom filter and a wider stroke', () => {
