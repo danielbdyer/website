@@ -45,24 +45,28 @@ const HUE_CSS_VAR: Record<ConstellationHue, string> = {
 // Vocabulary" makes this distinction explicit.
 
 export function Thread({ endpoints, hue, id, active = false, className }: ThreadProps) {
-  const colorVar = HUE_CSS_VAR[hue];
+  // Stroke is always the gold-cream thread warmth (the Hevelius
+  // register's constellation-line color); the facet hue still
+  // travels via data-hue so a future highlighting pass can lift
+  // it without rewiring the atom. At rest threads are visible —
+  // CONSTELLATION_DESIGN.md §"The Threads" calls them wisps; the
+  // first form rendered them invisibly until hover, which made the
+  // sky read as disconnected points rather than a constellation.
   return (
     <line
       x1={endpoints.x1}
       y1={endpoints.y1}
       x2={endpoints.x2}
       y2={endpoints.y2}
-      stroke={colorVar}
-      strokeWidth={active ? 1.1 : 0.45}
+      stroke="var(--thread-warmth)"
+      strokeWidth={active ? 1.2 : 0.55}
       strokeLinecap="round"
-      // CONSTELLATION_DESIGN.md §"Materials" wants brushstroke at
-      // rest — but the filter that produced it (feTurbulence +
-      // feDisplacementMap) re-runs per frame for every thread
-      // inside the 600s-rotating group, costing 270ms+ idle
-      // frames at 70 threads. Held until a non-filter approach
-      // lands (deterministic wobbly path geometry, or a stroke
-      // pattern). Active threads keep the vespers bloom — there
-      // are at most 1–2 at once so the cost is bounded.
+      // The brushstroke filter is held — feTurbulence inside the
+      // rotating group re-runs the rasterizer for every thread every
+      // frame at ~270ms idle for 70 threads. The held intent
+      // (paint-grain on threads at rest) returns via deterministic
+      // wobbly geometry or a per-thread stroke pattern. Active
+      // threads keep the vespers bloom — there are at most 1–2 at once.
       filter={active ? 'url(#cn-vespers-bloom)' : undefined}
       data-thread-id={id}
       data-hue={hue}
@@ -70,9 +74,17 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
       aria-hidden="true"
       className={cn(
         'constellation-thread pointer-events-none',
-        active ? 'opacity-95' : 'opacity-25',
+        active ? 'opacity-95' : 'opacity-55',
         className,
       )}
     />
   );
 }
+
+// Imported but no longer referenced inside the component — the stroke
+// is read directly from the --thread-warmth token. Kept around because
+// removing the type-erasure of the union value is not free and the
+// static map is still informative documentation of what each facet
+// could mean here. If a future highlight pass needs it, the lookup
+// is one line away.
+void HUE_CSS_VAR;

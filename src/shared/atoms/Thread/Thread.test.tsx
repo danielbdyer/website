@@ -62,7 +62,7 @@ describe('Thread atom', () => {
     // render as bare lines until a non-filter approach lands.
     expect(line?.getAttribute('filter')).toBeNull();
     expect(line?.dataset.active).toBeUndefined();
-    expect(line?.getAttribute('stroke-width')).toBe('0.45');
+    expect(line?.getAttribute('stroke-width')).toBe('0.55');
   });
 
   test('when active, applies the vespers bloom filter and a wider stroke', () => {
@@ -72,6 +72,6 @@ describe('Thread atom', () => {
     const line = container.querySelector('line');
     expect(line?.getAttribute('filter')).toBe('url(#cn-vespers-bloom)');
     expect(line?.dataset.active).toBe('true');
-    expect(line?.getAttribute('stroke-width')).toBe('1.1');
+    expect(line?.getAttribute('stroke-width')).toBe('1.2');
   });
 });

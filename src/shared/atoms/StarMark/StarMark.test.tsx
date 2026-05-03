@@ -7,11 +7,12 @@ function withSvg(node: React.ReactNode) {
 }
 
 describe('StarMark atom', () => {
-  test('renders the four-layer anatomy: halo, gold, body, hit', () => {
+  test('renders the five-layer anatomy: tint, halo, body, spikes, hit', () => {
     const { container } = render(withSvg(<StarMark hue="rose" />));
+    expect(container.querySelector('.constellation-star__tint')).not.toBeNull();
     expect(container.querySelector('.constellation-star__halo')).not.toBeNull();
-    expect(container.querySelector('.constellation-star__gold')).not.toBeNull();
     expect(container.querySelector('.constellation-star__body')).not.toBeNull();
+    expect(container.querySelector('.constellation-star__spikes')).not.toBeNull();
     expect(container.querySelector('.constellation-star__hit')).not.toBeNull();
   });
 
@@ -21,10 +22,10 @@ describe('StarMark atom', () => {
     expect(halo?.getAttribute('filter')).toBe('url(#cn-watercolor-halo)');
   });
 
-  test('twinkleDelay applies as the halo animation-delay so adjacent stars desync', () => {
+  test('twinkleDelay flows to the body as data-twinkle-phase for the WebGL halo broadcast', () => {
     const { container } = render(withSvg(<StarMark hue="warm" twinkleDelay={2.7} />));
-    const halo = container.querySelector<SVGCircleElement>('.constellation-star__halo');
-    expect(halo?.style.animationDelay).toBe('2.7s');
+    const body = container.querySelector<SVGCircleElement>('.constellation-star__body');
+    expect(body?.dataset.twinklePhase).toBe('2.7');
   });
 
   test('preview works render a quieter body', () => {
@@ -33,9 +34,9 @@ describe('StarMark atom', () => {
     expect(body?.getAttribute('opacity')).toBe('0.55');
   });
 
-  test('hue maps to the right facet token (data-fill carries the var)', () => {
+  test('the outer tint carries the facet hue so category remains legible', () => {
     const { container } = render(withSvg(<StarMark hue="violet" />));
-    const halo = container.querySelector<SVGCircleElement>('.constellation-star__halo');
-    expect(halo?.getAttribute('fill')).toBe('var(--accent-violet)');
+    const tint = container.querySelector<SVGCircleElement>('.constellation-star__tint');
+    expect(tint?.getAttribute('fill')).toBe('var(--accent-violet)');
   });
 });

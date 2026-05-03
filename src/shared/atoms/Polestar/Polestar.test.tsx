@@ -9,15 +9,23 @@ function withSvg(node: React.ReactNode) {
 describe('Polestar atom', () => {
   test('renders the figure as decorative (aria-hidden)', () => {
     const { container } = render(withSvg(<Polestar cx={500} cy={500} />));
-    const group = container.querySelector('g[aria-hidden="true"]');
+    const group = container.querySelector('.constellation-polestar[aria-hidden="true"]');
     expect(group).not.toBeNull();
   });
 
-  test('composes the five geometric primitives — two rects, four diagonal lines, central circle', () => {
+  test('composes the geometric figure: two rects, four corner diagonals, central circle', () => {
     const { container } = render(withSvg(<Polestar cx={500} cy={500} />));
     expect(container.querySelectorAll('rect').length).toBe(2);
-    expect(container.querySelectorAll('line').length).toBe(4);
+    // 8 ray spikes + 4 corner diagonals = 12 lines total
+    expect(container.querySelectorAll('line').length).toBe(12);
     expect(container.querySelectorAll('circle').length).toBe(1);
+  });
+
+  test('the eight ray burst sits inside its own group for theming', () => {
+    const { container } = render(withSvg(<Polestar cx={500} cy={500} />));
+    const rays = container.querySelector('.constellation-polestar__rays');
+    expect(rays).not.toBeNull();
+    expect(rays?.querySelectorAll('line').length).toBe(8);
   });
 
   test('positions the outer rect symmetrically around the center', () => {

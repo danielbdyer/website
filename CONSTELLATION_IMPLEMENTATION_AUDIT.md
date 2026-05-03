@@ -110,23 +110,24 @@ For each `Sx` from `CONSTELLATION_DESIGN.md` §"Surface Inventory":
 
 For each `Cx` from `CONSTELLATION_DESIGN.md` §"Component Library". Anatomy parts noted where partial/absent.
 
-### C1. CompanionGlyph — **partial**
+### C1. CompanionGlyph — **retired**
 
-- Center mark, halo: **present** (basic circle with watercolor halo filter).
-- Trail: **absent**.
-- Active hue shift: **absent** (glyph stays at amber regardless of active basin).
-- Reduced-motion equivalent: **partial** (glyph doesn't drift but pulse / breath cue is absent).
+- Retired with the basin-physics → trackball pivot. The visitor's body in the trackball model is the camera itself; the screen center is the focal zone, indicated by the polestar wash. No DOM marker needed. The C1 spec section in `CONSTELLATION_DESIGN.md` describes the old form; if a future interaction wants a body-on-the-surface mark (e.g. a returning demonstration drift), the atom can be revived from history.
 
-### C2. Star — **partial**
+### C2. Star — **present** (Hevelius register)
 
-- Halo, body, hit target: **present** (24px hit circle, watercolor-haloed body).
-- Optional label: **absent** (no label rendered on settle or hover currently in /sky).
-- Pin mark: **absent**.
-- States: `default`, `hover`, `focused`, `active-basin`, `dragged-toward`, `opening` are partially handled by CSS/data attributes; `dimmed-by-filter`, `pinned`, `new-since-last-visit`, `time-dimmed` are **absent**.
+- Anatomy: tint, halo, body, spike rays, hit target — five layers (28px hit circle).
+- Body: bright cream-gold (`--star-cream`) — dominant register.
+- Halo: warm amber (`--star-halo`) with watercolor filter for paper-bleed edge.
+- Tint: facet hue at 0.18 opacity behind the halo — the held accents stay semantic, but as a faint outer wash rather than the star's primary color.
+- Spike rays: short cross of cream-cream lines for the iconic Hevelius mark; brighter and wider on active.
+- Depth-driven scale + opacity: the wrapper group's transform carries a per-frame scale (1× near, 0.45× far) and `--star-depth-opacity` (1 near, 0.18 far). The back hemisphere visibly recedes as the camera rotates around the globe.
+- States: `default`, `hover`, `focused`, `active-by-camera-settling` handled by CSS/data attributes; `pinned`, `new-since-last-visit`, `time-dimmed`, `dimmed-by-filter` **absent** (depend on later phases).
 
-### C3. Thread — **partial**
+### C3. Thread — **partial** (visible at rest)
 
 - Path line: **present**.
+- Visible at rest: **present** — gold-cream stroke (`--thread-warmth`) at opacity 0.55 and stroke-width 0.55, so the constellation reads as a constellation without a hover. Was invisible-until-hover in the first form; the Hevelius restyle made the lines visible at rest.
 - Endpoint glow: **partial** (active state highlights endpoints visually; `endpoint-active` data attribute drives stroke width).
 - Active brightening on hover/travel: **partial** (stroke width and filter change on `active`; full bloom and travel-along visualization absent).
 - States: `default`, `endpoint-active` present; `both-endpoints-active`, `traveling-along`, `dimmed-by-filter`, `behind-camera` **absent**.
@@ -146,10 +147,12 @@ For each `Cx` from `CONSTELLATION_DESIGN.md` §"Component Library". Anatomy part
 - Cursor-responsive twinkle modulation (twinkle intensity reading cursor proximity): **held**.
 - Depth-aware shader parallax (multiple atmospheric layers at different depths): **held**.
 
-### C5. Polestar — **present**
+### C5. Polestar — **present** (8-ray burst)
 
 - Geometric figure at world center: **present** (`Polestar` atom).
-- Slow rotation: **present** as part of `constellation-rotates` group.
+- Slow rotation: **present** as part of `constellation-rotates` group (the heavens rotate; the polestar is still).
+- Eight-ray burst: **present** — cardinal + ordinal directions, the iconic compass-rose mark Hevelius engravings carry as the brightest stars' identification. Strokes use `--polestar-rays` so each theme picks its own gold-cream value.
+- Polestar wash (atmospheric): **present** — slow tidal swell at the center of the sky on a ~14s breath (shader contribution).
 - Tap-to-open-panel behavior: **absent** (depends on PolestarPanel, which is absent).
 
 ### C6. HorizonStrip — **absent**
@@ -208,27 +211,24 @@ Cross-cutting behaviors not tied to a single component.
 | Behavior | Status | Note |
 |---|--------|------|
 | Latent sphere positions for every star | **present** | `unitPosition: UnitVector3` derived in `placeNode`. |
-| Perspectival projection through camera | **present** | `STAGE_CAMERA`, `projectToViewbox`, `cameraBasis`. |
-| Geodesic basin physics on sphere surface | **present** | `sphericalBasinForce`, `tangentTowards`, `geodesicNearestNode`. |
-| Cursor lives on the sphere as `UnitVector3` | **present** | `state.pos` is mutable Vec3 normalized to sphere. |
-| Tangent velocity (perpendicular to position) | **present** | `state.vel` re-projected onto tangent plane each tick. |
-| Pointer ray-cast through camera onto sphere | **present** | `pointerToSphere` → `unproject` + `raySphereIntersect`. |
-| Spring-tension drag toward target | **present** | `DRAG_SPRING`, `DRAG_DAMPING` in tangent space. |
-| Flick velocity injection on release | **present** | `flickAngularVelocity` + `FLICK_SCALE`. |
-| Held-arrow-key directional acceleration | **present** | `tangentHoldDirection` against camera basis. |
-| Reduced-motion: snap-to-nearest fallback | **present** | `prefersReducedMotion()` short-circuits the RAF loop and snaps. |
-| Camera orbits sphere (cursor leads, camera trails) | **present** | `cameraSurfacePos` slerps toward `state.pos` with `CAMERA_LAG_RATE`. |
-| Per-frame DOM re-projection of stars + threads | **present** | `projectScene` mutates transform / x1y1x2y2 attrs each tick. |
-| Companion glyph at cursor's projected position | **present** | DOM mutation of `<circle data-companion>` cx/cy each tick. |
-| WebGL atmosphere following cursor signal | **present** | `constellationCursor` shared signal; firmament reads each frame. |
-| Per-star halos with breathing twinkle in WebGL | **present** | `atmosphericScene` shared signal; skyProjector writes post-rotation positions per RAF tick; shader paints additive halos with sin(uTime + phase) twinkle. |
+| Perspectival projection through camera | **present** | `cameraFromAngles`, `projectToViewbox`, `cameraBasis`. |
+| Trackball direct-manipulation rotation (yaw + pitch) | **present** | `useConstellationNavigation` rebuilt around (yaw, pitch) + angular velocity. Drag horizontally → yaw; drag vertically → pitch (clamped to ±π/2 - ε). The basin/well system retired with this commit; the visitor's gesture IS the rotation. |
+| Pointer ray-cast through camera onto sphere | **retired** | The trackball model doesn't ray-cast — drag deltas drive yaw/pitch directly. `unproject` + `raySphereIntersect` remain in geometry/sphere.ts as pure helpers; nothing in the constellation calls them now. |
+| Flick velocity injection on release | **present** | Computed from recent `(yaw, pitch)` samples over a 100ms window; clamped to MAX_ANGULAR_VEL. |
+| Held-arrow-key directional acceleration | **present** | Arrows accumulate angular velocity in their direction during the RAF loop; under reduced-motion, step the view by 15° per press. |
+| Reduced-motion: snap-to-rotation fallback | **present** | `prefersReducedMotion()` short-circuits the loop; pointer drag still rotates 1:1; keyboard arrows step the view by a fixed angle. |
+| Camera orbits the world from yaw/pitch | **present** | Camera position derived from `anglesToDirection(yaw, pitch) * -ORBIT_DISTANCE`; looks at origin. |
+| Per-frame DOM re-projection of stars + threads | **present** | `projectScene` mutates transform / x1y1x2y2 attrs each tick. The element cache (built once on graph change) is the lookup path; querySelector is the fallback for the single transient frame between graph edit and cache rebuild. |
+| Depth-driven star scale + opacity (3D-globe feel) | **present** | `projectStars` writes a per-frame scale into the transform and `--star-depth-opacity` onto the wrapper; CSS combines depth with active/hover/preview state. Back-hemisphere stars fade to 0.45× scale and 0.18 opacity. |
+| Camera-settle active-star claim | **present** | After the angular velocity drops below threshold, the star nearest screen-center within 0.25 normalized radius claims active state (drives thread bloom + keyboard focus). |
+| WebGL atmosphere with per-star halos | **present** | `atmosphericScene` shared signal; skyProjector writes post-rotation positions per RAF tick; shader paints single-zone gold-cream halos with per-star sin-modulated twinkle. |
 | Polestar wash with slow tidal breath | **present** | Shader paints a vUv=center radial wash on a ~14s sin cycle. |
 | Drifting motes (four, slow Lissajous) | **present** | Shader-resident; cheap. |
-| Camera yaw flourish from velocity | **present** | `applyCameraYaw` writes `--cam-yaw` CSS variable. |
-| Slow background rotation (600s/cycle) | **present** | `constellation-rotates` CSS animation. |
-| First-visit Demonstration drift | **absent** | No autonomous cursor motion on arrival. |
+| Slow background rotation (600s/cycle) | **present** | `constellation-rotates` CSS animation; the projector mirrors the rotation on CPU when broadcasting star positions to the shader. |
+| Companion glyph + ghost-decay trail | **retired** | Visitor's body in the trackball model is the camera; no surface-cursor marker. |
+| First-visit Demonstration drift | **held** | Basin-physics version retired; trackball-shaped equivalent (a quiet auto-orbit until first input) waits for its own design pass. |
 | Contemplative idle drift toward gravitational center | **absent** | No long-idle detection. |
-| Cursor position survives within session | **absent** | No `sessionStorage` persistence of cursor sphere position. |
+| Cursor position survives within session | **present** | The trackball persists the camera's looking-at unit vector to `sessionStorage`; on restore, `vectorToAngles` seeds (yaw, pitch). The same key/schema as the basin-physics persistence so existing sessions restore cleanly. |
 | Filter state (active facets reduce emphasis) | **absent** | No filter mechanism. |
 | Search predicate over corpus | **absent** | No search. |
 | Time-scrub changes constellation emphasis | **absent** | No timeline. |

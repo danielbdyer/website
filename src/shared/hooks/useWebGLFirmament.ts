@@ -130,19 +130,29 @@ const FRAGMENT_SHADER = /* glsl */ `
   vec4 starHalos(vec2 fragP) {
     vec3 color = vec3(0.0);
     float alpha = 0.0;
+    // Hevelius-register gold-cream that the halos paint with. Mixed
+    // with the per-star facet hue so each star carries its category
+    // as a faint accent inside the dominant warm. The hue mix is
+    // applied once per star (not once per pixel per star) by
+    // pre-multiplying into the color contribution.
+    vec3 cream = vec3(0.97, 0.85, 0.55);
     for (int i = 0; i < ${STAR_CAPACITY_GLSL}; i++) {
       if (i >= uStarCount) break;
       vec4 d = uStarData[i];
       vec2 starP = d.xy * vec2(uAspect, 1.0);
       float dist = distance(fragP, starP);
-      // Soft outer falloff (~0.18) plus a tighter inner core (~0.04).
-      float halo = smoothstep(0.18, 0.02, dist);
+      // Single-zone falloff. The two-zone (outer + inner core) form
+      // doubled per-pixel cost on this layer; the SVG body atom
+      // beneath carries the bright center natively, so the shader
+      // contribution focuses on the warm lamp around it.
+      float halo = smoothstep(0.20, 0.02, dist);
       // Twinkle: slow breath modulated by per-star phase. Bounded
-      // [0.55, 1.0] so a star never disappears entirely.
+      // [0.78, 1.0] so a star never disappears entirely.
       float twinkle = 0.78 + 0.22 * sin(uTime * 0.9 + d.w);
       vec3 hue = uHuePalette[int(d.z)];
-      color += hue * halo * twinkle * 0.55;
-      alpha += halo * twinkle * 0.55;
+      vec3 starColor = mix(cream, hue, 0.22);
+      color += starColor * halo * twinkle * 0.95;
+      alpha += halo * twinkle * 0.85;
     }
     return vec4(color, alpha);
   }
@@ -198,13 +208,18 @@ const FRAGMENT_SHADER = /* glsl */ `
     // Polestar wash — the slow tidal swell at the center of the
     // sky. Long breath cycle (~14s); larger radius than the cursor
     // pool so it reads as the sky's center rather than a spot.
-    float polestarBreath = 0.62 + 0.38 * sin(uTime * (TWO_PI / 14.0));
+    // Brighter than the first form: this is the iconic moment of
+    // the sky, and the Hevelius reference's polestar is unmistakable.
+    float polestarBreath = 0.7 + 0.3 * sin(uTime * (TWO_PI / 14.0));
     float polestarBase = smoothstep(0.55, 0.05, length(fragP));
-    float polestarWash = polestarBase * polestarBreath * 0.32;
+    float polestarWash = polestarBase * polestarBreath * 0.55;
 
-    // Theme palette — warm-glow in light mode, cool-silver in dark.
-    vec3 lightTone = vec3(0.95, 0.85, 0.65);
-    vec3 darkTone  = vec3(0.55, 0.6, 0.85);
+    // Theme palette — warm-amber gold in light mode, deeper warm-amber
+    // in dark mode (with a hint of horizon warmth so the night sky
+    // doesn't read as cold). The Hevelius reference is a warm sky
+    // either way; the difference between modes is brightness, not hue.
+    vec3 lightTone = vec3(0.95, 0.85, 0.62);
+    vec3 darkTone  = vec3(0.92, 0.78, 0.48);
     vec3 tone = mix(lightTone, darkTone, uTheme);
 
     vec3 saturatedTone = tone + (tone - vec3(0.5)) * 0.4;

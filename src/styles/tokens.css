@@ -191,6 +191,20 @@
   --sky-horizon: var(--bg);
   --sky-grain-opacity: 0.04;
   --sky-glow: rgb(200, 118, 77, 0.07);
+
+  /* Hevelius register — gold-cream stars and warm-amber halos
+     dominant; facet hue mixes in as a faint outer tint so the
+     constellation reads as a sky with category as accent rather than
+     a category map painted as a sky. Daylight version: deeper umber
+     against the paper-warm ground. CONSTELLATION_DESIGN.md
+     §"Aesthetic References — Star atlases" — Bayer / Hevelius /
+     Flamsteed are the touchstones; the warmer body color sits
+     against the paper register. */
+  --star-body: #c8923f;
+  --star-halo: #d99857;
+  --star-cream: #f3e4c2;
+  --thread-warmth: #a87a48;
+  --polestar-rays: #c8923f;
 }
 
 /* ─── Dark palette ──────────────────────────────────────────── */
@@ -238,6 +252,19 @@
   --sky-horizon: var(--bg);
   --sky-grain-opacity: 0.06;
   --sky-glow: rgb(212, 152, 152, 0.05);
+
+  /* Hevelius register, paper-night version. Star bodies bright
+     cream-gold so they read against the deep sky; halos warm gold
+     for the held-lamp warmth that the reference atlases carry; the
+     polestar's radial rays match the halo so the central burst
+     reads as the brightest moment in the sky. The thread color is
+     a quieter cream so the constellation lines are visible at rest
+     without competing with the stars themselves. */
+  --star-body: #f3e4c2;
+  --star-halo: #e8b86a;
+  --star-cream: #fff2cf;
+  --thread-warmth: #b8a075;
+  --polestar-rays: #f0c878;
 }
 
 /* ─── Base ──────────────────────────────────────────────────── */
@@ -471,48 +498,84 @@ body::before {
    old form; the trackball restyling commit catches the spec up to
    the lived surface. */
 
+/* Star wrapper group — the projector writes --star-depth-opacity
+   here per frame from the dot-product depth (back-hemisphere fades
+   toward 0.18). CSS reads it so the star atom doesn't need to know
+   about depth at all; the cascade combines depth with state. */
+.constellation-star {
+  opacity: var(--star-depth-opacity, 1);
+}
+
+/* Outer facet tint — a soft pigment glow at the far edge of the
+   halo carrying the work's category color. Subtle by design: the
+   constellation's dominant register is gold-cream; facet is the
+   accent that lives in the wash, not the mark. */
+.constellation-star__tint {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1);
+  transition:
+    transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Warm-amber halo — the held lamp. Wider in active state, brighter
+   then too. The watercolor filter softens the edge so the halo
+   reads as paper-water bleed rather than digital glow. */
 .constellation-star__halo {
   transform-box: fill-box;
   transform-origin: center;
   transform: scale(1);
-  opacity: 0.22;
+  opacity: 0.55;
   transition:
     transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
-  /* star-twinkle keyframe animation removed — the per-frame
-     opacity oscillation on a filtered element inside the rotating
-     group was a major contributor to idle stutter. The transition
-     above still drives the halo claim on activate. */
 }
 
-/* Halo claim — when the cursor settles into this star's well, the
-   halo crescendos: a small scale growth (~6%) and an opacity rise
-   over ~400ms with the signature easing. The design's named
-   *halo claim* visual cue — *the room becoming attentive to you.*
-   The twinkle animation keeps running; the claim composes with it
-   rather than replacing. */
+/* Star body — the bright cream-gold dot. The held twinkle on a
+   filtered element was the original perf regression; this version
+   tried it on the unfiltered body and still regressed because
+   per-frame opacity on N elements inside the rotating compositor
+   layer adds work the layer can't cache. The body stays static —
+   the WebGL halo's per-star sin-modulated breathing is the twinkle
+   the visitor actually sees, and it lives on the layer that's
+   built for it. */
+.constellation-star__body {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Spike rays — a thin cross painted behind the body, gold-cream,
+   barely visible at rest, brighter when the star is active. The
+   reference Hevelius plates carry these for the brightest stars;
+   showing them on every star here is editorial — the corpus is
+   small and every star deserves the iconic mark. */
+.constellation-star__spikes {
+  stroke: var(--star-cream);
+  stroke-width: 0.55;
+  stroke-linecap: round;
+  opacity: 0.35;
+  transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Active state — when the camera settles on a star (or the visitor
+   tabs onto it), the star claims attention: brighter body, brighter
+   halo, brighter spike rays, larger tint. The crescendo runs over
+   ~400ms with the signature easing. */
 .constellation-star[data-active='true'] .constellation-star__halo {
-  transform: scale(1.065);
+  transform: scale(1.18);
+  opacity: 0.85;
+}
+
+.constellation-star[data-active='true'] .constellation-star__tint {
+  transform: scale(1.18);
   opacity: 0.45;
 }
 
-/* Gold-as-attention overlay. Invisible at rest; rises to a soft
-   ring around the facet halo when the well claims. Gold is the
-   language of attention given (CONSTELLATION_DESIGN.md §"Light as
-   Medium" — *gold marks attention; facet hues mark category*). */
-.constellation-star__gold {
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: scale(0.94);
-  opacity: 0;
-  transition:
-    transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.constellation-star[data-active='true'] .constellation-star__gold {
-  transform: scale(1);
-  opacity: 0.42;
+.constellation-star[data-active='true'] .constellation-star__spikes {
+  opacity: 0.85;
+  stroke-width: 0.7;
 }
 
 /* The whispered label — *"{title}"* in italic serif at meta size,
@@ -596,6 +659,20 @@ body::before {
 .constellation-polestar-wash {
   transform-box: fill-box;
   transform-origin: center;
+}
+
+/* Polestar ray burst — eight short spikes radiating from the
+   center: cardinal + ordinal directions, the iconic compass-rose
+   mark Hevelius engravings carry as the brightest stars'
+   identification. Strokes use --polestar-rays so each theme picks
+   its own gold-cream value. The geometric figure beneath holds the
+   structural identity (the figure ascended, per CONSTELLATION.md
+   §"The polestar"); the rays are the brightness made visible. */
+.constellation-polestar__rays {
+  stroke: var(--polestar-rays);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.85;
 }
 
 /* Work overlay typographic registers — the deck (an invitation,
