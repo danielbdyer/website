@@ -52,6 +52,7 @@ const SAMPLE_GRAPH: ConstellationGraph = {
       unitPosition: projectToSphere(135, 0.6),
       hue: 'gold',
       twinklePhase: 1.2,
+      magnitude: 1,
     },
     {
       room: 'studio',
@@ -66,6 +67,7 @@ const SAMPLE_GRAPH: ConstellationGraph = {
       unitPosition: projectToSphere(225, 0.7),
       hue: 'rose',
       twinklePhase: 3.4,
+      magnitude: 1.2,
     },
   ],
   edges: [

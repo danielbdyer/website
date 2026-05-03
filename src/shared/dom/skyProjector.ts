@@ -94,7 +94,7 @@ export type ElementCache = ReadonlyMap<string, Element>;
  *  hover/active-state changes. */
 export function buildElementCache(
   cameraGroup: SVGGElement,
-  selectorAttr: 'data-node-key' | 'data-thread-id',
+  selectorAttr: 'data-node-key' | 'data-thread-id' | 'data-bg-id',
   keys: readonly string[],
 ): ElementCache {
   const cache = new Map<string, Element>();
@@ -200,10 +200,16 @@ export function projectStars(
     }
     const proj = projectToViewbox(node.unitPos, camera, basis, viewboxSize);
     const visuals = depthVisuals(node.unitPos, camDir);
+    // Per-star magnitude (default 1) composes with the depth scale.
+    // Magnitude is a stable hash-derived value carried in the
+    // navigable node — bright "named" stars at ~1.4×, most quieter
+    // — so the field has visual hierarchy without coordination.
+    const magnitude = node.magnitude ?? 1;
+    const finalScale = visuals.scale * magnitude;
     el.setAttribute(
       'transform',
       proj.inFront
-        ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)}) scale(${visuals.scale.toFixed(3)})`
+        ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)}) scale(${finalScale.toFixed(3)})`
         : 'translate(-9999 -9999)',
     );
     // Opacity flows through a CSS variable so atom CSS can combine
@@ -256,5 +262,48 @@ export function projectThreads(
     el.setAttribute('y1', ps.y.toFixed(2));
     el.setAttribute('x2', pt.x.toFixed(2));
     el.setAttribute('y2', pt.y.toFixed(2));
+  }
+}
+
+/** A background-star position the projector iterates over. The id
+ *  matches the BackgroundStarfield atom's data-bg-id; unitPos lives
+ *  on the unit sphere (Fibonacci spiral distribution). */
+export interface NavigableBackgroundStar {
+  readonly id: string;
+  readonly unitPos: UnitVector3;
+}
+
+/**
+ * Position every background star's wrapper group. Simpler than
+ * projectStars: no depth-opacity (background dots don't need
+ * cascading state), no scale (small dots stay small), no broadcast
+ * to the WebGL scene buffer (background stars don't drive shader
+ * halos). Just translate to the projected position, or off-screen
+ * if behind the camera.
+ *
+ * @bigO Time: O(B) per call (one cache.get + one matrix-multiply +
+ *       one setAttribute per star). Hot path: called once per RAF
+ *       tick. Background star count is fixed at module load (120
+ *       in the current set), so this is bounded constant.
+ *       Space: O(1).
+ */
+export function projectBackgroundStars(
+  cameraGroup: SVGGElement,
+  stars: readonly NavigableBackgroundStar[],
+  cache: ElementCache,
+  camera: Camera,
+  basis: CameraBasis,
+  viewboxSize: number,
+): void {
+  for (const star of stars) {
+    const el = cache.get(star.id) ?? cameraGroup.querySelector(`[data-bg-id="${star.id}"]`);
+    if (!el) continue;
+    const proj = projectToViewbox(star.unitPos, camera, basis, viewboxSize);
+    el.setAttribute(
+      'transform',
+      proj.inFront
+        ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)})`
+        : 'translate(-9999 -9999)',
+    );
   }
 }

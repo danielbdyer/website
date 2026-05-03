@@ -52,18 +52,17 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
   // CONSTELLATION_DESIGN.md §"The Threads" calls them wisps; the
   // first form rendered them invisibly until hover, which made the
   // sky read as disconnected points rather than a constellation.
-  // At rest: invisible. The constellation reads as scattered points
-  // of light, not as a graph diagram. Threads stay in the DOM so the
-  // hover bloom can still light them briefly when a star is focused
-  // — connection becomes a found thing, not a declared one.
+  // At rest: a quiet dotted thread (dasharray "1 4") at low opacity
+  // — barely visible, but present, so the constellation reads as a
+  // constellation rather than as scattered unrelated points. The
+  // Hevelius reference plates carry exactly this register: faint
+  // gold-cream connecting lines that you read once you look closely.
   //
-  // When active: a stitched stroke (stroke-dasharray) softened by
-  // the wider vespers-bloom filter so the line reads as a wisp of
-  // light rather than a hard geometric edge. The dashes blur into a
-  // continuous-but-soft glow under the bloom; without the bloom they
-  // read as a stitched thread; together they read as both — a thread
-  // of light. CONSTELLATION_DESIGN.md §"Materials — brushstroke
-  // thread" names the intent; this is its first form.
+  // When active: a longer-dashed stitched stroke softened by the
+  // vespers-bloom filter so the line reads as a wisp of light. The
+  // dashes blur into a continuous-but-soft glow under the bloom;
+  // without the bloom they read as a stitched thread; together they
+  // read as both — a thread of light.
   return (
     <line
       x1={endpoints.x1}
@@ -71,9 +70,9 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
       x2={endpoints.x2}
       y2={endpoints.y2}
       stroke="var(--thread-warmth)"
-      strokeWidth={active ? 1.4 : 0.55}
+      strokeWidth={active ? 1.4 : 0.45}
       strokeLinecap="round"
-      strokeDasharray={active ? '3 5' : undefined}
+      strokeDasharray={active ? '3 5' : '1 4'}
       filter={active ? 'url(#cn-vespers-bloom)' : undefined}
       data-thread-id={id}
       data-hue={hue}
@@ -81,7 +80,7 @@ export function Thread({ endpoints, hue, id, active = false, className }: Thread
       aria-hidden="true"
       className={cn(
         'constellation-thread pointer-events-none',
-        active ? 'opacity-70' : 'opacity-0',
+        active ? 'opacity-70' : 'opacity-15',
         className,
       )}
     />

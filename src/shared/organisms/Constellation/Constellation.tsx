@@ -93,7 +93,11 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
   const overlayKey = overlayMatch
     ? `${overlayMatch.params.room}/${overlayMatch.params.slug}`
     : null;
-  const navigableNodes = nodes.map(({ key, node }) => ({ key, unitPos: node.unitPosition }));
+  const navigableNodes = nodes.map(({ key, node }) => ({
+    key,
+    unitPos: node.unitPosition,
+    magnitude: node.magnitude,
+  }));
   useAtmosphericStarMetadata(nodes);
   const navigableEdges: NavigableEdge[] = edges.flatMap((edge) => {
     const source = positioned.get(edge.sourceKey);

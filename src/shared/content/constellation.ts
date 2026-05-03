@@ -109,6 +109,11 @@ export interface ConstellationNode {
    *  (`star-twinkle` keyframes); any value in [0, duration) yields a
    *  stable, lightly-randomized starfield. */
   twinklePhase: number;
+  /** Per-star scale magnitude in [0.75, 1.45]. Some stars read as
+   *  bright "named" lights, most as quieter dots, mirroring the
+   *  Hevelius reference plates' visible-magnitude hierarchy.
+   *  Deterministic per slug. */
+  magnitude: number;
 }
 
 export interface ConstellationEdge {
@@ -317,6 +322,7 @@ export function getConstellationGraphSync(): ConstellationGraph {
       isPreview: isPreviewWork(work),
       hue: primaryFacet ? FACET_HUE[primaryFacet] : 'gold',
       twinklePhase: unitOffset(`${room}/${work.slug}/twinkle`) * TWINKLE_DURATION_SECONDS,
+      magnitude: 0.75 + unitOffset(`${room}/${work.slug}/magnitude`) * 0.7,
       ...placeNode(room, work.slug),
     };
   });

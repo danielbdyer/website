@@ -53,13 +53,14 @@ describe('Thread atom', () => {
     expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/pointer-events-none/);
   });
 
-  test('at rest, threads are invisible — the constellation is points of light, not a graph', () => {
+  test('at rest, threads carry a quiet dotted stitch — visible but faint', () => {
     const { container } = render(withSvg(<Thread id="x|y|z" endpoints={endpoints()} hue="rose" />));
     const line = container.querySelector('line');
     expect(line?.getAttribute('filter')).toBeNull();
     expect(line?.dataset.active).toBeUndefined();
-    expect(line?.getAttribute('stroke-width')).toBe('0.55');
-    expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/opacity-0(?!\d)/);
+    expect(line?.getAttribute('stroke-width')).toBe('0.45');
+    expect(line?.getAttribute('stroke-dasharray')).toBe('1 4');
+    expect(line?.className.baseVal ?? line?.getAttribute('class')).toMatch(/opacity-15/);
   });
 
   test('when active, applies the vespers bloom + dashed stroke for a soft thread feel', () => {

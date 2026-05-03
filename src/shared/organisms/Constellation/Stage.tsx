@@ -1,5 +1,6 @@
 import type { KeyboardEvent, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
+import { BackgroundStarfield } from '@/shared/atoms/BackgroundStarfield/BackgroundStarfield';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
 import { Star, type StarWork } from '@/shared/molecules/Star/Star';
@@ -72,6 +73,40 @@ function starWorkFor(node: RenderableNode['node']): StarWork {
   };
 }
 
+/** Five concentric rings at increasing fractions of the sphere
+ *  silhouette radius — the armillary armature the Hevelius plates
+ *  carry as the celestial coordinate system. Inner rings tighter to
+ *  the polestar, outer rings near (but inside) the sphere boundary.
+ *  Each ring is dashed gold-cream at low opacity, fainter as it
+ *  expands outward so the visual emphasis stays at the center. */
+const RING_FRACTIONS = [0.18, 0.32, 0.5, 0.68, 0.88] as const;
+
+interface ArmillaryRingsProps {
+  cx: number;
+  cy: number;
+  sphereRadius: number;
+}
+
+function ArmillaryRings({ cx, cy, sphereRadius }: ArmillaryRingsProps) {
+  return (
+    <g aria-hidden="true" className="constellation-armillary pointer-events-none">
+      {RING_FRACTIONS.map((fraction, i) => (
+        <circle
+          key={fraction}
+          cx={cx}
+          cy={cy}
+          r={sphereRadius * fraction}
+          fill="none"
+          stroke="var(--polestar-rays)"
+          strokeWidth="0.4"
+          strokeDasharray="1.5 5"
+          strokeOpacity={0.45 - i * 0.06}
+        />
+      ))}
+    </g>
+  );
+}
+
 export function Stage({ world, interactions }: StageProps) {
   const { edges, nodes, activeKey, activeHue, overlayKey } = world;
   const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp } = interactions;
@@ -97,12 +132,18 @@ export function Stage({ world, interactions }: StageProps) {
         aria-hidden="true"
         className="constellation-polestar-wash pointer-events-none"
       />
+      {/* Concentric armillary rings — five dashed circles emanating
+          from the polestar at increasing radii. The Hevelius
+          reference plates carry exactly this armature: an
+          armillary's coordinate system, faint gold lines that read
+          as the celestial scaffolding under the stars. Static at
+          viewbox center (the polestar doesn't move under camera
+          rotation), so the armature stays anchored. */}
+      <ArmillaryRings cx={500} cy={500} sphereRadius={sphereRadius} />
       {/* Sphere boundary ring — a faint stroke-only circle at the
           sphere's projected silhouette radius. Marks the backing
           shape so rotating stars read as orbiting a globe rather
-          than as scattered points moving through space. Static
-          (the sphere doesn't move under camera rotation; only the
-          stars do), so the ring stays at a fixed viewbox radius. */}
+          than as scattered points moving through space. */}
       <circle
         cx={500}
         cy={500}
@@ -116,6 +157,12 @@ export function Stage({ world, interactions }: StageProps) {
       />
       <Polestar cx={500} cy={500} />
       <g className="constellation-rotates" data-active-hue={activeHue ?? 'warm'}>
+        {/* Background starfield — decorative pinpricks of light
+            distributed across the unit sphere via Fibonacci spiral.
+            Renders BEFORE threads + named stars so it sits behind
+            them in z-order. The projector positions each via the
+            data-bg-id selector each RAF tick. */}
+        <BackgroundStarfield />
         <g aria-hidden="true">
           {edges.map((edge) => (
             <Thread

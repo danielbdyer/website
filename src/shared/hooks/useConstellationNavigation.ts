@@ -4,11 +4,14 @@ import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import { cameraBasis, project } from '@/shared/geometry/camera';
 import {
   buildElementCache,
+  projectBackgroundStars,
   projectStars,
   projectThreads,
   type ElementCache,
   type NavigableEdge,
+  type NavigableBackgroundStar,
 } from '@/shared/dom/skyProjector';
+import { BACKGROUND_STARS } from '@/shared/content/backgroundStars';
 import {
   hasVisitedBefore,
   markVisited,
@@ -201,9 +204,42 @@ interface RuntimeRefs {
   readonly edgesRef: RefObject<readonly NavigableEdge[]>;
   readonly starsCacheRef: RefObject<ElementCache>;
   readonly threadsCacheRef: RefObject<ElementCache>;
+  readonly bgStarsCacheRef: RefObject<ElementCache>;
   readonly cameraRef: RefObject<SVGGElement | null>;
   readonly viewboxSize: number;
   readonly setActiveKey: (key: string) => void;
+}
+
+/** The background-star list as a NavigableBackgroundStar array,
+ *  computed once at module load. The projector iterates this every
+ *  RAF tick; keeping the array stable lets the cache stay valid
+ *  across renders. */
+const BG_STAR_NAVIGABLE: readonly NavigableBackgroundStar[] = BACKGROUND_STARS.map((s) => ({
+  id: s.id,
+  unitPos: s.unitPos,
+}));
+
+/** Build the background-star element cache once on mount. Owns the
+ *  ref internally (the React Compiler flags writing to a ref passed
+ *  in as a prop) and returns it for the navigation hook to thread
+ *  through to the projector. The set is fixed at module load, so
+ *  the effect only fires when the cameraRef itself changes —
+ *  effectively once per Constellation mount. Extracted so the
+ *  navigation hook stays under the 80-line ceiling. */
+function useBackgroundStarsCache(
+  cameraRef: RefObject<SVGGElement | null>,
+): RefObject<ElementCache> {
+  const cacheRef = useRef<ElementCache>(new Map());
+  useEffect(() => {
+    if (cameraRef.current) {
+      cacheRef.current = buildElementCache(
+        cameraRef.current,
+        'data-bg-id',
+        BG_STAR_NAVIGABLE.map((s) => s.id),
+      );
+    }
+  }, [cameraRef]);
+  return cacheRef;
 }
 
 function rebuildCamera(state: NavState): void {
@@ -221,6 +257,14 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   if (!cameraGroup) return;
   const { currentCamera: camera, currentBasis: basis } = state;
   const viewboxSize = refs.viewboxSize;
+  projectBackgroundStars(
+    cameraGroup,
+    BG_STAR_NAVIGABLE,
+    refs.bgStarsCacheRef.current,
+    camera,
+    basis,
+    viewboxSize,
+  );
   projectStars(
     cameraGroup,
     refs.nodesRef.current,
@@ -510,6 +554,10 @@ export function useConstellationNavigation({
   const edgesRef = useRef<readonly NavigableEdge[]>(edges);
   const starsCacheRef = useRef<ElementCache>(new Map());
   const threadsCacheRef = useRef<ElementCache>(new Map());
+  // Background-star cache: built once on mount when the camera ref
+  // is set. Background stars are a fixed set (never change across
+  // renders), so unlike the named-star cache this never invalidates.
+  const bgStarsCacheRef = useBackgroundStarsCache(cameraRef);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -548,6 +596,7 @@ export function useConstellationNavigation({
     edgesRef,
     starsCacheRef,
     threadsCacheRef,
+    bgStarsCacheRef,
     cameraRef,
     viewboxSize,
     setActiveKey,
@@ -561,6 +610,7 @@ export function useConstellationNavigation({
       edgesRef,
       starsCacheRef,
       threadsCacheRef,
+      bgStarsCacheRef,
       cameraRef,
       viewboxSize,
       setActiveKey,
