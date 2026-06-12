@@ -353,10 +353,15 @@ export default tseslint.config(
   {
     files: [
       'src/shared/hooks/useConstellationNavigation.ts',
+      'src/shared/hooks/useThresholdReveal.ts',
       'src/shared/hooks/useWebGLFirmament.ts',
       'src/shared/dom/skyProjector.ts',
       'src/shared/state/constellationCursor.ts',
+      'src/shared/state/skyCamera.ts',
+      'src/shared/geometry/camera.ts',
       'src/shared/geometry/wellPhysics.ts',
+      'src/shared/webgl/atmosphereProjection.ts',
+      'src/shared/webgl/atmosphereRenderer.ts',
     ],
     rules: {
       'no-restricted-syntax': 'off',

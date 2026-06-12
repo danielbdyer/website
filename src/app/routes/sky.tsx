@@ -1,14 +1,21 @@
-import { Link, Outlet, createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Link, Outlet, createFileRoute, useMatch, useNavigate } from '@tanstack/react-router';
 import { Constellation } from '@dby/sky';
 import { useReturnGesture } from '@/shared/hooks/useReturnGesture';
+import { useThresholdReveal } from '@/shared/hooks/useThresholdReveal';
 import { getConstellationGraph } from '@/shared/content/constellation';
 
 // The constellation route. The visitor enters by looking up; the page
 // occupies the entire viewport — no nav, no footer, no column. The
 // chrome belongs to the rooms below, not to the firmament. The carpet
-// rolls out on first paint via .sky-arrival; the visitor leaves via
-// any of three gestures (ArrowDown / Escape, sustained scroll-down,
-// touch swipe-down) wired through useReturnGesture.
+// rolls out on first paint via .sky-arrival.
+//
+// Leaving is the inverse gesture, threshold-held: scrolling down
+// leans the Foyer's ground into the frame from below (spring-backed
+// preview); past the threshold the return commits. ArrowDown and
+// Escape stay instant for keyboards; the small "↓ Return" link is
+// the always-visible path. While a work overlay is open, all of it
+// stands down — scroll belongs to the reading, and the way back is
+// the overlay's own close (Esc, ×, click-off).
 //
 // CONSTELLATION.md §"Reframe 1" committed to this layout opt-out;
 // __root.tsx hides Nav/Footer and drops column constraints when the
@@ -35,8 +42,19 @@ export const Route = createFileRoute('/sky')({
 function SkyPage() {
   const { graph } = Route.useLoaderData();
   const navigate = useNavigate();
-  useReturnGesture(() => {
+  // While the work overlay is open, the sky's leave-gestures stand
+  // down entirely: scrolling reads the work, Escape closes the
+  // overlay (its own handler), and only the overlay's close paths
+  // return here.
+  const overlayOpen = Boolean(useMatch({ from: '/sky/$room/$slug', shouldThrow: false }));
+  const returnHome = () => {
     void navigate({ to: '/' });
+  };
+  useReturnGesture(returnHome, !overlayOpen);
+  const groundRef = useThresholdReveal<HTMLDivElement>({
+    direction: 'down',
+    enabled: !overlayOpen,
+    onCommit: returnHome,
   });
 
   return (
@@ -46,12 +64,16 @@ function SkyPage() {
           when the URL points at a specific work; otherwise it's
           empty and the constellation alone fills the surface. */}
       <Outlet />
+      {/* The Foyer's ground, leaning in from below as the visitor
+          scrolls toward leaving — the threshold preview. Purely
+          decorative; the commit navigates. */}
+      <div ref={groundRef} aria-hidden="true" className="threshold-preview-ground" />
       {/* The return affordance — small, italic, low contrast, fixed at
           the bottom-center of the viewport. The gesture-based returns
-          (down arrow, scroll-down, swipe-down) are the canonical paths;
-          this link is the visible fallback for visitors who don't
-          discover them. The aria-label is verbose so screen readers
-          announce what the small ↓ glyph means. */}
+          (down arrow, sustained scroll-down past the threshold) are
+          the canonical paths; this link is the visible fallback for
+          visitors who don't discover them. The aria-label is verbose
+          so screen readers announce what the small ↓ glyph means. */}
       <Link
         to="/"
         aria-label="Return to the Foyer"

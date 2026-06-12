@@ -228,13 +228,14 @@
   --geo-color: rgb(106, 174, 146, 0.1);
   --geo-accent: rgb(224, 144, 106, 0.12);
 
-  /* Constellation sky — paper-night by night. Deeper than --bg, with
-     a hint of cooler tone (the umber undercurrent breathes upward
-     into something starlit). The glow is the moon's silver-cool
-     gathering near the upper-mid; grain compounds the body's grain
-     to give the dark sky a stardust-feel. See CONSTELLATION.md
-     §"Two Render Modes" — night: the firmament. */
-  --sky-zenith: #0d0e12;
+  /* Constellation sky — paper-night by night. Deep night-blue
+     trending toward black (CONSTELLATION.md §"Two Render Modes" —
+     night: the firmament), the indigo register the celestial-chart
+     hi-fi holds, with the umber undercurrent breathing upward at
+     the horizon. The glow is the moon's silver-rose gathering near
+     the upper-mid; grain compounds the body's grain to give the
+     dark sky a stardust-feel. */
+  --sky-zenith: #0d1322;
   --sky-horizon: var(--bg);
   --sky-grain-opacity: 0.06;
   --sky-glow: rgb(212, 152, 152, 0.05);
@@ -550,6 +551,17 @@ body::before {
      above still drives the halo claim on activate. */
 }
 
+/* When the WebGL atmosphere is live it paints each star's halo as
+   a shader sprite (with the twinkle the SVG once held); the SVG's
+   filtered halo quiets to a remnant so the star carries one bleed,
+   not two — and the rasterizer stops re-rendering a filter per
+   star while the navigation camera moves. The claim rule below
+   still lifts it on activation (later in the file, same
+   specificity, so the crescendo wins). */
+.constellation-frame[data-atmosphere='webgl'] .constellation-star__halo {
+  opacity: 0.08;
+}
+
 /* Halo claim — when the cursor settles into this star's well, the
    halo crescendos: a small scale growth (~6%) and an opacity rise
    over ~400ms with the signature easing. The design's named
@@ -595,6 +607,89 @@ body::before {
 
 .constellation-star[data-active='true'] .constellation-star__label {
   opacity: 0.85;
+}
+
+/* ─── Threshold previews ────────────────────────────────────────
+   The held overscroll gesture's first form (CONSTELLATION.md §"The
+   Reveal Mechanism"). useThresholdReveal writes --reveal ∈ [0, 1]
+   per frame; these surfaces lean in proportionally — the firmament
+   from above the Foyer's ceiling, the Foyer's ground from beneath
+   the sky — and spring back if the visitor releases early. Past
+   the threshold the navigation commits and the full transition
+   (the carpet roll, the route crossfade) carries the rest of the
+   way. Both are decorative (aria-hidden, pointer-events none);
+   the gesture's meaning lives in the navigation it commits.
+   Reduced motion never writes --reveal, so both rest hidden. */
+.threshold-preview-sky {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 24dvh;
+  z-index: 60;
+  pointer-events: none;
+  transform: translateY(calc((var(--reveal, 0) - 1) * 100%));
+  opacity: min(calc(var(--reveal, 0) * 8), 1);
+  background:
+    radial-gradient(circle at 24% 58%, var(--accent-gold) 0 1px, transparent 2px),
+    radial-gradient(circle at 71% 34%, var(--accent-gold) 0 1px, transparent 2px),
+    radial-gradient(circle at 52% 74%, var(--accent-rose) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 87% 66%, var(--accent-violet) 0 1px, transparent 1.8px),
+    linear-gradient(to bottom, var(--sky-zenith) 58%, var(--sky-horizon));
+  box-shadow: var(--shadow-lg);
+  will-change: transform;
+}
+
+.threshold-preview-ground {
+  position: fixed;
+  inset: auto 0 0;
+  height: 18dvh;
+  z-index: 5;
+  pointer-events: none;
+  transform: translateY(calc((1 - var(--reveal, 0)) * 100%));
+  opacity: min(calc(var(--reveal, 0) * 8), 1);
+  background: linear-gradient(to top, var(--bg) 55%, transparent);
+  will-change: transform;
+}
+
+/* ─── Constellation atmosphere handoff ──────────────────────────
+   The WebGL atmosphere paints the complete firmament when it can.
+   The hook marks the frame with data-atmosphere="webgl" after the
+   first frame lands; the canvas fades in over the SVG firmament
+   and the SVG firmament recedes — one sky at a time, crossfading
+   on the 600ms reveal rhythm the .constellation/.webgl-firmament
+   transition below already carries. On WebGL context loss (or any
+   fallback gate) the attribute lifts and the SVG firmament is the
+   firmament again. The structural stars and threads are inside
+   neither rule — they never dim for the weather.
+
+   The frame and the canvas shell carry their structural layout
+   here rather than as Tailwind utilities: the constellation also
+   mounts inside the @dby/sky perf harness, which deliberately
+   skips the Tailwind pipeline. Position is load-bearing for the
+   canvas (it must fill the frame the SVG fills); it belongs to
+   the surface, not to the host app's utility layer. */
+.constellation-frame {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.webgl-firmament {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.constellation-frame[data-atmosphere='webgl'] .webgl-firmament {
+  opacity: 1;
+}
+
+.constellation-svg-firmament {
+  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.constellation-frame[data-atmosphere='webgl'] .constellation-svg-firmament {
+  opacity: 0;
 }
 
 /* Behind-the-veil constellation — when the WorkOverlay is mounted

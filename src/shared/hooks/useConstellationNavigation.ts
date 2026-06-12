@@ -5,6 +5,7 @@ import { cameraBasis, unproject } from '@/shared/geometry/camera';
 import {
   TRAIL_LENGTH,
   applyCameraYaw,
+  broadcastCameraToFirmament,
   broadcastCursorToFirmament,
   projectGlyph,
   projectStars,
@@ -108,6 +109,12 @@ interface UseConstellationNavigationArgs {
 // @/shared/geometry/wellPhysics — this file imports the ones it
 // needs. The constants below tune the visitor's input gestures
 // against the well field and only matter at the hook boundary.
+// A press only becomes a drag after the pointer travels this far —
+// below it, the press is a tap and the star's native anchor click
+// proceeds untouched. Without the threshold every pointerdown
+// captured the pointer, which retargeted the eventual click to the
+// drag surface and made opening a work nearly impossible.
+const DRAG_THRESHOLD_PX = 7;
 const DRAG_SPRING = 60;
 const DRAG_DAMPING = 14;
 const FREE_DAMPING = 4;
@@ -116,6 +123,15 @@ const FLICK_SCALE = 1;
 const MAX_DT_SECONDS = 0.033;
 const IDLE_VELOCITY_EPSILON = 0.005;
 const IDLE_ACCELERATION_EPSILON = 0.04;
+// Settle assist — inside a claimed well at low speed, the claimed
+// star wins decisively: the cursor eases onto the node itself and
+// the integrator is allowed to rest there. Without this, the sum of
+// neighboring wells holds a slow tug-of-war at every settle point —
+// the cursor creeps for seconds, the camera chases it, and the
+// whole world drifts under a pointer that thought it had arrived.
+const SETTLE_SPEED = 0.3;
+const SETTLE_RATE = 7;
+const SETTLE_REST_RAD = 0.004;
 
 // Camera orbit constants. The camera sits at -ORBIT_DISTANCE *
 // cameraSurfacePos and looks at origin — so the surface point lands
@@ -173,6 +189,10 @@ interface NavState {
   vel: MutableVec3;
   mode: 'free' | 'dragging';
   dragTarget: UnitVector3 | null;
+  /** A pointer that has gone down but not yet crossed the drag
+   *  threshold. Cleared on promotion (→ dragging) or release (a
+   *  tap — the click proceeds to whatever anchor it landed on). */
+  press: { pointerId: number; clientX: number; clientY: number } | null;
   pointerSamples: PointerSample[];
   pointerId: number | null;
   heldKeys: Set<string>;
@@ -260,12 +280,11 @@ function orbitalCamera(surfacePos: UnitVector3): Camera {
  *  through the camera. Returns null when the ray misses the sphere
  *  (pointer outside the sphere's silhouette). */
 function pointerToSphere(
-  e: PointerEvent<SVGGElement>,
+  e: PointerEvent<SVGSVGElement>,
   camera: Camera,
   basis: CameraBasis,
 ): UnitVector3 | null {
-  const svg = e.currentTarget.ownerSVGElement;
-  if (!svg) return null;
+  const svg = e.currentTarget;
   const bounds = svg.getBoundingClientRect();
   if (bounds.width === 0 || bounds.height === 0) return null;
   const screenX = ((e.clientX - bounds.left) / bounds.width) * 2 - 1;
@@ -436,6 +455,7 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   const cursorProj = projectGlyph(refs.glyphRef.current, state.pos, camera, basis, viewboxSize);
   projectTrail(cameraGroup, state.trailHistory, camera, basis, viewboxSize);
   broadcastCursorToFirmament(cursorProj, viewboxSize);
+  broadcastCameraToFirmament(camera, basis);
 }
 
 /** Integrate the navigation physics one tick: acceleration → tangent
@@ -509,6 +529,37 @@ function advanceDemoDrift(state: NavState, now: number): void {
   if (t >= 1) state.demoDrift = null;
 }
 
+/** Settle assist: claimed, slow, and free → ease onto the node and
+ *  bleed the residual velocity, so arrival is an ending rather than
+ *  a long negotiation between neighboring wells. Returns whether
+ *  the assist is active this tick (the rest check builds on it). */
+function applySettleAssist(
+  state: NavState,
+  refs: RuntimeRefs,
+  nearest: { key: string; distance: number } | null,
+  speed2: number,
+  dt: number,
+): boolean {
+  const settling =
+    nearest !== null &&
+    state.mode === 'free' &&
+    state.heldKeys.size === 0 &&
+    state.demoDrift === null &&
+    speed2 < SETTLE_SPEED * SETTLE_SPEED;
+  if (!settling) return false;
+  const node = refs.nodesRef.current.find((n) => n.key === nearest.key);
+  if (!node) return false;
+  const eased = slerp(state.pos, node.unitPos, 1 - Math.exp(-SETTLE_RATE * dt));
+  state.pos.x = eased.x;
+  state.pos.y = eased.y;
+  state.pos.z = eased.z;
+  const damp = Math.exp(-SETTLE_RATE * dt);
+  state.vel.x *= damp;
+  state.vel.y *= damp;
+  state.vel.z *= damp;
+  return true;
+}
+
 /**
  * One RAF tick of the constellation's navigation: read input state,
  * advance physics or demo drift, shift the trail, settle the active
@@ -526,7 +577,13 @@ function advanceDemoDrift(state: NavState, now: number): void {
  */
 function tick(now: number, refs: RuntimeRefs): void {
   const state = refs.stateRef.current;
-  const dt = state.lastTime === 0 ? 0 : Math.min((now - state.lastTime) / 1000, MAX_DT_SECONDS);
+  // Two clocks: the force integrator clamps its step (an unbounded
+  // dt teleports the cursor after a hitch or hidden-tab return),
+  // but the exponential eases — camera lag, settle assist — are
+  // unconditionally stable and must use real time, or a low-fps
+  // device plays the whole arrival in slow motion.
+  const dtReal = state.lastTime === 0 ? 0 : (now - state.lastTime) / 1000;
+  const dt = Math.min(dtReal, MAX_DT_SECONDS);
   state.lastTime = now;
 
   // Demonstration drift suspends the physics integrator and slerps
@@ -552,6 +609,8 @@ function tick(now: number, refs: RuntimeRefs): void {
   const nearest = geodesicNearestNode(state.pos, refs.nodesRef.current, WELL_RADIUS_RAD);
   if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
 
+  const settling = applySettleAssist(state, refs, nearest, speed2, dtReal);
+
   const claim = nearest ? 1 - clamp(nearest.distance / WELL_RADIUS_RAD, 0, 1) : 0;
   writeGlyphChannels(refs.glyphRef.current, claim, Math.sqrt(speed2));
 
@@ -561,7 +620,7 @@ function tick(now: number, refs: RuntimeRefs): void {
   // follow, and the projected scene visibly shifts toward where
   // the visitor is reaching. Settled state: glyph at center, world
   // centered on the active well's projection.
-  const lagT = 1 - Math.exp(-CAMERA_LAG_RATE * dt);
+  const lagT = 1 - Math.exp(-CAMERA_LAG_RATE * dtReal);
   const slerped = slerp(state.cameraSurfacePos, state.pos, lagT);
   state.cameraSurfacePos.x = slerped.x;
   state.cameraSurfacePos.y = slerped.y;
@@ -584,18 +643,40 @@ function tick(now: number, refs: RuntimeRefs): void {
     applyCameraYaw(refs.cameraRef.current, yaw);
   }
 
-  // speed2 above is the post-step magnitude; vel hasn't been mutated
-  // since, so it's the right value to gate the rest check on.
+  // Rest: either the classic full-stillness check, or — settled
+  // inside a well and pinned to its node — rest there exactly. The
+  // exact snap makes the persisted cursor idempotent (restore lands
+  // on the node, not on the well's historical entry point) and lets
+  // the camera, the projector, and the atmosphere's calm cadence
+  // all actually stop.
+  const pinned =
+    settling &&
+    nearest !== null &&
+    nearest.distance < SETTLE_REST_RAD &&
+    speed2 <= IDLE_VELOCITY_EPSILON * IDLE_VELOCITY_EPSILON;
+  if (pinned) {
+    const node = refs.nodesRef.current.find((n) => n.key === nearest.key);
+    if (node) {
+      state.pos.x = node.unitPos.x;
+      state.pos.y = node.unitPos.y;
+      state.pos.z = node.unitPos.z;
+    }
+  }
+  // The camera must finish its catch-up before the loop sleeps, or
+  // the world freezes mid-trail and wakes with a visible jump.
+  const cameraSettled = geodesicDistance(state.cameraSurfacePos, state.pos) < 0.005;
   if (
+    (pinned ||
+      (speed2 <= IDLE_VELOCITY_EPSILON * IDLE_VELOCITY_EPSILON && isAtRest(state, accel))) &&
+    cameraSettled &&
     state.mode === 'free' &&
-    state.heldKeys.size === 0 &&
-    speed2 <= IDLE_VELOCITY_EPSILON * IDLE_VELOCITY_EPSILON &&
-    isAtRest(state, accel)
+    state.heldKeys.size === 0
   ) {
     state.vel.x = 0;
     state.vel.y = 0;
     state.vel.z = 0;
     state.raf = null;
+    persistCursorPos(state.pos);
     return;
   }
   state.raf = globalThis.requestAnimationFrame((t) => tick(t, refs));
@@ -614,50 +695,82 @@ function focusNodeByKey(key: string): void {
   handle?.focus();
 }
 
-function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void {
+function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): void {
   const state = refs.stateRef.current;
-  const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
-  if (!pt) return;
   // First real interaction. Cancel any in-flight demo drift AND
   // any pending demo-drift timeout so the visitor's input wins
-  // immediately. The pending-timeout cancel is the fix for the
-  // race the codex review flagged: a fast tap-and-release before
-  // DEMO_DELAY_MS would otherwise let the drift kick in 1.4s
-  // later, overriding control. Mark the visit so future sessions
-  // skip the full demo.
+  // immediately. Mark the visit so future sessions skip the full
+  // demo.
   state.demoDrift = null;
   cancelPendingDemo(state);
   markVisited();
+  // The press is provisional: no capture, no physics. A tap stays a
+  // tap (the anchor's click fires natively); only movement past the
+  // threshold promotes it into a drag — see handlePointerMove.
+  state.press = { pointerId: e.pointerId, clientX: e.clientX, clientY: e.clientY };
+  if (prefersReducedMotion()) {
+    const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
+    if (!pt) return;
+    const nearest = geodesicNearestNode(pt, refs.nodesRef.current);
+    if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
+  }
+}
+
+/** Promote a threshold-crossing press into a real drag: capture the
+ *  pointer (clicks stop mattering from here), seed the spring's
+ *  target and the flick sampler, and wake the integrator. */
+function promoteToDrag(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>, pt: UnitVector3): void {
+  const state = refs.stateRef.current;
+  state.press = null;
   state.mode = 'dragging';
   state.dragTarget = pt;
   state.pointerId = e.pointerId;
   state.pointerSamples = [{ time: globalThis.performance.now(), pos: pt }];
   e.currentTarget.setPointerCapture(e.pointerId);
+  ensureRunning(refs);
+}
+
+function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): void {
+  const state = refs.stateRef.current;
+  if (state.mode === 'dragging' && state.pointerId === e.pointerId) {
+    const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
+    if (!pt) return;
+    state.dragTarget = pt;
+    const now = globalThis.performance.now();
+    state.pointerSamples.push({ time: now, pos: pt });
+    pruneSamples(state.pointerSamples, now, VELOCITY_SAMPLE_WINDOW_MS);
+    return;
+  }
+  if (state.press?.pointerId !== e.pointerId) return;
   if (prefersReducedMotion()) {
+    // Same destinations, different choreography: while pressed, the
+    // claim follows the pointer by nearest-node snap.
+    const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
+    if (!pt) return;
     const nearest = geodesicNearestNode(pt, refs.nodesRef.current);
     if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
     return;
   }
-  ensureRunning(refs);
-}
-
-function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void {
-  const state = refs.stateRef.current;
-  if (state.mode !== 'dragging' || state.pointerId !== e.pointerId) return;
+  const dx = e.clientX - state.press.clientX;
+  const dy = e.clientY - state.press.clientY;
+  if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return;
   const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
-  if (!pt) return;
-  state.dragTarget = pt;
-  const now = globalThis.performance.now();
-  state.pointerSamples.push({ time: now, pos: pt });
-  pruneSamples(state.pointerSamples, now, VELOCITY_SAMPLE_WINDOW_MS);
-  if (prefersReducedMotion()) {
-    const nearest = geodesicNearestNode(pt, refs.nodesRef.current);
-    if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
+  if (!pt) {
+    state.press = null;
+    return;
   }
+  promoteToDrag(refs, e, pt);
 }
 
-function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGGElement>): void {
+function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): void {
   const state = refs.stateRef.current;
+  if (state.press?.pointerId === e.pointerId) {
+    // A tap: the press never promoted. Let the browser deliver the
+    // click to the star's anchor — opening a work is the click's
+    // job, traveling is the drag's.
+    state.press = null;
+    return;
+  }
   if (state.pointerId !== e.pointerId) return;
   if (prefersReducedMotion()) {
     const target = state.dragTarget ?? unitVector(state.pos.x, state.pos.y, state.pos.z);
@@ -744,6 +857,7 @@ function buildInitialState(): NavState {
     vel: { x: 0, y: 0, z: 0 },
     mode: 'free',
     dragTarget: null,
+    press: null,
     pointerSamples: [],
     pointerId: null,
     heldKeys: new Set(),
@@ -833,10 +947,10 @@ export function useConstellationNavigation({
 
   return {
     dragHandlers: {
-      onPointerDown: (e: PointerEvent<SVGGElement>) => handlePointerDown(refs, e),
-      onPointerMove: (e: PointerEvent<SVGGElement>) => handlePointerMove(refs, e),
-      onPointerUp: (e: PointerEvent<SVGGElement>) => handlePointerUp(refs, e),
-      onPointerCancel: (e: PointerEvent<SVGGElement>) => handlePointerUp(refs, e),
+      onPointerDown: (e: PointerEvent<SVGSVGElement>) => handlePointerDown(refs, e),
+      onPointerMove: (e: PointerEvent<SVGSVGElement>) => handlePointerMove(refs, e),
+      onPointerUp: (e: PointerEvent<SVGSVGElement>) => handlePointerUp(refs, e),
+      onPointerCancel: (e: PointerEvent<SVGSVGElement>) => handlePointerUp(refs, e),
     },
     onKeyDown: (e: KeyboardEvent) => handleKeyDown(refs, e),
     onKeyUp: (e: KeyboardEvent) => handleKeyUp(refs, e),

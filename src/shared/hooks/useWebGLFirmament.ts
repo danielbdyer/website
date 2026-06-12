@@ -1,347 +1,665 @@
 import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
+import type { Vec3 } from '@/shared/geometry/sphere';
+import type { AtmosphericScene } from '@/shared/webgl/atmosphereScene';
+import type { AtmosphereFrameInput, AtmosphereHandles } from '@/shared/webgl/atmosphereRenderer';
+import {
+  fitViewboxToCanvas,
+  projectPointsToCanvas,
+  applyAffine,
+} from '@/shared/webgl/atmosphereProjection';
+import { buildSkyPalette } from '@/shared/webgl/palette';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
+import { getSkyCamera, getSkyCameraVersion, subscribeSkyCamera } from '@/shared/state/skyCamera';
 
-// Inline GLSL — embedded at build time via the JS bundler. Splitting
-// shader code into separate .glsl files would require a Vite raw-text
-// import; for one shader we bundle inline. If a second shader earns
-// its place, the extraction earns its place too.
-
-// ogl's `Triangle` exposes its vertex attribute as `position` (no
-// `a` prefix); the vertex shader's attribute name must match exactly,
-// or ogl's program linker leaves the attribute unbound. Downstream
-// uniform iteration then trips on the undefined attribute slot
-// ("Cannot read properties of undefined (reading 'needsUpdate')").
-// The convention varies between libraries — three.js uses `position`,
-// raw WebGL tutorials often show `a_position` — so the alignment is
-// load-bearing rather than stylistic.
-const VERTEX_SHADER = /* glsl */ `
-  attribute vec2 position;
-  varying vec2 vUv;
-  void main() {
-    vUv = position * 0.5 + 0.5;
-    gl_Position = vec4(position, 0.0, 1.0);
-  }
-`;
-
-// Fragment shader — paints a continuous, cursor-aware atmospheric
-// layer over the SVG firmament. Capability that SVG filters cannot
-// deliver:
+// The atmospheric layer's runtime — CONSTELLATION_HORIZON.md's
+// Layer 1, in its full Phase 2 + 3 form. The hook owns what the
+// renderer cannot: the fallback gates, the DOM reads that keep the
+// WebGL paint registered with the structural SVG (computed-style
+// transforms, the companion glyph's live position), the camera
+// signal, the theme observer, and the loop's lifetime.
 //
-//  - Continuous procedural noise via simplex (the standard Ashima
-//    Arts WebGL implementation) sampled at a slow drift, so the
-//    paper-grain breathes rather than sitting frozen as feTurbulence
-//    does.
-//  - A cursor-following luminous "pool of attention" — areas near
-//    the visitor's gaze brighten softly, like cupping a hand over a
-//    candle. Fades with a smoothstep so the boundary is honest weather,
-//    not a hard edge.
-//  - Theme-aware tone via `uTheme` mixed between warm (light) and cool
-//    (dark) palettes. The theme transition's 500ms crossfade animates
-//    the uniform on toggle.
+// Composition contract: the canvas paints the complete firmament
+// (dome, halos, motes) behind the structural SVG. When the first
+// frame lands, the constellation frame gains data-atmosphere="webgl"
+// and the SVG's own firmament crossfades out; if the context is
+// lost or the layer unmounts, the attribute lifts and the SVG
+// firmament returns. The structural layer never notices either way.
 //
-// All output is additive — `gl_FragColor` is composited via the
-// canvas's `mix-blend-mode: soft-light` so it deepens the SVG layer
-// rather than replacing it. If WebGL is unavailable, the canvas
-// doesn't render and the SVG firmament is still complete.
+// Reduced motion holds the shader on a still frame (the horizon
+// doc's exact wording) and repaints only when the camera snaps,
+// the theme flips, or the viewport resizes. Save-Data, forced
+// colors, and prefers-contrast: more skip the layer entirely — the
+// SVG firmament is the honest fallback for each.
 
-const FRAGMENT_SHADER = /* glsl */ `
-  precision mediump float;
-  varying vec2 vUv;
-  uniform float uTime;
-  uniform vec2 uCursor;       // [-1, 1] normalized cursor offset
-  uniform float uTheme;       // 0 = light, 1 = dark
-  uniform float uActive;      // 1 if cursor is over the surface, 0 otherwise
+const VIEWBOX = 1000;
+const VIEWBOX_CENTER = VIEWBOX / 2;
+const DAYSTAR_VIEWBOX = { x: 500, y: 240 };
+const ACTIVE_EASE_RATE = 7;
+const POOL_EASE_RATE = 5;
+// The parallax multipliers tokens.css applies to the two layered
+// groups (.constellation-parallax--sky / --firmament). The chain
+// replay computes the same translate from the raw vars; if the CSS
+// multipliers tune, these tune with them.
+const PARALLAX_SKY_PX = -14;
+const PARALLAX_FIRMAMENT_PX = -6;
+// Rate matching the 800ms signature ease the CSS consumers carry —
+// an exponential at 6/s reaches ~95% by 500ms, the same felt arrival.
+const PARALLAX_EASE_RATE = 6;
+// Consecutive still frames before the loop halves its cadence.
+const CALM_AFTER_FRAMES = 45;
 
-  // Simplex 2D noise — Ashima Arts, public domain.
-  vec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x, 289.0);}
-  float snoise(vec2 v){
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-                        -0.577350269189626, 0.024390243902439);
-    vec2 i  = floor(v + dot(v, C.yy));
-    vec2 x0 = v -   i + dot(i, C.xx);
-    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-    vec4 x12 = x0.xyxy + C.xxzz;
-    x12.xy -= i1;
-    i = mod(i, 289.0);
-    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0))
-                            + i.x + vec3(0.0, i1.x, 1.0));
-    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
-                            dot(x12.zw,x12.zw)), 0.0);
-    m = m*m; m = m*m;
-    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
-    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
-    vec3 g;
-    g.x  = a0.x  * x0.x  + h.x  * x0.y;
-    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-    return 130.0 * dot(m, g);
-  }
-
-  void main() {
-    // Noise at two octaves, drifting slowly. The drift is bounded by
-    // a low time multiplier so the motion is felt rather than seen
-    // — a sky breathing, not a sky scrolling.
-    float t = uTime * 0.05;
-    vec2 p = vUv * 4.0 + vec2(t, t * 0.7);
-    float n = snoise(p) * 0.5 + snoise(p * 2.3) * 0.25;
-    n = n * 0.5 + 0.5;
-
-    // Cursor pool — a soft luminous disc that follows the visitor's
-    // sphere-surface position (driven by the navigation cursor, not
-    // the raw pointer). smoothstep gives the falloff; squaring it
-    // gives a slightly rotund (bulb-like) profile rather than a
-    // linear ramp, so the pool feels held rather than flat — the
-    // Galaxy hint Pass 2 is reaching for. uActive gates the pool
-    // to zero when the cursor is outside the surface.
-    vec2 cursorUv = uCursor * 0.5 + 0.5;
-    float dist = distance(vUv, cursorUv);
-    float poolBase = smoothstep(0.55, 0.0, dist);
-    float pool = poolBase * poolBase * uActive * 0.45;
-
-    // Theme palette — warm-glow in light mode, cool-silver in dark.
-    vec3 lightTone = vec3(0.95, 0.85, 0.65);
-    vec3 darkTone  = vec3(0.55, 0.6, 0.85);
-    vec3 tone = mix(lightTone, darkTone, uTheme);
-
-    // Saturation boost in the pool — pushes the tone toward a richer
-    // chroma where the visitor's attention sits. Computed as a soft
-    // shift away from the noise's mid-grey toward the saturated
-    // tone; pool * 0.35 keeps the boost subtle.
-    vec3 saturatedTone = tone + (tone - vec3(0.5)) * 0.4;
-    vec3 baseTone = mix(tone, saturatedTone, pool * 0.35);
-
-    // Composite: the noise gives texture; the pool gives focus. The
-    // theme tone shifts the whole layer warm or cool; the pool both
-    // brightens and saturates near the cursor.
-    vec3 color = baseTone * (n * 0.18 + pool);
-    float alpha = (n * 0.12) + pool * 0.7;
-
-    // Vignette — a vignette/painted sense of attention, not a
-    // photographic darkening. Centered distance maps via smoothstep
-    // so the corners fall off softly toward the umber ground rather
-    // than hard-clipping. Multiplies into both the color and the
-    // alpha so the WebGL contribution simply *recedes* at the edges
-    // and the SVG firmament beneath becomes the final paint there.
-    // Concentrates attention toward the polestar at the center.
-    vec2 centered = vUv - 0.5;
-    float vignetteDist = length(centered) * 1.4;
-    float vignette = smoothstep(0.95, 0.35, vignetteDist);
-    color *= vignette;
-    alpha *= vignette;
-
-    gl_FragColor = vec4(color, alpha);
-  }
-`;
-
-interface FirmamentHandles {
-  canvas: HTMLCanvasElement;
-  dispose: () => void;
+interface SkyDomElements {
+  readonly frame: HTMLElement;
+  readonly svg: SVGSVGElement;
+  readonly parallaxFirmament: Element;
+  readonly parallaxSky: Element;
+  readonly cameraGroup: Element;
+  readonly rotates: Element;
+  readonly glyph: SVGCircleElement | null;
 }
 
-// Type-only import — ogl's types come along at compile time but the
-// runtime module stays lazily-imported inside initWebGL, so no-route
-// visitors don't pay for the WebGL bundle weight.
-import type { Mesh, Renderer } from 'ogl';
-
-interface UniformsShape {
-  uTime: { value: number | readonly number[] };
-  uCursor: { value: number | readonly number[] };
-  uActive: { value: number | readonly number[] };
-}
-interface RenderLoopArgs {
-  uniforms: UniformsShape;
-  renderer: Renderer;
-  mesh: Mesh;
-  canvas: HTMLCanvasElement;
+interface MutableVec3 {
+  x: number;
+  y: number;
+  z: number;
 }
 
-// Drives the rAF render loop, with a try/catch around the per-frame
-// work so a GPU-context loss or ogl-internal throw halts the loop
-// (and hides the canvas) rather than escaping as a recurring
-// pageerror. Returns a `stop` callback the disposer calls on
-// unmount. Extracted so initWebGL stays under the 80-line ceiling
-// per REACT_NORTH_STAR.md §"Threshold System".
-//
-// Reads the navigation cursor signal each frame so the firmament's
-// luminous pool of attention follows the visitor's surface position
-// on the latent sphere — not the raw pointer. The pool now lives
-// where the cursor lives, which means it stays anchored after a
-// flick releases (the cursor's spring carries the pool along) and
-// settles into the active well when the navigation does.
-function startRenderLoop({ uniforms, renderer, mesh, canvas }: RenderLoopArgs): () => void {
-  let raf = 0;
-  let halted = false;
-  const startTime = performance.now();
-  const tick = () => {
-    if (halted) return;
-    try {
-      uniforms.uTime.value = (performance.now() - startTime) / 1000;
-      const cursor = getConstellationCursor();
-      uniforms.uCursor.value = [cursor.x, cursor.y];
-      uniforms.uActive.value = cursor.active ? 1 : 0;
-      renderer.render({ scene: mesh });
-    } catch {
-      halted = true;
-      canvas.style.display = 'none';
-      return;
+interface FrameBuffers {
+  readonly starPositions: readonly Vec3[];
+  readonly starCenters: Float32Array;
+  readonly starActive: Float32Array;
+  readonly motePositions: MutableVec3[];
+  readonly moteCenters: Float32Array;
+}
+
+interface MutableFit {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+interface LoopState {
+  readonly buffers: FrameBuffers;
+  readonly scene: AtmosphericScene;
+  readonly els: SkyDomElements;
+  readonly handles: AtmosphereHandles;
+  readonly fitMode: 'cover' | 'contain';
+  readonly activeIndexRef: RefObject<number>;
+  /** Viewbox→buffer-px mapping, measured against the SVG's actual
+   *  box (not the canvas box — the two can differ by chrome above
+   *  the SVG). Recomputed on resize, read every frame. */
+  readonly fit: MutableFit;
+  readonly chain: ChainState;
+  /** The one frame-input object, mutated in place per paint — the
+   *  steady-state loop allocates nothing. */
+  readonly frame: AtmosphereFrameInput;
+  poolStrength: number;
+  lastTime: number;
+}
+
+/** Measure the viewbox→buffer-px fit through the SVG's own layout
+ *  box, then re-anchor it to the canvas. This keeps the WebGL paint
+ *  registered with the structural layer even when the two boxes
+ *  disagree (the perf harness mounts without the host's utility
+ *  CSS, for example). */
+function measureFit(state: LoopState): void {
+  const canvas = state.handles.canvas;
+  const canvasRect = canvas.getBoundingClientRect();
+  const svgRect = state.els.svg.getBoundingClientRect();
+  if (canvasRect.width === 0 || svgRect.width === 0) {
+    const fallback = fitViewboxToCanvas(canvas.width, canvas.height, VIEWBOX, state.fitMode);
+    state.fit.scale = fallback.scale;
+    state.fit.offsetX = fallback.offsetX;
+    state.fit.offsetY = fallback.offsetY;
+    return;
+  }
+  const dpr = canvas.width / canvasRect.width;
+  const inner = fitViewboxToCanvas(svgRect.width, svgRect.height, VIEWBOX, state.fitMode);
+  state.fit.scale = inner.scale * dpr;
+  state.fit.offsetX = (svgRect.left - canvasRect.left + inner.offsetX) * dpr;
+  state.fit.offsetY = (svgRect.top - canvasRect.top + inner.offsetY) * dpr;
+}
+
+function locateSkyDom(container: HTMLElement): SkyDomElements | null {
+  const frame = container.closest<HTMLElement>('.constellation-frame');
+  if (!frame) return null;
+  const svg = frame.querySelector<SVGSVGElement>('svg.constellation');
+  const parallaxFirmament = frame.querySelector('.constellation-parallax--firmament');
+  const parallaxSky = frame.querySelector('.constellation-parallax--sky');
+  const cameraGroup = frame.querySelector('.constellation-camera');
+  const rotates = frame.querySelector('.constellation-rotates');
+  if (!svg || !parallaxFirmament || !parallaxSky || !cameraGroup || !rotates) return null;
+  return {
+    frame,
+    svg,
+    parallaxFirmament,
+    parallaxSky,
+    cameraGroup,
+    rotates,
+    glyph: frame.querySelector<SVGCircleElement>('[data-companion]'),
+  };
+}
+
+function allocateBuffers(scene: AtmosphericScene): FrameBuffers {
+  return {
+    starPositions: scene.stars.map((star) => star.unitPosition),
+    starCenters: new Float32Array(scene.stars.length * 2),
+    starActive: new Float32Array(scene.stars.length),
+    motePositions: scene.motes.map((mote) => ({ ...mote.basePosition })),
+    moteCenters: new Float32Array(scene.motes.length * 2),
+  };
+}
+
+/** Drift each mote around its rest position — slow tangent bobbing,
+ *  frozen at t = 0 under reduced motion. Mutates the scratch
+ *  positions in place (hot path, once per frame). */
+function driftMotes(state: LoopState, t: number): void {
+  const { motes } = state.scene;
+  const out = state.buffers.motePositions;
+  for (const [i, m] of motes.entries()) {
+    const swingA = Math.sin(m.frequencyA * t + m.phase) * m.amplitude;
+    const swingB = Math.cos(m.frequencyB * t + m.phase * 1.7) * m.amplitude * 0.8;
+    const p = out[i]!;
+    p.x = m.basePosition.x + m.driftA.x * swingA + m.driftB.x * swingB;
+    p.y = m.basePosition.y + m.driftA.y * swingA + m.driftB.y * swingB;
+    p.z = m.basePosition.z + m.driftA.z * swingA + m.driftB.z * swingB;
+  }
+}
+
+interface MutableAffine {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  e: number;
+  f: number;
+}
+
+/** The live transform stack, replayed numerically. Persistent and
+ *  mutated in place each frame — the loop's chain reads allocate
+ *  nothing and, critically, never call getComputedStyle: a computed-
+ *  style read inside an animating subtree forces a synchronous style
+ *  recalc every frame, which was the loop's main-thread spike. */
+interface ChainState {
+  parSkyX: number;
+  parSkyY: number;
+  parFirX: number;
+  parFirY: number;
+  spin: number;
+  rotation: Animation | null;
+  rotationDurationMs: number;
+  world: MutableAffine;
+  glyphChain: MutableAffine;
+}
+
+function newChainState(): ChainState {
+  return {
+    parSkyX: 0,
+    parSkyY: 0,
+    parFirX: 0,
+    parFirY: 0,
+    spin: 0,
+    rotation: null,
+    rotationDurationMs: 0,
+    world: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    glyphChain: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+  };
+}
+
+function inlineVar(el: Element, name: string): number {
+  const raw = (el as Element & ElementCSSInlineStyle).style.getPropertyValue(name);
+  const value = Number.parseFloat(raw);
+  return Number.isNaN(value) ? 0 : value;
+}
+
+/** Locate the 600s heavens animation once; read its clock per frame.
+ *  Animation.currentTime is a plain property — unlike a computed
+ *  transform it costs no style recalc. Under reduced motion the
+ *  global CSS collapses the duration and the angle parks near 0. */
+function readSpin(els: SkyDomElements, chain: ChainState): number {
+  if (!chain.rotation) {
+    const animations = els.rotates.getAnimations?.() ?? [];
+    chain.rotation = animations[0] ?? null;
+    if (chain.rotation) {
+      const timing = chain.rotation.effect?.getTiming();
+      chain.rotationDurationMs = typeof timing?.duration === 'number' ? timing.duration : 600_000;
     }
-    raf = requestAnimationFrame(tick);
-  };
-  raf = requestAnimationFrame(tick);
-  return () => {
-    halted = true;
-    cancelAnimationFrame(raf);
-  };
+  }
+  const t = chain.rotation?.currentTime;
+  if (typeof t !== 'number' || chain.rotationDurationMs <= 0) return 0;
+  return ((t % chain.rotationDurationMs) / chain.rotationDurationMs) * Math.PI * 2;
 }
 
-// Sets up an ogl-driven WebGL canvas inside the given container,
-// running the fragment shader above with cursor + theme uniforms.
-// The hook handles: canvas creation, shader compilation, animation
-// loop, resize observer, theme observation, cursor tracking, and
-// cleanup. If WebGL is unsupported or any of the fallback gates is
-// active (Save-Data, reduced-motion, no JS), the hook does not
-// initialize and the container stays empty — the SVG firmament
-// already provides the baseline.
-export function useWebGLFirmament(containerRef: React.RefObject<HTMLDivElement | null>) {
-  const handlesRef = useRef<FirmamentHandles | null>(null);
+/** Build a rotation-about-viewbox-center plus translate, in place. */
+function writeRotationAffine(out: MutableAffine, angle: number, tx: number, ty: number): void {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  out.a = cos;
+  out.b = sin;
+  out.c = -sin;
+  out.d = cos;
+  out.e = VIEWBOX_CENTER - (cos * VIEWBOX_CENTER - sin * VIEWBOX_CENTER) + tx;
+  out.f = VIEWBOX_CENTER - (sin * VIEWBOX_CENTER + cos * VIEWBOX_CENTER) + ty;
+}
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    if (!shouldRenderWebGL()) return;
+/** Advance the chain replay one frame: smooth the parallax vars
+ *  toward their targets (matching the CSS consumers' 800ms arrival),
+ *  read the heavens' clock, and rebuild the two affines. The camera
+ *  group's yaw and the rotates group's spin share the same pivot, so
+ *  their rotations compose by addition. (--cam-x/--cam-y are part of
+ *  the camera transform's vocabulary but nothing writes them today;
+ *  if they come alive, read them here the same way.) */
+function advanceChains(els: SkyDomElements, chain: ChainState, dt: number): number {
+  const k = 1 - Math.exp(-PARALLAX_EASE_RATE * dt);
+  const targetX = inlineVar(els.svg, '--parallax-x') * PARALLAX_SKY_PX;
+  const targetY = inlineVar(els.svg, '--parallax-y') * PARALLAX_SKY_PX;
+  chain.parSkyX += (targetX - chain.parSkyX) * k;
+  chain.parSkyY += (targetY - chain.parSkyY) * k;
+  chain.parFirX = (chain.parSkyX * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
+  chain.parFirY = (chain.parSkyY * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
+  const yaw = (inlineVar(els.cameraGroup, '--cam-yaw') * Math.PI) / 180;
+  chain.spin = readSpin(els, chain);
+  writeRotationAffine(chain.world, yaw + chain.spin, chain.parSkyX, chain.parSkyY);
+  writeRotationAffine(chain.glyphChain, yaw, chain.parSkyX, chain.parSkyY);
+  // Residual in viewbox px, normalized so ~0.07px reads as settled.
+  return (Math.abs(targetX - chain.parSkyX) + Math.abs(targetY - chain.parSkyY)) / 14;
+}
 
-    let cancelled = false;
-    void initWebGL(container)
-      .then((handles) => {
-        if (cancelled || !handles) return;
-        handlesRef.current = handles;
-      })
-      .catch(() => {
-        // WebGL init failed for any reason (context creation, shader
-        // compile, ogl internals throwing on a particular GPU).
-        // Swallow the error so it does not surface as an unhandled
-        // pageerror — the SVG firmament beneath the canvas already
-        // provides the complete fallback. Real-device failures
-        // surface in monitoring; tests that gate on console errors
-        // (e2e/error-boundary.spec.ts) stay green.
-      });
+/** Ease per-star activation toward its target; returns the largest
+ *  remaining delta so the loop knows when the claim has settled. */
+function easeActivations(state: LoopState, k: number): number {
+  const active = state.buffers.starActive;
+  const target = state.activeIndexRef.current;
+  let residual = 0;
+  for (const i of active.keys()) {
+    const goal = i === target ? 1 : 0;
+    const next = active[i]! + (goal - active[i]!) * k;
+    active[i] = next;
+    const delta = Math.abs(goal - next);
+    if (delta > residual) residual = delta;
+  }
+  return residual;
+}
 
-    return () => {
-      cancelled = true;
-      handlesRef.current?.dispose();
-      handlesRef.current = null;
-    };
-  }, [containerRef]);
+/** Assemble and paint one atmosphere frame. `timeSeconds` is the
+ *  loop clock (0 and frozen under reduced motion). The fit is
+ *  computed against the drawing buffer, so every position handed to
+ *  the shader is already in buffer pixels. Returns the frame's
+ *  unsettledness (0 = nothing but ambient time is moving) so the
+ *  loop can halve its cadence when the sky is calm. */
+function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: number): number {
+  const { els, handles, buffers, fit, chain, frame } = state;
+  const { camera, basis } = getSkyCamera();
+  const dt = state.lastTime === 0 ? 0.016 : Math.min(timeSeconds - state.lastTime, 0.1);
+  state.lastTime = timeSeconds;
+  const parallaxResidual = advanceChains(els, chain, dt);
+  projectPointsToCanvas(
+    buffers.starPositions,
+    camera,
+    basis,
+    chain.world,
+    fit,
+    VIEWBOX,
+    buffers.starCenters,
+  );
+  driftMotes(state, timeSeconds);
+  projectPointsToCanvas(
+    buffers.motePositions,
+    camera,
+    basis,
+    chain.glyphChain,
+    fit,
+    VIEWBOX,
+    buffers.moteCenters,
+  );
+  const activeResidual = easeActivations(
+    state,
+    motion === 0 ? 1 : 1 - Math.exp(-ACTIVE_EASE_RATE * dt),
+  );
+  const cursor = getConstellationCursor();
+  const poolTarget = cursor.active ? 1 : 0;
+  state.poolStrength += (poolTarget - state.poolStrength) * (1 - Math.exp(-POOL_EASE_RATE * dt));
+  const glyphX = els.glyph ? els.glyph.cx.baseVal.value : VIEWBOX_CENTER;
+  const glyphY = els.glyph ? els.glyph.cy.baseVal.value : VIEWBOX_CENTER;
+  const pool = applyAffine(chain.glyphChain, glyphX, glyphY);
+  frame.timeSeconds = timeSeconds;
+  frame.motion = motion;
+  frame.camera = camera;
+  frame.basis = basis;
+  frame.fit.scale = fit.scale;
+  frame.fit.offsetX = fit.offsetX;
+  frame.fit.offsetY = fit.offsetY;
+  // The firmament group's translate, replayed as a ray offset so
+  // the painted backdrop drifts with the cursor parallax.
+  frame.domeShift.x = -chain.parFirX / 440;
+  frame.domeShift.y = chain.parFirY / 440;
+  frame.spin = chain.spin;
+  frame.pool.x = fit.offsetX + pool.x * fit.scale;
+  frame.pool.y = fit.offsetY + pool.y * fit.scale;
+  frame.pool.strength = state.poolStrength * motion;
+  frame.daystar.x = fit.offsetX + (DAYSTAR_VIEWBOX.x + chain.parFirX) * fit.scale;
+  frame.daystar.y = fit.offsetY + (DAYSTAR_VIEWBOX.y + chain.parFirY) * fit.scale;
+  handles.render(frame);
+  return Math.max(activeResidual, parallaxResidual, Math.abs(poolTarget - state.poolStrength));
+}
+
+function prefersStillAtmosphere(): boolean {
+  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
 function shouldRenderWebGL(): boolean {
-  if (globalThis.window === undefined) return false;
-  if (typeof document === 'undefined') return false;
-  // Reduced motion: silence the firmament's animation loop entirely.
-  if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
-  // Save-Data: don't ship the WebGL atmospheric layer when the
-  // visitor has signaled bandwidth conservation. The SVG firmament
-  // is sufficient.
+  if (globalThis.window === undefined || typeof document === 'undefined') return false;
+  // The perf probe's deterministic knob — CI measures the SVG
+  // surface against calibrated thresholds; SwiftShader WebGL would
+  // skew them. Visitors never carry this param.
+  if (new URLSearchParams(globalThis.location.search).get('atmosphere') === 'off') return false;
+  // Save-Data: the painted weather is exactly the weight to shed.
   const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
   if (conn?.saveData) return false;
+  // Forced colors / prefers-contrast: the painterly layer softens
+  // contrast by nature; the SVG firmament is the honest form.
+  if (globalThis.matchMedia?.('(forced-colors: active)').matches) return false;
+  if (globalThis.matchMedia?.('(prefers-contrast: more)').matches) return false;
   return true;
 }
 
-async function initWebGL(container: HTMLDivElement): Promise<FirmamentHandles | null> {
-  // Probe WebGL availability with our own canvas before letting ogl
-  // try. ogl's Renderer constructor calls
-  // `console.error('unable to create webgl context')` on failure
-  // (ogl/src/core/Renderer.js line 46) — and the e2e error-boundary
-  // spec catches every console error as a test failure. Headless
-  // CI Chromium without GPU emulation falls into exactly this case.
-  // Pre-probing here lets us bail silently before ogl gets the
-  // chance to log; the SVG firmament continues as the only firmament
-  // with no log noise.
+interface MountedAtmosphere {
+  dispose: () => void;
+  repaint: () => void;
+}
+
+/** Wait out the sky's arrival animation before paying for context
+ *  creation and shader compiles — the SVG firmament is the arrival's
+ *  first-paint surface anyway, and a GL init mid-carpet-roll is a
+ *  stutter the visitor feels. Resolves immediately when no arrival
+ *  is running (direct loads, reduced motion, the perf harness). */
+function arrivalSettled(container: HTMLElement): Promise<void> {
+  const arrival = container.closest('.sky-arrival');
+  const running = arrival?.getAnimations?.().find((animation) => animation.playState === 'running');
+  if (!running) return Promise.resolve();
+  return new Promise((resolve) => {
+    const fallback = setTimeout(resolve, 2000);
+    const settled = () => {
+      clearTimeout(fallback);
+      resolve();
+    };
+    running.finished.then(settled, settled);
+  });
+}
+
+async function mountAtmosphere(
+  container: HTMLDivElement,
+  scene: AtmosphericScene,
+  fitMode: 'cover' | 'contain',
+  activeIndexRef: RefObject<number>,
+): Promise<MountedAtmosphere | null> {
+  await arrivalSettled(container);
+  // Probe with our own canvas before ogl gets the chance to
+  // console.error on context failure (headless CI without GPU).
   const probe = document.createElement('canvas');
-  if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
-    return null;
-  }
+  if (!probe.getContext('webgl2') && !probe.getContext('webgl')) return null;
+  const els = locateSkyDom(container);
+  if (!els) return null;
+  const { createAtmosphere } = await import('@/shared/webgl/atmosphereRenderer');
+  const root = document.documentElement;
+  const readToken = (token: string) => getComputedStyle(root).getPropertyValue(token);
+  const isDark = () => root.classList.contains('dk');
+  // 1.5 is the sweet spot for a layer that is entirely soft paint:
+  // the structural SVG above carries every crisp mark, so the
+  // atmosphere's pixels can be 44% fewer than a dpr-2 buffer with no
+  // visible cost. The budget watcher can still drop to 1.
+  const dpr = Math.min(globalThis.devicePixelRatio || 1, 1.5);
+  const handles = await createAtmosphere(scene, buildSkyPalette(readToken, isDark()), dpr);
+  if (!handles) return null;
+  const still = prefersStillAtmosphere();
+  const buffers = allocateBuffers(scene);
+  const state: LoopState = {
+    buffers,
+    scene,
+    els,
+    handles,
+    fitMode,
+    activeIndexRef,
+    fit: { scale: 1, offsetX: 0, offsetY: 0 },
+    chain: newChainState(),
+    frame: {
+      timeSeconds: 0,
+      motion: 1,
+      camera: getSkyCamera().camera,
+      basis: getSkyCamera().basis,
+      fit: { scale: 1, offsetX: 0, offsetY: 0 },
+      domeShift: { x: 0, y: 0 },
+      spin: 0,
+      pool: { x: 0, y: 0, strength: 0 },
+      daystar: { x: 0, y: 0 },
+      starCenters: buffers.starCenters,
+      starActive: buffers.starActive,
+      moteCenters: buffers.moteCenters,
+    },
+    poolStrength: 0,
+    lastTime: 0,
+  };
+  return wireAtmosphere(container, state, { still, readToken, isDark });
+}
 
-  // Lazy-import ogl so the dependency is only pulled into the chunk
-  // that actually mounts the WebGL surface. Routes that don't reach
-  // /sky never download the WebGL bundle.
-  const { Renderer, Program, Mesh, Triangle } = await import('ogl');
+interface AtmosphereEnv {
+  readonly still: boolean;
+  readonly readToken: (token: string) => string;
+  readonly isDark: () => boolean;
+}
 
-  let renderer: InstanceType<typeof Renderer>;
-  try {
-    renderer = new Renderer({ alpha: true, premultipliedAlpha: false, dpr: 1 });
-  } catch {
-    // WebGL unavailable (older browser, disabled, or context creation
-    // failed). The SVG firmament continues as the only firmament.
-    return null;
-  }
-  const gl = renderer.gl;
-  gl.clearColor(0, 0, 0, 0);
+/** Frame-budget guard: if the device can't hold the budget at full
+ *  resolution, the caller's downgrade runs once and the watcher
+ *  retires. The shader simplifies before anything structural does. */
+function createBudgetWatcher(onDegrade: () => void): (now: number) => void {
+  let frameCount = 0;
+  let slowFrames = 0;
+  let degraded = false;
+  let lastFrameAt = 0;
+  return (now: number) => {
+    if (degraded) return;
+    const dt = lastFrameAt === 0 ? 0 : now - lastFrameAt;
+    lastFrameAt = now;
+    frameCount += 1;
+    if (dt > 26) slowFrames += 1;
+    if (frameCount >= 90) {
+      if (slowFrames > frameCount * 0.5) {
+        degraded = true;
+        onDegrade();
+      }
+      frameCount = 0;
+      slowFrames = 0;
+    }
+  };
+}
 
-  const canvas = gl.canvas;
+interface PaintLoop {
+  step(now: number): void;
+  repaint(): void;
+  /** Break the calm — full cadence resumes (theme fades, etc.). */
+  wake(): void;
+}
+
+/** The paint scheduler. Owns the calm cadence: when the world is
+ *  still (no camera writes, pool and halo claim settled, parallax
+ *  arrived, no theme fade), the loop paints every other frame —
+ *  twinkle and drift at 30fps are indistinguishable at their
+ *  periods, and the GPU rests with the sky. Any disturbance
+ *  restores the full rate on the next frame. */
+function createPaintLoop(
+  state: LoopState,
+  env: AtmosphereEnv,
+  startTime: number,
+  onPaintFailure: () => void,
+): PaintLoop {
+  let unsettled = 1;
+  let calmFrames = 0;
+  let frameParity = 0;
+  let lastCameraVersion = -1;
+  const paint = (timeSeconds: number) => {
+    try {
+      unsettled = renderAtmosphereFrame(state, timeSeconds, env.still ? 0 : 1);
+    } catch {
+      onPaintFailure();
+    }
+  };
+  return {
+    step(now: number) {
+      const cameraVersion = getSkyCameraVersion();
+      const still = cameraVersion === lastCameraVersion && unsettled < 0.005;
+      lastCameraVersion = cameraVersion;
+      calmFrames = still ? calmFrames + 1 : 0;
+      frameParity ^= 1;
+      if (calmFrames < CALM_AFTER_FRAMES || frameParity === 0) {
+        paint((now - startTime) / 1000);
+      }
+    },
+    repaint() {
+      paint(env.still ? 0 : (performance.now() - startTime) / 1000);
+    },
+    wake() {
+      calmFrames = 0;
+      unsettled = 1;
+    },
+  };
+}
+
+function dressCanvas(canvas: HTMLCanvasElement): void {
   canvas.style.width = '100%';
   canvas.style.height = '100%';
   canvas.style.position = 'absolute';
   canvas.style.inset = '0';
   canvas.setAttribute('aria-hidden', 'true');
+}
+
+function wireAtmosphere(
+  container: HTMLDivElement,
+  state: LoopState,
+  env: AtmosphereEnv,
+): MountedAtmosphere {
+  const { handles, els } = state;
+  const canvas = handles.canvas;
+  dressCanvas(canvas);
   container.append(canvas);
-
-  const geometry = new Triangle(gl);
-  const program = new Program(gl, {
-    vertex: VERTEX_SHADER,
-    fragment: FRAGMENT_SHADER,
-    uniforms: {
-      uTime: { value: 0 },
-      uCursor: { value: [0, 0] },
-      uTheme: { value: document.documentElement.classList.contains('dk') ? 1 : 0 },
-      uActive: { value: 0 },
-    },
-    transparent: true,
-  });
-  const mesh = new Mesh(gl, { geometry, program });
-
   const resize = () => {
     const rect = container.getBoundingClientRect();
-    renderer.setSize(rect.width || 1, rect.height || 1);
+    handles.setSize(rect.width || 1, rect.height || 1);
+    measureFit(state);
   };
   resize();
-
-  // ogl's uniform map is loosely typed. The shader's uniforms are
-  // declared above with known shapes; this typed view makes the
-  // mutations explicit and lint-safe without changing behavior.
-  const uniforms = program.uniforms as Record<
-    'uTime' | 'uCursor' | 'uTheme' | 'uActive',
-    { value: number | readonly number[] }
-  >;
-
-  // Cursor + active state are no longer driven by raw pointer
-  // events; the navigation hook writes the visitor's sphere-
-  // surface cursor to the constellationCursor signal, which the
-  // render loop reads each frame. This means the luminous pool
-  // follows the visitor's *intent* (where they are on the latent
-  // sphere) rather than the device pointer's screen position.
-
-  const themeObserver = new MutationObserver(() => {
-    uniforms.uTheme.value = document.documentElement.classList.contains('dk') ? 1 : 0;
+  let raf = 0;
+  let halted = false;
+  const startTime = performance.now();
+  const watchBudget = createBudgetWatcher(() => {
+    handles.setDpr(1);
+    resize();
+    // The buffer reallocation clears to black (opaque context);
+    // repaint in the same task so no composite can catch it empty.
+    loop.wake();
+    loop.repaint();
   });
-  themeObserver.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['class'],
+  const loop = createPaintLoop(state, env, startTime, () => {
+    halted = true;
+    canvas.style.display = 'none';
+    delete els.frame.dataset.atmosphere;
   });
-
-  const resizeObserver = new ResizeObserver(resize);
-  resizeObserver.observe(container);
-
-  const stopRaf = startRenderLoop({ uniforms, renderer, mesh, canvas });
-
-  const dispose = () => {
-    stopRaf();
-    themeObserver.disconnect();
-    resizeObserver.disconnect();
-    if (canvas.parentNode === container) canvas.remove();
+  const repaint = () => {
+    if (halted) return;
+    loop.repaint();
   };
+  if (env.still) {
+    repaint();
+  } else {
+    const tick = () => {
+      if (halted) return;
+      const now = performance.now();
+      watchBudget(now);
+      loop.step(now);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+  els.frame.dataset.atmosphere = 'webgl';
+  const unsubscribeCamera = env.still ? subscribeSkyCamera(repaint) : undefined;
+  const themeObserver = new MutationObserver(() => {
+    handles.setPalette(buildSkyPalette(env.readToken, env.isDark()), env.still);
+    loop.wake();
+    if (env.still) repaint();
+  });
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  const resizeObserver = new ResizeObserver(() => {
+    resize();
+    // Same reallocation hazard as the budget downgrade: never leave
+    // a cleared buffer on screen waiting for the next scheduled
+    // paint (the calm cadence may be skipping that very frame).
+    loop.wake();
+    repaint();
+  });
+  resizeObserver.observe(container);
+  const onContextLost = () => {
+    halted = true;
+    canvas.style.display = 'none';
+    delete els.frame.dataset.atmosphere;
+  };
+  canvas.addEventListener('webglcontextlost', onContextLost);
+  return {
+    repaint,
+    dispose() {
+      halted = true;
+      cancelAnimationFrame(raf);
+      unsubscribeCamera?.();
+      themeObserver.disconnect();
+      resizeObserver.disconnect();
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      delete els.frame.dataset.atmosphere;
+      handles.dispose();
+    },
+  };
+}
 
-  return { canvas, dispose };
+/** Mount the WebGL atmosphere inside `containerRef`'s div. The
+ *  scene is the precomputed atmospheric contract for the current
+ *  graph; `activeIndex` names the star whose halo is claimed
+ *  (-1 for none); `fit` mirrors the SVG's preserveAspectRatio. */
+export function useWebGLFirmament(
+  containerRef: RefObject<HTMLDivElement | null>,
+  scene: AtmosphericScene,
+  activeIndex: number,
+  fit: 'cover' | 'contain',
+) {
+  const mountedRef = useRef<MountedAtmosphere | null>(null);
+  const activeIndexRef = useRef(activeIndex);
+
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+    mountedRef.current?.repaint();
+  }, [activeIndex]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    if (!shouldRenderWebGL()) return;
+    let cancelled = false;
+    void mountAtmosphere(container, scene, fit, activeIndexRef)
+      .then((mounted) => {
+        if (!mounted) return;
+        if (cancelled) {
+          mounted.dispose();
+          return;
+        }
+        mountedRef.current = mounted;
+      })
+      .catch(() => {
+        // Init failed (context creation, shader compile, ogl
+        // internals on a particular GPU). Stay silent: the SVG
+        // firmament beneath is the complete fallback, and the
+        // error-boundary e2e gate treats console noise as failure.
+      });
+    return () => {
+      cancelled = true;
+      mountedRef.current?.dispose();
+      mountedRef.current = null;
+    };
+  }, [containerRef, scene, fit]);
 }

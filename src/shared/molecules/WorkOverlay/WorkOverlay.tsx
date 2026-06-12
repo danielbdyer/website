@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import type { DisplayWork } from '@/shared/content';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
@@ -90,6 +90,7 @@ function OverlayLead({ work, titleId }: { work: DisplayWork; titleId: string }) 
 
 export function WorkOverlay({ work, closeHref }: WorkOverlayProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const titleId = `work-overlay-title-${work.room}-${work.slug}`;
 
   useEffect(() => {
@@ -99,6 +100,21 @@ export function WorkOverlay({ work, closeHref }: WorkOverlayProps) {
       previousFocus?.focus?.();
     };
   }, []);
+
+  // Escape closes the overlay — back into the sky, never past it.
+  // The sky's own leave-gestures stand down while the overlay is
+  // open (the parent gates them), so this is the only Escape.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      void navigate({ to: closeHref });
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [navigate, closeHref]);
 
   return (
     <div

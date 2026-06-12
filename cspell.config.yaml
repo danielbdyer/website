@@ -330,10 +330,29 @@ words:
   - oframe
   - regl
   - mediump
+  - highp
+  - GLTF
   - snoise
   - fract
   - xxzz
   - xyxy
+  - xxyy
+  - xzyw
+  - zzww
+  - lumin
+  - Gustavson
+  - affines
+  - retarget
+  - Retarget
+  - webglcontextlost
+  - retargeted
+  - accum
+  - depthless
+  - macrotask
+  - unsettledness
+  - aspirationally
+  - transcendentals
+  - libm
 
   # Perf harness vocabulary
   - synthesizable

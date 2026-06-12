@@ -17,6 +17,34 @@
         font-family: ui-sans-serif, system-ui, sans-serif;
         overflow: hidden;
       }
+
+      /* The harness skips the host's Tailwind pipeline, so the two
+         utility classes the constellation's layout actually depends
+         on are re-stated here: the sr-only heading must leave the
+         flow (otherwise it pushes the SVG below the canvas box) and
+         the frame + SVG must fill the viewport the way h-full/w-full
+         make them in production. */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .constellation-frame {
+        height: 100%;
+        width: 100%;
+      }
+
+      svg.constellation {
+        display: block;
+        height: 100%;
+        width: 100%;
+      }
     </style>
   </head>
   <body>

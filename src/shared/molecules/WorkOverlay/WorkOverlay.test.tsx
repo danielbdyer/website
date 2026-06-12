@@ -1,9 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 import {
+  Outlet,
   RouterProvider,
   createMemoryHistory,
   createRootRoute,
+  createRoute,
   createRouter,
 } from '@tanstack/react-router';
 import { axe } from '@/test/axe';
@@ -25,14 +28,25 @@ const SAMPLE_WORK: DisplayWork = {
 };
 
 function renderOverlay(work: DisplayWork) {
-  const rootRoute = createRootRoute({
+  // A miniature of the real tree — /sky parent with the overlay as
+  // a child — so close navigations (Escape, backdrop, ×) have a
+  // real destination to land on.
+  const rootRoute = createRootRoute({ component: Outlet });
+  const skyRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/sky',
+    component: Outlet,
+  });
+  const overlayRoute = createRoute({
+    getParentRoute: () => skyRoute,
+    path: '$room/$slug',
     component: () => <WorkOverlay work={work} closeHref="/sky" />,
   });
   const router = createRouter({
-    routeTree: rootRoute,
+    routeTree: rootRoute.addChildren([skyRoute.addChildren([overlayRoute])]),
     history: createMemoryHistory({ initialEntries: ['/sky/garden/small-weather'] }),
   });
-  return render(<RouterProvider router={router} />);
+  return { router, ...render(<RouterProvider router={router} />) };
 }
 
 describe('WorkOverlay molecule', () => {
@@ -68,5 +82,15 @@ describe('WorkOverlay molecule', () => {
     await screen.findByRole('dialog');
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+
+  test('Escape closes the overlay back into the sky — never past it', async () => {
+    const user = userEvent.setup();
+    const { router } = renderOverlay(SAMPLE_WORK);
+    await screen.findByRole('dialog');
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(router.history.location.pathname).toBe('/sky');
+    });
   });
 });

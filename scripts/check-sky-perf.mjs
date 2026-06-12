@@ -49,7 +49,14 @@ const THRESHOLDS = {
 };
 
 const HARNESS_PORT = 5180;
-const HARNESS_URL = `http://localhost:${String(HARNESS_PORT)}/`;
+// `?atmosphere=off` holds the WebGL atmospheric layer back so the
+// thresholds keep measuring what they were calibrated against: the
+// structural SVG surface. Headless Chromium renders WebGL through
+// SwiftShader (software), whose frame times say nothing about the
+// GPUs visitors actually hold. Set PROBE_ATMOSPHERE=on to measure
+// with the atmosphere anyway (informational; thresholds will trip).
+const ATMOSPHERE = process.env.PROBE_ATMOSPHERE === 'on' ? 'on' : 'off';
+const HARNESS_URL = `http://localhost:${String(HARNESS_PORT)}/?atmosphere=${ATMOSPHERE}`;
 const MEASURE_WINDOW_MS = 5000;
 const FIXTURE = process.env.PROBE_FIXTURE ?? 'production';
 const FIXTURE_KEYS = { small: '1', production: '2', heavy: '3', extreme: '4' };

@@ -120,6 +120,47 @@ function clamp01(v: number): number {
   return v;
 }
 
+/** Mutable projection target for `projectInto` — the hot paths
+ *  (the DOM projector and the atmosphere, once per element per
+ *  frame) reuse one scratch instead of allocating a result per
+ *  call. Same fields and semantics as ProjectedPoint. */
+export interface ProjectedPointMut {
+  screenX: number;
+  screenY: number;
+  depth: number;
+  inFront: boolean;
+}
+
+/** Allocation-free `project`. Writes into `out` and returns it.
+ *  Behavior is identical to `project`; the pair stays in lockstep. */
+export function projectInto(
+  point: Vec3,
+  camera: Camera,
+  basis: CameraBasis,
+  aspect: number,
+  out: ProjectedPointMut,
+): ProjectedPointMut {
+  const ox = point.x - camera.position.x;
+  const oy = point.y - camera.position.y;
+  const oz = point.z - camera.position.z;
+  const zCam = ox * basis.forward.x + oy * basis.forward.y + oz * basis.forward.z;
+  if (zCam <= 0) {
+    out.screenX = 0;
+    out.screenY = 0;
+    out.depth = 1;
+    out.inFront = false;
+    return out;
+  }
+  const xCam = ox * basis.right.x + oy * basis.right.y + oz * basis.right.z;
+  const yCam = ox * basis.up.x + oy * basis.up.y + oz * basis.up.z;
+  const f = 1 / Math.tan(camera.fovY / 2);
+  out.screenX = ((f / aspect) * xCam) / zCam;
+  out.screenY = (f * yCam) / zCam;
+  out.depth = clamp01((zCam - camera.near) / (camera.far - camera.near));
+  out.inFront = true;
+  return out;
+}
+
 /** Inverse of `project`: given normalized screen coords (x, y in
  *  [-1, 1]) return the world-space ray cast through that screen
  *  point. The ray's origin is the camera position; its direction

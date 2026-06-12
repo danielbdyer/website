@@ -37,15 +37,23 @@ export function Firmament({ size, idPrefix = 'firmament' }: FirmamentProps) {
           <feTurbulence type="fractalNoise" baseFrequency="0.92" numOctaves="2" seed="7" />
         </filter>
       </defs>
-      <rect x={0} y={0} width={size} height={size} fill={`url(#${gradientId})`} />
-      <rect
-        x={0}
-        y={0}
-        width={size}
-        height={size}
-        filter={`url(#${grainFilterId})`}
-        style={{ opacity: 'var(--sky-grain-opacity)', mixBlendMode: 'soft-light' }}
-      />
+      {/* The class is the WebGL handoff seam: when the atmosphere
+          canvas goes live the frame carries data-atmosphere="webgl"
+          and this group crossfades out (tokens.css §"Constellation
+          atmosphere handoff"); on context loss it returns. The SVG
+          stays in the DOM either way — it is the no-JS, no-WebGL,
+          reduced-data firmament. */}
+      <g className="constellation-svg-firmament">
+        <rect x={0} y={0} width={size} height={size} fill={`url(#${gradientId})`} />
+        <rect
+          x={0}
+          y={0}
+          width={size}
+          height={size}
+          filter={`url(#${grainFilterId})`}
+          style={{ opacity: 'var(--sky-grain-opacity)', mixBlendMode: 'soft-light' }}
+        />
+      </g>
     </>
   );
 }

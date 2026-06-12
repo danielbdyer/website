@@ -83,12 +83,15 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
       <h2 id={titleId} className="sr-only">
         {skyTitle(graph.nodes.length)}
       </h2>
-      <WebGLFirmament />
+      <WebGLFirmament graph={graph} activeKey={activeKey} fullViewport={fullViewport} />
       <svg
         ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         preserveAspectRatio={fullViewport ? 'xMidYMid slice' : 'xMidYMid meet'}
         onClick={onSkyClick}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
+        {...dragHandlers}
         className={cn('constellation relative block w-full', fullViewport && 'h-full')}
       >
         <ConstellationFilters />
@@ -104,9 +107,6 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
                 onActivate: handleActivate,
                 onMouseLeave: handleMouseLeave,
                 onBlur: handleBlur,
-                onKeyDown,
-                onKeyUp,
-                dragHandlers,
               }}
               glyphRef={glyphRef}
             />
