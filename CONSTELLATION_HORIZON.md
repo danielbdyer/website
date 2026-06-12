@@ -130,7 +130,7 @@ A full-route-bleed WebGL canvas, mounted behind everything else, `aria-hidden="t
 
 The atmospheric layer carries **zero semantic content**. It is paint, not navigation. A screen reader walks past it; a `prefers-reduced-data` visitor never downloads it.
 
-*Pass 2 (Phase E) shipped the first form of this layer: a `<canvas>` mounted behind the structural SVG, an `ogl`-flavored render loop, and a fragment shader that paints a luminous pool of attention around the cursor's projected sphere position with a squared-falloff profile and a saturation boost in the active well's zone. The radial gradient, the procedural noise field, the twinkle, the parallax depth, and the day↔night shader crossfade remain held — the canvas exists, the shader is small, the rest is added when each pulls.*
+*Pass 2 (Phase E) shipped the first form of this layer: a `<canvas>` mounted behind the structural SVG and a fragment shader painting a luminous pool of attention at the cursor's projected sphere position. Pass 3 (2026-06-12) shipped the full form, and it went further than this section first imagined: rather than a screen-space gradient with parallax offsets, the dome casts a per-pixel **view ray through the live navigation camera** (shared via a module-level camera signal the navigation hook broadcasts each tick) and intersects the latent sphere — so the painted sky is world-anchored and parallaxes with the visitor's travel for free. Three passes compose: the dome (gradient, domain-warped fbm weather, stereographic-charted micro-starfield, room-quadrant tints, daystar glow, cursor pool, luminance-aware paper grain), instanced star-halo sprites (pigment bleeds by day / twinkling glows by night, blended through `uNight`), and instanced motes drifting on shells above the sphere. Halo registration with the structural stars is exact: the hook replays the SVG's computed transform stack (cursor parallax → camera yaw → 600s rotation) and the viewbox fit each frame, measured against the SVG's own layout box. The palette is read from the live design tokens at init and on theme toggle — tokens.css stays the single source of truth — and crossfades CPU-side over the 500ms theme transition. When WebGL paints, the frame carries `data-atmosphere="webgl"` and the SVG firmament crossfades out; every fallback gate (no WebGL, context loss, Save-Data, forced colors, `prefers-contrast: more`) returns it. Reduced motion holds a still frame, repainting only on camera snap / theme flip / resize. A frame-budget watcher lowers the render resolution once if the device can't hold 60fps — the shader simplifies before anything structural does.*
 
 ### Layer 2: Labeling (the transient annotations)
 
@@ -249,24 +249,28 @@ Each layer needs a precise, narrow contract with the data layer. The contracts a
 ### Atmospheric layer ← `AtmosphericScene`
 
 ```ts
+// As drafted before the latent sphere shipped, positions were
+// normalized [0,1]². The lived contract (src/shared/webgl/
+// atmosphereScene.ts) carries 3D unit positions instead, because
+// the atmosphere projects through the same camera the structural
+// layer does:
+interface AtmosphericStar {
+  readonly key: string; // pairs the sprite with its structural anchor
+  readonly unitPosition: UnitVector3;
+  readonly hueIndex: number; // 0 warm · 1 rose · 2 violet · 3 gold
+  readonly twinklePhase: number; // shared beat with the structural data
+  readonly sizeVariance: number;
+}
+
 interface AtmosphericScene {
-  /** Star positions in normalized [0,1]² space — the WebGL shader's
-   *  uniform array. Derived from ConstellationGraph at module load. */
-  readonly haloPositions: readonly { x: number; y: number; hue: ConstellationHue }[];
-  /** Twinkle phase per star — random but stable across renders so
-   *  the same star always twinkles on the same beat. */
-  readonly twinklePhases: readonly number[];
-  /** The polestar position (the geometric figure's ascended location). */
-  readonly polestar: { x: number; y: number };
-  /** Theme phase: 0 = light, 1 = dark, animated during transitions. */
-  readonly themePhase: number;
-  /** Reduced motion flag — when true, the shader holds its current
-   *  frame and stops parallax / twinkle. */
-  readonly reducedMotion: boolean;
+  readonly stars: readonly AtmosphericStar[];
+  readonly motes: readonly AtmosphericMote[]; // deterministic dust on shells above the sphere
 }
 
 function buildAtmosphericScene(graph: ConstellationGraph): AtmosphericScene;
 ```
+
+Theme phase and reduced motion turned out not to belong to the scene: the theme is a renderer-level palette fade (read live from tokens.css), and reduced motion is the hook's loop policy (a still frame, repainted on camera snaps). The scene is pure data, derived once per graph.
 
 The atmospheric layer never consumes the full `ConstellationGraph`. It only needs positions and hues. Threads are not visible at this layer; the structural layer paints them.
 
@@ -441,13 +445,13 @@ If a readiness's trigger fires and the doing-it-right register cannot be held, t
 
 The first-paint carpet animation has shipped: `.sky-arrival` clip-paths from the top edge over 900ms with the signature easing curve. Works on any entry path. *What remains held* in this readiness: the overscroll-up gesture from the Foyer (so the gesture is initiated by the visitor, not by route arrival), and the daystar's cross-page morph (currently the daystar simply *is* in the firmament when /sky paints, rather than ascending from the nav corner via View Transitions).
 
-### Phase 2 (shipped in SVG; WebGL still ahead) — *Does the sky have weather?*
+### Phase 2 (shipped — SVG first, WebGL full form on 2026-06-12) — *Does the sky have weather?*
 
-Paper grain, layered radial gradient (sky-glow → zenith → horizon), watercolor-filtered halos on stars and the daystar — all shipped via SVG `<feTurbulence>`, `<feGaussianBlur>`, `<feDisplacementMap>` filter primitives + `mix-blend-mode: soft-light`. The sky has weather. *What remains held*: the WebGL atmospheric layer, which delivers what SVG filters cannot — cursor-responsive twinkle fields, depth-aware shader parallax, drifting motes, procedural noise with continuous parallax offset rather than the static feTurbulence we have today.
+Paper grain, layered radial gradient (sky-glow → zenith → horizon), watercolor-filtered halos on stars and the daystar — first shipped via SVG `<feTurbulence>`, `<feGaussianBlur>`, `<feDisplacementMap>` filter primitives + `mix-blend-mode: soft-light`. The WebGL atmospheric layer then delivered what SVG filters could not: continuous domain-warped procedural weather that breathes, a deep micro-starfield, drifting motes, the room quadrants' chromatic atmospheres, and a day↔night ontology crossfade (pigment bleeds ↔ luminous halos) through the theme transition. The SVG weather remains in the DOM as the complete fallback for every gate. See Layer 1 above for the shipped architecture.
 
-### Phase 3 (shipped in SVG; WebGL still ahead) — *Does the sky live?*
+### Phase 3 (shipped — SVG first, WebGL full form on 2026-06-12) — *Does the sky live?*
 
-Slow rotation (600s/cycle around the polestar), per-star twinkle (4.5s with deterministic phase offsets), cursor-driven parallax (two depths, signature easing) — all shipped via CSS animations + the `useConstellationParallax` hook. The sky lives. *What remains held*: shader-based motion that responds to the cursor at the per-pixel level, parallax with real depth-of-field rather than two CSS layers.
+Slow rotation (600s/cycle around the polestar), per-star twinkle (4.5s with deterministic phase offsets), cursor-driven parallax (two depths, signature easing) — first shipped via CSS animations + the `useConstellationParallax` hook; the twinkle was then held back when its filter cost stuttered the rotating layer. The WebGL layer returned it as shader work (per-star phase, the same 4.5s beat) and added what CSS could not: per-pixel camera parallax (the dome is sampled along view rays through the live navigation camera, so depth is real rather than layered), and motes at shell radii that move more than the stars beneath them. The heavens' rotation reaches the deep starfield at a farther layer's slower rate — *nearer atmospheric depth moves more, farther layers move less*, now literally true.
 
 ### Phase 4 (shipped) — *Does looking at a star bloom its threads?*
 
@@ -463,25 +467,13 @@ Tech: pure CSS gradient transitions for the carpet, View Transitions API for the
 
 Two commits. No new dependencies. Reversible by reverting the Foyer route and removing the carpet CSS.
 
-### Phase 2 — *Does the sky have weather?*
+### Phase 2 — *Does the sky have weather?* *(trigger fired; realized 2026-06-12)*
 
-The atmospheric WebGL layer, first form. Paper grain, radial firmament gradient, soft halos at star positions. No twinkle yet, no parallax. *A sky that breathes.*
+The atmospheric WebGL layer. The trigger as originally named — *the SVG-only sky reads as correct but quiet; the surface wants weight that paint, not points, would carry* — fired as an explicit pull from Danny rather than from star count. The shipped form (recorded at Layer 1 above and in the shipped Phase 2 header) went past this section's first imagining: not a screen-space gradient but a camera-aware dome sampled along view rays, with the weather, the deep field, the room atmospheres, and the dual day/night ontology in one surface. `ogl` was already in the house from Pass 2's pool; shaders live as template literals in `src/shared/webgl/atmosphereShaders.ts` (no raw-text import needed for one module). Reduced-data, reduced-motion, forced-colors, contrast, and context-loss fallbacks landed in the same change.
 
-**Trigger:** when the structural surface has settled long enough that its restraint is no longer the point. Likely when 4–6 stars exist and the SVG-only sky reads as *correct but quiet* — the surface wanting weight that paint, not points, would carry. Not before. A WebGL canvas painted over a single star is a noise-to-signal violation.
+### Phase 3 — *Does the sky live?* *(trigger fired; realized 2026-06-12)*
 
-Tech: `ogl` added as a dep (≤12KB gzipped), shader code in a single `.glsl` file imported as raw text, mounted as a `<canvas>` behind the SVG. Reduced-data and reduced-motion fallbacks land in the same commit so the surface never ships without them.
-
-Two commits. New dep gate: `ogl` defended in the commit message; held alternative (hand-rolled WebGL) named.
-
-### Phase 3 — *Does the sky live?*
-
-Twinkle, parallax (cursor-driven), slow autonomous rotation. The atmospheric layer becomes time-aware. The polestar (still position-only at this phase, no figure ascended yet) is the rotation pivot.
-
-**Trigger:** when Phase 2 has settled and the static atmosphere reads as a painting of a sky rather than a sky itself. The pull is subtle and easy to mistake for impatience — wait until the static version has been lived with long enough that motion would *deepen* rather than *animate*. The 60-second geometric figure is the touchstone: if motion in the constellation would honor that pace, it is ready.
-
-Tech: animation loop runs at 60fps via `requestAnimationFrame`, throttled by `prefers-reduced-motion`. Shader uniform updates happen once per frame.
-
-One commit. Pure shader work; no new deps.
+Twinkle, per-pixel parallax, drifting motes — shipped with Phase 2 in the same pass, because the camera-aware architecture made motion the natural state rather than an addition. The shipped form is recorded in the Phase 3 header above. The rotation pivot remains the polestar; the deep field turns with the heavens at a reduced rate, which is what gives the backdrop its distance.
 
 ### Phase 4 — *Does looking at a star bloom its threads?*
 

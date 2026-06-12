@@ -17,6 +17,7 @@ import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import { project } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { setConstellationCursor } from '@/shared/state/constellationCursor';
+import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 
 /** Number of ghost positions trailing the cursor for the companion
@@ -185,6 +186,13 @@ export function projectTrail(
 export function broadcastCursorToFirmament(proj: ScreenProj, viewboxSize: number): void {
   const center = viewboxSize / 2;
   setConstellationCursor((proj.x - center) / center, -(proj.y - center) / center, proj.inFront);
+}
+
+/** Hand the live camera to the WebGL atmosphere so its dome casts
+ *  view rays through the same pinhole the structural projection
+ *  uses. Broadcast once per tick alongside the cursor. */
+export function broadcastCameraToFirmament(camera: Camera, basis: CameraBasis): void {
+  setSkyCamera(camera, basis);
 }
 
 /** Write the per-frame style channels the companion glyph reads:

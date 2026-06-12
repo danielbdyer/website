@@ -83,7 +83,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
       <h2 id={titleId} className="sr-only">
         {skyTitle(graph.nodes.length)}
       </h2>
-      <WebGLFirmament />
+      <WebGLFirmament graph={graph} activeKey={activeKey} fullViewport={fullViewport} />
       <svg
         ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}

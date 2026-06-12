@@ -5,6 +5,7 @@ import { cameraBasis, unproject } from '@/shared/geometry/camera';
 import {
   TRAIL_LENGTH,
   applyCameraYaw,
+  broadcastCameraToFirmament,
   broadcastCursorToFirmament,
   projectGlyph,
   projectStars,
@@ -436,6 +437,7 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   const cursorProj = projectGlyph(refs.glyphRef.current, state.pos, camera, basis, viewboxSize);
   projectTrail(cameraGroup, state.trailHistory, camera, basis, viewboxSize);
   broadcastCursorToFirmament(cursorProj, viewboxSize);
+  broadcastCameraToFirmament(camera, basis);
 }
 
 /** Integrate the navigation physics one tick: acceleration → tangent
