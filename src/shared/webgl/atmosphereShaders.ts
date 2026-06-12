@@ -186,11 +186,51 @@ export const DOME_FRAGMENT = /* glsl */ `
     float zen = smoothstep(-0.42, 0.95, P.z);
     vec3 sky = mix(uHorizon, uZenith, zen);
 
-    // Umber warmth breathing up from the horizon — a band hugging
-    // the equator, not a wash over everything below the pole, so
-    // the sky never reads as a lit planet edge.
-    float horizonBand = smoothstep(-0.38, -0.02, P.z) * (1.0 - smoothstep(0.02, 0.38, P.z));
-    sky = mix(sky, uAccentWarm, horizonBand * (0.04 + 0.035 * uNight));
+    // ── Fields: one low-frequency mass + one warped fbm. The mass
+    // field shapes cloud banks and warps the wash; the wash carries
+    // the watercolor weather, the nebula, and the vein's clumping.
+    // Five simplex calls per pixel, total.
+    float mass = snoise(Pd * 1.5 + vec3(0.0, 0.0, uTime * 0.004 * uMotion));
+    float massN = mass * 0.5 + 0.5;
+    float wash = fbm(Pd * 2.4 + mass * 0.55 + vec3(uTime * 0.0045 * uMotion, 0.0, 0.0));
+    float washN = wash * 0.5 + 0.5;
+
+    // ── The milky vein — a clustered band of stardust crossing the
+    // vault on its own great circle, clumped by the wash so it reads
+    // as granular weather rather than a stripe. World-anchored: it
+    // turns with the heavens and parallaxes with travel.
+    float veinD = dot(Pd, vec3(0.6198, -0.2817, 0.7325));
+    float vein = exp(-veinD * veinD * 24.0);
+    float veinBody = vein * smoothstep(0.25, 0.85, washN);
+    vec3 veinTone = uZenith * 2.2 + uAccentViolet * 0.30 + vec3(0.015, 0.022, 0.05);
+    sky += veinTone * veinBody * 0.42 * uNight;
+
+    // A whisper of nebula beyond the vein.
+    sky += (uZenith * 1.4 + uAccentViolet * 0.12) * max(washN - 0.62, 0.0) * 0.45 * uNight;
+
+    // ── Deep starfield — three depths of dust on a stereographic
+    // chart, denser inside the vein the way real dust gathers.
+    vec2 chart = Pd.xy / (1.0 + max(Pd.z, -0.85));
+    float starGain = (0.45 + 0.55 * zen) * (0.55 + 2.1 * vein * (0.35 + 0.65 * washN));
+    float t = uTime * uMotion;
+    float deep = starLayer(chart * 96.0, 0.78, t) * 0.30
+      + starLayer(chart * 40.0, 0.90, t * 0.9 + 11.0) * 0.62
+      + starLayer(chart * 17.0, 0.955, t * 0.8 + 7.0) * 1.05;
+    sky += vec3(0.93, 0.94, 1.0) * deep * starGain * uNight;
+
+    // ── The chart's gold rings — hairline circles of constant
+    // angular distance from the polestar, breathing on the 30s
+    // cycle the SVG wash once held. By day they fade to the faint
+    // construction lines of a celestial map.
+    float polar = acos(clamp(P.z, -1.0, 1.0));
+    float breath = 0.8 + 0.2 * sin(uTime * 0.2094 * uMotion);
+    float ringDist = abs(fract(polar * 4.4 + 0.5) - 0.5) / 4.4;
+    float ring = smoothstep(0.005, 0.0, ringDist);
+    float ringMask = smoothstep(1.3, 0.2, polar) * smoothstep(0.05, 0.1, polar);
+    sky += uAccentGold * ring * ringMask * breath * (0.022 + 0.042 * uNight);
+    // The polestar's own gathered warmth, breathing with the rings.
+    sky += mix(uGlowColor, uAccentGold, 0.5) * exp(-polar * polar * 7.0) * breath
+      * (0.02 + 0.035 * uNight);
 
     // Room atmospheres — Studio NW warm, Garden SW rose,
     // Study SE violet, Salon NE gold. Felt near the rim of the
@@ -204,30 +244,33 @@ export const DOME_FRAGMENT = /* glsl */ `
       + uAccentGold * sectorWeight(phi, 5.4978);
     sky = mix(sky, roomTint, roomBand * (0.075 - 0.035 * uNight));
 
-    // Watercolor wash — domain-warped fbm sampled on the sphere,
-    // drifting at a felt-not-seen rate.
-    vec3 q = Pd * 2.3 + vec3(0.0, 0.0, uTime * 0.0045 * uMotion);
-    float warp = fbm(q + 3.7);
-    float wash = fbm(q * 1.55 + warp * 0.85 + vec3(uTime * 0.006 * uMotion, 0.0, 0.0));
-    float washN = wash * 0.5 + 0.5;
+    // ── The horizon — a luminous gather where the sky meets the
+    // ground, hugging the frame's bottom where the Foyer waits
+    // beneath. The low-frequency field breathes through it as
+    // watercolor weather — variation in the wash, never painted
+    // cloud shapes, never lit edges. Light bleeds; it does not edge.
+    float hb = exp(-(P.z + 0.06) * (P.z + 0.06) * 11.0);
+    float bw = smoothstep(0.35, 1.0, frag.y / uResolution.y);
+    vec3 glowTone = mix(uGlowColor, uAccentGold, 0.55);
+    float horizonGlow = hb * bw * bw;
+    float nearHorizon = smoothstep(0.32, 0.06, abs(P.z + 0.04));
+    float weather = smoothstep(0.5, 0.85, massN) * nearHorizon;
+    sky += glowTone * horizonGlow * (0.07 + 0.16 * uNight) * (1.0 - weather * 0.6);
+    vec3 weatherTone = mix(uHorizon * 0.97, mix(uZenith, uHorizon, 0.45) * 0.85, uNight);
+    sky = mix(sky, weatherTone, weather * (0.12 + 0.22 * uNight) * (0.3 + 0.7 * bw));
 
-    // Day: pigment pooling on wet paper. Night: a whisper of nebula.
+    // Umber warmth breathing up from the horizon — quieter now that
+    // the luminous gather carries most of the hour's warmth.
+    float horizonBand = smoothstep(-0.38, -0.02, P.z) * (1.0 - smoothstep(0.02, 0.38, P.z));
+    sky = mix(sky, uAccentWarm, horizonBand * 0.035);
+
+    // Day: pigment pooling on wet paper.
     vec3 dayWashTone = mix(uHorizon * 0.985, uGlowColor, 0.45);
-    sky = mix(sky, dayWashTone, smoothstep(0.38, 0.95, washN) * 0.24 * (1.0 - uNight));
-    vec3 nightNebTone = uZenith * 1.4 + uAccentViolet * 0.12 + vec3(0.008, 0.012, 0.024);
-    sky += nightNebTone * max(washN - 0.60, 0.0) * 0.7 * uNight;
-
-    // Deep starfield — stereographic chart of the rotated sphere,
-    // two depths of dust. Almost nothing by day.
-    vec2 chart = Pd.xy / (1.0 + max(Pd.z, -0.85));
-    float deepFine = starLayer(chart * 52.0, 0.93, uTime * uMotion) * 0.5;
-    float deepBright = starLayer(chart * 21.0, 0.955, uTime * uMotion * 0.8 + 7.0);
-    vec3 starlight = vec3(0.92, 0.93, 1.0);
-    sky += starlight * (deepFine + deepBright) * uNight * (0.3 + 0.7 * zen) * 0.6;
+    sky = mix(sky, dayWashTone, smoothstep(0.38, 0.95, washN) * 0.18 * (1.0 - uNight));
 
     // The daystar's gathered glow.
     float gd = distance(frag, uDaystar) / max(uFitScale * 330.0, 1.0);
-    sky += uGlowColor * (uGlowStrength * 2.6) * exp(-gd * gd * 1.7);
+    sky += uGlowColor * (uGlowStrength * (1.6 + 1.2 * uNight)) * exp(-gd * gd * 1.7);
 
     // The pool of attention — brightens and saturates where the
     // visitor's cursor lives on the sphere.
@@ -244,13 +287,13 @@ export const DOME_FRAGMENT = /* glsl */ `
     float grain = (hash21(frag) - 0.5) + (hash21(floor(frag * 0.21)) - 0.5) * 0.6;
     sky += grain * uGrain * (0.35 + lum * 1.6);
 
-    // The frame recedes toward the ground at its edges, strongest
-    // along the bottom where the sky meets the Foyer.
+    // The frame recedes toward the ground at its edges — gently at
+    // the bottom, where the horizon's gather now lives.
     vec2 ec = frag / uResolution - 0.5;
     float edge = smoothstep(0.42, 0.78, length(ec * vec2(1.0, 1.15)));
-    sky = mix(sky, uGround, edge * 0.45);
-    float bottom = smoothstep(0.70, 1.0, frag.y / uResolution.y);
-    sky = mix(sky, uGround, bottom * 0.55);
+    sky = mix(sky, uGround, edge * 0.40);
+    float bottom = smoothstep(0.72, 1.0, frag.y / uResolution.y);
+    sky = mix(sky, uGround, bottom * 0.35);
 
     gl_FragColor = vec4(sky, 1.0);
   }
@@ -313,7 +356,13 @@ export const GLOW_FRAGMENT = /* glsl */ `
     float window = smoothstep(1.0, 0.72, d);
     float core = exp(-d * d * 14.0) * 1.15;
     float aura = exp(-d * d * 2.0) * 0.36;
-    float lumin = (core + aura) * window * (1.0 + 0.22 * vTwinkle);
+    // A four-point sparkle in the illustrated register — the chart's
+    // brighter stars catch the eye without turning photographic.
+    // Larger halos (vSeed) flare more, the way the hi-fi's do.
+    float flare = exp(-abs(vQuad.x) * 11.0 - vQuad.y * vQuad.y * 70.0)
+      + exp(-abs(vQuad.y) * 11.0 - vQuad.x * vQuad.x * 70.0);
+    float lumin = (core + aura + flare * (0.30 + 0.45 * vSeed)) * window
+      * (1.0 + 0.22 * vTwinkle);
     vec3 col = mix(vColor, vec3(1.0, 0.98, 0.94), core * 0.5);
     col = mix(col, uAccentGold, vActive * 0.22);
     gl_FragColor = vec4(col * lumin * uNight * (0.8 + 0.5 * vActive), 0.0);

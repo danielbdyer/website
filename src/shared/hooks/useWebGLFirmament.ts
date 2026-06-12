@@ -2,20 +2,15 @@ import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { Vec3 } from '@/shared/geometry/sphere';
 import type { AtmosphericScene } from '@/shared/webgl/atmosphereScene';
-import type { AtmosphereHandles } from '@/shared/webgl/atmosphereRenderer';
-import type { Affine2D } from '@/shared/webgl/atmosphereProjection';
+import type { AtmosphereFrameInput, AtmosphereHandles } from '@/shared/webgl/atmosphereRenderer';
 import {
-  affineRotation,
-  composeAffine,
   fitViewboxToCanvas,
-  parseCssMatrix,
   projectPointsToCanvas,
-  withOrigin,
   applyAffine,
 } from '@/shared/webgl/atmosphereProjection';
 import { buildSkyPalette } from '@/shared/webgl/palette';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
-import { getSkyCamera, subscribeSkyCamera } from '@/shared/state/skyCamera';
+import { getSkyCamera, getSkyCameraVersion, subscribeSkyCamera } from '@/shared/state/skyCamera';
 
 // The atmospheric layer's runtime — CONSTELLATION_HORIZON.md's
 // Layer 1, in its full Phase 2 + 3 form. The hook owns what the
@@ -42,6 +37,17 @@ const VIEWBOX_CENTER = VIEWBOX / 2;
 const DAYSTAR_VIEWBOX = { x: 500, y: 240 };
 const ACTIVE_EASE_RATE = 7;
 const POOL_EASE_RATE = 5;
+// The parallax multipliers tokens.css applies to the two layered
+// groups (.constellation-parallax--sky / --firmament). The chain
+// replay computes the same translate from the raw vars; if the CSS
+// multipliers tune, these tune with them.
+const PARALLAX_SKY_PX = -14;
+const PARALLAX_FIRMAMENT_PX = -6;
+// Rate matching the 800ms signature ease the CSS consumers carry —
+// an exponential at 6/s reaches ~95% by 500ms, the same felt arrival.
+const PARALLAX_EASE_RATE = 6;
+// Consecutive still frames before the loop halves its cadence.
+const CALM_AFTER_FRAMES = 45;
 
 interface SkyDomElements {
   readonly frame: HTMLElement;
@@ -84,6 +90,10 @@ interface LoopState {
    *  box (not the canvas box — the two can differ by chrome above
    *  the SVG). Recomputed on resize, read every frame. */
   readonly fit: MutableFit;
+  readonly chain: ChainState;
+  /** The one frame-input object, mutated in place per paint — the
+   *  steady-state loop allocates nothing. */
+  readonly frame: AtmosphereFrameInput;
   poolStrength: number;
   lastTime: number;
 }
@@ -157,56 +167,138 @@ function driftMotes(state: LoopState, t: number): void {
   }
 }
 
-interface ChainReads {
-  readonly world: Affine2D;
-  readonly glyphChain: Affine2D;
-  readonly firmamentChain: Affine2D;
-  readonly spin: number;
+interface MutableAffine {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  e: number;
+  f: number;
 }
 
-/** Read the SVG's live CSS transform stack — the cursor parallax,
- *  the camera yaw, the 600s heavens rotation — so the WebGL paint
- *  replays exactly what the browser composites for the SVG stars. */
-function readChains(els: SkyDomElements): ChainReads {
-  const mPar = parseCssMatrix(getComputedStyle(els.parallaxSky).transform);
-  const mCam = withOrigin(
-    parseCssMatrix(getComputedStyle(els.cameraGroup).transform),
-    VIEWBOX_CENTER,
-    VIEWBOX_CENTER,
-  );
-  const mRotRaw = parseCssMatrix(getComputedStyle(els.rotates).transform);
-  const glyphChain = composeAffine(mPar, mCam);
+/** The live transform stack, replayed numerically. Persistent and
+ *  mutated in place each frame — the loop's chain reads allocate
+ *  nothing and, critically, never call getComputedStyle: a computed-
+ *  style read inside an animating subtree forces a synchronous style
+ *  recalc every frame, which was the loop's main-thread spike. */
+interface ChainState {
+  parSkyX: number;
+  parSkyY: number;
+  parFirX: number;
+  parFirY: number;
+  spin: number;
+  rotation: Animation | null;
+  rotationDurationMs: number;
+  world: MutableAffine;
+  glyphChain: MutableAffine;
+}
+
+function newChainState(): ChainState {
   return {
-    world: composeAffine(glyphChain, withOrigin(mRotRaw, VIEWBOX_CENTER, VIEWBOX_CENTER)),
-    glyphChain,
-    firmamentChain: parseCssMatrix(getComputedStyle(els.parallaxFirmament).transform),
-    spin: affineRotation(mRotRaw),
+    parSkyX: 0,
+    parSkyY: 0,
+    parFirX: 0,
+    parFirY: 0,
+    spin: 0,
+    rotation: null,
+    rotationDurationMs: 0,
+    world: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    glyphChain: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
   };
 }
 
-function easeActivations(state: LoopState, k: number): void {
+function inlineVar(el: Element, name: string): number {
+  const raw = (el as Element & ElementCSSInlineStyle).style.getPropertyValue(name);
+  const value = Number.parseFloat(raw);
+  return Number.isNaN(value) ? 0 : value;
+}
+
+/** Locate the 600s heavens animation once; read its clock per frame.
+ *  Animation.currentTime is a plain property — unlike a computed
+ *  transform it costs no style recalc. Under reduced motion the
+ *  global CSS collapses the duration and the angle parks near 0. */
+function readSpin(els: SkyDomElements, chain: ChainState): number {
+  if (!chain.rotation) {
+    const animations = els.rotates.getAnimations?.() ?? [];
+    chain.rotation = animations[0] ?? null;
+    if (chain.rotation) {
+      const timing = chain.rotation.effect?.getTiming();
+      chain.rotationDurationMs = typeof timing?.duration === 'number' ? timing.duration : 600_000;
+    }
+  }
+  const t = chain.rotation?.currentTime;
+  if (typeof t !== 'number' || chain.rotationDurationMs <= 0) return 0;
+  return ((t % chain.rotationDurationMs) / chain.rotationDurationMs) * Math.PI * 2;
+}
+
+/** Build a rotation-about-viewbox-center plus translate, in place. */
+function writeRotationAffine(out: MutableAffine, angle: number, tx: number, ty: number): void {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  out.a = cos;
+  out.b = sin;
+  out.c = -sin;
+  out.d = cos;
+  out.e = VIEWBOX_CENTER - (cos * VIEWBOX_CENTER - sin * VIEWBOX_CENTER) + tx;
+  out.f = VIEWBOX_CENTER - (sin * VIEWBOX_CENTER + cos * VIEWBOX_CENTER) + ty;
+}
+
+/** Advance the chain replay one frame: smooth the parallax vars
+ *  toward their targets (matching the CSS consumers' 800ms arrival),
+ *  read the heavens' clock, and rebuild the two affines. The camera
+ *  group's yaw and the rotates group's spin share the same pivot, so
+ *  their rotations compose by addition. (--cam-x/--cam-y are part of
+ *  the camera transform's vocabulary but nothing writes them today;
+ *  if they come alive, read them here the same way.) */
+function advanceChains(els: SkyDomElements, chain: ChainState, dt: number): number {
+  const k = 1 - Math.exp(-PARALLAX_EASE_RATE * dt);
+  const targetX = inlineVar(els.svg, '--parallax-x') * PARALLAX_SKY_PX;
+  const targetY = inlineVar(els.svg, '--parallax-y') * PARALLAX_SKY_PX;
+  chain.parSkyX += (targetX - chain.parSkyX) * k;
+  chain.parSkyY += (targetY - chain.parSkyY) * k;
+  chain.parFirX = (chain.parSkyX * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
+  chain.parFirY = (chain.parSkyY * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
+  const yaw = (inlineVar(els.cameraGroup, '--cam-yaw') * Math.PI) / 180;
+  chain.spin = readSpin(els, chain);
+  writeRotationAffine(chain.world, yaw + chain.spin, chain.parSkyX, chain.parSkyY);
+  writeRotationAffine(chain.glyphChain, yaw, chain.parSkyX, chain.parSkyY);
+  // Residual in viewbox px, normalized so ~0.07px reads as settled.
+  return (Math.abs(targetX - chain.parSkyX) + Math.abs(targetY - chain.parSkyY)) / 14;
+}
+
+/** Ease per-star activation toward its target; returns the largest
+ *  remaining delta so the loop knows when the claim has settled. */
+function easeActivations(state: LoopState, k: number): number {
   const active = state.buffers.starActive;
   const target = state.activeIndexRef.current;
+  let residual = 0;
   for (const i of active.keys()) {
-    active[i] = active[i]! + ((i === target ? 1 : 0) - active[i]!) * k;
+    const goal = i === target ? 1 : 0;
+    const next = active[i]! + (goal - active[i]!) * k;
+    active[i] = next;
+    const delta = Math.abs(goal - next);
+    if (delta > residual) residual = delta;
   }
+  return residual;
 }
 
 /** Assemble and paint one atmosphere frame. `timeSeconds` is the
  *  loop clock (0 and frozen under reduced motion). The fit is
- *  computed against the drawing buffer, so every position handed
- *  to the shader is already in buffer pixels. */
-function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: number): void {
-  const { els, handles, buffers, fit } = state;
-  const chains = readChains(els);
+ *  computed against the drawing buffer, so every position handed to
+ *  the shader is already in buffer pixels. Returns the frame's
+ *  unsettledness (0 = nothing but ambient time is moving) so the
+ *  loop can halve its cadence when the sky is calm. */
+function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: number): number {
+  const { els, handles, buffers, fit, chain, frame } = state;
   const { camera, basis } = getSkyCamera();
   const dt = state.lastTime === 0 ? 0.016 : Math.min(timeSeconds - state.lastTime, 0.1);
   state.lastTime = timeSeconds;
+  const parallaxResidual = advanceChains(els, chain, dt);
   projectPointsToCanvas(
     buffers.starPositions,
     camera,
     basis,
-    chains.world,
+    chain.world,
     fit,
     VIEWBOX,
     buffers.starCenters,
@@ -216,45 +308,40 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
     buffers.motePositions,
     camera,
     basis,
-    chains.glyphChain,
+    chain.glyphChain,
     fit,
     VIEWBOX,
     buffers.moteCenters,
   );
-  easeActivations(state, motion === 0 ? 1 : 1 - Math.exp(-ACTIVE_EASE_RATE * dt));
+  const activeResidual = easeActivations(
+    state,
+    motion === 0 ? 1 : 1 - Math.exp(-ACTIVE_EASE_RATE * dt),
+  );
   const cursor = getConstellationCursor();
-  state.poolStrength +=
-    ((cursor.active ? 1 : 0) - state.poolStrength) * (1 - Math.exp(-POOL_EASE_RATE * dt));
-  const glyphViewbox = els.glyph
-    ? { x: els.glyph.cx.baseVal.value, y: els.glyph.cy.baseVal.value }
-    : { x: VIEWBOX_CENTER, y: VIEWBOX_CENTER };
-  const poolViewbox = applyAffine(chains.glyphChain, glyphViewbox.x, glyphViewbox.y);
-  const daystarViewbox = applyAffine(chains.firmamentChain, DAYSTAR_VIEWBOX.x, DAYSTAR_VIEWBOX.y);
+  const poolTarget = cursor.active ? 1 : 0;
+  state.poolStrength += (poolTarget - state.poolStrength) * (1 - Math.exp(-POOL_EASE_RATE * dt));
+  const glyphX = els.glyph ? els.glyph.cx.baseVal.value : VIEWBOX_CENTER;
+  const glyphY = els.glyph ? els.glyph.cy.baseVal.value : VIEWBOX_CENTER;
+  const pool = applyAffine(chain.glyphChain, glyphX, glyphY);
+  frame.timeSeconds = timeSeconds;
+  frame.motion = motion;
+  frame.camera = camera;
+  frame.basis = basis;
+  frame.fit.scale = fit.scale;
+  frame.fit.offsetX = fit.offsetX;
+  frame.fit.offsetY = fit.offsetY;
   // The firmament group's translate, replayed as a ray offset so
   // the painted backdrop drifts with the cursor parallax.
-  const fe = chains.firmamentChain.e;
-  const ff = chains.firmamentChain.f;
-  handles.render({
-    timeSeconds,
-    motion,
-    camera,
-    basis,
-    fit,
-    domeShift: { x: -fe / 440, y: ff / 440 },
-    spin: chains.spin,
-    pool: {
-      x: fit.offsetX + poolViewbox.x * fit.scale,
-      y: fit.offsetY + poolViewbox.y * fit.scale,
-      strength: state.poolStrength * motion,
-    },
-    daystar: {
-      x: fit.offsetX + daystarViewbox.x * fit.scale,
-      y: fit.offsetY + daystarViewbox.y * fit.scale,
-    },
-    starCenters: buffers.starCenters,
-    starActive: buffers.starActive,
-    moteCenters: buffers.moteCenters,
-  });
+  frame.domeShift.x = -chain.parFirX / 440;
+  frame.domeShift.y = chain.parFirY / 440;
+  frame.spin = chain.spin;
+  frame.pool.x = fit.offsetX + pool.x * fit.scale;
+  frame.pool.y = fit.offsetY + pool.y * fit.scale;
+  frame.pool.strength = state.poolStrength * motion;
+  frame.daystar.x = fit.offsetX + (DAYSTAR_VIEWBOX.x + chain.parFirX) * fit.scale;
+  frame.daystar.y = fit.offsetY + (DAYSTAR_VIEWBOX.y + chain.parFirY) * fit.scale;
+  handles.render(frame);
+  return Math.max(activeResidual, parallaxResidual, Math.abs(poolTarget - state.poolStrength));
 }
 
 function prefersStillAtmosphere(): boolean {
@@ -298,18 +385,38 @@ async function mountAtmosphere(
   const root = document.documentElement;
   const readToken = (token: string) => getComputedStyle(root).getPropertyValue(token);
   const isDark = () => root.classList.contains('dk');
-  const dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
+  // 1.5 is the sweet spot for a layer that is entirely soft paint:
+  // the structural SVG above carries every crisp mark, so the
+  // atmosphere's pixels can be 44% fewer than a dpr-2 buffer with no
+  // visible cost. The budget watcher can still drop to 1.
+  const dpr = Math.min(globalThis.devicePixelRatio || 1, 1.5);
   const handles = await createAtmosphere(scene, buildSkyPalette(readToken, isDark()), dpr);
   if (!handles) return null;
   const still = prefersStillAtmosphere();
+  const buffers = allocateBuffers(scene);
   const state: LoopState = {
-    buffers: allocateBuffers(scene),
+    buffers,
     scene,
     els,
     handles,
     fitMode,
     activeIndexRef,
     fit: { scale: 1, offsetX: 0, offsetY: 0 },
+    chain: newChainState(),
+    frame: {
+      timeSeconds: 0,
+      motion: 1,
+      camera: getSkyCamera().camera,
+      basis: getSkyCamera().basis,
+      fit: { scale: 1, offsetX: 0, offsetY: 0 },
+      domeShift: { x: 0, y: 0 },
+      spin: 0,
+      pool: { x: 0, y: 0, strength: 0 },
+      daystar: { x: 0, y: 0 },
+      starCenters: buffers.starCenters,
+      starActive: buffers.starActive,
+      moteCenters: buffers.moteCenters,
+    },
     poolStrength: 0,
     lastTime: 0,
   };
@@ -347,6 +454,57 @@ function createBudgetWatcher(onDegrade: () => void): (now: number) => void {
   };
 }
 
+interface PaintLoop {
+  step(now: number): void;
+  repaint(): void;
+  /** Break the calm — full cadence resumes (theme fades, etc.). */
+  wake(): void;
+}
+
+/** The paint scheduler. Owns the calm cadence: when the world is
+ *  still (no camera writes, pool and halo claim settled, parallax
+ *  arrived, no theme fade), the loop paints every other frame —
+ *  twinkle and drift at 30fps are indistinguishable at their
+ *  periods, and the GPU rests with the sky. Any disturbance
+ *  restores the full rate on the next frame. */
+function createPaintLoop(
+  state: LoopState,
+  env: AtmosphereEnv,
+  startTime: number,
+  onPaintFailure: () => void,
+): PaintLoop {
+  let unsettled = 1;
+  let calmFrames = 0;
+  let frameParity = 0;
+  let lastCameraVersion = -1;
+  const paint = (timeSeconds: number) => {
+    try {
+      unsettled = renderAtmosphereFrame(state, timeSeconds, env.still ? 0 : 1);
+    } catch {
+      onPaintFailure();
+    }
+  };
+  return {
+    step(now: number) {
+      const cameraVersion = getSkyCameraVersion();
+      const still = cameraVersion === lastCameraVersion && unsettled < 0.005;
+      lastCameraVersion = cameraVersion;
+      calmFrames = still ? calmFrames + 1 : 0;
+      frameParity ^= 1;
+      if (calmFrames < CALM_AFTER_FRAMES || frameParity === 0) {
+        paint((now - startTime) / 1000);
+      }
+    },
+    repaint() {
+      paint(env.still ? 0 : (performance.now() - startTime) / 1000);
+    },
+    wake() {
+      calmFrames = 0;
+      unsettled = 1;
+    },
+  };
+}
+
 function dressCanvas(canvas: HTMLCanvasElement): void {
   canvas.style.width = '100%';
   canvas.style.height = '100%';
@@ -376,42 +534,47 @@ function wireAtmosphere(
   const watchBudget = createBudgetWatcher(() => {
     handles.setDpr(1);
     resize();
+    // The buffer reallocation clears to black (opaque context);
+    // repaint in the same task so no composite can catch it empty.
+    loop.wake();
+    loop.repaint();
   });
-  const paint = (timeSeconds: number) => {
-    try {
-      renderAtmosphereFrame(state, timeSeconds, env.still ? 0 : 1);
-    } catch {
-      halted = true;
-      canvas.style.display = 'none';
-      delete els.frame.dataset.atmosphere;
-    }
-  };
+  const loop = createPaintLoop(state, env, startTime, () => {
+    halted = true;
+    canvas.style.display = 'none';
+    delete els.frame.dataset.atmosphere;
+  });
   const repaint = () => {
     if (halted) return;
-    paint(env.still ? 0 : (performance.now() - startTime) / 1000);
-  };
-  const tick = () => {
-    if (halted) return;
-    const now = performance.now();
-    watchBudget(now);
-    paint((now - startTime) / 1000);
-    raf = requestAnimationFrame(tick);
+    loop.repaint();
   };
   if (env.still) {
     repaint();
   } else {
+    const tick = () => {
+      if (halted) return;
+      const now = performance.now();
+      watchBudget(now);
+      loop.step(now);
+      raf = requestAnimationFrame(tick);
+    };
     raf = requestAnimationFrame(tick);
   }
   els.frame.dataset.atmosphere = 'webgl';
   const unsubscribeCamera = env.still ? subscribeSkyCamera(repaint) : undefined;
   const themeObserver = new MutationObserver(() => {
     handles.setPalette(buildSkyPalette(env.readToken, env.isDark()), env.still);
+    loop.wake();
     if (env.still) repaint();
   });
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   const resizeObserver = new ResizeObserver(() => {
     resize();
-    if (env.still) repaint();
+    // Same reallocation hazard as the budget downgrade: never leave
+    // a cleared buffer on screen waiting for the next scheduled
+    // paint (the calm cadence may be skipping that very frame).
+    loop.wake();
+    repaint();
   });
   resizeObserver.observe(container);
   const onContextLost = () => {

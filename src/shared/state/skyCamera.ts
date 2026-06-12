@@ -33,15 +33,24 @@ export interface SkyCameraState {
 }
 
 let current: SkyCameraState = { camera: DEFAULT_CAMERA, basis: cameraBasis(DEFAULT_CAMERA) };
+let version = 0;
 const listeners = new Set<() => void>();
 
 export function setSkyCamera(camera: Camera, basis: CameraBasis): void {
   current = { camera, basis };
+  version += 1;
   for (const listener of listeners) listener();
 }
 
 export function getSkyCamera(): SkyCameraState {
   return current;
+}
+
+/** Monotonic write counter. The atmosphere's render loop compares
+ *  versions across frames to know the world is still — when it is,
+ *  the loop halves its cadence and the GPU rests with it. */
+export function getSkyCameraVersion(): number {
+  return version;
 }
 
 /** Subscribe to camera writes. Returns the unsubscribe. Used by the
@@ -55,5 +64,6 @@ export function subscribeSkyCamera(listener: () => void): () => void {
 /** Test-only helper — restore the default camera between tests. */
 export function resetSkyCamera(): void {
   current = { camera: DEFAULT_CAMERA, basis: cameraBasis(DEFAULT_CAMERA) };
+  version = 0;
   listeners.clear();
 }

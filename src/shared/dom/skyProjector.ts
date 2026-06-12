@@ -13,12 +13,42 @@
 // only ever mutating projected coordinates — never the elements'
 // identity, role, or addressability.
 
-import type { Camera, CameraBasis } from '@/shared/geometry/camera';
-import { project } from '@/shared/geometry/camera';
+import type { Camera, CameraBasis, ProjectedPointMut } from '@/shared/geometry/camera';
+import { project, projectInto } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
+
+// Per-frame element lookups were the navigation tick's hidden cost:
+// ~100 querySelector walks per frame at production density (one per
+// star, two-per-thread ids, the trail, the glyph). The cache below
+// resolves each selector once per element and revalidates only by
+// isConnected — if React remounts a node the stale entry misses and
+// the selector runs again for that key alone.
+const elementCaches = new WeakMap<Element, Map<string, Element>>();
+
+function cachedElement(root: Element, selector: string): Element | null {
+  let cache = elementCaches.get(root);
+  if (!cache) {
+    cache = new Map();
+    elementCaches.set(root, cache);
+  }
+  const hit = cache.get(selector);
+  if (hit?.isConnected) return hit;
+  const found = root.querySelector(selector);
+  if (found) {
+    cache.set(selector, found);
+  } else {
+    cache.delete(selector);
+  }
+  return found;
+}
+
+// Shared scratch for the per-element projections below — one
+// allocation for the module's lifetime instead of two per element
+// per tick.
+const SCRATCH: ProjectedPointMut = { screenX: 0, screenY: 0, depth: 1, inFront: false };
 
 /** Number of ghost positions trailing the cursor for the companion
  *  glyph's fade-tail. Stage renders this many trail circles; the
@@ -74,13 +104,13 @@ export function projectToViewbox(
  * target) are hidden by a translate-far-offscreen trick rather
  * than added complexity in the DOM.
  *
- * @bigO Time: O(N) per call (one querySelector + one matrix-multiply
- *       + one setAttribute per node). Hot path: called once per
- *       RAF tick. Don't accumulate a stars-by-key cache — the
- *       camera moves every tick so the projection has to rerun
- *       anyway, and the per-tick selector lookup is cheap on the
- *       small node count Stage holds.
- *       Space: O(1).
+ * @bigO Time: O(N) per call (one cached element lookup + one
+ *       matrix-multiply + one setAttribute per node). Hot path:
+ *       called once per RAF tick. Element references are cached
+ *       per camera-group (revalidated by isConnected); the
+ *       projection itself reruns every tick because the camera
+ *       moves.
+ *       Space: O(N) for the element cache, O(1) per tick.
  */
 export function projectStars(
   cameraGroup: SVGGElement,
@@ -89,14 +119,16 @@ export function projectStars(
   basis: CameraBasis,
   viewboxSize: number,
 ): void {
+  const center = viewboxSize / 2;
+  const radius = viewboxSize * 0.44;
   for (const node of nodes) {
-    const el = cameraGroup.querySelector(`[data-node-key="${node.key}"]`);
+    const el = cachedElement(cameraGroup, `[data-node-key="${node.key}"]`);
     if (!el) continue;
-    const proj = projectToViewbox(node.unitPos, camera, basis, viewboxSize);
+    projectInto(node.unitPos, camera, basis, 1, SCRATCH);
     el.setAttribute(
       'transform',
-      proj.inFront
-        ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)})`
+      SCRATCH.inFront
+        ? `translate(${(center + SCRATCH.screenX * radius).toFixed(2)} ${(center - SCRATCH.screenY * radius).toFixed(2)})`
         : 'translate(-9999 -9999)',
     );
   }
@@ -107,10 +139,10 @@ export function projectStars(
  * selector. Threads connecting behind-camera endpoints render
  * off-canvas through the same far-offscreen trick.
  *
- * @bigO Time: O(E) per call (one querySelector + two matrix-
- *       multiplies per edge). Hot path: called once per RAF tick
- *       alongside projectStars.
- *       Space: O(1).
+ * @bigO Time: O(E) per call (one cached element lookup + two
+ *       matrix-multiplies per edge). Hot path: called once per RAF
+ *       tick alongside projectStars.
+ *       Space: O(E) for the element cache, O(1) per tick.
  */
 export function projectThreads(
   cameraGroup: SVGGElement,
@@ -119,15 +151,17 @@ export function projectThreads(
   basis: CameraBasis,
   viewboxSize: number,
 ): void {
+  const center = viewboxSize / 2;
+  const radius = viewboxSize * 0.44;
   for (const edge of edges) {
-    const el = cameraGroup.querySelector(`[data-thread-id="${edge.id}"]`);
+    const el = cachedElement(cameraGroup, `[data-thread-id="${edge.id}"]`);
     if (!el) continue;
-    const ps = projectToViewbox(edge.sourcePos, camera, basis, viewboxSize);
-    const pt = projectToViewbox(edge.targetPos, camera, basis, viewboxSize);
-    el.setAttribute('x1', ps.x.toFixed(2));
-    el.setAttribute('y1', ps.y.toFixed(2));
-    el.setAttribute('x2', pt.x.toFixed(2));
-    el.setAttribute('y2', pt.y.toFixed(2));
+    projectInto(edge.sourcePos, camera, basis, 1, SCRATCH);
+    el.setAttribute('x1', (center + SCRATCH.screenX * radius).toFixed(2));
+    el.setAttribute('y1', (center - SCRATCH.screenY * radius).toFixed(2));
+    projectInto(edge.targetPos, camera, basis, 1, SCRATCH);
+    el.setAttribute('x2', (center + SCRATCH.screenX * radius).toFixed(2));
+    el.setAttribute('y2', (center - SCRATCH.screenY * radius).toFixed(2));
   }
 }
 
@@ -155,9 +189,8 @@ export function projectGlyph(
  * by per-ghost base opacity) so the trail asserts itself only
  * during fast travel.
  *
- * @bigO Time: O(TRAIL_LENGTH) per call — fixed at 4. The
- *       querySelector inside the loop is acceptable because the
- *       count is small and the parent group is local.
+ * @bigO Time: O(TRAIL_LENGTH) per call — fixed at 4, served from
+ *       the element cache.
  *       Space: O(1).
  */
 export function projectTrail(
@@ -169,12 +202,12 @@ export function projectTrail(
 ): void {
   let i = 0;
   for (const entry of history) {
-    const trailEl = cameraGroup.querySelector(`[data-companion-trail="${i}"]`);
+    const trailEl = cachedElement(cameraGroup, `[data-companion-trail="${i}"]`);
     i += 1;
     if (!trailEl) continue;
     const proj = projectToViewbox(entry, camera, basis, viewboxSize);
-    trailEl.setAttribute('cx', proj.inFront ? proj.x.toFixed(2) : (-9999).toString());
-    trailEl.setAttribute('cy', proj.inFront ? proj.y.toFixed(2) : (-9999).toString());
+    trailEl.setAttribute('cx', proj.inFront ? proj.x.toFixed(2) : '-9999');
+    trailEl.setAttribute('cy', proj.inFront ? proj.y.toFixed(2) : '-9999');
   }
 }
 

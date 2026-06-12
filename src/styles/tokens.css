@@ -228,13 +228,14 @@
   --geo-color: rgb(106, 174, 146, 0.1);
   --geo-accent: rgb(224, 144, 106, 0.12);
 
-  /* Constellation sky — paper-night by night. Deeper than --bg, with
-     a hint of cooler tone (the umber undercurrent breathes upward
-     into something starlit). The glow is the moon's silver-cool
-     gathering near the upper-mid; grain compounds the body's grain
-     to give the dark sky a stardust-feel. See CONSTELLATION.md
-     §"Two Render Modes" — night: the firmament. */
-  --sky-zenith: #0d0e12;
+  /* Constellation sky — paper-night by night. Deep night-blue
+     trending toward black (CONSTELLATION.md §"Two Render Modes" —
+     night: the firmament), the indigo register the celestial-chart
+     hi-fi holds, with the umber undercurrent breathing upward at
+     the horizon. The glow is the moon's silver-rose gathering near
+     the upper-mid; grain compounds the body's grain to give the
+     dark sky a stardust-feel. */
+  --sky-zenith: #0d1322;
   --sky-horizon: var(--bg);
   --sky-grain-opacity: 0.06;
   --sky-glow: rgb(212, 152, 152, 0.05);
@@ -548,6 +549,17 @@ body::before {
      opacity oscillation on a filtered element inside the rotating
      group was a major contributor to idle stutter. The transition
      above still drives the halo claim on activate. */
+}
+
+/* When the WebGL atmosphere is live it paints each star's halo as
+   a shader sprite (with the twinkle the SVG once held); the SVG's
+   filtered halo quiets to a remnant so the star carries one bleed,
+   not two — and the rasterizer stops re-rendering a filter per
+   star while the navigation camera moves. The claim rule below
+   still lifts it on activation (later in the file, same
+   specificity, so the crescendo wins). */
+.constellation-frame[data-atmosphere='webgl'] .constellation-star__halo {
+  opacity: 0.08;
 }
 
 /* Halo claim — when the cursor settles into this star's well, the

@@ -15,7 +15,6 @@ import type { Mesh, OGLRenderingContext, Program, Renderer, Transform } from 'og
 import type * as Ogl from 'ogl';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import type { AtmosphericScene } from './atmosphereScene';
-import type { FitTransform } from './atmosphereProjection';
 import type { SkyPalette } from './palette';
 import { blendSkyPalettes } from './palette';
 import {
@@ -28,26 +27,29 @@ import {
   SPRITE_VERTEX,
 } from './atmosphereShaders';
 
+/** One frame's inputs. Deliberately mutable: the hook owns a single
+ *  instance and rewrites it in place each paint, so the steady-state
+ *  loop allocates nothing. */
 export interface AtmosphereFrameInput {
-  readonly timeSeconds: number;
+  timeSeconds: number;
   /** 0 under reduced motion (drift and twinkle hold), 1 otherwise. */
-  readonly motion: number;
-  readonly camera: Camera;
-  readonly basis: CameraBasis;
-  readonly fit: FitTransform;
+  motion: number;
+  camera: Camera;
+  basis: CameraBasis;
+  fit: { scale: number; offsetX: number; offsetY: number };
   /** Firmament-layer parallax in normalized screen units. */
-  readonly domeShift: { readonly x: number; readonly y: number };
+  domeShift: { x: number; y: number };
   /** The heavens' current rotation phase in radians. */
-  readonly spin: number;
+  spin: number;
   /** Cursor pool in buffer px + smoothed strength ∈ [0, 1]. */
-  readonly pool: { readonly x: number; readonly y: number; readonly strength: number };
+  pool: { x: number; y: number; strength: number };
   /** Daystar anchor in buffer px. */
-  readonly daystar: { readonly x: number; readonly y: number };
+  daystar: { x: number; y: number };
   /** Caller-projected star centers (2·N) and eased activation (N). */
-  readonly starCenters: Float32Array;
-  readonly starActive: Float32Array;
+  starCenters: Float32Array;
+  starActive: Float32Array;
   /** Caller-projected mote centers (2·M). */
-  readonly moteCenters: Float32Array;
+  moteCenters: Float32Array;
 }
 
 export interface AtmosphereHandles {
@@ -73,7 +75,7 @@ const STAR_HALO_VIEWBOX_RADIUS = 36;
 // a blot of color, not a luminous field.
 const STAR_PIGMENT_VIEWBOX_RADIUS = 15;
 const MOTE_VIEWBOX_RADIUS = 3.4;
-const POOL_VIEWBOX_RADIUS = 235;
+const POOL_VIEWBOX_RADIUS = 320;
 
 interface PaletteFade {
   from: SkyPalette;
@@ -201,6 +203,12 @@ function resolvePalette(fade: PaletteFade, timeSeconds: number): SkyPalette {
   if (fade.instant) return fade.to;
   fade.startTime ??= timeSeconds;
   const t = Math.min((timeSeconds - fade.startTime) / THEME_FADE_SECONDS, 1);
+  if (t >= 1) {
+    // Fade complete — collapse to the target so steady-state frames
+    // return a reference-stable palette and skip uniform writes.
+    fade.instant = true;
+    return fade.to;
+  }
   return blendSkyPalettes(fade.from, fade.to, easeTheme(t));
 }
 
@@ -326,16 +334,35 @@ function buildMoteMesh(
   });
 }
 
-function buildPasses(
+/** Yield to the next animation frame (or a macrotask outside a
+ *  rendering context) so successive shader compiles never stack
+ *  into one long main-thread block. */
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => resolve());
+    } else {
+      setTimeout(resolve, 0);
+    }
+  });
+}
+
+async function buildPasses(
   ogl: OglModule,
   renderer: Renderer,
   scene: AtmosphericScene,
   palette: SkyPalette,
-): PassSet {
+): Promise<PassSet> {
   const gl = renderer.gl;
   const root = new ogl.Transform();
+  // One program per frame: driver-side shader compilation is the
+  // single biggest main-thread block this layer can cause, and it
+  // would land during the arrival animation. Spreading the four
+  // compiles across frames keeps each under the frame budget.
   const dome = buildDomeMesh(ogl, gl, palette);
+  await nextFrame();
   const { pigment, glow } = buildStarMeshes(ogl, gl, scene, palette);
+  await nextFrame();
   const motes = buildMoteMesh(ogl, gl, scene, palette);
   // Paint order: the dome is the ground truth, dust behind the
   // halos, pigment beneath glow so the theme crossfade reads as one
@@ -415,12 +442,15 @@ export async function createAtmosphere(
   const ogl: OglModule = { Renderer, Program, Mesh, Triangle, Geometry, Transform };
   let renderer: Renderer;
   try {
-    renderer = new ogl.Renderer({ alpha: true, premultipliedAlpha: true, dpr });
+    // Opaque, depthless context: the dome repaints every pixel every
+    // frame, so the canvas needs no alpha compositing against the
+    // page, no depth buffer, and no clear pass.
+    renderer = new ogl.Renderer({ alpha: false, depth: false, dpr });
   } catch {
     return null;
   }
-  renderer.gl.clearColor(0, 0, 0, 0);
-  const passes = buildPasses(ogl, renderer, scene, initialPalette);
+  renderer.autoClear = false;
+  const passes = await buildPasses(ogl, renderer, scene, initialPalette);
   const fade: PaletteFade = {
     from: initialPalette,
     to: initialPalette,
@@ -458,9 +488,14 @@ export async function createAtmosphere(
     },
     render(frame: AtmosphereFrameInput) {
       const palette = resolvePalette(fade, frame.timeSeconds);
-      lastResolved = palette;
-      for (const mesh of [passes.dome, passes.pigment, passes.glow, passes.motes]) {
-        writePalette(mesh.program, palette);
+      if (palette !== lastResolved) {
+        // Palette uniforms change only while a theme fade is live
+        // (the blend allocates a fresh object per frame); at rest
+        // the reference is stable and the writes are skipped.
+        lastResolved = palette;
+        for (const mesh of [passes.dome, passes.pigment, passes.glow, passes.motes]) {
+          writePalette(mesh.program, palette);
+        }
       }
       writeFrameUniforms(passes, frame);
       writeFrameAttributes(passes, frame);
