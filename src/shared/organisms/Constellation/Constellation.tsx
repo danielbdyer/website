@@ -89,6 +89,9 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         preserveAspectRatio={fullViewport ? 'xMidYMid slice' : 'xMidYMid meet'}
         onClick={onSkyClick}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
+        {...dragHandlers}
         className={cn('constellation relative block w-full', fullViewport && 'h-full')}
       >
         <ConstellationFilters />
@@ -104,9 +107,6 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
                 onActivate: handleActivate,
                 onMouseLeave: handleMouseLeave,
                 onBlur: handleBlur,
-                onKeyDown,
-                onKeyUp,
-                dragHandlers,
               }}
               glyphRef={glyphRef}
             />

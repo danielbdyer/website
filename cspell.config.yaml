@@ -345,6 +345,8 @@ words:
   - retarget
   - Retarget
   - webglcontextlost
+  - retargeted
+  - accum
   - depthless
   - macrotask
   - unsettledness

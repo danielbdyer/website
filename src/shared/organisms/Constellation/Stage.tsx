@@ -1,4 +1,4 @@
-import type { KeyboardEvent, PointerEvent, RefObject, SyntheticEvent, FocusEvent } from 'react';
+import type { RefObject, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread } from '@/shared/atoms/Thread/Thread';
@@ -11,13 +11,6 @@ import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 // without flattening the structural meaning of the tree (Polestar
 // alongside the rotates layer, threads and stars as sibling groups
 // inside it).
-
-interface DragHandlers {
-  readonly onPointerDown: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerMove: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerUp: (e: PointerEvent<SVGGElement>) => void;
-  readonly onPointerCancel: (e: PointerEvent<SVGGElement>) => void;
-}
 
 /** The constellation's observable world — what Stage paints. The
  *  edges + nodes are the structural graph; activeKey + activeHue
@@ -32,16 +25,14 @@ export interface ConstellationWorld {
   readonly overlayKey: string | null;
 }
 
-/** Interaction handlers Stage forwards to its inner star group.
- *  Each comes from the hover-state hook or the navigation hook;
- *  Stage doesn't own any of them. */
+/** Interaction handlers Stage forwards to its inner star group —
+ *  the hover/focus set only. The drag and keyboard handlers attach
+ *  at the svg level (the whole sky is the drag surface; a press on
+ *  a star below the drag threshold stays a click). */
 export interface StageInteractions {
   readonly onActivate: (e: SyntheticEvent<Element>) => void;
   readonly onMouseLeave: () => void;
   readonly onBlur: (e: FocusEvent<Element>) => void;
-  readonly onKeyDown: (e: KeyboardEvent) => void;
-  readonly onKeyUp: (e: KeyboardEvent) => void;
-  readonly dragHandlers: DragHandlers;
 }
 
 interface StageProps {
@@ -123,7 +114,7 @@ function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
 
 export function Stage({ world, interactions, glyphRef }: StageProps) {
   const { edges, nodes, activeKey, activeHue, overlayKey } = world;
-  const { onActivate, onMouseLeave, onBlur, onKeyDown, onKeyUp, dragHandlers } = interactions;
+  const { onActivate, onMouseLeave, onBlur } = interactions;
   return (
     <>
       {/* Watercolor wash — soft halo of paper-warm light around
@@ -161,9 +152,6 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
           onMouseLeave={onMouseLeave}
           onFocus={onActivate}
           onBlur={onBlur}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          {...dragHandlers}
         >
           {nodes.map(({ node, pos, key }) => (
             // Wrapping group's transform places the star at its

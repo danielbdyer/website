@@ -67,6 +67,14 @@ describe('buildAtmosphericScene', () => {
     expect(a.motes).toEqual(b.motes);
   });
 
+  test('returns the same scene object for the same graph — the remount guard', () => {
+    // The scene is an effect dependency in the WebGL hook. A fresh
+    // object per render would tear the GL context down on every
+    // hover; identity is the contract that keeps the atmosphere
+    // mounted across re-renders.
+    expect(buildAtmosphericScene(GRAPH)).toBe(buildAtmosphericScene(GRAPH));
+  });
+
   test('size variance stays inside its tuned band', () => {
     const scene = buildAtmosphericScene(GRAPH);
     for (const star of scene.stars) {

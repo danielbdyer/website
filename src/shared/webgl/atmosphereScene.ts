@@ -118,7 +118,17 @@ const MOTES: readonly AtmosphericMote[] = Array.from({ length: MOTE_COUNT }, (_,
   buildMote(i),
 );
 
+// One scene per graph, by identity. The scene object is an effect
+// dependency in the WebGL hook — if a re-render (hover, overlay
+// open) produced a fresh scene for the same graph, the atmosphere
+// would tear down its GL context and remount mid-gesture. The cache
+// makes the guarantee structural instead of trusting the compiler's
+// memoization of the call site.
+const sceneCache = new WeakMap<ConstellationGraph, AtmosphericScene>();
+
 export function buildAtmosphericScene(graph: ConstellationGraph): AtmosphericScene {
+  const cached = sceneCache.get(graph);
+  if (cached) return cached;
   const stars = graph.nodes.map((node) => ({
     key: `${node.room}/${node.slug}`,
     unitPosition: node.unitPosition,
@@ -126,7 +136,9 @@ export function buildAtmosphericScene(graph: ConstellationGraph): AtmosphericSce
     twinklePhase: node.twinklePhase,
     sizeVariance: 0.75 + unitOf(`${node.room}/${node.slug}/halo`) * 0.5,
   }));
-  return { stars, motes: MOTES };
+  const scene: AtmosphericScene = { stars, motes: MOTES };
+  sceneCache.set(graph, scene);
+  return scene;
 }
 
 /** Resolve the active star's scene index from the structural

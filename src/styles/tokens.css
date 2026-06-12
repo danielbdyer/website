@@ -609,6 +609,47 @@ body::before {
   opacity: 0.85;
 }
 
+/* ─── Threshold previews ────────────────────────────────────────
+   The held overscroll gesture's first form (CONSTELLATION.md §"The
+   Reveal Mechanism"). useThresholdReveal writes --reveal ∈ [0, 1]
+   per frame; these surfaces lean in proportionally — the firmament
+   from above the Foyer's ceiling, the Foyer's ground from beneath
+   the sky — and spring back if the visitor releases early. Past
+   the threshold the navigation commits and the full transition
+   (the carpet roll, the route crossfade) carries the rest of the
+   way. Both are decorative (aria-hidden, pointer-events none);
+   the gesture's meaning lives in the navigation it commits.
+   Reduced motion never writes --reveal, so both rest hidden. */
+.threshold-preview-sky {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 24dvh;
+  z-index: 60;
+  pointer-events: none;
+  transform: translateY(calc((var(--reveal, 0) - 1) * 100%));
+  opacity: min(calc(var(--reveal, 0) * 8), 1);
+  background:
+    radial-gradient(circle at 24% 58%, var(--accent-gold) 0 1px, transparent 2px),
+    radial-gradient(circle at 71% 34%, var(--accent-gold) 0 1px, transparent 2px),
+    radial-gradient(circle at 52% 74%, var(--accent-rose) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 87% 66%, var(--accent-violet) 0 1px, transparent 1.8px),
+    linear-gradient(to bottom, var(--sky-zenith) 58%, var(--sky-horizon));
+  box-shadow: var(--shadow-lg);
+  will-change: transform;
+}
+
+.threshold-preview-ground {
+  position: fixed;
+  inset: auto 0 0;
+  height: 18dvh;
+  z-index: 5;
+  pointer-events: none;
+  transform: translateY(calc((1 - var(--reveal, 0)) * 100%));
+  opacity: min(calc(var(--reveal, 0) * 8), 1);
+  background: linear-gradient(to top, var(--bg) 55%, transparent);
+  will-change: transform;
+}
+
 /* ─── Constellation atmosphere handoff ──────────────────────────
    The WebGL atmosphere paints the complete firmament when it can.
    The hook marks the frame with data-atmosphere="webgl" after the

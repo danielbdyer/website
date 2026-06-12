@@ -369,12 +369,32 @@ interface MountedAtmosphere {
   repaint: () => void;
 }
 
+/** Wait out the sky's arrival animation before paying for context
+ *  creation and shader compiles — the SVG firmament is the arrival's
+ *  first-paint surface anyway, and a GL init mid-carpet-roll is a
+ *  stutter the visitor feels. Resolves immediately when no arrival
+ *  is running (direct loads, reduced motion, the perf harness). */
+function arrivalSettled(container: HTMLElement): Promise<void> {
+  const arrival = container.closest('.sky-arrival');
+  const running = arrival?.getAnimations?.().find((animation) => animation.playState === 'running');
+  if (!running) return Promise.resolve();
+  return new Promise((resolve) => {
+    const fallback = setTimeout(resolve, 2000);
+    const settled = () => {
+      clearTimeout(fallback);
+      resolve();
+    };
+    running.finished.then(settled, settled);
+  });
+}
+
 async function mountAtmosphere(
   container: HTMLDivElement,
   scene: AtmosphericScene,
   fitMode: 'cover' | 'contain',
   activeIndexRef: RefObject<number>,
 ): Promise<MountedAtmosphere | null> {
+  await arrivalSettled(container);
   // Probe with our own canvas before ogl gets the chance to
   // console.error on context failure (headless CI without GPU).
   const probe = document.createElement('canvas');
