@@ -9,15 +9,15 @@ import { getDisplayWorksByRoomSync } from './display';
 //
 // A projection of the site's content as a sky. Each work becomes a star;
 // each shared facet becomes a faint thread between the works that carry
-// it. Rooms occupy regions of the firmament. The data layer is pure —
-// it derives the constellation from the existing display works without
-// knowing anything about rendering.
+// it. The data layer is pure — it derives the constellation from the
+// existing display works without knowing anything about rendering.
 //
-// Stable across builds: a given set of works produces the same graph,
-// and adding a new work never moves the existing stars. The positioning
-// is a deterministic hash of (slug, date) within a per-room polar
-// sector. CONSTELLATION.md §"What the Constellation Shows" describes
-// the visible result; this file is the data the renderer consumes.
+// Deterministic per corpus: a given set of works produces the same graph,
+// the stars spread evenly across the dome by a Fibonacci spiral over a
+// stable order (see placeNode). Adding a work re-spaces the spiral — the
+// sky reorganizes as it grows rather than holding old positions fixed.
+// CONSTELLATION.md §"What the Constellation Shows" describes the visible
+// result; this file is the data the renderer consumes.
 //
 // The Foyer is excluded. The Foyer is the ground we look up from, not
 // a region of the sky. (DOMAIN_MODEL.md §"Invariants" — the Foyer is a
@@ -74,7 +74,8 @@ export interface ConstellationNode {
   isPreview: boolean;
   /** Polar coordinates within a unit circle: angleDeg ∈ [0, 360),
    *  radius ∈ [0, 1]. Center is the firmament's polestar; rim is
-   *  the horizon. Position is deterministic in (room, slug). */
+   *  the horizon. Position is deterministic per corpus (the work's
+   *  index on the even Fibonacci spiral — see placeNode). */
   angleDeg: number;
   radius: number;
   /** Position on the latent unit sphere — the topology Pass 2's
