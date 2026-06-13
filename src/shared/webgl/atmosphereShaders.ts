@@ -264,13 +264,46 @@ export const DOME_FRAGMENT = /* glsl */ `
     float horizonBand = smoothstep(-0.38, -0.02, P.z) * (1.0 - smoothstep(0.02, 0.38, P.z));
     sky = mix(sky, uAccentWarm, horizonBand * 0.035);
 
-    // Day: pigment pooling on wet paper.
-    vec3 dayWashTone = mix(uHorizon * 0.985, uGlowColor, 0.45);
-    sky = mix(sky, dayWashTone, smoothstep(0.38, 0.95, washN) * 0.18 * (1.0 - uNight));
+    // ── Day: the reflecting pool. The firmament read as still water —
+    // umber, not blue; calm, faintly refractive. A slow ripple bends the
+    // light the surface holds; the wash pools with more body than a dry
+    // sheet; the umber bed gathers through the near water. Night you look
+    // up at the firmament; day you look down into the pool that holds it.
+    // CONSTELLATION.md §"Daylight: the reflecting pool."
+    float day = 1.0 - uNight;
+    // Daylight as a clear reflecting pool — a *smooth* calm surface, not
+    // the billowing noise that read as smoke (both the warm and cool
+    // mottled versions read as gas, not water). Cool, still water at the
+    // edge of morning, holding the firmament on a glassy surface.
+    vec3 waterTone = mix(sky, vec3(0.66, 0.72, 0.76), 0.5);
+    sky = mix(sky, waterTone, day);
+    // Depth toward the near water (bottom of the view) — the pool's body.
+    vec3 poolDeep = mix(sky, vec3(0.36, 0.44, 0.49), 0.55);
+    float bedDepth = smoothstep(0.45, 1.0, frag.y / uResolution.y);
+    sky = mix(sky, poolDeep, bedDepth * 0.4 * day);
+    // Still-water ripples — clean horizontal bands of light by altitude,
+    // drifting slowly, gently warped so they read as a calm surface
+    // rather than a venetian blind. Smooth and lined, never cloudy: this
+    // is what reads as water rather than smoke.
+    float rt = uTime * 0.22 * uMotion;
+    float warp = fbm(vec3(P.xy * 2.5, uTime * 0.03 * uMotion)) * 0.14;
+    float bands = sin((P.z + warp) * 52.0 - rt) * 0.5 + 0.5;
+    float bands2 = sin((P.z + warp) * 21.0 + rt * 0.6 + 1.7) * 0.5 + 0.5;
+    float ripples = bands * 0.62 + bands2 * 0.38;
+    sky *= 1.0 + (ripples - 0.5) * 0.14 * day;
 
     // The daystar's gathered glow.
     float gd = distance(frag, uDaystar) / max(uFitScale * 330.0, 1.0);
     sky += uGlowColor * (uGlowStrength * (1.6 + 1.2 * uNight)) * exp(-gd * gd * 1.7);
+
+    // By day, the daystar reflects on the surface — a glade falling
+    // toward the viewer, broken into horizontal glints by the ripple
+    // bands: a sun on water, not a flame.
+    float gx = (frag.x - uDaystar.x) / max(uFitScale * 80.0, 1.0);
+    float gy = (frag.y - uDaystar.y) / max(uFitScale * 520.0, 1.0);
+    float gladeBelow = smoothstep(0.0, 50.0, frag.y - uDaystar.y);
+    float glade = exp(-gx * gx) * exp(-gy * gy) * gladeBelow * (0.35 + 0.65 * bands * bands);
+    sky += vec3(0.95, 0.97, 1.0) * glade * (uGlowStrength * 1.6 + 0.2) * day;
 
     // The pool of attention — brightens and saturates where the
     // visitor's cursor lives on the sphere.
