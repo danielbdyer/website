@@ -115,11 +115,18 @@ interface UseConstellationNavigationArgs {
 // captured the pointer, which retargeted the eventual click to the
 // drag surface and made opening a work nearly impossible.
 const DRAG_THRESHOLD_PX = 7;
-const DRAG_SPRING = 60;
-const DRAG_DAMPING = 14;
-const FREE_DAMPING = 4;
+// Drag feel, tuned toward deliberate weight. The world should read
+// as a body with mass that the visitor *guides*, not a surface that
+// snaps to the pointer. DRAG_SPRING softened (the cursor follows with
+// a little give); DRAG_DAMPING set near-critical for the new spring
+// (k≈36 → c≈12: a smooth glide, no overshoot); FLICK_SCALE halved so a
+// release is a gentle continuation rather than a throw. The dominant
+// "too fast" lever is the velocity cap in wellPhysics (lowered there).
+const DRAG_SPRING = 36;
+const DRAG_DAMPING = 12;
+const FREE_DAMPING = 3.2;
 const HOLD_ACCEL = 5.5;
-const FLICK_SCALE = 1;
+const FLICK_SCALE = 0.5;
 const MAX_DT_SECONDS = 0.033;
 const IDLE_VELOCITY_EPSILON = 0.005;
 const IDLE_ACCELERATION_EPSILON = 0.04;

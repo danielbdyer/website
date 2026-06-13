@@ -844,65 +844,53 @@ body::before {
 
 /* The lift-and-pitch — the sky page's first-paint gesture. *Not* a
    z-axis rotation; a perspective camera move. The visitor's
-   experience is looking up: gaze tilts upward, the ceiling pitches
-   into view, the firmament settles upright. The opening state is more
-   dramatic: the surface begins aggressively pitched away (near-folded)
-   and slightly compressed, then unfolds through a held midpoint before
-   arriving level. Four composed motions in one keyframe over 1350ms
-   with the signature easing:
+   experience is looking up: as the gaze tilts, the firmament pitches
+   from a steep glancing angle until it faces the visitor and settles
+   level.
 
-     - clip-path animates from `inset(0 0 100% 0)` to `inset(0 0 0 0)`
-       so the surface reveals from the top edge down (the ceiling
-       coming into view).
-     - perspective(1300px) + rotateX(-72deg → 0) tilts the surface
-       through 72° around the upper edge — closer to a folded-plane
-       reveal before settling to a normal read.
-     - translateY(8dvh → 0) + scaleY(0.86 → 1) stages a slight
-       depth-compression in the opening beat so the motion feels like
-       the ground plane hinging into place above the visitor.
-     - opacity 0.4 → 1 lets the SVG firmament behind read briefly
-       through the carpet roll, so the arrival doesn't read as a
-       hard cut.
+   Two earlier ingredients were removed because they fought the intent
+   rather than serving it:
+     - the clip-path inset wipe read as a sheet of paper unrolling
+       (not a gaze lifting), and — animated on the same element that
+       hosts the WebGL firmament <canvas> — it forced a re-raster of
+       the canvas each frame that surfaced as the visible glitch-then-
+       snap at the end of the roll.
+     - scaleY compression read as a fold/squash, deepening the
+       paper-being-folded impression.
+   What remains is a single dimensional pitch: perspective + rotateX
+   (-58deg → 0) around the top edge, a uniform scale (0.965 → 1) for a
+   gentle approach, a small translateY lift, and an opacity fade so the
+   firmament resolves rather than hard-cuts. The signature arrival
+   curve (cubic-bezier(0.23, 1, 0.32, 1)) lets it settle without
+   snapping; will-change promotes the layer so the canvas composites
+   cleanly through the rotation.
 
-   Anchored at `transform-origin: 50% 0%` (the top edge of the
-   surface). This is what makes the rotation feel like *looking up*
-   rather than *flipping a card* — the top edge stays in the
-   visitor's plane while the bottom edge sweeps in from below.
+   The truer form of this gesture pitches the WebGL navigation camera
+   itself (the dome already casts view rays through it), so the look-up
+   happens *in the world* rather than as a CSS transform of the
+   rasterized result — held as the next refinement, alongside the
+   symmetric scroll-down reverse named in CONSTELLATION_HORIZON.md.
 
-   prefers-reduced-motion is honored globally (the animation-
-   duration collapses to ~0 ms via the universal block above), so
-   the firmament simply *is* there for reduced-motion visitors —
-   no lift, no tilt, no clip — present and complete from first
-   paint.
-
-   The reverse — the firmament tilting away as the visitor scrolls
-   back down to the Foyer — is held. Adding a leave-side animation
-   requires intercepting the navigation; today the visitor returns
-   via the standard view-transition fade. CONSTELLATION_HORIZON.md
-   names the symmetric reverse as the next refinement. */
+   prefers-reduced-motion is honored globally (the animation-duration
+   collapses to ~0 ms via the universal block above), so the firmament
+   simply *is* there for those visitors — present and complete from
+   first paint. */
 @keyframes sky-look-up {
   0% {
-    clip-path: inset(0 0 100% 0);
-    transform: perspective(1300px) translateY(8dvh) rotateX(-72deg) scaleY(0.86);
-    opacity: 0.25;
-  }
-
-  62% {
-    clip-path: inset(0 0 0 0);
-    transform: perspective(1300px) translateY(1.5dvh) rotateX(-18deg) scaleY(0.97);
-    opacity: 0.92;
+    transform: perspective(1400px) translateY(5dvh) rotateX(-58deg) scale(0.965);
+    opacity: 0.3;
   }
 
   100% {
-    clip-path: inset(0 0 0 0);
-    transform: perspective(1300px) translateY(0) rotateX(0deg) scaleY(1);
+    transform: perspective(1400px) translateY(0) rotateX(0deg) scale(1);
     opacity: 1;
   }
 }
 
 .sky-arrival {
   transform-origin: 50% 0%;
-  animation: sky-look-up 1350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: sky-look-up 1400ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  will-change: transform;
 }
 
 /* ─── View Transitions ──────────────────────────────────────────

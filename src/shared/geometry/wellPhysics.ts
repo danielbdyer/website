@@ -38,7 +38,12 @@ export interface NavigableNode {
 export const INFLUENCE_RADIUS_RAD = 0.7;
 export const WELL_RADIUS_RAD = 0.3;
 export const WELL_STIFFNESS = 9;
-export const MAX_ANGULAR_VELOCITY = 8;
+// The world's top speed, deliberately slow. At 3.5 rad/s a full
+// hemisphere sweep takes ~0.9s — fast enough to feel responsive,
+// slow enough that a hard drag or flick reads as surfing a current
+// rather than whipping across. This is the primary lever against
+// "the click and drag moves way too quickly."
+export const MAX_ANGULAR_VELOCITY = 3.5;
 export const VELOCITY_SAMPLE_WINDOW_MS = 120;
 
 /** A single pointer sample taken during a drag. The flick velocity
