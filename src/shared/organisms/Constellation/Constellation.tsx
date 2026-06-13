@@ -26,10 +26,20 @@ interface ConstellationProps {
    *  fit) so the constellation occupies every available pixel rather
    *  than being letterboxed inside a column. */
   fullViewport?: boolean;
+  /** A node key (`{room}/{slug}`) to open centered on — the look-up
+   *  jump from a work lands on its star. Forwarded to the navigation
+   *  hook; null/absent opens at the polestar (or the restored cursor).
+   *  CONSTELLATION_PARALLEL.md §"The Orientation Contract." */
+  focusKey?: string | undefined;
   className?: string;
 }
 
-export function Constellation({ graph, fullViewport = false, className }: ConstellationProps) {
+export function Constellation({
+  graph,
+  fullViewport = false,
+  focusKey,
+  className,
+}: ConstellationProps) {
   const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const cameraRef = useRef<SVGGElement | null>(null);
@@ -73,6 +83,7 @@ export function Constellation({ graph, fullViewport = false, className }: Conste
     setActiveKey,
     cameraRef,
     glyphRef,
+    focusKey,
   });
 
   return (

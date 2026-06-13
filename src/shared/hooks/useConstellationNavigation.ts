@@ -101,6 +101,13 @@ interface UseConstellationNavigationArgs {
    *  position. The hook updates its cx and cy each RAF tick so the
    *  visitor can see *where they are* on the latent sphere. */
   readonly glyphRef: RefObject<SVGCircleElement | null>;
+  /** When set to a node key (`{room}/{slug}`), the sky opens centered
+   *  on that star, claimed and active — the visitor looked up from the
+   *  work and arrives at its place among its relations. Takes priority
+   *  over the restored cursor and the demonstration drift: an explicit
+   *  jump is not a first-visit. CONSTELLATION_PARALLEL.md §"The
+   *  Orientation Contract." */
+  readonly focusKey?: string | undefined;
 }
 
 // Hook-local physics tuning. The well-field constants
@@ -353,16 +360,54 @@ function demoTarget(state: NavState, nodes: readonly NavigableNode[]): Navigable
   return nodes.find((c) => c.key === nearest.key) ?? null;
 }
 
-/** Initialize the cursor's session lifecycle: restore from
- *  sessionStorage if present, otherwise schedule a demonstration
- *  drift after the carpet roll. Returns a cleanup that persists
- *  the cursor and tears down listeners — composes inside the
- *  hook's mount effect. */
+/** Open the sky centered on a specific node — the work↔star jump. The
+ *  cursor lands on the star (camera centered, trail seeded), the basin
+ *  claims it (active → threads bloom), and the loop wakes to project
+ *  the focused scene. Reduced motion projects once instead of running. */
+function focusCursorOnNode(state: NavState, refs: RuntimeRefs, node: NavigableNode): void {
+  applyRestoredCursor(state, node.unitPos);
+  flipActive(state, node.key, refs.setActiveKey);
+  if (prefersReducedMotion()) projectScene(state, refs);
+  else ensureRunning(refs);
+}
+
+/** Initialize the cursor's session lifecycle. An explicit `focusKey`
+ *  (a look-up jump from a work) wins: the sky opens centered on that
+ *  star. Absent a focus, the default path restores or demonstrates.
+ *  Returns a cleanup that persists the cursor and tears down listeners
+ *  — composes inside the hook's mount effect. */
 function setupCursorLifecycle(
   state: NavState,
   refs: RuntimeRefs,
   nodes: readonly NavigableNode[],
+  focusKey?: string,
 ): () => void {
+  const focusNode = focusKey ? (nodes.find((n) => n.key === focusKey) ?? null) : null;
+  if (focusNode) {
+    focusCursorOnNode(state, refs, focusNode);
+  } else {
+    setupDefaultCursor(state, refs, nodes);
+  }
+  const persistOnHide = () => persistCursorPos(state.pos);
+  globalThis.addEventListener?.('pagehide', persistOnHide);
+  globalThis.addEventListener?.('visibilitychange', persistOnHide);
+  return () => {
+    cancelPendingDemo(state);
+    globalThis.removeEventListener?.('pagehide', persistOnHide);
+    globalThis.removeEventListener?.('visibilitychange', persistOnHide);
+    persistCursorPos(state.pos);
+  };
+}
+
+/** The default cursor lifecycle, absent an explicit focus: restore the
+ *  last settled position from sessionStorage, or (first visit) schedule
+ *  the demonstration drift after the carpet roll. Reduced motion snaps
+ *  without running the loop. */
+function setupDefaultCursor(
+  state: NavState,
+  refs: RuntimeRefs,
+  nodes: readonly NavigableNode[],
+): void {
   const restored = readPersistedCursorPos();
   if (restored) {
     applyRestoredCursor(state, restored);
@@ -405,15 +450,6 @@ function setupCursorLifecycle(
       ensureRunning(refs);
     }, DEMO_DELAY_MS);
   }
-  const persistOnHide = () => persistCursorPos(state.pos);
-  globalThis.addEventListener?.('pagehide', persistOnHide);
-  globalThis.addEventListener?.('visibilitychange', persistOnHide);
-  return () => {
-    cancelPendingDemo(state);
-    globalThis.removeEventListener?.('pagehide', persistOnHide);
-    globalThis.removeEventListener?.('visibilitychange', persistOnHide);
-    persistCursorPos(state.pos);
-  };
 }
 
 /** Begin a demonstration drift toward `target` over `durationMs`.
@@ -981,6 +1017,7 @@ export function useConstellationNavigation({
   setActiveKey,
   cameraRef,
   glyphRef,
+  focusKey,
 }: UseConstellationNavigationArgs) {
   const stateRef = useRef<NavState>(buildInitialState());
   const nodesRef = useRef<readonly NavigableNode[]>(nodes);
@@ -1031,8 +1068,8 @@ export function useConstellationNavigation({
       viewboxSize,
       setActiveKey,
     };
-    return setupCursorLifecycle(state, lifecycleRefs, nodesRef.current);
-  }, [cameraRef, glyphRef, viewboxSize, setActiveKey]);
+    return setupCursorLifecycle(state, lifecycleRefs, nodesRef.current, focusKey);
+  }, [cameraRef, glyphRef, viewboxSize, setActiveKey, focusKey]);
 
   return {
     dragHandlers: {
