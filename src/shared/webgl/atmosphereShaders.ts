@@ -274,21 +274,22 @@ export const DOME_FRAGMENT = /* glsl */ `
     float ripT = uTime * 0.05 * uMotion;
     float ripple = fbm(vec3(P.xy * 5.0, ripT));
     float shimmer = fbm(vec3(P.xy * 16.0 + 4.0, ripT * 1.6));
-    // Deepen the pale sky into a still umber pool. Water is darker than
-    // the sky it holds, and that depth is what gives the reflected light
-    // room to glint — without it, day stays a flat bright sheet. Still
-    // umber, not blue; the same family as the Foyer ground, sunk.
-    vec3 poolDeep = sky * vec3(0.6, 0.53, 0.47) + uGround * 0.16;
-    sky = mix(sky, poolDeep, day * 0.6);
-    // Mottled pigment pooling where the weather gathers, bent by ripple.
-    vec3 dayWashTone = mix(uHorizon * 0.6, uAccentWarm, 0.4);
-    float washMask = smoothstep(0.25, 0.95, washN + ripple * 0.2);
-    sky = mix(sky, dayWashTone, washMask * 0.4 * day);
-    // Refraction — crests brighten, troughs darken, light on water.
-    sky *= 1.0 + (ripple * 0.16 + shimmer * 0.09) * day;
-    // The umber bed gathering through the near water (toward the bottom).
-    float bedDepth = smoothstep(0.5, 0.0, frag.y / uResolution.y);
-    sky = mix(sky, uGround * 0.85, bedDepth * 0.3 * day);
+    // Daylight as a calm reflecting pool — still pond water at the edge
+    // of morning, a cool neutral surface (the warm-umber version read as
+    // wildfire; this is its opposite). Medium-toned with visible
+    // refraction so it reads as a liquid surface, not a pale sheet.
+    vec3 waterTone = mix(sky, vec3(0.58, 0.63, 0.66), 0.55);
+    sky = mix(sky, waterTone, day);
+    // Depth gathering toward the near water (the bottom of the view) —
+    // the pool's cool body, where the eye sees down into it.
+    vec3 poolDeep = mix(sky, vec3(0.32, 0.39, 0.42), 0.6);
+    float bedDepth = smoothstep(0.45, 1.0, frag.y / uResolution.y);
+    sky = mix(sky, poolDeep, bedDepth * 0.5 * day);
+    // Refraction — visible crests and troughs, light moving on the
+    // surface; a cool sheen band where it catches the morning.
+    sky *= 1.0 + (ripple * 0.13 + shimmer * 0.07) * day;
+    float sheen = exp(-(P.z - 0.32) * (P.z - 0.32) * 5.0) * (0.5 + 0.5 * ripple);
+    sky += vec3(0.86, 0.92, 1.0) * sheen * 0.05 * day;
 
     // The daystar's gathered glow.
     float gd = distance(frag, uDaystar) / max(uFitScale * 330.0, 1.0);
@@ -304,7 +305,7 @@ export const DOME_FRAGMENT = /* glsl */ `
       0.55 +
       0.45 * sin(frag.y * 0.055 + ripT * 9.0) * (0.5 + 0.5 * sin(frag.x * 0.14 + ripple * 5.0));
     float glade = exp(-gx * gx) * exp(-gy * gy) * gladeBelow * glitter;
-    sky += uGlowColor * glade * (uGlowStrength * 4.0 + 0.32) * day;
+    sky += vec3(0.95, 0.97, 1.0) * glade * (uGlowStrength * 1.2 + 0.14) * day;
 
     // The pool of attention — brightens and saturates where the
     // visitor's cursor lives on the sphere.
