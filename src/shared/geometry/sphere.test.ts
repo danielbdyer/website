@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   NORTH_POLE,
   SOUTH_POLE,
+  clampGeodesic,
   diskToHemisphere,
   geodesicDistance,
   projectOntoTangentPlane,
@@ -41,6 +42,33 @@ function approxEqualVec(a: { x: number; y: number; z: number }, b: typeof a): vo
 function isUnitNorm(v: { x: number; y: number; z: number }): boolean {
   return Math.abs(Math.hypot(v.x, v.y, v.z) - 1) < 1e-9;
 }
+
+describe('clampGeodesic', () => {
+  const anchor = NORTH_POLE;
+
+  test('a point within the cap is returned unchanged', () => {
+    const inside = sphericalToUnit(spherical(0.3, 1));
+    expect(clampGeodesic(inside, anchor, 0.9)).toBe(inside);
+  });
+
+  test('a point beyond the cap is pulled back to exactly the boundary', () => {
+    const far = sphericalToUnit(spherical(1.4, 2)); // 1.4 rad from the pole
+    const clamped = clampGeodesic(far, anchor, 0.9);
+    expect(geodesicDistance(clamped, anchor)).toBeCloseTo(0.9, 6);
+    expect(isUnitNorm(clamped)).toBe(true);
+  });
+
+  test('clamping preserves the azimuth (pulls straight in along the arc)', () => {
+    const far = sphericalToUnit(spherical(1.2, 2));
+    const clamped = clampGeodesic(far, anchor, 0.5);
+    // Same great circle through the pole → same longitude.
+    expect(unitToSpherical(clamped).phi).toBeCloseTo(unitToSpherical(far).phi, 6);
+  });
+
+  test('a point exactly at the anchor is returned unchanged', () => {
+    expect(clampGeodesic(anchor, anchor, 0.9)).toBe(anchor);
+  });
+});
 
 describe('spherical smart constructor', () => {
   test('clamps theta to [0, π]', () => {

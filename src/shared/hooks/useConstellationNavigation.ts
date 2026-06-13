@@ -23,6 +23,7 @@ import {
 import type { UnitVector3, Vec3 } from '@/shared/geometry/sphere';
 import {
   NORTH_POLE,
+  clampGeodesic,
   geodesicDistance,
   raySphereIntersect,
   slerp,
@@ -166,6 +167,16 @@ const CAMERA_NEAR = 0.1;
 const CAMERA_FAR = 10;
 const WORLD_UP: UnitVector3 = { x: 0, y: 1, z: 0 };
 
+// The travel leash. The cursor (and the camera trailing it) may roam
+// only this far in geodesic radians past the farthest star from the
+// polestar — finitely scoping the sky to the populated cap with a
+// comfortable margin, so a flick or a drag can't sail off into empty
+// sphere and leave the visitor asking "where did the content go?". The
+// bound is computed per graph (farthest star + this margin), so it
+// widens as the corpus grows. NORTH_POLE anchors it because the cap is
+// placed around the pole (constellation.ts §"the dome cap").
+const LEASH_MARGIN_RAD = 0.32;
+
 // Yaw — a small rotation flourish on top of the orbit, driven by
 // the cursor's screen-space x-velocity. Bounded so it never reads
 // as tilt.
@@ -270,6 +281,10 @@ interface NavState {
    *  fast tap-and-release before DEMO_DELAY_MS could let the
    *  drift kick in after the visitor already took control. */
   demoTimeoutId: ReturnType<typeof setTimeout> | null;
+  /** Max geodesic distance (radians) the cursor may travel from the
+   *  polestar — the leash. Recomputed per graph from the farthest star
+   *  plus LEASH_MARGIN_RAD; π until the graph is known (no bound). */
+  travelLeash: number;
 }
 
 // TRAIL_LENGTH and the trail-strength tuning live in
@@ -528,6 +543,51 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   broadcastCameraToFirmament(camera, basis);
 }
 
+/** The leash radius for a graph: the farthest star from the polestar,
+ *  plus a comfortable margin. π (no bound) for an empty graph. Widens
+ *  as the corpus grows — more stars, more reachable sky. */
+function computeTravelLeash(nodes: readonly NavigableNode[]): number {
+  if (nodes.length === 0) return Math.PI;
+  const farthest = nodes.reduce(
+    (max, node) => Math.max(max, geodesicDistance(NORTH_POLE, node.unitPos)),
+    0,
+  );
+  return Math.min(farthest + LEASH_MARGIN_RAD, Math.PI);
+}
+
+/** Hold the cursor inside the leash: a position past the boundary is
+ *  pulled back to it, and the outward (away-from-polestar) component of
+ *  velocity is shed so the cursor slides along the edge rather than
+ *  pressing into empty sky. Tangential motion along the boundary and
+ *  any inward motion are preserved. A no-op while inside. */
+function applyTravelLeash(state: NavState): void {
+  const distance = geodesicDistance(state.pos, NORTH_POLE);
+  if (distance <= state.travelLeash) return;
+  const held = slerp(NORTH_POLE, state.pos, state.travelLeash / distance);
+  state.pos.x = held.x;
+  state.pos.y = held.y;
+  state.pos.z = held.z;
+  const toward = tangentTowards(state.pos, NORTH_POLE);
+  const vDotToward = state.vel.x * toward.x + state.vel.y * toward.y + state.vel.z * toward.z;
+  // vDotToward < 0 ⇔ velocity points outward (away from the polestar);
+  // remove that radial component, leaving the tangential glide.
+  if (vDotToward < 0) {
+    state.vel.x -= vDotToward * toward.x;
+    state.vel.y -= vDotToward * toward.y;
+    state.vel.z -= vDotToward * toward.z;
+  }
+}
+
+/** Project velocity back onto the tangent plane at the current pos,
+ *  shedding any radial drift. Mutates in place (no allocation) — the
+ *  hot path runs this twice a tick. */
+function retangentVelocity(state: NavState): void {
+  const dot = state.vel.x * state.pos.x + state.vel.y * state.pos.y + state.vel.z * state.pos.z;
+  state.vel.x -= dot * state.pos.x;
+  state.vel.y -= dot * state.pos.y;
+  state.vel.z -= dot * state.pos.z;
+}
+
 /** Integrate the navigation physics one tick: acceleration → tangent
  *  velocity → step on the sphere. Mutates state.vel and state.pos in
  *  place. The caller has already computed dt and decided physics
@@ -544,11 +604,7 @@ function integratePhysics(state: NavState, refs: RuntimeRefs, dt: number): void 
     state.vel.y *= scale;
     state.vel.z *= scale;
   }
-  // Re-tangent against radial drift before stepping.
-  const dotVP = state.vel.x * state.pos.x + state.vel.y * state.pos.y + state.vel.z * state.pos.z;
-  state.vel.x -= dotVP * state.pos.x;
-  state.vel.y -= dotVP * state.pos.y;
-  state.vel.z -= dotVP * state.pos.z;
+  retangentVelocity(state); // shed radial drift before stepping
   const next = stepOnSphere(state.pos, state.vel, dt);
   state.pos.x = next.x;
   state.pos.y = next.y;
@@ -665,16 +721,12 @@ function tick(now: number, refs: RuntimeRefs): void {
   } else {
     integratePhysics(state, refs, dt);
   }
+  applyTravelLeash(state); // hold the cursor inside the populated cap
   const accel = state.accelBuffer;
   const speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
 
   shiftTrailHistory(state);
-
-  // Re-tangent velocity to the new position too.
-  const dotVP2 = state.vel.x * state.pos.x + state.vel.y * state.pos.y + state.vel.z * state.pos.z;
-  state.vel.x -= dotVP2 * state.pos.x;
-  state.vel.y -= dotVP2 * state.pos.y;
-  state.vel.z -= dotVP2 * state.pos.z;
+  retangentVelocity(state); // re-tangent against the new position too
 
   const nearest = geodesicNearestNode(state.pos, refs.nodesRef.current, WELL_RADIUS_RAD);
   if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
@@ -816,9 +868,12 @@ function promoteToDrag(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>, pt: Un
   // the spring's ray-casting reads a settling camera, not a peered one.
   state.lookTarget.x = 0;
   state.lookTarget.y = 0;
-  state.dragTarget = pt;
+  // The drag target is leashed too, so dragging can't pull the spring
+  // toward empty sky past the populated cap.
+  const target = clampGeodesic(pt, NORTH_POLE, state.travelLeash);
+  state.dragTarget = target;
   state.pointerId = e.pointerId;
-  state.pointerSamples = [{ time: globalThis.performance.now(), pos: pt }];
+  state.pointerSamples = [{ time: globalThis.performance.now(), pos: target }];
   e.currentTarget.setPointerCapture(e.pointerId);
   ensureRunning(refs);
 }
@@ -828,9 +883,10 @@ function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): v
   if (state.mode === 'dragging' && state.pointerId === e.pointerId) {
     const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
     if (!pt) return;
-    state.dragTarget = pt;
+    const target = clampGeodesic(pt, NORTH_POLE, state.travelLeash);
+    state.dragTarget = target;
     const now = globalThis.performance.now();
-    state.pointerSamples.push({ time: now, pos: pt });
+    state.pointerSamples.push({ time: now, pos: target });
     pruneSamples(state.pointerSamples, now, VELOCITY_SAMPLE_WINDOW_MS);
     return;
   }
@@ -996,6 +1052,7 @@ function buildInitialState(): NavState {
     trailHistory,
     demoDrift: null,
     demoTimeoutId: null,
+    travelLeash: Math.PI,
   };
 }
 
@@ -1025,6 +1082,7 @@ export function useConstellationNavigation({
 
   useEffect(() => {
     nodesRef.current = nodes;
+    stateRef.current.travelLeash = computeTravelLeash(nodes);
   }, [nodes]);
 
   useEffect(() => {

@@ -320,6 +320,7 @@ words:
   - trackpads
   - unhover
   - Rodrigues
+  - retangent
 
   # WebGL / shader vocabulary — the GLSL fragment shader uses
   # tokens that aren't in the standard dictionaries.
