@@ -52,9 +52,11 @@ The route is `/sky` (or `/constellation` — naming held). The path is reachable
 
 The constellation respects the room's hour. When the site is in light mode, the sky is *daylight*. When the site is in dark mode, the sky is *night*. These are not skins; they are different ontologies of the same data.
 
-### Daylight: the watercolor ocean
+### Daylight: the reflecting pool
 
-In daylight the sky reads as a *sea-painted dome* — not a literal blue sky, not photographic clouds. A washed, granular, paper-grain expanse, in the same umber family as the Foyer ground but lifted lighter, hazier, suspended. The works appear as **watercolor points** — soft circular bleeds of pigment, edges feathered, each one a small bloom of color sitting on the textured field. *Calm. Floating in the ocean.*
+*Resolved 2026-06-13, from a conversation with Danny. The daylight mode's identity is a **reflecting pool**. Night and day are one sky seen from two directions: at night the visitor looks **up** into the firmament; by day they look **down** into still water that holds it. The water is the reason the daylight mode was always reaching for — the "watercolor ocean" was a wash without a subject, lovely and unaccountable; the pool gives day a point of view as old and as knowing as the night sky's. The decision is made; the **rendering** — the waterline, the mirrored firmament beneath it, the slow refraction, the umber ground read as the pool's bed — is held as the next constellation pass, not built in the same breath as the decision.*
+
+In daylight the surface reads as a *still pool at the edge of morning* — not a literal blue sky, not photographic clouds. A washed, granular, paper-grain expanse in the same umber family as the Foyer ground, lifted and suspended and faintly *refractive*: the works are not floating on a dome above but reflected in water below. They appear as **watercolor points** — soft circular bleeds of pigment, edges feathered, each one a small bloom sitting on the textured field, doubled and softened the way light doubles on water. *Calm. Looking down into the ocean rather than up at it.*
 
 The pigment of each point reads from its primary facet. The four held accents (`--accent-warm`, `--accent-rose`, `--accent-violet`, `--accent-gold`) graduate from vocabulary to semantics in this surface, and only in this surface. The editorial pairing, now in code at `src/shared/content/constellation.ts` (`FACET_HUE`):
 
@@ -150,6 +152,7 @@ Everything the constellation does is in service of the visitor's attention. The 
 | Gesture | Result | Felt sense |
 |---|---|---|
 | **Pointer enters the firmament** | The sky settles, parallax relaxes, ambient motion slows | *The room knows you arrived* |
+| **Pointer moves across the firmament** | The camera peers a few degrees toward the cursor — true perspective parallax, near stars shifting more than far; on leave it returns to center | *The space has depth, and it breathes with your attention* |
 | **Hover a node** | Threads bloom outward; the node's label appears as a soft caption | *A breath toward what this is* |
 | **Hover a thread** | Both endpoints illuminate; midpoint label names the relation | *The connection speaks its own name* |
 | **Hover a region of sky** | The room's atmospheric color brightens half a step; no label | *The neighborhood acknowledges itself* |
@@ -162,7 +165,7 @@ What the constellation refuses:
 
 - **No selection mode.** No "select multiple works to filter" — the grammar of the constellation is *attention*, not *operation*.
 - **No search.** The Foyer's ordinary search (when it eventually arrives) belongs to the room beneath, not the sky above.
-- **No zoom controls.** The depth of the sky is one continuous parallax; no UI for stepping through zoom levels. *The sky is a place, not an interface.*
+- **No zoom controls.** The depth of the sky is one continuous parallax; no UI for stepping through zoom levels. The passive mouse-look peer (above) is *of* that continuous parallax — a few degrees of camera rotation that returns to center, the space breathing with attention — not a control the visitor operates. *The sky is a place, not an interface.*
 - **No legend.** Hover surfaces every label that needs surfacing. A persistent legend would be the constellation explaining itself, which is exactly the chrome the site refuses.
 
 A held question: **constellation patterns.** A constellation, in the cultural sense, is the *named* arrangement — Cassiopeia, Orion, the Plough. The site's stars could carry editorial constellation-names: clusters of works Danny names as a pattern (*The Cathedral* for the works that hover around relation/becoming/language; *The Ground* for the works that orbit body/craft/devotion). This is an authorial act of the same kind as naming a facet. *Held until the constellation has enough stars to name patterns within.*
@@ -260,7 +263,7 @@ Named so they aren't lost. Each will resolve in its own time.
 - **Whether specs appear as nodes.** The strata convergence wants this. The first form does not include it; it is a richer surface earned later, when the annotation system has settled.
 - **The constellation patterns.** Editorial naming of clusters. *Held until the cluster is real.*
 - **The "look up" affordance form.** A chevron, a pulled thread, a pulsing dot, an explicit nav link only at Foyer top — held; will pull during implementation against real visitors.
-- **Whether the daylight mode and the night mode are the *same constellation* differently lit, or two different aesthetic worlds with the same data.** The pull is the former (same constellation, different hour). Implementation may discover that a faithful daylight mode requires different placement, different density. *Held.*
+- ~~**Whether the daylight mode and the night mode are the *same constellation* differently lit, or two different aesthetic worlds with the same data.**~~ **Resolved (2026-06-13): the same sky, seen from two directions.** Night is the firmament looked up into; day is the reflecting pool looked down into, holding the same stars in the same positions. One constellation, one layout; the hour changes which way the gaze falls and whether the works read as lights above or reflections below. See §"Two Render Modes › Daylight: the reflecting pool." *The pool's rendering is held as the next pass; the decision is not.*
 - **Whether the sky is *one sky* or *one sky per room*.** A visitor at `/garden` could, in theory, scroll up to see *the Garden's sky* — a regional constellation. Held; the first form is one shared sky.
 - **Audio.** The Salon is the cellist's son's room. A faint ambient layer in the constellation — a slow drone, a held chord, almost-silent — is in keeping with the register, but audio is a body the site has not yet committed to. *Held until the Salon's first audio work arrives* (which is itself held in `MEDIA_STRATEGY.md`).
 
@@ -290,7 +293,8 @@ The full structural future state of the constellation, expanded across multiple 
 - **Motion.** Slow rotation (600s/cycle) on the constellation — an order of magnitude slower than the geometric figure, only noticed if the visitor sits. Twinkle (4.5s ease-in-out) per-star, with deterministic per-slug phase offsets so adjacent stars desync. Cursor parallax with two depths (firmament 6px, sky 14px) and an 800ms signature-easing transition. The carpet rolls out on mount: `.sky-arrival` clip-paths from the top edge over 900ms.
 - **Held accents graduate.** The four held accents pair editorially with the eight facets in `FACET_HUE`; two facets share each hue. The pairing lives in TS (not CSS) so the palette stays general and each surface speaks the vocabulary editorially. `DESIGN_SYSTEM.md` updated.
 - **Tests.** 178 total, all green. Coverage: data layer, layout primitives, every atom (Star, Thread, Firmament, ConstellationFilters, Daystar, Polestar), the parallax hook, the organism with jest-axe.
-- **Build verified.** `/sky/index.html` ships at ~64KB with the structural SVG fully prerendered: small-weather as an addressable `<a href="/garden/small-weather">`, the daystar markup, the polestar at center, the carpet's clip-path animation ready, JSON-LD WebSite/Person attached.
+- **Build verified.** `/sky/index.html` ships at ~64KB with the structural SVG fully prerendered: small-weather as an addressable `<a href="/garden/small-weather">`, the daystar markup, the polestar at center, the look-up arrival ready, JSON-LD WebSite/Person attached.
+- **Interaction retune (2026-06-13).** The drag was slowed toward deliberate weight — a softer spring, halved flick momentum, and a lower angular-velocity cap (8→3.5 rad/s) — so travel reads as surfing a current, not whipping across. The look-up arrival lost the clip-path wipe and `scaleY` squash that read as a sheet of paper folding (and forced a glitch-then-snap re-raster of the WebGL canvas it sat over); it's now a single perspective pitch on the signature curve. And the navigation camera gained a **passive mouse-look peer** — a few degrees of true perspective rotation toward the cursor on hover, returning to center on leave — so the sky reads as a dimensional volume. The CSS layer-parallax was eased back to a faint complement so the cursor drives one coherent parallax.
 
 What is still held — *each one a readiness, each waiting for its own pull, none of them a queue:*
 

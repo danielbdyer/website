@@ -445,7 +445,7 @@ If a readiness's trigger fires and the doing-it-right register cannot be held, t
 
 ### Phase 1 (partially shipped) — *Does the carpet roll out when you look up?*
 
-The first-paint carpet animation has shipped: `.sky-arrival` clip-paths from the top edge over 900ms with the signature easing curve. Works on any entry path. *What remains held* in this readiness: the overscroll-up gesture from the Foyer (so the gesture is initiated by the visitor, not by route arrival), and the daystar's cross-page morph (currently the daystar simply *is* in the firmament when /sky paints, rather than ascending from the nav corner via View Transitions).
+The first-paint look-up animation has shipped: `.sky-arrival` is a single perspective pitch (rotateX -58deg → 0 with a uniform approach scale and an opacity resolve) over 1400ms on the signature curve. (The earlier clip-path wipe + `scaleY` squash were removed on 2026-06-13 — they read as a sheet of paper folding and forced a glitch-then-snap re-raster of the WebGL canvas the transform sits over.) Works on any entry path. *What remains held* in this readiness: the overscroll-up gesture from the Foyer (so the gesture is initiated by the visitor, not by route arrival); the daystar's cross-page morph; and **the truer look-up that pitches the WebGL navigation camera itself** rather than CSS-transforming the rasterized DOM. The camera-pitch arrival is the dimensionally honest form — the dome already casts view rays through that camera — and with the reflecting-pool decision (`CONSTELLATION.md`) its *direction* becomes theme-aware: looking up into the firmament by night, down into the pool by day. Its one real constraint, and the reason it is a deliberate next step rather than a quick swap: the structural SVG prerenders **level**, so a camera arrival that only exists after hydration must seed its pitched first frame without a flash from level — a coordination worth verifying in the eye, not shipping blind.
 
 ### Phase 2 (shipped — SVG first, WebGL full form on 2026-06-12) — *Does the sky have weather?*
 
@@ -605,7 +605,7 @@ The stakes are not technical. The stakes are whether this surface becomes part o
 
 Some things WebGL, audio, parallax, and a temporal manifest *make possible*. The architecture says no anyway. These are the boundaries that protect the practice from its own capability.
 
-- **No 3D camera.** No orbit controls, no pinch-zoom, no fly-through. The sky is *looked at*, not *flown through*. Adding 3D motion would turn the constellation into a vehicle and the visitor into a pilot. The site refuses.
+- **No 3D camera the visitor pilots.** No orbit controls, no pinch-zoom, no fly-through. The sky is *looked at*, not *flown through*; a camera the visitor steers would turn the constellation into a vehicle and the visitor into a pilot. The bounded mouse-look peer (shipped 2026-06-13) is the permitted edge of this: a few degrees of perspective rotation toward the cursor that always returns to center — the space breathing with attention, never a vehicle the visitor drives. The line the site refuses to cross is *control*, not *parallax*.
 
 - **No automatic edge inference.** Even with a richer rendering layer, the graph stays *one graph* of *authored* edges. No "you might also like" computed from substring overlap, no co-occurrence inference, no vector-similarity threads. *The graph is what the writing has made.* Refusing this is the architecture's tax against the temptation that arrives the moment the visualization gets pretty.
 
