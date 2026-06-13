@@ -47,9 +47,9 @@ describe('getConstellationGraphSync — content', () => {
       expect(node.angleDeg).toBeLessThan(360);
       // The dome cap — stars spread evenly across it (radius × 90° =
       // degrees from the polestar). See DOME_INNER_DEG / DOME_OUTER_DEG
-      // (14°–48° ≈ radius 0.16–0.53) in constellation.ts.
-      expect(node.radius).toBeGreaterThanOrEqual(0.15);
-      expect(node.radius).toBeLessThanOrEqual(0.54);
+      // (12°–60° ≈ radius 0.13–0.67) in constellation.ts.
+      expect(node.radius).toBeGreaterThanOrEqual(0.12);
+      expect(node.radius).toBeLessThanOrEqual(0.68);
     }
   });
 

@@ -166,8 +166,8 @@ const TWINKLE_DURATION_SECONDS = 4.5;
 // from the pole, so unitPosition is the exact un-projection of
 // (radius, angle) and the 2D and 3D layouts agree.
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-const DOME_INNER_DEG = 14;
-const DOME_OUTER_DEG = 48;
+const DOME_INNER_DEG = 12;
+const DOME_OUTER_DEG = 60;
 
 interface NodePlacement {
   readonly angleDeg: number;
