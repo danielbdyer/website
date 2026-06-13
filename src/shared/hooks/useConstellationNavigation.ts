@@ -167,15 +167,24 @@ const CAMERA_NEAR = 0.1;
 const CAMERA_FAR = 10;
 const WORLD_UP: UnitVector3 = { x: 0, y: 1, z: 0 };
 
-// The travel leash. The cursor (and the camera trailing it) may roam
-// only this far in geodesic radians past the farthest star from the
-// polestar — finitely scoping the sky to the populated cap with a
-// comfortable margin, so a flick or a drag can't sail off into empty
-// sphere and leave the visitor asking "where did the content go?". The
-// bound is computed per graph (farthest star + this margin), so it
-// widens as the corpus grows. NORTH_POLE anchors it because the cap is
-// placed around the pole (constellation.ts §"the dome cap").
-const LEASH_MARGIN_RAD = 0.32;
+// Containment, in two parts, both anchored on the content's centroid
+// (NavState.contentAnchor) so the sky stays "finitely scoped to the
+// available area of the viewable content with a comfortable amount of
+// excess" without feeling walled.
+//
+// CAMERA_LEASH_RAD is the real frame: the camera may lean only this far
+// from the content's center toward the cursor before it stops, so the
+// whole constellation stays on screen — the viewbox effectively
+// compresses to the content, and the next star in any direction is
+// already in view. A hard flick or repeated drags can no longer walk
+// the world off into empty sphere, because the camera doesn't follow
+// the cursor past this radius.
+//
+// LEASH_MARGIN_RAD sets the cursor's softer bound (farthest star +
+// margin): a frame-edge stop that keeps the glyph on screen, not a wall
+// near the stars. Both bounds widen as the corpus grows.
+const CAMERA_LEASH_RAD = 0.26;
+const LEASH_MARGIN_RAD = 0.4;
 
 // Yaw — a small rotation flourish on top of the orbit, driven by
 // the cursor's screen-space x-velocity. Bounded so it never reads
@@ -281,9 +290,15 @@ interface NavState {
    *  fast tap-and-release before DEMO_DELAY_MS could let the
    *  drift kick in after the visitor already took control. */
   demoTimeoutId: ReturnType<typeof setTimeout> | null;
+  /** The content's center on the sphere — the centroid of the stars.
+   *  The camera frames this point (CAMERA_LEASH_RAD) and the cursor is
+   *  leashed around it, so "the viewbox compresses to the content."
+   *  Recomputed per graph; the polestar until the graph is known. */
+  contentAnchor: MutableVec3;
   /** Max geodesic distance (radians) the cursor may travel from the
-   *  polestar — the leash. Recomputed per graph from the farthest star
-   *  plus LEASH_MARGIN_RAD; π until the graph is known (no bound). */
+   *  content anchor — a soft frame-edge stop, not a wall, since the
+   *  camera (below) is what keeps the content framed. Recomputed per
+   *  graph from the farthest star plus LEASH_MARGIN_RAD; π until known. */
   travelLeash: number;
 }
 
@@ -543,16 +558,29 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   broadcastCameraToFirmament(camera, basis);
 }
 
-/** The leash radius for a graph: the farthest star from the polestar,
- *  plus a comfortable margin. π (no bound) for an empty graph. Widens
- *  as the corpus grows — more stars, more reachable sky. */
-function computeTravelLeash(nodes: readonly NavigableNode[]): number {
-  if (nodes.length === 0) return Math.PI;
-  const farthest = nodes.reduce(
-    (max, node) => Math.max(max, geodesicDistance(NORTH_POLE, node.unitPos)),
+/** The content frame for a graph: the centroid of the stars (the point
+ *  the camera frames) and the cursor's leash radius (the farthest star
+ *  from that centroid plus a comfortable margin). An empty graph frames
+ *  the polestar with no bound. Both widen as the corpus grows. */
+function computeContentFrame(nodes: readonly NavigableNode[]): {
+  anchor: UnitVector3;
+  travelLeash: number;
+} {
+  if (nodes.length === 0) return { anchor: NORTH_POLE, travelLeash: Math.PI };
+  const sum = nodes.reduce(
+    (acc, node) => ({
+      x: acc.x + node.unitPos.x,
+      y: acc.y + node.unitPos.y,
+      z: acc.z + node.unitPos.z,
+    }),
+    { x: 0, y: 0, z: 0 },
+  );
+  const anchor = unitVector(sum.x, sum.y, sum.z);
+  const extent = nodes.reduce(
+    (max, node) => Math.max(max, geodesicDistance(anchor, node.unitPos)),
     0,
   );
-  return Math.min(farthest + LEASH_MARGIN_RAD, Math.PI);
+  return { anchor, travelLeash: Math.min(extent + LEASH_MARGIN_RAD, Math.PI) };
 }
 
 /** Hold the cursor inside the leash: a position past the boundary is
@@ -561,13 +589,14 @@ function computeTravelLeash(nodes: readonly NavigableNode[]): number {
  *  pressing into empty sky. Tangential motion along the boundary and
  *  any inward motion are preserved. A no-op while inside. */
 function applyTravelLeash(state: NavState): void {
-  const distance = geodesicDistance(state.pos, NORTH_POLE);
+  const anchor = state.contentAnchor;
+  const distance = geodesicDistance(state.pos, anchor);
   if (distance <= state.travelLeash) return;
-  const held = slerp(NORTH_POLE, state.pos, state.travelLeash / distance);
+  const held = slerp(anchor, state.pos, state.travelLeash / distance);
   state.pos.x = held.x;
   state.pos.y = held.y;
   state.pos.z = held.z;
-  const toward = tangentTowards(state.pos, NORTH_POLE);
+  const toward = tangentTowards(state.pos, anchor);
   const vDotToward = state.vel.x * toward.x + state.vel.y * toward.y + state.vel.z * toward.z;
   // vDotToward < 0 ⇔ velocity points outward (away from the polestar);
   // remove that radial component, leaving the tangential glide.
@@ -744,9 +773,14 @@ function tick(now: number, refs: RuntimeRefs): void {
   // centered on the active well's projection.
   const lagT = 1 - Math.exp(-CAMERA_LAG_RATE * dtReal);
   const slerped = slerp(state.cameraSurfacePos, state.pos, lagT);
-  state.cameraSurfacePos.x = slerped.x;
-  state.cameraSurfacePos.y = slerped.y;
-  state.cameraSurfacePos.z = slerped.z;
+  // Leash the camera to the content's center: it leans toward the
+  // cursor but never past CAMERA_LEASH_RAD, so the whole constellation
+  // stays framed — the viewbox compressed to the content — and the
+  // world can't be walked off into empty sky.
+  const framed = clampGeodesic(slerped, state.contentAnchor, CAMERA_LEASH_RAD);
+  state.cameraSurfacePos.x = framed.x;
+  state.cameraSurfacePos.y = framed.y;
+  state.cameraSurfacePos.z = framed.z;
   // Ease the passive look offset toward its cursor-driven target, then
   // peer the orbital camera by it. The eased camera carries the whole
   // scene — SVG stars, glyph, threads, and the WebGL dome (which reads
@@ -797,8 +831,11 @@ function tick(now: number, refs: RuntimeRefs): void {
     }
   }
   // The camera must finish its catch-up before the loop sleeps, or
-  // the world freezes mid-trail and wakes with a visible jump.
-  const cameraSettled = geodesicDistance(state.cameraSurfacePos, state.pos) < 0.005;
+  // the world freezes mid-trail and wakes with a visible jump. Its
+  // resting point is the leashed target, not the cursor itself — when
+  // the cursor sits beyond the frame, the camera settles at the leash.
+  const cameraTarget = clampGeodesic(state.pos, state.contentAnchor, CAMERA_LEASH_RAD);
+  const cameraSettled = geodesicDistance(state.cameraSurfacePos, cameraTarget) < 0.005;
   // The mouse-look peer must reach its target before the loop sleeps —
   // resting mid-ease would freeze the camera and wake with a jump. A
   // held peer (steady non-zero target) settles and rests fine.
@@ -870,7 +907,7 @@ function promoteToDrag(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>, pt: Un
   state.lookTarget.y = 0;
   // The drag target is leashed too, so dragging can't pull the spring
   // toward empty sky past the populated cap.
-  const target = clampGeodesic(pt, NORTH_POLE, state.travelLeash);
+  const target = clampGeodesic(pt, state.contentAnchor, state.travelLeash);
   state.dragTarget = target;
   state.pointerId = e.pointerId;
   state.pointerSamples = [{ time: globalThis.performance.now(), pos: target }];
@@ -883,7 +920,7 @@ function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): v
   if (state.mode === 'dragging' && state.pointerId === e.pointerId) {
     const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
     if (!pt) return;
-    const target = clampGeodesic(pt, NORTH_POLE, state.travelLeash);
+    const target = clampGeodesic(pt, state.contentAnchor, state.travelLeash);
     state.dragTarget = target;
     const now = globalThis.performance.now();
     state.pointerSamples.push({ time: now, pos: target });
@@ -1052,6 +1089,7 @@ function buildInitialState(): NavState {
     trailHistory,
     demoDrift: null,
     demoTimeoutId: null,
+    contentAnchor: { x: startPos.x, y: startPos.y, z: startPos.z },
     travelLeash: Math.PI,
   };
 }
@@ -1082,7 +1120,12 @@ export function useConstellationNavigation({
 
   useEffect(() => {
     nodesRef.current = nodes;
-    stateRef.current.travelLeash = computeTravelLeash(nodes);
+    const frame = computeContentFrame(nodes);
+    const state = stateRef.current;
+    state.contentAnchor.x = frame.anchor.x;
+    state.contentAnchor.y = frame.anchor.y;
+    state.contentAnchor.z = frame.anchor.z;
+    state.travelLeash = frame.travelLeash;
   }, [nodes]);
 
   useEffect(() => {
