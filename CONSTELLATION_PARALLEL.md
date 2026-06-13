@@ -22,7 +22,7 @@ The crossing is only generous if it lands you somewhere meaningful. Each surface
 
 | From (the ground) | Look up lands at (the sky) | Look down returns to |
 |---|---|---|
-| **A work** `/{room}/{slug}` | That work's star, *open* — centered, active, threads bloomed (the existing `/sky/{room}/{slug}` overlay state) | The work, scroll preserved |
+| **A work** `/{room}/{slug}` | That work's star — centered, active, threads bloomed, via `/sky?focus={room}/{slug}`; seen among its relations, not read again in a panel (the reading overlay `/sky/{room}/{slug}` is a further step *inside* the sky) | The work |
 | **A room** `/{room}` | The sky oriented to that room's region — its works gathered and lit, the rest of the firmament quieted | The room landing |
 | **A facet** `/facet/{facets}` | The sky with that facet's constellation lit — its member stars and threads emphasized, others dimmed (the search-as-reduction grammar, applied to a facet) | The facet page, filters intact |
 | **The Foyer** `/` | The polestar — the still center, the whole sky at rest | The Foyer |
@@ -71,11 +71,13 @@ The sky reads `SkyFocus` and orients: the navigation camera eases to `center` (o
 
 ## The Smallest Valid First Form
 
-Per the practice of *spanda*, the paradigm ships one crossing first, and only when it pulls. **The work ↔ star jump** is the smallest valid form and the one Danny named directly ("jump back and forth between the regular node as a piece and then as a star"):
+Per the practice of *spanda*, the paradigm ships one crossing first, and only when it pulls. **The work ↔ star jump** is the smallest valid form and the one Danny named directly ("jump back and forth between the regular node as a piece and then as a star"). It shipped on 2026-06-13:
 
-1. On a work page, an affordance — the look-up gesture, plus a visible "see this in the sky" link — enters `/sky/{room}/{slug}` with that star open.
-2. On that sky state, the existing return gesture (and a visible link) comes back down to `/{room}/{slug}`.
-3. The crossing uses the star↔hero view transition already wired.
+1. On a work page, a visible "↑ See this in the sky" anchor beside the room kicker carries the visitor to `/sky?focus={room}/{slug}`.
+2. The sky reads `focus` and opens centered on that work's star — claimed and active, its threads bloomed — seen among its relations, not read again in a panel. The navigation hook's `focusKey` lands the cursor there and skips the demonstration drift (an explicit jump is not a first-visit), taking priority over the restored cursor.
+3. Looking back down — the existing return gesture, plus a "↓ Return to the piece" link — returns to `/{room}/{slug}`, not the Foyer.
+
+This is a floor, complete on its own. *Held within this first form:* the scroll-up gesture on the work page (the anchor is the visible path today; the gesture is the canonical one the room and facet parallels will share) and the precise work-hero↔star view-transition morph (the crossing rides the daystar ascent and a crossfade for now). The room parallel pulls next — it inherits the gesture and the orientation function; the facet parallel after.
 
 This is a floor, complete on its own: it adds the round trip between a work and its star without requiring the room or facet parallels to exist. The room parallel pulls next (it inherits the gesture and the orientation function); the facet parallel after (it inherits the search-as-reduction lighting). None is a prerequisite for the one before shipping as a finished thing.
 
@@ -112,8 +114,8 @@ The paradigm holds the site's thresholds (see `ACCESSIBILITY.md`, `RENDERING_STR
 
 ## Enforced in Code
 
-Today, exactly one crossing exists: the Foyer ↔ `/sky`, via `useThresholdReveal` (up, on the Foyer) and `useReturnGesture` + `useThresholdReveal` (down, on `/sky`), with the look-up / return links as fallbacks. The `/sky/{room}/{slug}` overlay route exists and renders a work open within the sky — the destination the work↔star parallel will reach.
+Two crossings exist today. The Foyer ↔ `/sky`, via `useThresholdReveal` (up, on the Foyer) and `useReturnGesture` + `useThresholdReveal` (down, on `/sky`), with the look-up / return links as fallbacks. And the **work ↔ star jump** (2026-06-13): the work page's "↑ See this in the sky" anchor → `/sky?focus={room}/{slug}`, the navigation hook's `focusKey` opening centered on the active star, and the "↓ Return to the piece" path back. The reading overlay `/sky/{room}/{slug}` also exists — a work opened as a panel *inside* the sky, a further step than the star-centered focus.
 
-Not yet built: the `skyFocusForRoute` orientation function; the look-up gesture mounted on work, room, and facet surfaces; the look-down return to the originating surface; the selection-persistence across the crossing. The first to build is the **work ↔ star** form above, when it pulls. Until then, this file is the design, held — a recognition of where the site is going, not a queue of work owed.
+Not yet built: the general `skyFocusForRoute` orientation function (today's focus is a single node key; the room and facet orientations are not yet derived); the look-up *scroll gesture* on work, room, and facet surfaces (the work page has the anchor, not yet the gesture); the room and facet parallels; selection-persistence beyond the single work focus. The room parallel pulls next. Until then, this file is the design running a step ahead of the lived first form.
 
 *If this document and the lived implementation disagree, the lived implementation is the present moment and this file is what it is reaching for. Catch the document up.*
