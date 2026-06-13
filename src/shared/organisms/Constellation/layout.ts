@@ -17,16 +17,18 @@ export const VIEWBOX = 1000;
 export const CENTER = VIEWBOX / 2;
 export const SKY_RADIUS = 440;
 
-// Phase B camera: positioned below the sphere, looking up at the
-// upper hemisphere. The FOV and distance are tuned so the equator-
-// rim sits just inside the frame (the polestar lands at image
-// center, rim at ±0.97 in normalized screen). This is a small
-// visible shift from the disk-azimuthal projection — stars in the
-// mid-radii feel slightly more "domed" — and the first commitment
-// to rendering through a real 3D camera. Phase C makes this
-// camera state and gives it to the navigation hook.
+// Phase B camera: positioned beneath the firmament, looking up into
+// it. The distance (1.6 × the unit sphere's radius) places the visitor
+// *under the dome* rather than outside looking at a globe — the near
+// hemisphere fills the frame, the limb falls off all four edges, and
+// the polestar/zenith sits at center with the horizon at the rim. This
+// matches ORBIT_DISTANCE in useConstellationNavigation so the
+// prerendered first paint and the hydrated navigation camera agree
+// (no jump from far to close on hydration). The FOV stays narrow on
+// purpose: a wider lens captures more solid angle and lets the void
+// back in around the dome; the narrow lens is what envelops.
 export const STAGE_CAMERA: Camera = {
-  position: { x: 0, y: 0, z: -2.5 },
+  position: { x: 0, y: 0, z: -1.6 },
   target: { x: 0, y: 0, z: 0 },
   up: { x: 0, y: 1, z: 0 },
   fovY: Math.PI / 4,
