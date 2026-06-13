@@ -122,9 +122,13 @@ const DRAG_THRESHOLD_PX = 7;
 // (k≈36 → c≈12: a smooth glide, no overshoot); FLICK_SCALE halved so a
 // release is a gentle continuation rather than a throw. The dominant
 // "too fast" lever is the velocity cap in wellPhysics (lowered there).
+// FREE_DAMPING (coast friction) is high enough that a coast settles
+// into a well without overshoot — the landing reads as decisive, not
+// wobbly — which matters more now that the closer camera magnifies
+// every motion (see ORBIT_DISTANCE).
 const DRAG_SPRING = 36;
 const DRAG_DAMPING = 12;
-const FREE_DAMPING = 3.2;
+const FREE_DAMPING = 5;
 const HOLD_ACCEL = 5.5;
 const FLICK_SCALE = 0.5;
 const MAX_DT_SECONDS = 0.033;
@@ -137,7 +141,7 @@ const IDLE_ACCELERATION_EPSILON = 0.04;
 // the cursor creeps for seconds, the camera chases it, and the
 // whole world drifts under a pointer that thought it had arrived.
 const SETTLE_SPEED = 0.3;
-const SETTLE_RATE = 7;
+const SETTLE_RATE = 9;
 const SETTLE_REST_RAD = 0.004;
 
 // Camera orbit constants. The camera sits at -ORBIT_DISTANCE *
@@ -148,7 +152,7 @@ const SETTLE_REST_RAD = 0.004;
 // drifts off-center, the world re-projects toward where the visitor
 // is reaching. Settled state: glyph at center, world centered on
 // the active well.
-const ORBIT_DISTANCE = 2.5;
+const ORBIT_DISTANCE = 1.6;
 const CAMERA_LAG_RATE = 6;
 const CAMERA_FOV_Y = Math.PI / 4;
 const CAMERA_NEAR = 0.1;
