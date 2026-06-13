@@ -818,13 +818,17 @@ body::before {
    cursor right shifts the scene a little left, as if the visitor
    were looking past it. The 800ms ease-out transition gives the
    motion an arrival rhythm rather than a one-to-one jitter. */
+/* These layer-translates are now a faint complement to the navigation
+   camera's true mouse-look peer (useConstellationNavigation), which
+   re-projects the whole scene in perspective. Kept small so the cursor
+   drives one coherent parallax, not two competing ones. */
 .constellation-parallax--firmament {
-  transform: translate(calc(var(--parallax-x, 0) * -6px), calc(var(--parallax-y, 0) * -6px));
+  transform: translate(calc(var(--parallax-x, 0) * -3px), calc(var(--parallax-y, 0) * -3px));
   transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .constellation-parallax--sky {
-  transform: translate(calc(var(--parallax-x, 0) * -14px), calc(var(--parallax-y, 0) * -14px));
+  transform: translate(calc(var(--parallax-x, 0) * -6px), calc(var(--parallax-y, 0) * -6px));
   transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
 }
 

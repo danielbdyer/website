@@ -1,7 +1,7 @@
 import type { KeyboardEvent, PointerEvent, RefObject } from 'react';
 import { useEffect, useRef } from 'react';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
-import { cameraBasis, unproject } from '@/shared/geometry/camera';
+import { applyCameraLook, cameraBasis, unproject } from '@/shared/geometry/camera';
 import {
   TRAIL_LENGTH,
   applyCameraYaw,
@@ -161,10 +161,26 @@ const WORLD_UP: UnitVector3 = { x: 0, y: 1, z: 0 };
 const YAW_VELOCITY_SCALE = 800;
 const MAX_YAW_DEG = 5;
 
+// Passive mouse-look. While the pointer hovers the sky (no press, no
+// drag), the camera peers a few degrees toward the cursor — true
+// perspective parallax, the space's depth made felt, distinct from the
+// drag that commits the centerpoint to travel. The offset eases in and
+// out (LOOK_EASE_RATE) and stands down during a drag so the drag's
+// ray-casting reads a clean camera. LOOK_REST_EPSILON lets the loop
+// sleep once the peer has settled (held or returned to center).
+const MAX_LOOK_RAD = 0.12;
+const LOOK_EASE_RATE = 5;
+const LOOK_REST_EPSILON = 0.002;
+
 interface MutableVec3 {
   x: number;
   y: number;
   z: number;
+}
+
+interface MutableVec2 {
+  x: number;
+  y: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -207,6 +223,13 @@ interface NavState {
   raf: number | null;
   activeKey: string | null;
   accelBuffer: MutableVec3;
+  /** Passive mouse-look offset, normalized [-1, 1] per axis. `look`
+   *  eases toward `lookTarget` each tick; the eased value scales
+   *  MAX_LOOK_RAD into the camera's yaw/pitch peer. Driven by the
+   *  cursor on free hover, zeroed during a drag, returned to center
+   *  on pointer-leave. */
+  look: MutableVec2;
+  lookTarget: MutableVec2;
   /** Sphere point the orbital camera follows. Slerps toward `pos`
    *  with CAMERA_LAG_RATE so the cursor leads, the camera trails. */
   cameraSurfacePos: MutableVec3;
@@ -632,7 +655,19 @@ function tick(now: number, refs: RuntimeRefs): void {
   state.cameraSurfacePos.x = slerped.x;
   state.cameraSurfacePos.y = slerped.y;
   state.cameraSurfacePos.z = slerped.z;
-  state.currentCamera = orbitalCamera(state.cameraSurfacePos);
+  // Ease the passive look offset toward its cursor-driven target, then
+  // peer the orbital camera by it. The eased camera carries the whole
+  // scene — SVG stars, glyph, threads, and the WebGL dome (which reads
+  // currentCamera) — so the parallax is one coherent depth, not a
+  // layered fake.
+  const lookT = 1 - Math.exp(-LOOK_EASE_RATE * dtReal);
+  state.look.x += (state.lookTarget.x - state.look.x) * lookT;
+  state.look.y += (state.lookTarget.y - state.look.y) * lookT;
+  state.currentCamera = applyCameraLook(
+    orbitalCamera(state.cameraSurfacePos),
+    state.look.x * MAX_LOOK_RAD,
+    state.look.y * MAX_LOOK_RAD,
+  );
   state.currentBasis = cameraBasis(state.currentCamera);
 
   // Re-project the entire scene through the live camera and write
@@ -672,10 +707,17 @@ function tick(now: number, refs: RuntimeRefs): void {
   // The camera must finish its catch-up before the loop sleeps, or
   // the world freezes mid-trail and wakes with a visible jump.
   const cameraSettled = geodesicDistance(state.cameraSurfacePos, state.pos) < 0.005;
+  // The mouse-look peer must reach its target before the loop sleeps —
+  // resting mid-ease would freeze the camera and wake with a jump. A
+  // held peer (steady non-zero target) settles and rests fine.
+  const lookSettled =
+    Math.abs(state.look.x - state.lookTarget.x) < LOOK_REST_EPSILON &&
+    Math.abs(state.look.y - state.lookTarget.y) < LOOK_REST_EPSILON;
   if (
     (pinned ||
       (speed2 <= IDLE_VELOCITY_EPSILON * IDLE_VELOCITY_EPSILON && isAtRest(state, accel))) &&
     cameraSettled &&
+    lookSettled &&
     state.mode === 'free' &&
     state.heldKeys.size === 0
   ) {
@@ -730,6 +772,10 @@ function promoteToDrag(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>, pt: Un
   const state = refs.stateRef.current;
   state.press = null;
   state.mode = 'dragging';
+  // The peer stands down for the drag: the target eases to center so
+  // the spring's ray-casting reads a settling camera, not a peered one.
+  state.lookTarget.x = 0;
+  state.lookTarget.y = 0;
   state.dragTarget = pt;
   state.pointerId = e.pointerId;
   state.pointerSamples = [{ time: globalThis.performance.now(), pos: pt }];
@@ -746,6 +792,19 @@ function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): v
     const now = globalThis.performance.now();
     state.pointerSamples.push({ time: now, pos: pt });
     pruneSamples(state.pointerSamples, now, VELOCITY_SAMPLE_WINDOW_MS);
+    return;
+  }
+  // Free hover (no press pending, not dragging): drive the passive
+  // mouse-look peer toward the cursor's position in the frame. Skipped
+  // under reduced motion — the loop doesn't run, so there's nothing to
+  // ease. A pending press stands the peer down (it may become a drag).
+  if (state.mode === 'free' && state.press === null && !prefersReducedMotion()) {
+    const bounds = e.currentTarget.getBoundingClientRect();
+    if (bounds.width > 0 && bounds.height > 0) {
+      state.lookTarget.x = ((e.clientX - bounds.left) / bounds.width) * 2 - 1;
+      state.lookTarget.y = -(((e.clientY - bounds.top) / bounds.height) * 2 - 1);
+      ensureRunning(refs);
+    }
     return;
   }
   if (state.press?.pointerId !== e.pointerId) return;
@@ -804,6 +863,18 @@ function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): voi
   if (e.currentTarget.hasPointerCapture(e.pointerId)) {
     e.currentTarget.releasePointerCapture(e.pointerId);
   }
+  if (!prefersReducedMotion()) ensureRunning(refs);
+}
+
+/** Pointer left the sky: return the mouse-look peer to center so the
+ *  camera relaxes when the visitor's attention leaves. A no-op mid-
+ *  drag — the captured pointer keeps delivering moves, and the drag
+ *  owns the camera until release. */
+function handlePointerLeave(refs: RuntimeRefs): void {
+  const state = refs.stateRef.current;
+  if (state.mode === 'dragging') return;
+  state.lookTarget.x = 0;
+  state.lookTarget.y = 0;
   if (!prefersReducedMotion()) ensureRunning(refs);
 }
 
@@ -872,6 +943,8 @@ function buildInitialState(): NavState {
     raf: null,
     activeKey: null,
     accelBuffer: { x: 0, y: 0, z: 0 },
+    look: { x: 0, y: 0 },
+    lookTarget: { x: 0, y: 0 },
     cameraSurfacePos: { x: startPos.x, y: startPos.y, z: startPos.z },
     currentCamera: initialCamera,
     currentBasis: cameraBasis(initialCamera),
@@ -958,6 +1031,7 @@ export function useConstellationNavigation({
       onPointerMove: (e: PointerEvent<SVGSVGElement>) => handlePointerMove(refs, e),
       onPointerUp: (e: PointerEvent<SVGSVGElement>) => handlePointerUp(refs, e),
       onPointerCancel: (e: PointerEvent<SVGSVGElement>) => handlePointerUp(refs, e),
+      onPointerLeave: () => handlePointerLeave(refs),
     },
     onKeyDown: (e: KeyboardEvent) => handleKeyDown(refs, e),
     onKeyUp: (e: KeyboardEvent) => handleKeyUp(refs, e),
