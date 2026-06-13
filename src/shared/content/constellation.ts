@@ -174,11 +174,22 @@ const SECTOR_HALF_SPREAD = 35;
 // changes too — the value is paired, not free.
 const TWINKLE_DURATION_SECONDS = 4.5;
 
-// Radius lives in [0.45, 0.92] — never at the polestar (the center is
-// reserved for the geometric figure's eventual ascension) and never at
-// the rim (the horizon stays a clean edge).
-const RADIUS_MIN = 0.45;
-const RADIUS_MAX = 0.92;
+// Radius is the dome cap — the polar spread of the stars from the
+// zenith (the polestar at +z), measured as a fraction of the disk
+// (radius × 90° = degrees from the pole). Contained near the pole
+// ([0.18, 0.47] ≈ 16°–42°) so the sky reads as a *convex ceiling
+// overhead* rather than a full sphere to wander: with a small corpus
+// the stars gather close to the polestar, and there isn't enough yet
+// to justify navigating a whole sphere. Never at the polestar itself
+// (center reserved for the geometric figure's ascension), never near
+// the rim (the horizon stays a clean edge). As the corpus grows the
+// cap is meant to widen — more travel, stars constellating and
+// separating by relation — held as the organic-growth direction, which
+// deliberately relaxes the "adding a work never moves a star"
+// invariant. unitPosition stays the exact un-projection of (radius,
+// angle), so the 2D and 3D layouts agree.
+const RADIUS_MIN = 0.18;
+const RADIUS_MAX = 0.47;
 
 interface NodePlacement {
   readonly angleDeg: number;

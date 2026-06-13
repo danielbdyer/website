@@ -35,7 +35,14 @@ export interface NavigableNode {
 /** Force-field constants in spherical units. Position is a unit
  *  vector on the sphere; "distance" is geodesic (radians along
  *  great circle). Velocity is angular (rad/s). */
-export const INFLUENCE_RADIUS_RAD = 0.7;
+// A well's reach, kept local. At 0.7 rad every star tugged the cursor
+// from far across the cap, so a flick crossed several overlapping
+// wells and got deflected through saddle points — it would "spin and
+// snap between a couple of weighted stars before landing on one you
+// didn't expect" (Danny). At 0.42 rad each well only claims the cursor
+// when it's genuinely near, so a release lands in the well the
+// momentum actually carried it toward, not the densest neighborhood.
+export const INFLUENCE_RADIUS_RAD = 0.42;
 export const WELL_RADIUS_RAD = 0.3;
 export const WELL_STIFFNESS = 9;
 // The world's top speed, deliberately slow. At 3.5 rad/s a full

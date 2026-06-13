@@ -29,6 +29,43 @@ const HOLD_MS = 90;
 const DRAIN_RATE = 3.2;
 const FOLLOW_RATE = 16;
 
+// A cubic-bezier easing evaluator — returns f(x) → y for x ∈ [0, 1],
+// solving x(t) by a few Newton steps then reading y(t). Standard CSS
+// timing-function math; kept here so the resistance has a real curve
+// rather than the bare linear progress the follower produced.
+function cubicBezierEase(x1: number, y1: number, x2: number, y2: number): (x: number) => number {
+  // Canonical coefficient form: p(t) = ((a·t + b)·t + c)·t for each axis.
+  const cxc = 3 * x1;
+  const bxc = 3 * (x2 - x1) - cxc;
+  const axc = 1 - cxc - bxc;
+  const cyc = 3 * y1;
+  const byc = 3 * (y2 - y1) - cyc;
+  const ayc = 1 - cyc - byc;
+  const sampleX = (t: number): number => ((axc * t + bxc) * t + cxc) * t;
+  const sampleY = (t: number): number => ((ayc * t + byc) * t + cyc) * t;
+  const slopeX = (t: number): number => (3 * axc * t + 2 * bxc) * t + cxc;
+  return (x: number): number => {
+    const clamped = Math.min(Math.max(x, 0), 1);
+    let t = clamped;
+    for (let i = 0; i < 5; i++) {
+      const dx = sampleX(t) - clamped;
+      if (Math.abs(dx) < 1e-4) break;
+      const d = slopeX(t);
+      if (Math.abs(d) < 1e-6) break;
+      t -= dx / d;
+    }
+    return sampleY(Math.min(Math.max(t, 0), 1));
+  };
+}
+
+// The resistance curve. The follower produced a near-linear lean-in,
+// which read as mechanical. This ease-in-out holds at the start (the
+// page resists — "tipping a scale"), gives through the middle, and
+// settles into the commit, so the preview leans in with a body rather
+// than a slope. (Danny: there should be a cubic-bezier to the
+// resistance.)
+const RESISTANCE_EASE = cubicBezierEase(0.5, 0, 0.5, 1);
+
 interface ThresholdRevealOptions {
   /** 'up' commits on scroll-up / pull-down (the Foyer looking up);
    *  'down' commits on scroll-down (the sky returning to ground). */
@@ -67,7 +104,7 @@ function stepReveal(el: HTMLElement | null, state: RevealState, onCommit: () => 
     state.accum *= Math.exp(-DRAIN_RATE * dt);
   }
   state.shown += (state.accum - state.shown) * (1 - Math.exp(-FOLLOW_RATE * dt));
-  writeReveal(el, Math.min(state.shown, 1));
+  writeReveal(el, RESISTANCE_EASE(Math.min(state.shown, 1)));
   if (!state.committed && state.accum >= 1) {
     state.committed = true;
     writeReveal(el, 1);
