@@ -130,7 +130,7 @@ const DRAG_SPRING = 36;
 const DRAG_DAMPING = 12;
 const FREE_DAMPING = 5;
 const HOLD_ACCEL = 5.5;
-const FLICK_SCALE = 0.5;
+const FLICK_SCALE = 0.3;
 const MAX_DT_SECONDS = 0.033;
 const IDLE_VELOCITY_EPSILON = 0.005;
 const IDLE_ACCELERATION_EPSILON = 0.04;
@@ -805,8 +805,13 @@ function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): v
   if (state.mode === 'free' && state.press === null && !prefersReducedMotion()) {
     const bounds = e.currentTarget.getBoundingClientRect();
     if (bounds.width > 0 && bounds.height > 0) {
-      state.lookTarget.x = ((e.clientX - bounds.left) / bounds.width) * 2 - 1;
-      state.lookTarget.y = -(((e.clientY - bounds.top) / bounds.height) * 2 - 1);
+      // Inverted: moving the cursor toward an edge leans the camera the
+      // *other* way, so the gesture reads as "head toward what I'm
+      // reaching for" — the world swings to bring it forward — rather
+      // than peering away from it. (Danny: the peer's impact on where
+      // to head should be inverse.)
+      state.lookTarget.x = -(((e.clientX - bounds.left) / bounds.width) * 2 - 1);
+      state.lookTarget.y = ((e.clientY - bounds.top) / bounds.height) * 2 - 1;
       ensureRunning(refs);
     }
     return;

@@ -30,27 +30,31 @@ const CONSTELLATION_ROOMS: readonly Exclude<Room, 'foyer'>[] = [
   'salon',
 ];
 
-// Each room occupies a 90° sector of a polar layout, centered around
-// the firmament's center. Angles follow SVG-direct convention
-// (0° = east, 90° = south, 180° = west, 270° = north — Y grows
-// downward, so sin(angle) maps to vertical-down). The four rooms sit
-// at the four diagonals so each occupies one quadrant of the sky:
+// Semantic placement — the constellation arranges by *relation*, not by
+// room. Each facet is an anchor direction on the dome; a work sits at
+// the centroid of its facets' anchors, so works that share facets
+// gather into the same neighborhood (they constellate) and works whose
+// facets are disjoint drift to different arcs (they separate). The
+// eight anchors are spaced evenly around the azimuth and ordered so the
+// two facets of each hue sit adjacent — the dome reads as four
+// chromatic arcs (warm, rose, violet, gold), echoing FACET_HUE below.
 //
-//   Studio (NW) ─── ★ ─── Salon (NE)
-//                        ─
-//   Garden (SW) ─── ★ ─── Study (SE)
-//
-// Studio sits upper-left because it is the daylight-discipline room
-// (dawn-direction). Salon sits upper-right — music high in the sky,
-// the cellist's son's room. Study sits lower-right, the evening side
-// where reflection happens. Garden sits lower-left, the earth-and-
-// growth quadrant. The arrangement is editorial; the data layer
-// commits to it so positions are stable across builds.
-const ROOM_SECTOR_DEG: Record<Exclude<Room, 'foyer'>, number> = {
-  studio: 225, // NW — upper-left of the sky
-  salon: 315, // NE — upper-right
-  study: 45, // SE — lower-right
-  garden: 135, // SW — lower-left
+// A work's place depends only on its own facets, so placement is
+// deterministic and a returning visitor finds the sky as they left it;
+// the pattern grows as works accrue without reshuffling what is already
+// there. This supersedes the earlier room-quadrant layout: a work's
+// *room* is still its identity, its link, and its atmosphere, but its
+// *place* in the sky is now its meaning. CONSTELLATION.md §"What the
+// Constellation Shows."
+const FACET_AZIMUTH_DEG: Record<Facet, number> = {
+  craft: 0,
+  body: 45,
+  beauty: 90,
+  language: 135,
+  consciousness: 180,
+  becoming: 225,
+  leadership: 270,
+  relation: 315,
 };
 
 // Editorial assignment of the held accent vocabulary to the eight
@@ -162,10 +166,15 @@ function unitOffset(seed: string): number {
   return hash(seed) / UINT32_MAX;
 }
 
-// Within a 90° sector the work spreads across [-35°, +35°] from the
-// sector center, leaving a small gap to neighboring sectors so the
-// rooms read as adjacent rather than seamless.
-const SECTOR_HALF_SPREAD = 35;
+// Facet-anchor placement. Each facet's anchor sits at this disk radius
+// (≈38° from the zenith); a single-facet work lands on it, a multi-
+// facet work at the centroid of its anchors (pulled inward, toward the
+// polestar, the more threads it carries). A small deterministic jitter
+// separates works that share the same facet set so they cluster without
+// landing on top of one another.
+const FACET_ANCHOR_RADIUS = 0.42;
+const JITTER_RADIUS = 0.05;
+const JITTER_AZIMUTH_DEG = 11;
 
 // Twinkle phase ceiling — the upper bound on each star's halo
 // animation-delay. Matches the CSS `star-twinkle` keyframe duration
@@ -174,11 +183,22 @@ const SECTOR_HALF_SPREAD = 35;
 // changes too — the value is paired, not free.
 const TWINKLE_DURATION_SECONDS = 4.5;
 
-// Radius lives in [0.45, 0.92] — never at the polestar (the center is
-// reserved for the geometric figure's eventual ascension) and never at
-// the rim (the horizon stays a clean edge).
-const RADIUS_MIN = 0.45;
-const RADIUS_MAX = 0.92;
+// Radius is the dome cap — the polar spread of the stars from the
+// zenith (the polestar at +z), measured as a fraction of the disk
+// (radius × 90° = degrees from the pole). Contained near the pole
+// ([0.18, 0.47] ≈ 16°–42°) so the sky reads as a *convex ceiling
+// overhead* rather than a full sphere to wander: with a small corpus
+// the stars gather close to the polestar, and there isn't enough yet
+// to justify navigating a whole sphere. Never at the polestar itself
+// (center reserved for the geometric figure's ascension), never near
+// the rim (the horizon stays a clean edge). As the corpus grows the
+// cap is meant to widen — more travel, stars constellating and
+// separating by relation — held as the organic-growth direction, which
+// deliberately relaxes the "adding a work never moves a star"
+// invariant. unitPosition stays the exact un-projection of (radius,
+// angle), so the 2D and 3D layouts agree.
+const RADIUS_MIN = 0.18;
+const RADIUS_MAX = 0.47;
 
 interface NodePlacement {
   readonly angleDeg: number;
@@ -186,18 +206,35 @@ interface NodePlacement {
   readonly unitPosition: UnitVector3;
 }
 
-// Pure pipeline: a (room, slug) determines a 2D disk position, and
-// the 2D disk position determines the 3D unit-sphere position via
-// the upper-hemisphere projection. The disk values stay authoritative
-// for today's renderer; the unitPosition rides alongside as the
-// future-form 3D coord, derived deterministically from the same
-// inputs.
-function placeNode(room: Exclude<Room, 'foyer'>, slug: string): NodePlacement {
-  const sectorCenter = ROOM_SECTOR_DEG[room];
-  const angleOffset = (unitOffset(`${room}/${slug}/angle`) - 0.5) * 2 * SECTOR_HALF_SPREAD;
-  const radiusT = unitOffset(`${room}/${slug}/radius`);
-  const radius = RADIUS_MIN + radiusT * (RADIUS_MAX - RADIUS_MIN);
-  const angleDeg = (sectorCenter + angleOffset + 360) % 360;
+// Pure pipeline: a work's facet set determines a 2D disk position — the
+// centroid of its facets' anchors, jittered per slug to break ties —
+// and the disk position determines the 3D unit-sphere position via the
+// upper-hemisphere projection. unitPosition is the exact un-projection
+// of (radius, angleDeg), so the 2D and 3D layouts agree.
+function placeNode(slug: string, facets: readonly Facet[]): NodePlacement {
+  // Centroid of the facets' anchor points on the disk (functional fold —
+  // no mutation). A single facet → its anchor; many facets → pulled
+  // inward toward the polestar.
+  const centroid = facets.reduce(
+    (acc, facet) => {
+      const az = (FACET_AZIMUTH_DEG[facet] * Math.PI) / 180;
+      return {
+        x: acc.x + (FACET_ANCHOR_RADIUS * Math.cos(az)) / facets.length,
+        y: acc.y + (FACET_ANCHOR_RADIUS * Math.sin(az)) / facets.length,
+      };
+    },
+    { x: 0, y: 0 },
+  );
+  const jitterR = (unitOffset(`${slug}/jitter-r`) - 0.5) * 2 * JITTER_RADIUS;
+  const jitterA = (unitOffset(`${slug}/jitter-a`) - 0.5) * 2 * JITTER_AZIMUTH_DEG;
+  // Facetless works rest near the polestar — the still center.
+  const baseRadius = facets.length === 0 ? RADIUS_MIN : Math.hypot(centroid.x, centroid.y);
+  const baseAngleDeg =
+    facets.length === 0
+      ? unitOffset(`${slug}/angle`) * 360
+      : (Math.atan2(centroid.y, centroid.x) * 180) / Math.PI;
+  const radius = Math.min(Math.max(baseRadius + jitterR, RADIUS_MIN), RADIUS_MAX);
+  const angleDeg = (((baseAngleDeg + jitterA) % 360) + 360) % 360;
   const unitPosition = diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
   return { angleDeg, radius, unitPosition };
 }
@@ -269,7 +306,7 @@ export function getConstellationGraphSync(): ConstellationGraph {
       isPreview: isPreviewWork(work),
       hue: primaryFacet ? FACET_HUE[primaryFacet] : 'gold',
       twinklePhase: unitOffset(`${room}/${work.slug}/twinkle`) * TWINKLE_DURATION_SECONDS,
-      ...placeNode(room, work.slug),
+      ...placeNode(work.slug, work.facets),
     };
   });
   const edges = deriveFacetEdges(nodes);
