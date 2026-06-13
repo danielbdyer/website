@@ -99,22 +99,6 @@ export function geodesicDistance(a: UnitVector3, b: UnitVector3): number {
   return 2 * Math.asin(clamp(chord / 2, 0, 1));
 }
 
-/** Clamp `point` to lie within `maxRad` geodesic radians of `anchor`.
- *  A point already inside the cap is returned unchanged; one outside is
- *  pulled back along the great-circle arc to the boundary. This is the
- *  leash that keeps the constellation's cursor from wandering past the
- *  populated cap into empty sky — finitely scoping travel to where the
- *  content is, with whatever margin `maxRad` allows. */
-export function clampGeodesic(
-  point: UnitVector3,
-  anchor: UnitVector3,
-  maxRad: number,
-): UnitVector3 {
-  const d = geodesicDistance(point, anchor);
-  if (d <= maxRad || d < 1e-9) return point;
-  return slerp(anchor, point, maxRad / d);
-}
-
 /** Inverse azimuthal-equidistant projection: given a point on the
  *  2D unit disk (radius ∈ [0, 1] from the disk's center, an angle
  *  in radians around the disk), return its position on the upper

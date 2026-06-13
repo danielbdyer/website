@@ -45,11 +45,11 @@ describe('getConstellationGraphSync — content', () => {
     for (const node of g.nodes) {
       expect(node.angleDeg).toBeGreaterThanOrEqual(0);
       expect(node.angleDeg).toBeLessThan(360);
-      // The dome cap — stars gather near the zenith (radius × 90° =
-      // degrees from the polestar), a contained convex ceiling rather
-      // than a full sphere. See RADIUS_MIN/RADIUS_MAX in constellation.ts.
-      expect(node.radius).toBeGreaterThanOrEqual(0.18);
-      expect(node.radius).toBeLessThanOrEqual(0.47);
+      // The dome cap — stars spread evenly across it (radius × 90° =
+      // degrees from the polestar). See DOME_INNER_DEG / DOME_OUTER_DEG
+      // (14°–48° ≈ radius 0.16–0.53) in constellation.ts.
+      expect(node.radius).toBeGreaterThanOrEqual(0.15);
+      expect(node.radius).toBeLessThanOrEqual(0.54);
     }
   });
 
