@@ -264,13 +264,47 @@ export const DOME_FRAGMENT = /* glsl */ `
     float horizonBand = smoothstep(-0.38, -0.02, P.z) * (1.0 - smoothstep(0.02, 0.38, P.z));
     sky = mix(sky, uAccentWarm, horizonBand * 0.035);
 
-    // Day: pigment pooling on wet paper.
-    vec3 dayWashTone = mix(uHorizon * 0.985, uGlowColor, 0.45);
-    sky = mix(sky, dayWashTone, smoothstep(0.38, 0.95, washN) * 0.18 * (1.0 - uNight));
+    // ── Day: the reflecting pool. The firmament read as still water —
+    // umber, not blue; calm, faintly refractive. A slow ripple bends the
+    // light the surface holds; the wash pools with more body than a dry
+    // sheet; the umber bed gathers through the near water. Night you look
+    // up at the firmament; day you look down into the pool that holds it.
+    // CONSTELLATION.md §"Daylight: the reflecting pool."
+    float day = 1.0 - uNight;
+    float ripT = uTime * 0.05 * uMotion;
+    float ripple = fbm(vec3(P.xy * 5.0, ripT));
+    float shimmer = fbm(vec3(P.xy * 16.0 + 4.0, ripT * 1.6));
+    // Deepen the pale sky into a still umber pool. Water is darker than
+    // the sky it holds, and that depth is what gives the reflected light
+    // room to glint — without it, day stays a flat bright sheet. Still
+    // umber, not blue; the same family as the Foyer ground, sunk.
+    vec3 poolDeep = sky * vec3(0.6, 0.53, 0.47) + uGround * 0.16;
+    sky = mix(sky, poolDeep, day * 0.6);
+    // Mottled pigment pooling where the weather gathers, bent by ripple.
+    vec3 dayWashTone = mix(uHorizon * 0.6, uAccentWarm, 0.4);
+    float washMask = smoothstep(0.25, 0.95, washN + ripple * 0.2);
+    sky = mix(sky, dayWashTone, washMask * 0.4 * day);
+    // Refraction — crests brighten, troughs darken, light on water.
+    sky *= 1.0 + (ripple * 0.16 + shimmer * 0.09) * day;
+    // The umber bed gathering through the near water (toward the bottom).
+    float bedDepth = smoothstep(0.5, 0.0, frag.y / uResolution.y);
+    sky = mix(sky, uGround * 0.85, bedDepth * 0.3 * day);
 
     // The daystar's gathered glow.
     float gd = distance(frag, uDaystar) / max(uFitScale * 330.0, 1.0);
     sky += uGlowColor * (uGlowStrength * (1.6 + 1.2 * uNight)) * exp(-gd * gd * 1.7);
+
+    // By day, the daystar doubles on the water — a shimmering glade
+    // falling toward the viewer, wavering with the ripple and broken
+    // into glitter, the unmistakable mark of a sun reflected on a pool.
+    float gx = (frag.x - uDaystar.x) / max(uFitScale * 72.0, 1.0) + ripple * 0.55;
+    float gy = (frag.y - uDaystar.y) / max(uFitScale * 520.0, 1.0);
+    float gladeBelow = smoothstep(0.0, 60.0, frag.y - uDaystar.y);
+    float glitter =
+      0.55 +
+      0.45 * sin(frag.y * 0.055 + ripT * 9.0) * (0.5 + 0.5 * sin(frag.x * 0.14 + ripple * 5.0));
+    float glade = exp(-gx * gx) * exp(-gy * gy) * gladeBelow * glitter;
+    sky += uGlowColor * glade * (uGlowStrength * 4.0 + 0.32) * day;
 
     // The pool of attention — brightens and saturates where the
     // visitor's cursor lives on the sphere.
