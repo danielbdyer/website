@@ -846,55 +846,51 @@ body::before {
   display: none;
 }
 
-/* The lift-and-pitch — the sky page's first-paint gesture. *Not* a
-   z-axis rotation; a perspective camera move. The visitor's
-   experience is looking up: as the gaze tilts, the firmament pitches
-   from a steep glancing angle until it faces the visitor and settles
-   level.
+/* Arrival — the look-up, rebuilt (2026-06-13, with Danny). The
+   earlier version pitched the whole route container (perspective
+   rotateX, and before that a clip-path wipe), which folded the
+   *background* along with the stars, read as a sheet of paper
+   unrolling, and glitched over the WebGL <canvas>. It also fought the
+   first paint: a camera that moves on arrival jumps from the
+   prerendered pose at hydration.
 
-   Two earlier ingredients were removed because they fought the intent
-   rather than serving it:
-     - the clip-path inset wipe read as a sheet of paper unrolling
-       (not a gaze lifting), and — animated on the same element that
-       hosts the WebGL firmament <canvas> — it forced a re-raster of
-       the canvas each frame that surfaced as the visible glitch-then-
-       snap at the end of the roll.
-     - scaleY compression read as a fold/squash, deepening the
-       paper-being-folded impression.
-   What remains is a single dimensional pitch: perspective + rotateX
-   (-58deg → 0) around the top edge, a uniform scale (0.965 → 1) for a
-   gentle approach, a small translateY lift, and an opacity fade so the
-   firmament resolves rather than hard-cuts. The signature arrival
-   curve (cubic-bezier(0.23, 1, 0.32, 1)) lets it settle without
-   snapping; will-change promotes the layer so the canvas composites
-   cleanly through the rotation.
+   The truer choreography: the firmament is already mounted — the dome,
+   the weather, the daystar are simply *there*, no fold — and it is the
+   stars that swell into focus beneath an already-oriented camera. The
+   looking-up point of view now lives in the steady-state camera itself
+   (ORBIT_DISTANCE places the visitor under the dome — see
+   useConstellationNavigation / STAGE_CAMERA), so the camera needn't
+   travel to establish the POV; the stars resolve into the sky the gaze
+   is already lifted into.
 
-   The truer form of this gesture pitches the WebGL navigation camera
-   itself (the dome already casts view rays through it), so the look-up
-   happens *in the world* rather than as a CSS transform of the
-   rasterized result — held as the next refinement, alongside the
-   symmetric scroll-down reverse named in CONSTELLATION_HORIZON.md.
+   The structural layer (.constellation-camera — polestar, threads,
+   stars, companion) fades up from nothing. opacity is safe to animate
+   here: the projector writes only this group's transform attribute
+   each tick, never its opacity, and the group is a sibling of the
+   WebGL canvas, so the mounted background is untouched. Because
+   .sky-arrival is present in the prerendered HTML, the 0% keyframe
+   applies at first paint — the stars are hidden before any JavaScript
+   and swell in over the signature curve, so there is no flash from a
+   prerendered-full state, and no-JS visitors get the same resolve.
+   prefers-reduced-motion collapses the duration via the universal
+   block above: the stars are simply present.
 
-   prefers-reduced-motion is honored globally (the animation-duration
-   collapses to ~0 ms via the universal block above), so the firmament
-   simply *is* there for those visitors — present and complete from
-   first paint. */
-@keyframes sky-look-up {
-  0% {
-    transform: perspective(1400px) translateY(5dvh) rotateX(-58deg) scale(0.965);
-    opacity: 0.3;
+   Held next (CONSTELLATION_HORIZON.md): a camera that *moves* on
+   arrival — a dolly-in under the dome — honest only once the
+   prerendered first-paint pose matches the motion's start, so it wants
+   a real eye on it rather than a blind push. */
+@keyframes cn-stars-swell {
+  from {
+    opacity: 0;
   }
 
-  100% {
-    transform: perspective(1400px) translateY(0) rotateX(0deg) scale(1);
+  to {
     opacity: 1;
   }
 }
 
-.sky-arrival {
-  transform-origin: 50% 0%;
-  animation: sky-look-up 1400ms cubic-bezier(0.23, 1, 0.32, 1) both;
-  will-change: transform;
+.sky-arrival .constellation-camera {
+  animation: cn-stars-swell 1100ms cubic-bezier(0.23, 1, 0.32, 1) 250ms both;
 }
 
 /* ─── View Transitions ──────────────────────────────────────────
