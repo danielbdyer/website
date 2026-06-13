@@ -93,6 +93,47 @@ export function cameraBasis(camera: Camera): CameraBasis {
   return { forward, right, up };
 }
 
+/** Rotate a vector around a unit axis by `angle` radians (Rodrigues'
+ *  rotation formula). Pure; the magnitude of `v` is preserved. */
+function rotateAroundAxis(v: Vec3, axis: UnitVector3, angle: number): Vec3 {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const dotKV = axis.x * v.x + axis.y * v.y + axis.z * v.z;
+  const crossX = axis.y * v.z - axis.z * v.y;
+  const crossY = axis.z * v.x - axis.x * v.z;
+  const crossZ = axis.x * v.y - axis.y * v.x;
+  const k = (1 - c) * dotKV;
+  return {
+    x: v.x * c + crossX * s + axis.x * k,
+    y: v.y * c + crossY * s + axis.y * k,
+    z: v.z * c + crossZ * s + axis.z * k,
+  };
+}
+
+/** Orbit a camera around its look-at target by a small yaw (about the
+ *  camera's up) and pitch (about camera-right), keeping the target, up,
+ *  and lens unchanged. This is the passive mouse-look peer: the camera
+ *  shifts a few degrees toward the cursor so the scene shows real
+ *  perspective parallax — near stars move more than far — without the
+ *  centerpoint committing anywhere (that commitment is the drag's job).
+ *  The orbit distance is preserved, since both rotations preserve the
+ *  position's magnitude about the target. A zero offset returns the
+ *  camera untouched (the common at-rest case). */
+export function applyCameraLook(camera: Camera, yaw: number, pitch: number): Camera {
+  if (yaw === 0 && pitch === 0) return camera;
+  const yawed = rotateAroundAxis(camera.position, camera.up, yaw);
+  const forward = normalize(
+    {
+      x: camera.target.x - yawed.x,
+      y: camera.target.y - yawed.y,
+      z: camera.target.z - yawed.z,
+    },
+    DEFAULT_FORWARD,
+  );
+  const right = normalize(cross(camera.up, forward), DEFAULT_RIGHT);
+  return { ...camera, position: rotateAroundAxis(yawed, right, pitch) };
+}
+
 /** Project a world-space point through the camera. Behind-camera
  *  points return `inFront: false` with the screen coords pinned at
  *  the image center — the consumer decides whether to render them. */

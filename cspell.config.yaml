@@ -319,6 +319,7 @@ words:
   - starfields
   - trackpads
   - unhover
+  - Rodrigues
 
   # WebGL / shader vocabulary — the GLSL fragment shader uses
   # tokens that aren't in the standard dictionaries.
