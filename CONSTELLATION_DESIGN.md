@@ -1536,7 +1536,7 @@ A five-tier responsive system. Most design proposals only need to mock the middl
 | Property | Phone | Tablet | Desktop | Wide | Ultra Wide |
 |---|---|---|---|---|---|
 | Camera FOV | 55° vertical | 50° | 45° | 42° | 40° (narrower; more cinematic) |
-| Camera distance | 1.9 × radius | 2.2 × | 2.5 × | 2.7 × | 2.9 × |
+| Camera distance | 1.4 × radius | 1.5 × | 1.6 × | 1.7 × | 1.8 × |
 | Star halo size | ~1.6× body | ~1.4× | ~1.3× | ~1.2× | ~1.1× |
 | HorizonStrip height | 12% viewport | 9% | 7% | 6% | 5% |
 | Facet chips | 6 + "more" | 8 visible | 8 visible | 8 visible | 8 visible |
@@ -1544,6 +1544,8 @@ A five-tier responsive system. Most design proposals only need to mock the middl
 | Radial echo ring radius | larger (touch) | medium | smaller | smaller | smaller |
 | WorkOverlay layout | Full-screen sheet | Overlay + veil | Overlay + veil | Overlay + veil with side rail | Overlay + veil with side rail + breadcrumbs |
 | Density target | 12 stars feel sparse | Balanced | Expanded | Roomy | Immersive |
+
+*Camera distance shipped (2026-06-13) as a single enveloping value — ~1.6× the unit radius — to put the visitor **under the dome** rather than outside looking at a globe; the per-tier values above are the held responsive refinement. The earlier table (1.9–2.9×) was written when the camera framed the sphere from outside; the envelopment decision tightened it, and a wider FOV was tried and reverted (it lets the void back in around the dome — the narrow lens is what envelops). See CONSTELLATION.md §"What Shipped" › "Interaction retune."*
 
 ### Phones in Landscape
 
