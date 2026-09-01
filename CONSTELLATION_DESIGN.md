@@ -1259,7 +1259,7 @@ Six speeds, each with its purposes named. A motion that doesn't fit one of the s
 | **Slow** | 10 s+ | Background rotation, polestar |
 | **Held** | 1–2 s | Thread travel, opening/closing overlay, autonomous demonstration drift |
 | **Reach** | 300–600 ms | Filter dimming, theme crossfade, panel reveal, label fade-in |
-| **Spring** | continuous | Cursor follow during drag |
+| **Grab** | one-to-one | The sky under the hand during a drag; the hand's own parting velocity after |
 | **Settle** | 200–400 ms | Basin claim acknowledgment, halo crescendo |
 | **Snap** | ≤100 ms | Reduced-motion fallback for any animation; focus ring |
 
@@ -1438,9 +1438,9 @@ For returning visitors, the demonstration is suppressed (their cursor lands at i
 
 The day↔night transition is a meaningful event, not an instant toggle. Specifically:
 
-- **The room is dimmed, not changed.** Stars stay where they are. Threads stay where they are. The cursor stays where it is. The polestar stays where it is. Only the *atmosphere* — sky color, atmosphere pool tone, halo saturation — crossfades over 500 ms.
+- **The room is dimmed, not changed.** Stars stay where they are. Threads stay where they are. The cursor stays where it is. The polestar stays where it is. Only the *atmosphere* — sky color, atmosphere pool tone, halo saturation — crossfades; the room's chrome in 500 ms, the sky itself over a 1.8 s arc that passes through a dusk belonging to neither hour (violet overhead, rose-gold at the foot, a flush along the horizon), with the setting body gone before the rising one lifts (`CONSTELLATION.md` §"Night: the firmament", 2026-09-01).
 - **The cursor's amber holds.** The visitor's body keeps its color. This is the visual signal that *you are unchanged; the room around you has shifted.*
-- **The slow rotation does not pause or reset.** Rotation continues across the crossfade. Disruption of the rotation would betray the metaphor that the room is the same room.
+- **The slow rotation does not pause or reset.** Rotation continues across the crossfade — it rides the wall clock, so it cannot do otherwise. Disruption of the rotation would betray the metaphor that the room is the same room.
 - **Active states crossfade independently.** A focused star's gold halo crossfades to its dark-theme variant; a hovered chip's hue shifts; the atmosphere pool's tone slides from warm to cool-silver.
 - **Reduced motion collapses the crossfade to ~80 ms.** The shift still happens; the duration just contracts.
 
@@ -1802,7 +1802,7 @@ Twenty named states (S0–S19) the constellation can be in. See **Surface Invent
 | **Slow** | 10 s+ | Background rotation, polestar |
 | **Held** | 1–2 s | Thread travel, opening/closing overlay, demo drift |
 | **Reach** | 300–600 ms | Filter dimming, theme crossfade, panel reveal, label fade-in |
-| **Spring** | continuous | Cursor follow during drag |
+| **Grab** | one-to-one | The sky under the hand during a drag; the hand's own parting velocity after |
 | **Settle** | 200–400 ms | Basin claim acknowledgment, halo crescendo |
 | **Snap** | ≤ 100 ms | Reduced-motion fallback; focus ring |
 

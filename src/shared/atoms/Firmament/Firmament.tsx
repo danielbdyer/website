@@ -1,11 +1,12 @@
-// The constellation's painted background — *the sea-painted dome
-// by day, paper-night by night.* A layered radial gradient (sky-glow
-// at upper-mid, sky-zenith mid, sky-horizon at the rim) carries the
+// The constellation's painted background — *the chart's paper by
+// day, paper-night by night.* A layered radial gradient (sky-glow at
+// upper-mid, sky-zenith mid, sky-horizon at the rim) carries the
 // firmament's color through the theme; a procedural feTurbulence
 // grain layer sits over it, modulated by `--sky-grain-opacity` and
-// `mix-blend-mode: soft-light` so the same noise reads as paper-water
-// in daylight and stardust at night. The umber palette breathed up
-// into a luminous expanse.
+// `mix-blend-mode: soft-light` so the same noise reads as the sheet's
+// grain in daylight and stardust at night. The umber palette breathed
+// up into a luminous expanse. This is the no-WebGL firmament; the
+// atmosphere paints the fuller chart and firmament over it when it can.
 //
 // CONSTELLATION.md §"Two Render Modes" describes the visual register;
 // tokens.css §"Constellation sky" defines the per-theme tones. The

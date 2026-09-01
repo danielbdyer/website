@@ -102,7 +102,8 @@ test.describe('constellation main-thread health', () => {
       // Let the sky-arrival animation finish.
       await page.waitForTimeout(1800);
 
-      // Baseline: page at rest, just the WebGL firmament + CSS rotation.
+      // Baseline: page at rest — the WebGL firmament plus the navigation
+      // loop's idle cadence carrying the heavens' turn.
       const baseline = await observeLongTasks(page, 2000);
       annotate(info, 'baseline', baseline);
 
