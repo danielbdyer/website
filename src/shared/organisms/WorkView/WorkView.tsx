@@ -33,6 +33,36 @@ interface WorkViewProps {
   work: DisplayWork;
 }
 
+interface WorkKickerBarProps {
+  work: DisplayWork;
+}
+
+// Two ways out of the piece: back to its room, or up to its star in the
+// sky — the work seen among its relations (CONSTELLATION_PARALLEL.md
+// §"The work ↔ star jump"). The sky link is the visible anchor for the
+// look-up; omitted for the Foyer, which has no region in the constellation.
+function WorkKickerBar({ work }: WorkKickerBarProps) {
+  return (
+    <div className="mt-4 mb-10 flex flex-wrap items-baseline gap-x-5 gap-y-1">
+      <Link
+        to={ROOM_TO[work.room]}
+        className="font-body text-kicker text-text-2 hover:text-text inline-block italic no-underline transition-colors duration-200"
+      >
+        ← {ROOM_LABELS[work.room]}
+      </Link>
+      {work.room !== 'foyer' && (
+        <Link
+          to="/sky"
+          search={{ focus: `${work.room}/${work.slug}` }}
+          className="font-body text-kicker text-text-3 hover:text-text-2 inline-block italic no-underline transition-colors duration-200"
+        >
+          ↑ See this in the sky
+        </Link>
+      )}
+    </div>
+  );
+}
+
 // Single work, alone. The page's job is to be read; the chrome's job is
 // to get out of the way. The work page does NOT carry the summary — that
 // lives in the room listing (per INFORMATION_ARCHITECTURE.md §"Anatomy"
@@ -57,12 +87,7 @@ export function WorkView({ work }: WorkViewProps) {
 
   return (
     <article>
-      <Link
-        to={roomPath}
-        className="font-body text-kicker text-text-2 hover:text-text mt-4 mb-10 inline-block italic no-underline transition-colors duration-200"
-      >
-        ← {roomLabel}
-      </Link>
+      <WorkKickerBar work={work} />
 
       <WorkHero work={work} image={work.image} thumbLabel={thumbLabel} />
 
