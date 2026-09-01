@@ -5,7 +5,6 @@ import { unitVector } from '@/shared/geometry/sphere';
 import { projectToViewbox } from '@/shared/dom/skyProjector';
 import {
   IDENTITY_AFFINE,
-  affineRotation,
   applyAffine,
   composeAffine,
   fitViewboxToCanvas,
@@ -53,19 +52,6 @@ describe('affine composition', () => {
     const o = applyAffine(aboutCenter, 500, 500);
     expect(o.x).toBeCloseTo(500);
     expect(o.y).toBeCloseTo(500);
-  });
-
-  test('affineRotation reads the rotation back out', () => {
-    const angle = 0.37;
-    const m = {
-      a: Math.cos(angle),
-      b: Math.sin(angle),
-      c: -Math.sin(angle),
-      d: Math.cos(angle),
-      e: 3,
-      f: 4,
-    };
-    expect(affineRotation(m)).toBeCloseTo(angle);
   });
 });
 

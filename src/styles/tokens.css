@@ -384,50 +384,33 @@ body::before {
 }
 
 /* ─── Constellation motion ──────────────────────────────────────
-   Three slow, restrained gestures that give the sky a body. All
-   three honor prefers-reduced-motion via the global block above —
-   the rotation pauses, twinkle stops, parallax returns to neutral.
-   See CONSTELLATION.md §"What Shipped (First Form)" and
-   CONSTELLATION_HORIZON.md Phase 3 for the felt rationale.
+   Three slow, restrained gestures give the sky a body — the heavens'
+   turn, the twinkle, the cursor parallax. All honor
+   prefers-reduced-motion: the turn holds, twinkle stops, parallax
+   returns to neutral. See CONSTELLATION.md §"What Shipped (First
+   Form)" and CONSTELLATION_HORIZON.md Phase 3 for the felt rationale.
 
-   The spin cycle is 600s (10 minutes) — the slowest motion on the
-   site, an order of magnitude beyond the geometric figure. So slow
-   the visitor only notices if they sit. The transform-origin pins
-   to the polestar at the center of the 1000-unit viewBox.
+   The heavens' turn — one revolution every 600s, the slowest motion
+   on the site — no longer lives here. It was a CSS rotation of the
+   .constellation-rotates group, which turned the stars' labels with
+   them (titles read vertically after two and a half minutes) and
+   turned the visible stars away from where the pointer ray-cast,
+   the companion glyph, and the keyboard frame believed them to be.
+   It is now a roll carried by the navigation camera itself
+   (src/shared/geometry/heavens.ts, useConstellationNavigation), on a
+   wall-clock phase: every consumer of the camera basis sees one sky,
+   and labels stay upright because only positions turn. The group
+   remains as structure, without a transform.
 
    The twinkle cycle is 4.5s — short enough that a static visitor
    reads the starfield as alive, slow enough that it does not
    announce itself. Per-star animation-delay (set inline by the
    organism from constellation.ts's twinklePhase) breaks the chord
-   into a distributed shimmer. */
-@keyframes constellation-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* The star-twinkle keyframes were held back: 16 halos with a
-   continuously-animating opacity, each carrying the watercolor
-   filter, inside the rotating group, forced per-frame rasterizer
-   work that compounded with the rotation cost into visible
-   stutter. The twinkle returns when there's a non-filter way to
-   express it (a tiny per-star CSS class swap, a static lighter
-   halo, an ambient WebGL noise contribution). */
-
-.constellation-rotates {
-  transform-origin: 500px 500px;
-  animation: constellation-spin 600s linear infinite;
-  /* Promote the rotating group to its own compositing layer so the
-     rotation transform happens on the GPU compositor without
-     repainting the rasterized children. With the at-rest twinkle
-     dropped, the children are stable inside the layer and the
-     filter results cache cleanly across frames. */
-  will-change: transform;
-}
+   into a distributed shimmer. The star-twinkle keyframes themselves
+   were held back — 16 halos with a continuously-animating opacity,
+   each carrying the watercolor filter, forced per-frame rasterizer
+   work that read as stutter — and the twinkle now lives in the WebGL
+   halo sprites instead. */
 
 /* The navigation camera. Wraps the world (polestar + rotates layer)
    so a small pan-and-yaw can follow the visitor's selection without

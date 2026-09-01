@@ -14,6 +14,7 @@ import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
 import {
   VIEWBOX,
+  activeHueOf,
   buildPositionedMap,
   buildRenderableNodes,
   resolveEdges,
@@ -50,14 +51,7 @@ export function Constellation({
   const titleId = 'constellation-title';
   const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
     useStarHoverState(null);
-  // The active star's facet hue, propagated to the companion group
-  // so CSS can mix the glyph's amber toward it by the per-tick
-  // --companion-claim factor the navigation hook writes. Null when
-  // no basin is settled — the glyph stays at-rest-no-active and
-  // reads as paper-amber.
-  const activeHue = activeKey
-    ? (nodes.find(({ key }) => key === activeKey)?.node.hue ?? null)
-    : null;
+  const activeHue = activeHueOf(nodes, activeKey);
   // Read the overlay route's params, when it's open. The matching
   // star suppresses its viewTransitionName so the overlay panel
   // (which carries the same name) has unambiguous ownership of
@@ -80,6 +74,7 @@ export function Constellation({
     nodes: navigableNodes,
     edges: navigableEdges,
     viewboxSize: VIEWBOX,
+    fit: fullViewport ? 'cover' : 'contain',
     setActiveKey,
     cameraRef,
     glyphRef,

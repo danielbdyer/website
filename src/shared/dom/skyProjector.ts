@@ -19,6 +19,7 @@ import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
+import { fitViewboxToCanvas } from '@/shared/webgl/atmosphereProjection';
 
 // Per-frame element lookups were the navigation tick's hidden cost:
 // ~100 querySelector walks per frame at production density (one per
@@ -95,6 +96,40 @@ export function projectToViewbox(
     y: center - proj.screenY * radius,
     inFront: proj.inFront,
   };
+}
+
+/** The frame the sky is drawn in: its box on the page and how the
+ *  square viewbox fits it — `cover` for the full-viewport sky
+ *  (xMidYMid slice), `contain` otherwise (xMidYMid meet). */
+export interface SkyFrame {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+  readonly fit: 'cover' | 'contain';
+}
+
+/** Inverse of projectToViewbox's screen mapping: a client position →
+ *  normalized image coords (±1 at the frustum edge, +y up), through
+ *  the viewbox's actual preserveAspectRatio fit. A cover-fit landscape
+ *  frame crops the square viewbox top and bottom, so normalizing over
+ *  the box's own width and height — as the pointer mapping once did —
+ *  stretched x and squeezed y, and every ray-cast named a place some
+ *  distance from the one under the pointer. Null when the frame has
+ *  no size. */
+export function clientToNormalized(
+  clientX: number,
+  clientY: number,
+  frame: SkyFrame,
+  viewboxSize: number,
+): { x: number; y: number } | null {
+  if (frame.width === 0 || frame.height === 0) return null;
+  const fit = fitViewboxToCanvas(frame.width, frame.height, viewboxSize, frame.fit);
+  const vbX = (clientX - frame.left - fit.offsetX) / fit.scale;
+  const vbY = (clientY - frame.top - fit.offsetY) / fit.scale;
+  const center = viewboxSize / 2;
+  const radius = viewboxSize * 0.44;
+  return { x: (vbX - center) / radius, y: -(vbY - center) / radius };
 }
 
 /**

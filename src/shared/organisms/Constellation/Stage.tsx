@@ -40,8 +40,8 @@ interface StageProps {
   interactions: StageInteractions;
   /** The companion glyph — a small mote at the cursor's projected
    *  screen position. The navigation hook updates its cx/cy each
-   *  RAF tick. Sibling of the rotates layer so the slow background
-   *  rotation doesn't drag it around. */
+   *  RAF tick through the same camera the stars project through, so
+   *  it turns with the heavens exactly as they do. */
   glyphRef: RefObject<SVGCircleElement | null>;
 }
 
@@ -77,11 +77,12 @@ interface CompanionGroupProps {
 // The visitor's surface position plus its ghost-decay trail. Trail
 // circles render before the glyph so the live mark paints on top.
 // The navigation hook positions each per RAF tick via data-companion
-// / data-companion-trail queries; CSS handles the visual register
-// (paper-amber by default, mixed toward the active facet hue by
-// --companion-claim, ghosts modulated by --trail-strength).
-// aria-hidden because keyboard / screen-reader focus moves through
-// the addressable star anchors, not this visual marker.
+// / data-companion-trail queries, projecting through the same rolled
+// camera as the stars; CSS handles the visual register (paper-amber
+// by default, mixed toward the active facet hue by --companion-claim,
+// ghosts modulated by --trail-strength). aria-hidden because keyboard
+// / screen-reader focus moves through the addressable star anchors,
+// not this visual marker.
 function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
   return (
     <g

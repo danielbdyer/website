@@ -10,7 +10,8 @@ import {
 } from '@/shared/webgl/atmosphereProjection';
 import { buildSkyPalette } from '@/shared/webgl/palette';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
-import { getSkyCamera, getSkyCameraVersion, subscribeSkyCamera } from '@/shared/state/skyCamera';
+import { getSkyCamera, subscribeSkyCamera } from '@/shared/state/skyCamera';
+import type { Camera } from '@/shared/geometry/camera';
 
 // The atmospheric layer's runtime — CONSTELLATION_HORIZON.md's
 // Layer 1, in its full Phase 2 + 3 form. The hook owns what the
@@ -55,7 +56,6 @@ interface SkyDomElements {
   readonly parallaxFirmament: Element;
   readonly parallaxSky: Element;
   readonly cameraGroup: Element;
-  readonly rotates: Element;
   readonly glyph: SVGCircleElement | null;
 }
 
@@ -128,15 +128,13 @@ function locateSkyDom(container: HTMLElement): SkyDomElements | null {
   const parallaxFirmament = frame.querySelector('.constellation-parallax--firmament');
   const parallaxSky = frame.querySelector('.constellation-parallax--sky');
   const cameraGroup = frame.querySelector('.constellation-camera');
-  const rotates = frame.querySelector('.constellation-rotates');
-  if (!svg || !parallaxFirmament || !parallaxSky || !cameraGroup || !rotates) return null;
+  if (!svg || !parallaxFirmament || !parallaxSky || !cameraGroup) return null;
   return {
     frame,
     svg,
     parallaxFirmament,
     parallaxSky,
     cameraGroup,
-    rotates,
     glyph: frame.querySelector<SVGCircleElement>('[data-companion]'),
   };
 }
@@ -186,9 +184,6 @@ interface ChainState {
   parSkyY: number;
   parFirX: number;
   parFirY: number;
-  spin: number;
-  rotation: Animation | null;
-  rotationDurationMs: number;
   world: MutableAffine;
   glyphChain: MutableAffine;
 }
@@ -199,9 +194,6 @@ function newChainState(): ChainState {
     parSkyY: 0,
     parFirX: 0,
     parFirY: 0,
-    spin: 0,
-    rotation: null,
-    rotationDurationMs: 0,
     world: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
     glyphChain: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
   };
@@ -211,24 +203,6 @@ function inlineVar(el: Element, name: string): number {
   const raw = (el as Element & ElementCSSInlineStyle).style.getPropertyValue(name);
   const value = Number.parseFloat(raw);
   return Number.isNaN(value) ? 0 : value;
-}
-
-/** Locate the 600s heavens animation once; read its clock per frame.
- *  Animation.currentTime is a plain property — unlike a computed
- *  transform it costs no style recalc. Under reduced motion the
- *  global CSS collapses the duration and the angle parks near 0. */
-function readSpin(els: SkyDomElements, chain: ChainState): number {
-  if (!chain.rotation) {
-    const animations = els.rotates.getAnimations?.() ?? [];
-    chain.rotation = animations[0] ?? null;
-    if (chain.rotation) {
-      const timing = chain.rotation.effect?.getTiming();
-      chain.rotationDurationMs = typeof timing?.duration === 'number' ? timing.duration : 600_000;
-    }
-  }
-  const t = chain.rotation?.currentTime;
-  if (typeof t !== 'number' || chain.rotationDurationMs <= 0) return 0;
-  return ((t % chain.rotationDurationMs) / chain.rotationDurationMs) * Math.PI * 2;
 }
 
 /** Build a rotation-about-viewbox-center plus translate, in place. */
@@ -244,12 +218,14 @@ function writeRotationAffine(out: MutableAffine, angle: number, tx: number, ty: 
 }
 
 /** Advance the chain replay one frame: smooth the parallax vars
- *  toward their targets (matching the CSS consumers' 800ms arrival),
- *  read the heavens' clock, and rebuild the two affines. The camera
- *  group's yaw and the rotates group's spin share the same pivot, so
- *  their rotations compose by addition. (--cam-x/--cam-y are part of
- *  the camera transform's vocabulary but nothing writes them today;
- *  if they come alive, read them here the same way.) */
+ *  toward their targets (matching the CSS consumers' 800ms arrival)
+ *  and rebuild the two affines from the camera group's yaw. The
+ *  heavens' turn is no longer a CSS transform to replay — it rides
+ *  the camera itself as a roll, so projecting through the shared
+ *  basis already places halos beneath their turned stars. (--cam-x/
+ *  --cam-y are part of the camera transform's vocabulary but nothing
+ *  writes them today; if they come alive, read them here the same
+ *  way.) */
 function advanceChains(els: SkyDomElements, chain: ChainState, dt: number): number {
   const k = 1 - Math.exp(-PARALLAX_EASE_RATE * dt);
   const targetX = inlineVar(els.svg, '--parallax-x') * PARALLAX_SKY_PX;
@@ -259,8 +235,7 @@ function advanceChains(els: SkyDomElements, chain: ChainState, dt: number): numb
   chain.parFirX = (chain.parSkyX * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
   chain.parFirY = (chain.parSkyY * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
   const yaw = (inlineVar(els.cameraGroup, '--cam-yaw') * Math.PI) / 180;
-  chain.spin = readSpin(els, chain);
-  writeRotationAffine(chain.world, yaw + chain.spin, chain.parSkyX, chain.parSkyY);
+  writeRotationAffine(chain.world, yaw, chain.parSkyX, chain.parSkyY);
   writeRotationAffine(chain.glyphChain, yaw, chain.parSkyX, chain.parSkyY);
   // Residual in viewbox px, normalized so ~0.07px reads as settled.
   return (Math.abs(targetX - chain.parSkyX) + Math.abs(targetY - chain.parSkyY)) / 14;
@@ -334,7 +309,9 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
   // the painted backdrop drifts with the cursor parallax.
   frame.domeShift.x = -chain.parFirX / 440;
   frame.domeShift.y = chain.parFirY / 440;
-  frame.spin = chain.spin;
+  // The heavens' phase, for the dome's depth cue (the deep field turns
+  // a little slower than the stars so the backdrop reads farther).
+  frame.spin = camera.roll ?? 0;
   frame.pool.x = fit.offsetX + pool.x * fit.scale;
   frame.pool.y = fit.offsetY + pool.y * fit.scale;
   frame.pool.strength = state.poolStrength * motion;
@@ -491,12 +468,27 @@ interface PaintLoop {
   wake(): void;
 }
 
+/** The camera's pose — where it stands and what it looks at — apart
+ *  from its roll. The heavens' roll advances on every broadcast, so a
+ *  changed camera is not by itself motion; only a moved pose is. */
+function samePose(a: Camera, b: Camera): boolean {
+  return (
+    a.position.x === b.position.x &&
+    a.position.y === b.position.y &&
+    a.position.z === b.position.z &&
+    a.target.x === b.target.x &&
+    a.target.y === b.target.y &&
+    a.target.z === b.target.z &&
+    a.fovY === b.fovY
+  );
+}
+
 /** The paint scheduler. Owns the calm cadence: when the world is
- *  still (no camera writes, pool and halo claim settled, parallax
- *  arrived, no theme fade), the loop paints every other frame —
- *  twinkle and drift at 30fps are indistinguishable at their
- *  periods, and the GPU rests with the sky. Any disturbance
- *  restores the full rate on the next frame. */
+ *  still (the camera's pose unmoved, pool and halo claim settled,
+ *  parallax arrived, no theme fade), the loop paints every other
+ *  frame — twinkle, drift, and the heavens' slow roll at 30fps are
+ *  indistinguishable at their periods, and the GPU rests with the
+ *  sky. Any disturbance restores the full rate on the next frame. */
 function createPaintLoop(
   state: LoopState,
   env: AtmosphereEnv,
@@ -506,7 +498,7 @@ function createPaintLoop(
   let unsettled = 1;
   let calmFrames = 0;
   let frameParity = 0;
-  let lastCameraVersion = -1;
+  let lastPose: Camera | null = null;
   const paint = (timeSeconds: number) => {
     try {
       unsettled = renderAtmosphereFrame(state, timeSeconds, env.still ? 0 : 1);
@@ -516,9 +508,9 @@ function createPaintLoop(
   };
   return {
     step(now: number) {
-      const cameraVersion = getSkyCameraVersion();
-      const still = cameraVersion === lastCameraVersion && unsettled < 0.005;
-      lastCameraVersion = cameraVersion;
+      const { camera } = getSkyCamera();
+      const still = lastPose !== null && samePose(lastPose, camera) && unsettled < 0.005;
+      lastPose = camera;
       calmFrames = still ? calmFrames + 1 : 0;
       frameParity ^= 1;
       if (calmFrames < CALM_AFTER_FRAMES || frameParity === 0) {

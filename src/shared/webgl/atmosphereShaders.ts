@@ -173,9 +173,11 @@ export const DOME_FRAGMENT = /* glsl */ `
     float hitT = -b + sqrt(max(disc, 0.0));
     vec3 P = normalize(uCamPos + ray * hitT);
 
-    // The heavens' slow turn, applied to the deep field at a
-    // reduced rate so the backdrop reads farther than the stars.
-    float sp = uSpin * 0.62;
+    // The heavens' turn rides the camera as a roll, so the world the
+    // ray meets already turns with the stars. The deep field is held
+    // back a little (-0.38 of the roll → it turns at 0.62× the stars'
+    // rate) so the backdrop reads farther than the stars.
+    float sp = -uSpin * 0.38;
     mat2 spin = mat2(cos(sp), -sin(sp), sin(sp), cos(sp));
     vec3 Pd = vec3(spin * P.xy, P.z);
 

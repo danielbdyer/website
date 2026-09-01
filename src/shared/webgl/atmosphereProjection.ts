@@ -1,13 +1,13 @@
 // Pure 2D-composition math for the atmosphere's per-frame uploads.
 //
 // The structural SVG positions stars by projecting unit-sphere
-// points through the navigation camera, then letting CSS compose
-// three transforms on top: the cursor parallax translate, the
-// camera yaw, and the 600s heavens rotation. For the WebGL halos to
-// sit exactly beneath the SVG stars, the atmosphere replays the
-// same chain: project through the same camera, apply the same
-// affine stack (read from computed style each frame), then map
-// viewbox coords to canvas pixels through the same
+// points through the navigation camera (whose roll carries the
+// heavens' turn), then letting CSS compose two transforms on top:
+// the cursor parallax translate and the camera yaw. For the WebGL
+// halos to sit exactly beneath the SVG stars, the atmosphere replays
+// the same chain: project through the same camera, apply the same
+// affine stack (replayed numerically from the inline variables each
+// frame), then map viewbox coords to canvas pixels through the same
 // preserveAspectRatio fit the SVG uses.
 //
 // Everything here is pure — DOM reads stay in the hook; this module
@@ -136,13 +136,6 @@ export function projectPointsToCanvas(
     out[i * 2] = fit.offsetX + wx * fit.scale;
     out[i * 2 + 1] = fit.offsetY + wy * fit.scale;
   }
-}
-
-/** Extract the rotation angle (radians) from an affine — the 600s
- *  heavens rotation read back from computed style, handed to the
- *  dome shader so the deep starfield turns with the sky. */
-export function affineRotation(m: Affine2D): number {
-  return Math.atan2(m.b, m.a);
 }
 
 // Re-export so the hook's per-frame path can type its buffers

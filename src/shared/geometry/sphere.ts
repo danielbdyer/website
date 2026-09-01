@@ -175,6 +175,60 @@ export function slerp(from: UnitVector3, to: UnitVector3, t: number): UnitVector
   return unitVector(a * from.x + b * to.x, a * from.y + b * to.y, a * from.z + b * to.z);
 }
 
+/** Rotate `v` about a unit `axis` by `angle` radians (Rodrigues'
+ *  formula). Pure; the magnitude of `v` is preserved. */
+export function rotateAboutAxis(v: Vec3, axis: UnitVector3, angle: number): Vec3 {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const dotKV = axis.x * v.x + axis.y * v.y + axis.z * v.z;
+  const crossX = axis.y * v.z - axis.z * v.y;
+  const crossY = axis.z * v.x - axis.x * v.z;
+  const crossZ = axis.x * v.y - axis.y * v.x;
+  const k = (1 - c) * dotKV;
+  return {
+    x: v.x * c + crossX * s + axis.x * k,
+    y: v.y * c + crossY * s + axis.y * k,
+    z: v.z * c + crossZ * s + axis.z * k,
+  };
+}
+
+/** The rotation carrying `from` onto `to` along their great circle:
+ *  a unit axis and an angle in [0, π]. Null when the points coincide
+ *  (nothing to do) or are antipodal (every great circle qualifies —
+ *  the caller decides). */
+export function rotationBetween(
+  from: UnitVector3,
+  to: UnitVector3,
+): { axis: UnitVector3; angle: number } | null {
+  const ax = from.y * to.z - from.z * to.y;
+  const ay = from.z * to.x - from.x * to.z;
+  const az = from.x * to.y - from.y * to.x;
+  const sinA = Math.hypot(ax, ay, az);
+  if (sinA < 1e-9) return null;
+  const cosA = clamp(from.x * to.x + from.y * to.y + from.z * to.z, -1, 1);
+  return { axis: { x: ax / sinA, y: ay / sinA, z: az / sinA }, angle: Math.atan2(sinA, cosA) };
+}
+
+/** The point on the unit sphere a viewer *inside the dome* is
+ *  pointing at: the ray's far intersection — the surface on the other
+ *  side of the origin from a camera that sits at -k·s looking through
+ *  the sphere toward the populated hemisphere. (`raySphereIntersect`
+ *  returns the near hit, which for that camera is the empty back of
+ *  the sphere — the antipode of what the visitor sees.) When the ray
+ *  misses the silhouette, returns the closest-approach direction so
+ *  a pointer just outside the sphere still names a place on it. */
+export function raySphereFarPoint(origin: Vec3, direction: Vec3): UnitVector3 {
+  const b = origin.x * direction.x + origin.y * direction.y + origin.z * direction.z;
+  const c = origin.x * origin.x + origin.y * origin.y + origin.z * origin.z - 1;
+  const disc = b * b - c;
+  const t = disc >= 0 ? -b + Math.sqrt(disc) : -b;
+  return unitVector(
+    origin.x + t * direction.x,
+    origin.y + t * direction.y,
+    origin.z + t * direction.z,
+  );
+}
+
 /** Ray-sphere intersection with the unit sphere centered at the
  *  origin. Returns the nearer-to-origin-of-ray intersection point
  *  on the sphere, or null if the ray misses. The ray is `origin +

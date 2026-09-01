@@ -171,6 +171,17 @@ export function buildRenderableNodes(
   return placed.toSorted((a, b) => b.depth - a.depth);
 }
 
+/** The active star's facet hue, or null when no well is claimed. The
+ *  companion glyph mixes its amber toward this hue by the per-tick
+ *  --companion-claim the navigation hook writes. */
+export function activeHueOf(
+  nodes: readonly RenderableNode[],
+  activeKey: string | null,
+): ConstellationHue | null {
+  if (activeKey === null) return null;
+  return nodes.find(({ key }) => key === activeKey)?.node.hue ?? null;
+}
+
 /** Avoid an unused-import lint warning by re-exporting the type that
  *  consumers building their own resolvedEdge tests may want. The
  *  graph type is re-exported here as a convenience for tests of the

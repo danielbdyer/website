@@ -7,12 +7,14 @@ import {
   applyCameraYaw,
   broadcastCameraToFirmament,
   broadcastCursorToFirmament,
+  clientToNormalized,
   projectGlyph,
   projectStars,
   projectThreads,
   projectTrail,
   writeGlyphChannels,
   type NavigableEdge,
+  type SkyFrame,
 } from '@/shared/dom/skyProjector';
 import {
   hasVisitedBefore,
@@ -24,12 +26,14 @@ import type { UnitVector3, Vec3 } from '@/shared/geometry/sphere';
 import {
   NORTH_POLE,
   geodesicDistance,
-  raySphereIntersect,
+  raySphereFarPoint,
+  rotateAboutAxis,
+  rotationBetween,
   slerp,
   stepOnSphere,
-  tangentTowards,
   unitVector,
 } from '@/shared/geometry/sphere';
+import { heavensPhase } from '@/shared/geometry/heavens';
 import {
   MAX_ANGULAR_VELOCITY,
   VELOCITY_SAMPLE_WINDOW_MS,
@@ -55,11 +59,15 @@ import {
 //
 // Three input gestures inject motion:
 //
-//   - Pointer drag: a strong tangent spring pulls the cursor toward
-//     the pointed-at sphere point (computed by ray-casting through
-//     the camera). On release, the gesture's recent angular
-//     velocity (tangent at the cursor's current position) is added
-//     to the cursor's velocity — a flick imparts momentum.
+//   - Pointer drag: a grab. The point of sky under the hand when it
+//     pressed stays under the hand as it moves — each frame the
+//     camera is turned by exactly the rotation that carries the point
+//     the pointer now names back onto the point it grabbed, so the
+//     sky travels one-to-one with the hand, never faster. The cursor
+//     rides the center of view while the grab holds. On release it
+//     keeps the hand's own parting velocity (a hand that paused before
+//     letting go imparts none), and friction and the wells take it
+//     from there.
 //   - Held arrow keys: as long as keys are held, a constant tangent
 //     acceleration pushes the cursor in the held direction
 //     (decomposed against the camera's right/up basis projected
@@ -95,6 +103,10 @@ interface UseConstellationNavigationArgs {
   readonly nodes: readonly NavigableNode[];
   readonly edges: readonly NavigableEdge[];
   readonly viewboxSize: number;
+  /** How the square viewbox fits the SVG's box — mirrors the SVG's
+   *  preserveAspectRatio so pointer positions invert the same mapping
+   *  the projector applies. */
+  readonly fit: 'cover' | 'contain';
   readonly setActiveKey: (key: string) => void;
   readonly cameraRef: RefObject<SVGGElement | null>;
   /** Companion glyph — a small mote at the cursor's projected screen
@@ -122,22 +134,26 @@ interface UseConstellationNavigationArgs {
 // captured the pointer, which retargeted the eventual click to the
 // drag surface and made opening a work nearly impossible.
 const DRAG_THRESHOLD_PX = 7;
-// Drag feel, tuned toward deliberate weight. The world should read
-// as a body with mass that the visitor *guides*, not a surface that
-// snaps to the pointer. DRAG_SPRING softened (the cursor follows with
-// a little give); DRAG_DAMPING set near-critical for the new spring
-// (k≈36 → c≈12: a smooth glide, no overshoot); FLICK_SCALE halved so a
-// release is a gentle continuation rather than a throw. The dominant
-// "too fast" lever is the velocity cap in wellPhysics (lowered there).
-// FREE_DAMPING (coast friction) is high enough that a coast settles
-// into a well without overshoot — the landing reads as decisive, not
-// wobbly — which matters more now that the closer camera magnifies
-// every motion (see ORBIT_DISTANCE).
-const DRAG_SPRING = 36;
-const DRAG_DAMPING = 12;
+// Coast feel. The grab itself has no tuning — the sky moves exactly as
+// far as the hand does. What is tuned is what happens after release:
+// FLICK_SCALE keeps most of the hand's parting velocity (a release is
+// a continuation, not a throw — and a hand that paused imparts none);
+// FREE_DAMPING is the friction the coast spends it against, high
+// enough that a brisk flick carries about one neighboring star and
+// settles without wobble, which matters because the close camera
+// magnifies every motion (see ORBIT_DISTANCE). The spring drag this
+// replaces chased the ray's *near* sphere hit — the empty back of the
+// dome, antipodal to what the visitor saw — so its target was always
+// ~3 rad away and the cursor ran at the velocity cap for as long as
+// the pointer sat off-center. That was the "way too fast."
 const FREE_DAMPING = 5;
 const HOLD_ACCEL = 5.5;
-const FLICK_SCALE = 0.3;
+const FLICK_SCALE = 0.9;
+// Idle cadence. The heavens turn on the wall clock, so the scene
+// re-projects even at rest — but at rest it needs only ~10 frames a
+// second (0.06° per step at 0.6°/s, under a pixel at any radius on the
+// frame), not 60. Any input wakes the full rate at once.
+const IDLE_TICK_MS = 100;
 const MAX_DT_SECONDS = 0.033;
 const IDLE_VELOCITY_EPSILON = 0.005;
 const IDLE_ACCELERATION_EPSILON = 0.04;
@@ -218,11 +234,29 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+/** A grab in progress: the point of sky under the hand when the press
+ *  became a drag, the hand's latest screen position, and the sky's
+ *  frame (cached at promotion — the SVG doesn't move during a drag,
+ *  and measuring it every frame would force a layout). */
+interface GrabState {
+  readonly point: UnitVector3;
+  clientX: number;
+  clientY: number;
+  readonly frame: SkyFrame;
+}
+
 interface NavState {
   pos: MutableVec3;
   vel: MutableVec3;
   mode: 'free' | 'dragging';
-  dragTarget: UnitVector3 | null;
+  grab: GrabState | null;
+  /** The heavens' roll this tick, radians (0 under reduced motion). */
+  roll: number;
+  /** True while the loop coasts at idle cadence. Set on the transition
+   *  into rest (which persists the cursor once); cleared by motion. */
+  resting: boolean;
+  /** Pending idle-cadence timer between rest ticks. */
+  idleTimer: ReturnType<typeof setTimeout> | null;
   /** A pointer that has gone down but not yet crossed the drag
    *  threshold. Cleared on promotion (→ dragging) or release (a
    *  tap — the click proceeds to whatever anchor it landed on). */
@@ -302,7 +336,7 @@ interface DemoDrift {
  *  looking at the origin, with world-up as the up reference.
  *  cameraBasis handles degeneracy when surfacePos is parallel to
  *  world-up (the south/north poles of the up vector). */
-function orbitalCamera(surfacePos: UnitVector3): Camera {
+function orbitalCamera(surfacePos: UnitVector3, roll: number): Camera {
   return {
     position: {
       x: -surfacePos.x * ORBIT_DISTANCE,
@@ -314,24 +348,41 @@ function orbitalCamera(surfacePos: UnitVector3): Camera {
     fovY: CAMERA_FOV_Y,
     near: CAMERA_NEAR,
     far: CAMERA_FAR,
+    roll,
   };
 }
 
-/** Convert a pointer event to a unit-sphere position by ray-casting
- *  through the camera. Returns null when the ray misses the sphere
- *  (pointer outside the sphere's silhouette). */
-function pointerToSphere(
-  e: PointerEvent<SVGSVGElement>,
+/** The point of sky under a screen position: the pointer's ray, cast
+ *  through the camera to the far side of the sphere — the dome the
+ *  visitor is looking up into. A pointer outside the silhouette names
+ *  the nearest place on the rim. Null only when the sky has no box. */
+function screenToSphere(
+  clientX: number,
+  clientY: number,
+  frame: SkyFrame,
+  viewboxSize: number,
   camera: Camera,
   basis: CameraBasis,
 ): UnitVector3 | null {
-  const svg = e.currentTarget;
-  const bounds = svg.getBoundingClientRect();
-  if (bounds.width === 0 || bounds.height === 0) return null;
-  const screenX = ((e.clientX - bounds.left) / bounds.width) * 2 - 1;
-  const screenY = -(((e.clientY - bounds.top) / bounds.height) * 2 - 1);
-  const ray = unproject(screenX, screenY, camera, basis, 1);
-  return raySphereIntersect(ray.origin, ray.direction);
+  const n = clientToNormalized(clientX, clientY, frame, viewboxSize);
+  if (!n) return null;
+  const ray = unproject(n.x, n.y, camera, basis, 1);
+  return raySphereFarPoint(ray.origin, ray.direction);
+}
+
+function skyFrameOf(svg: SVGSVGElement, fit: 'cover' | 'contain'): SkyFrame {
+  const { left, top, width, height } = svg.getBoundingClientRect();
+  return { left, top, width, height, fit };
+}
+
+function pointerToSphere(
+  e: PointerEvent<SVGSVGElement>,
+  refs: RuntimeRefs,
+  camera: Camera,
+  basis: CameraBasis,
+): UnitVector3 | null {
+  const frame = skyFrameOf(e.currentTarget, refs.fit);
+  return screenToSphere(e.clientX, e.clientY, frame, refs.viewboxSize, camera, basis);
 }
 
 interface RuntimeRefs {
@@ -341,6 +392,7 @@ interface RuntimeRefs {
   readonly cameraRef: RefObject<SVGGElement | null>;
   readonly glyphRef: RefObject<SVGCircleElement | null>;
   readonly viewboxSize: number;
+  readonly fit: 'cover' | 'contain';
   readonly setActiveKey: (key: string) => void;
 }
 
@@ -388,11 +440,17 @@ function setupCursorLifecycle(
   } else {
     setupDefaultCursor(state, refs, nodes);
   }
+  // The heavens turn from the first frame: the loop starts at mount so
+  // the wall-clock roll is applied before the arrival's swell brings
+  // the prerendered (unrolled) stars into view. Reduced motion holds
+  // the sky still at the prerendered pose instead.
+  if (!prefersReducedMotion()) ensureRunning(refs);
   const persistOnHide = () => persistCursorPos(state.pos);
   globalThis.addEventListener?.('pagehide', persistOnHide);
   globalThis.addEventListener?.('visibilitychange', persistOnHide);
   return () => {
     cancelPendingDemo(state);
+    stopLoop(state);
     globalThis.removeEventListener?.('pagehide', persistOnHide);
     globalThis.removeEventListener?.('visibilitychange', persistOnHide);
     persistCursorPos(state.pos);
@@ -431,7 +489,7 @@ function setupDefaultCursor(
       state.cameraSurfacePos.x = node.unitPos.x;
       state.cameraSurfacePos.y = node.unitPos.y;
       state.cameraSurfacePos.z = node.unitPos.z;
-      state.currentCamera = orbitalCamera(node.unitPos);
+      state.currentCamera = orbitalCamera(node.unitPos, state.roll);
       state.currentBasis = cameraBasis(state.currentCamera);
       flipActive(state, node.key, refs.setActiveKey);
       // Same reason as the restored branch above — the integrator
@@ -478,7 +536,7 @@ function applyRestoredCursor(state: NavState, restored: UnitVector3): void {
   state.cameraSurfacePos.x = restored.x;
   state.cameraSurfacePos.y = restored.y;
   state.cameraSurfacePos.z = restored.z;
-  state.currentCamera = orbitalCamera(restored);
+  state.currentCamera = orbitalCamera(restored, state.roll);
   state.currentBasis = cameraBasis(state.currentCamera);
   for (const entry of state.trailHistory) {
     entry.x = restored.x;
@@ -494,21 +552,55 @@ function computeAccelerationInto(state: NavState, refs: RuntimeRefs): void {
   out.x = well.x;
   out.y = well.y;
   out.z = well.z;
-  if (state.mode === 'dragging' && state.dragTarget) {
-    const tangent = tangentTowards(pos, state.dragTarget);
-    const distance = geodesicDistance(pos, state.dragTarget);
-    out.x += DRAG_SPRING * tangent.x * distance - DRAG_DAMPING * state.vel.x;
-    out.y += DRAG_SPRING * tangent.y * distance - DRAG_DAMPING * state.vel.y;
-    out.z += DRAG_SPRING * tangent.z * distance - DRAG_DAMPING * state.vel.z;
-  } else {
-    out.x -= FREE_DAMPING * state.vel.x;
-    out.y -= FREE_DAMPING * state.vel.y;
-    out.z -= FREE_DAMPING * state.vel.z;
-    const hold = tangentHoldDirection(state.heldKeys, state.currentBasis, pos);
-    out.x += HOLD_ACCEL * hold.x;
-    out.y += HOLD_ACCEL * hold.y;
-    out.z += HOLD_ACCEL * hold.z;
+  out.x -= FREE_DAMPING * state.vel.x;
+  out.y -= FREE_DAMPING * state.vel.y;
+  out.z -= FREE_DAMPING * state.vel.z;
+  const hold = tangentHoldDirection(state.heldKeys, state.currentBasis, pos);
+  out.x += HOLD_ACCEL * hold.x;
+  out.y += HOLD_ACCEL * hold.y;
+  out.z += HOLD_ACCEL * hold.z;
+}
+
+/** Hold the grabbed point under the hand. Each frame, the point of sky
+ *  the pointer currently names is carried onto the point it grabbed by
+ *  turning the camera's surface point through that same rotation — a
+ *  trackball, exact up to the camera's re-leveling, which the next
+ *  frame corrects. The cursor rides the center of view; its velocity is
+ *  the hand's, so the trail and the release flick read it. Samples are
+ *  taken every frame, so a hand that pauses before releasing lets go of
+ *  a still sky. */
+function applyGrab(state: NavState, refs: RuntimeRefs, now: number, dt: number): void {
+  const grab = state.grab;
+  if (!grab) return;
+  const pointed = screenToSphere(
+    grab.clientX,
+    grab.clientY,
+    grab.frame,
+    refs.viewboxSize,
+    state.currentCamera,
+    state.currentBasis,
+  );
+  const turn = pointed ? rotationBetween(pointed, grab.point) : null;
+  if (turn) {
+    const r = rotateAboutAxis(state.cameraSurfacePos, turn.axis, turn.angle);
+    const next = unitVector(r.x, r.y, r.z);
+    if (dt > 0) {
+      state.vel.x = (next.x - state.pos.x) / dt;
+      state.vel.y = (next.y - state.pos.y) / dt;
+      state.vel.z = (next.z - state.pos.z) / dt;
+    }
+    state.cameraSurfacePos.x = next.x;
+    state.cameraSurfacePos.y = next.y;
+    state.cameraSurfacePos.z = next.z;
+    state.pos.x = next.x;
+    state.pos.y = next.y;
+    state.pos.z = next.z;
   }
+  state.pointerSamples.push({
+    time: now,
+    pos: unitVector(state.pos.x, state.pos.y, state.pos.z),
+  });
+  pruneSamples(state.pointerSamples, now, VELOCITY_SAMPLE_WINDOW_MS);
 }
 
 /** Re-project every star, thread, the cursor's glyph, and the
@@ -636,6 +728,55 @@ function applySettleAssist(
   return true;
 }
 
+/** Advance the world one tick. The demonstration drift suspends the
+ *  physics integrator and slerps along its predetermined arc
+ *  (acceleration is still computed so isAtRest's check stays honest);
+ *  a grab is kinematic — the hand places the sky, no forces act; and
+ *  otherwise the well field and friction integrate. */
+function advanceMotion(
+  state: NavState,
+  refs: RuntimeRefs,
+  now: number,
+  dt: number,
+  dtReal: number,
+): void {
+  if (state.demoDrift !== null) {
+    advanceDemoDrift(state, now);
+    computeAccelerationInto(state, refs);
+  } else if (state.mode === 'dragging') {
+    applyGrab(state, refs, now, dtReal);
+    state.accelBuffer.x = 0;
+    state.accelBuffer.y = 0;
+    state.accelBuffer.z = 0;
+  } else {
+    integratePhysics(state, refs, dt);
+  }
+}
+
+/** Rest bookkeeping and the next frame. At rest the velocity is zeroed
+ *  and the cursor persisted once; the loop doesn't stop — the heavens
+ *  still turn — but drops to the idle cadence until input wakes it
+ *  (ensureRunning). Otherwise, the next frame at full rate. */
+function scheduleNextTick(state: NavState, refs: RuntimeRefs, atRest: boolean): void {
+  if (!atRest) {
+    state.resting = false;
+    state.raf = globalThis.requestAnimationFrame((t) => tick(t, refs));
+    return;
+  }
+  state.vel.x = 0;
+  state.vel.y = 0;
+  state.vel.z = 0;
+  if (!state.resting) {
+    state.resting = true;
+    persistCursorPos(state.pos);
+  }
+  state.raf = null;
+  state.idleTimer = setTimeout(() => {
+    state.idleTimer = null;
+    state.raf = globalThis.requestAnimationFrame((t) => tick(t, refs));
+  }, IDLE_TICK_MS);
+}
+
 /**
  * One RAF tick of the constellation's navigation: read input state,
  * advance physics or demo drift, shift the trail, settle the active
@@ -662,15 +803,10 @@ function tick(now: number, refs: RuntimeRefs): void {
   const dt = Math.min(dtReal, MAX_DT_SECONDS);
   state.lastTime = now;
 
-  // Demonstration drift suspends the physics integrator and slerps
-  // along its predetermined arc. Acceleration is still computed (so
-  // isAtRest's accel check remains honest) but doesn't drive pos.
-  if (state.demoDrift !== null) {
-    advanceDemoDrift(state, now);
-    computeAccelerationInto(state, refs);
-  } else {
-    integratePhysics(state, refs, dt);
-  }
+  // The heavens' roll rides the wall clock; everything below reads it
+  // through the camera basis. Reduced motion holds the sky still.
+  state.roll = prefersReducedMotion() ? 0 : heavensPhase(Date.now());
+  advanceMotion(state, refs, now, dt, dtReal);
   const accel = state.accelBuffer;
   const speed2 = state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
 
@@ -691,11 +827,15 @@ function tick(now: number, refs: RuntimeRefs): void {
   // follow, and the projected scene visibly shifts toward where
   // the visitor is reaching. Settled state: glyph at center, world
   // centered on the active well's projection.
-  const lagT = 1 - Math.exp(-CAMERA_LAG_RATE * dtReal);
-  const slerped = slerp(state.cameraSurfacePos, state.pos, lagT);
-  state.cameraSurfacePos.x = slerped.x;
-  state.cameraSurfacePos.y = slerped.y;
-  state.cameraSurfacePos.z = slerped.z;
+  // A grab places the camera directly (applyGrab); the lag is for the
+  // cursor's own travel.
+  if (state.mode !== 'dragging') {
+    const lagT = 1 - Math.exp(-CAMERA_LAG_RATE * dtReal);
+    const slerped = slerp(state.cameraSurfacePos, state.pos, lagT);
+    state.cameraSurfacePos.x = slerped.x;
+    state.cameraSurfacePos.y = slerped.y;
+    state.cameraSurfacePos.z = slerped.z;
+  }
   // Ease the passive look offset toward its cursor-driven target, then
   // peer the orbital camera by it. The eased camera carries the whole
   // scene — SVG stars, glyph, threads, and the WebGL dome (which reads
@@ -705,7 +845,7 @@ function tick(now: number, refs: RuntimeRefs): void {
   state.look.x += (state.lookTarget.x - state.look.x) * lookT;
   state.look.y += (state.lookTarget.y - state.look.y) * lookT;
   state.currentCamera = applyCameraLook(
-    orbitalCamera(state.cameraSurfacePos),
+    orbitalCamera(state.cameraSurfacePos, state.roll),
     state.look.x * MAX_LOOK_RAD,
     state.look.y * MAX_LOOK_RAD,
   );
@@ -718,11 +858,16 @@ function tick(now: number, refs: RuntimeRefs): void {
   projectScene(state, refs);
 
   if (refs.cameraRef.current) {
+    // The yaw flourish is a CSS rotation outside the projection, so it
+    // would move the grabbed point off the hand; a grab holds it at 0.
     const screenVelX =
       state.vel.x * state.currentBasis.right.x +
       state.vel.y * state.currentBasis.right.y +
       state.vel.z * state.currentBasis.right.z;
-    const yaw = clamp(screenVelX * YAW_VELOCITY_SCALE * 0.001, -MAX_YAW_DEG, MAX_YAW_DEG);
+    const yaw =
+      state.mode === 'dragging'
+        ? 0
+        : clamp(screenVelX * YAW_VELOCITY_SCALE * 0.001, -MAX_YAW_DEG, MAX_YAW_DEG);
     applyCameraYaw(refs.cameraRef.current, yaw);
   }
 
@@ -754,29 +899,34 @@ function tick(now: number, refs: RuntimeRefs): void {
   const lookSettled =
     Math.abs(state.look.x - state.lookTarget.x) < LOOK_REST_EPSILON &&
     Math.abs(state.look.y - state.lookTarget.y) < LOOK_REST_EPSILON;
-  if (
+  const atRest =
     (pinned ||
       (speed2 <= IDLE_VELOCITY_EPSILON * IDLE_VELOCITY_EPSILON && isAtRest(state, accel))) &&
     cameraSettled &&
     lookSettled &&
     state.mode === 'free' &&
-    state.heldKeys.size === 0
-  ) {
-    state.vel.x = 0;
-    state.vel.y = 0;
-    state.vel.z = 0;
-    state.raf = null;
-    persistCursorPos(state.pos);
-    return;
-  }
-  state.raf = globalThis.requestAnimationFrame((t) => tick(t, refs));
+    state.heldKeys.size === 0;
+  scheduleNextTick(state, refs, atRest);
 }
 
 function ensureRunning(refs: RuntimeRefs): void {
   const state = refs.stateRef.current;
   if (state.raf !== null) return;
+  if (state.idleTimer !== null) {
+    // Wake from the idle cadence at once — input shouldn't wait out
+    // the rest interval.
+    clearTimeout(state.idleTimer);
+    state.idleTimer = null;
+  }
   state.lastTime = 0;
   state.raf = globalThis.requestAnimationFrame((t) => tick(t, refs));
+}
+
+function stopLoop(state: NavState): void {
+  if (state.raf !== null) globalThis.cancelAnimationFrame(state.raf);
+  state.raf = null;
+  if (state.idleTimer !== null) clearTimeout(state.idleTimer);
+  state.idleTimer = null;
 }
 
 function focusNodeByKey(key: string): void {
@@ -799,27 +949,46 @@ function handlePointerDown(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): v
   // threshold promotes it into a drag — see handlePointerMove.
   state.press = { pointerId: e.pointerId, clientX: e.clientX, clientY: e.clientY };
   if (prefersReducedMotion()) {
-    const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
+    const pt = pointerToSphere(e, refs, state.currentCamera, state.currentBasis);
     if (!pt) return;
     const nearest = geodesicNearestNode(pt, refs.nodesRef.current);
     if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
   }
 }
 
-/** Promote a threshold-crossing press into a real drag: capture the
- *  pointer (clicks stop mattering from here), seed the spring's
- *  target and the flick sampler, and wake the integrator. */
-function promoteToDrag(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>, pt: UnitVector3): void {
+/** Promote a threshold-crossing press into a grab: capture the pointer
+ *  (clicks stop mattering from here), remember the point of sky that
+ *  was under the hand when it pressed, and wake the loop. The grabbed
+ *  point is read at the *press* position so the sky doesn't jump by
+ *  the threshold's few pixels when the grab takes hold. */
+function promoteToDrag(
+  refs: RuntimeRefs,
+  e: PointerEvent<SVGSVGElement>,
+  press: { clientX: number; clientY: number },
+): void {
   const state = refs.stateRef.current;
+  const frame = skyFrameOf(e.currentTarget, refs.fit);
+  const grabbed = screenToSphere(
+    press.clientX,
+    press.clientY,
+    frame,
+    refs.viewboxSize,
+    state.currentCamera,
+    state.currentBasis,
+  );
   state.press = null;
+  if (!grabbed) return;
   state.mode = 'dragging';
-  // The peer stands down for the drag: the target eases to center so
-  // the spring's ray-casting reads a settling camera, not a peered one.
+  // The peer stands down for the grab: the look eases to center, and
+  // the per-frame correction absorbs the camera's settling so the
+  // grabbed point never slips from under the hand.
   state.lookTarget.x = 0;
   state.lookTarget.y = 0;
-  state.dragTarget = pt;
+  state.grab = { point: grabbed, clientX: e.clientX, clientY: e.clientY, frame };
   state.pointerId = e.pointerId;
-  state.pointerSamples = [{ time: globalThis.performance.now(), pos: pt }];
+  state.pointerSamples = [
+    { time: globalThis.performance.now(), pos: unitVector(state.pos.x, state.pos.y, state.pos.z) },
+  ];
   e.currentTarget.setPointerCapture(e.pointerId);
   ensureRunning(refs);
 }
@@ -827,12 +996,11 @@ function promoteToDrag(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>, pt: Un
 function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): void {
   const state = refs.stateRef.current;
   if (state.mode === 'dragging' && state.pointerId === e.pointerId) {
-    const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
-    if (!pt) return;
-    state.dragTarget = pt;
-    const now = globalThis.performance.now();
-    state.pointerSamples.push({ time: now, pos: pt });
-    pruneSamples(state.pointerSamples, now, VELOCITY_SAMPLE_WINDOW_MS);
+    if (state.grab) {
+      state.grab.clientX = e.clientX;
+      state.grab.clientY = e.clientY;
+    }
+    ensureRunning(refs);
     return;
   }
   // Free hover (no press pending, not dragging): drive the passive
@@ -857,7 +1025,7 @@ function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): v
   if (prefersReducedMotion()) {
     // Same destinations, different choreography: while pressed, the
     // claim follows the pointer by nearest-node snap.
-    const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
+    const pt = pointerToSphere(e, refs, state.currentCamera, state.currentBasis);
     if (!pt) return;
     const nearest = geodesicNearestNode(pt, refs.nodesRef.current);
     if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
@@ -866,12 +1034,7 @@ function handlePointerMove(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): v
   const dx = e.clientX - state.press.clientX;
   const dy = e.clientY - state.press.clientY;
   if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return;
-  const pt = pointerToSphere(e, state.currentCamera, state.currentBasis);
-  if (!pt) {
-    state.press = null;
-    return;
-  }
-  promoteToDrag(refs, e, pt);
+  promoteToDrag(refs, e, state.press);
 }
 
 function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): void {
@@ -885,14 +1048,16 @@ function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): voi
   }
   if (state.pointerId !== e.pointerId) return;
   if (prefersReducedMotion()) {
-    const target = state.dragTarget ?? unitVector(state.pos.x, state.pos.y, state.pos.z);
-    const nearest = geodesicNearestNode(target, refs.nodesRef.current);
+    const nearest = geodesicNearestNode(state.pos, refs.nodesRef.current);
     if (nearest) flipActive(state, nearest.key, refs.setActiveKey);
   } else {
+    // The hand's parting velocity over its last moments. applyGrab
+    // sampled the center of view every frame, so a hand that paused
+    // before releasing lets go of a still sky.
     const v = flickAngularVelocity(state.pointerSamples);
-    state.vel.x += v.x * FLICK_SCALE;
-    state.vel.y += v.y * FLICK_SCALE;
-    state.vel.z += v.z * FLICK_SCALE;
+    state.vel.x = v.x * FLICK_SCALE;
+    state.vel.y = v.y * FLICK_SCALE;
+    state.vel.z = v.z * FLICK_SCALE;
     const speed2 =
       state.vel.x * state.vel.x + state.vel.y * state.vel.y + state.vel.z * state.vel.z;
     if (speed2 > MAX_ANGULAR_VELOCITY * MAX_ANGULAR_VELOCITY) {
@@ -903,7 +1068,7 @@ function handlePointerUp(refs: RuntimeRefs, e: PointerEvent<SVGSVGElement>): voi
     }
   }
   state.mode = 'free';
-  state.dragTarget = null;
+  state.grab = null;
   state.pointerId = null;
   state.pointerSamples = [];
   if (e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -970,7 +1135,7 @@ function buildInitialState(): NavState {
   // the first frame after wake-up doesn't render ghosts at random
   // positions before the shift cycle has filled them.
   const startPos: UnitVector3 = { ...NORTH_POLE };
-  const initialCamera = orbitalCamera(startPos);
+  const initialCamera = orbitalCamera(startPos, 0);
   const trailHistory: MutableVec3[] = Array.from({ length: TRAIL_LENGTH }, () => ({
     x: startPos.x,
     y: startPos.y,
@@ -980,7 +1145,10 @@ function buildInitialState(): NavState {
     pos: { x: startPos.x, y: startPos.y, z: startPos.z },
     vel: { x: 0, y: 0, z: 0 },
     mode: 'free',
-    dragTarget: null,
+    grab: null,
+    roll: 0,
+    resting: false,
+    idleTimer: null,
     press: null,
     pointerSamples: [],
     pointerId: null,
@@ -1015,6 +1183,7 @@ export function useConstellationNavigation({
   nodes,
   edges,
   viewboxSize,
+  fit,
   setActiveKey,
   cameraRef,
   glyphRef,
@@ -1035,8 +1204,7 @@ export function useConstellationNavigation({
   useEffect(() => {
     const state = stateRef.current;
     return () => {
-      if (state.raf !== null) globalThis.cancelAnimationFrame(state.raf);
-      state.raf = null;
+      stopLoop(state);
       state.heldKeys.clear();
     };
   }, []);
@@ -1048,6 +1216,7 @@ export function useConstellationNavigation({
     cameraRef,
     glyphRef,
     viewboxSize,
+    fit,
     setActiveKey,
   };
 
@@ -1067,10 +1236,11 @@ export function useConstellationNavigation({
       cameraRef,
       glyphRef,
       viewboxSize,
+      fit,
       setActiveKey,
     };
     return setupCursorLifecycle(state, lifecycleRefs, nodesRef.current, focusKey);
-  }, [cameraRef, glyphRef, viewboxSize, setActiveKey, focusKey]);
+  }, [cameraRef, glyphRef, viewboxSize, fit, setActiveKey, focusKey]);
 
   return {
     dragHandlers: {

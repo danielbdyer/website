@@ -2,8 +2,8 @@ import { describe, expect, test } from 'vitest';
 import { cameraBasis } from '@/shared/geometry/camera';
 import type { Camera } from '@/shared/geometry/camera';
 import { sphericalToUnit } from '@/shared/geometry/sphere';
-import { projectStars, projectThreads } from './skyProjector';
-import type { NavigableEdge } from './skyProjector';
+import { clientToNormalized, projectStars, projectThreads, projectToViewbox } from './skyProjector';
+import type { NavigableEdge, SkyFrame } from './skyProjector';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 
 // The projector caches element lookups per camera group (the
@@ -77,5 +77,49 @@ describe('skyProjector element cache', () => {
     projectThreads(group, [edge], CAMERA, BASIS, 1000);
     expect(Number.parseFloat(line.getAttribute('x1') ?? '')).toBeGreaterThan(0);
     expect(Number.parseFloat(line.getAttribute('y2') ?? '')).toBeGreaterThan(0);
+  });
+});
+
+describe('clientToNormalized', () => {
+  // A landscape frame with the square viewbox cover-fit into it: the
+  // viewbox scales to the width (1.44 px/unit) and is cropped top and
+  // bottom by 270px. The old bounds-based normalization stretched x
+  // and squeezed y; this mapping is the projector's own, inverted.
+  const frame: SkyFrame = { left: 0, top: 0, width: 1440, height: 900, fit: 'cover' };
+
+  test('the frame center is the image center', () => {
+    expect(clientToNormalized(720, 450, frame, 1000)).toEqual({ x: 0, y: -0 });
+  });
+
+  test('round-trips the projector: a projected star is found under its own pixel', () => {
+    const point = sphericalToUnit({ theta: 0.5, phi: 1.1 });
+    const proj = projectToViewbox(point, CAMERA, BASIS, 1000);
+    const scale = 1440 / 1000;
+    const offsetY = (900 - 1000 * scale) / 2;
+    const clientX = proj.x * scale;
+    const clientY = proj.y * scale + offsetY;
+    const n = clientToNormalized(clientX, clientY, frame, 1000);
+    // Undo the viewbox mapping by hand to compare normalized coords.
+    expect(n?.x).toBeCloseTo((proj.x - 500) / 440, 9);
+    expect(n?.y).toBeCloseTo(-(proj.y - 500) / 440, 9);
+  });
+
+  test('the frustum edge sits at 440 viewbox units, not at the box edge', () => {
+    // x = +1 normalized → viewbox 940 → 940 × 1.44 = 1353.6px, inside the
+    // 1440px box. Normalizing over the box width would have put +1 at 1440.
+    const n = clientToNormalized(940 * 1.44, 450, frame, 1000);
+    expect(n?.x).toBeCloseTo(1, 9);
+  });
+
+  test('a contain fit letterboxes instead of cropping', () => {
+    const contain: SkyFrame = { left: 0, top: 0, width: 1440, height: 900, fit: 'contain' };
+    // Scale is 0.9; the 900px-wide viewbox is centered with 270px bars left and right.
+    const n = clientToNormalized(270 + 500 * 0.9, 450, contain, 1000);
+    expect(n?.x).toBeCloseTo(0, 9);
+    expect(n?.y).toBeCloseTo(0, 9);
+  });
+
+  test('an empty frame yields null', () => {
+    expect(clientToNormalized(10, 10, { ...frame, width: 0 }, 1000)).toBeNull();
   });
 });
