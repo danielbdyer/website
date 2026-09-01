@@ -3,6 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import type { DisplayWork } from '@/shared/content';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
+import { formatWorkDate } from '@/shared/utils/format-date';
 
 // The sky's way of opening a work. *An iframe-but-not-an-iframe.*
 //
@@ -73,13 +74,7 @@ function OverlayLead({ work, titleId }: { work: DisplayWork; titleId: string }) 
           the title and the metadata band: an invitation, not a
           summary. */}
       {work.summary && <p className="work-overlay__deck">{work.summary}</p>}
-      <p className="text-meta text-text-3 mb-2 italic">
-        {work.date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })}
-      </p>
+      <p className="text-meta text-text-3 mb-2 italic">{formatWorkDate(work.date)}</p>
       {/* Asterism — *the page breathes between thoughts.* */}
       <div className="work-overlay__asterism" aria-hidden="true">
         ⁂

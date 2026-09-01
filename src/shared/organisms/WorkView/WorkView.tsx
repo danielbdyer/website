@@ -12,6 +12,7 @@ import {
   workTitleTransitionName,
 } from '@/shared/utils/view-transition-names';
 import { cn } from '@/shared/utils/cn';
+import { formatWorkDate } from '@/shared/utils/format-date';
 
 const ROOM_LABELS: Readonly<Record<Room, string>> = {
   foyer: 'The Foyer',
@@ -72,11 +73,7 @@ function WorkKickerBar({ work }: WorkKickerBarProps) {
 export function WorkView({ work }: WorkViewProps) {
   const roomLabel = ROOM_LABELS[work.room];
   const roomPath = ROOM_TO[work.room];
-  const formattedDate = work.date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const formattedDate = formatWorkDate(work.date);
   const thumbLabel = isPreviewWork(work) ? work.preview.thumbLabel : undefined;
   // Wikilinks render via dangerouslySetInnerHTML as raw `<a>` elements;
   // without delegation, a click triggers a full document reload (the

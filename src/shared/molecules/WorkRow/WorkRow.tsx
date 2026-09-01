@@ -3,6 +3,7 @@ import type { Work } from '@/shared/content/schema';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
 import { ImgSlot } from '@/shared/atoms/ImgSlot/ImgSlot';
 import { RoomGlyph } from '@/shared/atoms/RoomGlyph/RoomGlyph';
+import { formatWorkDate } from '@/shared/utils/format-date';
 import {
   workCardTransitionName,
   workHeroTransitionName,
@@ -48,11 +49,7 @@ interface WorkRowProps {
 // page's hero/title/meta). See INTERACTION_DESIGN.md §"Page and Route
 // Transitions" for the kind-table.
 export function WorkRow({ work, thumbLabel }: WorkRowProps) {
-  const formattedDate = work.date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const formattedDate = formatWorkDate(work.date);
   return (
     <article
       className="group border-border-lt hover:border-border flex flex-col gap-3 border-b py-6 transition-colors duration-300 first:border-t sm:py-7"
