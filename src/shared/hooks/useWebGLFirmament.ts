@@ -367,6 +367,16 @@ function shouldRenderWebGL(): boolean {
 interface MountedAtmosphere {
   dispose: () => void;
   repaint: () => void;
+  /** Mark the frame as painted by this mount (data-atmosphere="webgl").
+   *  Called only for a mount the effect keeps. A client-side crossing
+   *  into /sky mounts the layer twice in quick succession — both async
+   *  inits finish, and whichever finishes second used to win the frame
+   *  attribute: if that was the cancelled one, its dispose unmarked the
+   *  frame the live mount had just claimed, leaving the SVG firmament
+   *  visible over a canvas still painting every frame. Claiming only
+   *  from the kept mount, and releasing only what this mount claimed,
+   *  closes the race. */
+  claim: () => void;
 }
 
 /** Wait out the sky's arrival animation before paying for context
@@ -525,6 +535,24 @@ function createPaintLoop(
   };
 }
 
+/** Ownership of the frame's data-atmosphere attribute. Only the mount
+ *  the effect keeps claims it; a mount releases only what it claimed,
+ *  so a cancelled sibling resolving late can never unmark the live one. */
+function frameClaim(frame: HTMLElement): { claim: () => void; release: () => void } {
+  let claimed = false;
+  return {
+    claim() {
+      claimed = true;
+      frame.dataset.atmosphere = 'webgl';
+    },
+    release() {
+      if (!claimed) return;
+      claimed = false;
+      delete frame.dataset.atmosphere;
+    },
+  };
+}
+
 function dressCanvas(canvas: HTMLCanvasElement): void {
   canvas.style.width = '100%';
   canvas.style.height = '100%';
@@ -542,6 +570,13 @@ function wireAtmosphere(
   const canvas = handles.canvas;
   dressCanvas(canvas);
   container.append(canvas);
+  const { claim, release } = frameClaim(els.frame);
+  let halted = false;
+  const halt = () => {
+    halted = true;
+    canvas.style.display = 'none';
+    release();
+  };
   const resize = () => {
     const rect = container.getBoundingClientRect();
     handles.setSize(rect.width || 1, rect.height || 1);
@@ -549,7 +584,6 @@ function wireAtmosphere(
   };
   resize();
   let raf = 0;
-  let halted = false;
   const startTime = performance.now();
   const watchBudget = createBudgetWatcher(() => {
     handles.setDpr(1);
@@ -559,11 +593,7 @@ function wireAtmosphere(
     loop.wake();
     loop.repaint();
   });
-  const loop = createPaintLoop(state, env, startTime, () => {
-    halted = true;
-    canvas.style.display = 'none';
-    delete els.frame.dataset.atmosphere;
-  });
+  const loop = createPaintLoop(state, env, startTime, halt);
   const repaint = () => {
     if (halted) return;
     loop.repaint();
@@ -580,7 +610,6 @@ function wireAtmosphere(
     };
     raf = requestAnimationFrame(tick);
   }
-  els.frame.dataset.atmosphere = 'webgl';
   const unsubscribeCamera = env.still ? subscribeSkyCamera(repaint) : undefined;
   const themeObserver = new MutationObserver(() => {
     handles.setPalette(buildSkyPalette(env.readToken, env.isDark()), env.still);
@@ -597,22 +626,18 @@ function wireAtmosphere(
     repaint();
   });
   resizeObserver.observe(container);
-  const onContextLost = () => {
-    halted = true;
-    canvas.style.display = 'none';
-    delete els.frame.dataset.atmosphere;
-  };
-  canvas.addEventListener('webglcontextlost', onContextLost);
+  canvas.addEventListener('webglcontextlost', halt);
   return {
     repaint,
+    claim,
     dispose() {
       halted = true;
       cancelAnimationFrame(raf);
       unsubscribeCamera?.();
       themeObserver.disconnect();
       resizeObserver.disconnect();
-      canvas.removeEventListener('webglcontextlost', onContextLost);
-      delete els.frame.dataset.atmosphere;
+      canvas.removeEventListener('webglcontextlost', halt);
+      release();
       handles.dispose();
     },
   };
@@ -649,6 +674,7 @@ export function useWebGLFirmament(
           return;
         }
         mountedRef.current = mounted;
+        mounted.claim();
       })
       .catch(() => {
         // Init failed (context creation, shader compile, ogl
