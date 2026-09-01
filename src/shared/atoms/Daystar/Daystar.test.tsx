@@ -20,7 +20,7 @@ describe('Daystar atom', () => {
     );
   });
 
-  test('the sun composes a halo, body, and core for layered glow', () => {
+  test('the sun composes a corona, a gilded disc, and its rim', () => {
     const { container } = render(withSvg(<Daystar cx={500} cy={240} />));
     expect(container.querySelectorAll('.constellation-daystar__sun circle').length).toBe(3);
   });

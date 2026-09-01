@@ -66,14 +66,20 @@ export interface AtmosphereHandles {
   dispose(): void;
 }
 
-const THEME_FADE_SECONDS = 0.5;
+// The sky's hour changes over a longer arc than the room's 500ms
+// dimming: the atmosphere is the farthest surface, and dawn is not a
+// switch. The shader passes through a horizon flush midway
+// (`4·n·(1−n)` of the blended night value) and lets the deep field
+// leave early. INTERACTION_DESIGN.md §"Dark Mode as Room Dimming"
+// names this as the one surface that takes longer than the sigh.
+const THEME_FADE_SECONDS = 1.8;
 // Halo, mote, and pool extents in viewbox units — scaled to pixels
 // through the live fit so the paint keeps its proportion to the
 // structural layer at every viewport.
 const STAR_HALO_VIEWBOX_RADIUS = 36;
-// The day pigment bleed is a tighter mark than the night glow —
-// a blot of color, not a luminous field.
-const STAR_PIGMENT_VIEWBOX_RADIUS = 15;
+// The day pigment point is a tighter mark than the night glow —
+// a painted point on the chart, not a luminous field.
+const STAR_PIGMENT_VIEWBOX_RADIUS = 17;
 const MOTE_VIEWBOX_RADIUS = 3.4;
 const POOL_VIEWBOX_RADIUS = 320;
 
@@ -139,6 +145,7 @@ function paletteUniforms(palette: SkyPalette) {
     uAccentViolet: { value: [...palette.accents[2]] },
     uAccentGold: { value: [...palette.accents[3]] },
     uGrain: { value: palette.grain },
+    uInk: { value: [...palette.ink] },
     uNight: { value: palette.night },
   };
 }
@@ -170,6 +177,7 @@ function writePalette(program: Program, palette: SkyPalette): void {
     uAccentViolet: palette.accents[2],
     uAccentGold: palette.accents[3],
     uGrain: palette.grain,
+    uInk: palette.ink,
     uNight: palette.night,
   };
   for (const [name, value] of Object.entries(colors)) {

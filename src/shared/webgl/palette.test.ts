@@ -56,6 +56,7 @@ const LIGHT_TOKENS: Record<string, string> = {
   '--accent-violet': '#8a6fb0',
   '--accent-gold': '#bfa04d',
   '--sky-grain-opacity': '0.04',
+  '--text-3': '#786352',
 };
 
 describe('buildSkyPalette', () => {
@@ -65,6 +66,7 @@ describe('buildSkyPalette', () => {
     expect(palette.glowStrength).toBeCloseTo(0.07);
     expect(palette.accents[3][0]).toBeCloseTo(191 / 255);
     expect(palette.grain).toBeCloseTo(0.04);
+    expect(palette.ink[0]).toBeCloseTo(0x78 / 255);
     expect(palette.night).toBe(0);
   });
 

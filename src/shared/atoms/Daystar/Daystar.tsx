@@ -33,21 +33,30 @@ export function Daystar({ cx, cy, radius = 38 }: DaystarProps) {
       style={{ viewTransitionName: DAYSTAR_TRANSITION_NAME }}
       aria-hidden="true"
     >
-      {/* The sun — visible in light mode. A warm-glow disc with a
-          gentle rim. The glow halo is rendered via the watercolor
-          filter so the edge bleeds rather than rendering as a hard
-          circle. */}
+      {/* The sun — visible in light mode. A gilded disc: gold leaf
+          laid on the chart (the `cn-sun-leaf` gradient), a thin warm
+          rim where the leaf meets the paper, and a soft corona through
+          the watercolor filter. One body, not concentric rings — the
+          chart's sun, not a target. */}
       <g className="constellation-daystar__sun">
         <circle
           cx={cx}
           cy={cy}
-          r={radius * 1.7}
-          fill="var(--accent-warm)"
-          opacity={0.18}
+          r={radius * 1.9}
+          fill="var(--accent-gold)"
+          opacity={0.12}
           filter="url(#cn-watercolor-halo)"
         />
-        <circle cx={cx} cy={cy} r={radius} fill="var(--accent-warm)" opacity={0.55} />
-        <circle cx={cx} cy={cy} r={radius * 0.55} fill="var(--accent-warm)" opacity={0.85} />
+        <circle cx={cx} cy={cy} r={radius} fill="url(#cn-sun-leaf)" opacity={0.86} />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          fill="none"
+          stroke="var(--accent-warm)"
+          strokeWidth={0.9}
+          opacity={0.55}
+        />
       </g>
       {/* The moon — visible in dark mode. A cooler crescent with a
           soft halo. The crescent is two overlapping circles using

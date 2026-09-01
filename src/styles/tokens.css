@@ -178,15 +178,15 @@
   --geo-color: rgb(74, 124, 106, 0.12);
   --geo-accent: rgb(200, 118, 77, 0.15);
 
-  /* Constellation sky — sea-painted dome by day. The umber palette
-     breathed up into a luminous expanse: warmer, paler, paper-water.
-     Zenith is the firmament's top tone; horizon is where the sky
-     blends back into the Foyer ground (--bg). The glow is the
-     daystar's warmth gathering near the upper-mid of the sky. Grain
-     is the paper-water texture (subtler in light mode where the
+  /* Constellation sky — the chart by day. The sky drawn on the site's
+     own paper: zenith is the sheet's lit tone, horizon is where the
+     page settles back into the Foyer ground (--bg). The glow is the
+     gilded sun's warmth gathering near the upper-mid of the page.
+     Grain is the paper's texture (subtler in light mode where the
      ground itself already carries paper-grain at 0.025; the sky's
-     extra grain compounds gently). See CONSTELLATION.md
-     §"Two Render Modes" — daylight: watercolor ocean. */
+     extra grain compounds gently). The chart's lines are drawn in
+     --text-3, the page's quiet ink. See CONSTELLATION.md §"Two Render
+     Modes" — daylight: the chart. */
   --sky-zenith: #fcf8f1;
   --sky-horizon: var(--bg);
   --sky-grain-opacity: 0.04;
@@ -750,6 +750,13 @@ body::before {
   transform-origin: center;
 }
 
+/* By day the wash sits on paper, where the warm halo at full strength
+   read as a stain rather than a wash; it quiets to a suggestion. By
+   night the dark ground carries it at full strength. */
+.lt .constellation-polestar-wash {
+  opacity: 0.45;
+}
+
 /* Work overlay typographic registers — the deck (an invitation,
    not a summary) and the asterism divider that separates the
    metadata band from the body. CONSTELLATION_DESIGN.md
@@ -824,18 +831,57 @@ body::before {
   transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Daystar — theme-conditional visibility. Both bodies render in the
-   DOM so the switch is pure CSS, not React-conditional, avoiding the
-   hydration flash a JS-state-driven render would cause under SSG.
-   The .lt / .dk classes on <html> are applied pre-paint by the
-   inline init script in __root.tsx; the daystar is correct from
-   first paint. */
-.lt .constellation-daystar__moon {
-  display: none;
+/* Daystar — sun by day, moon by night. Both bodies render in the DOM
+   so the switch is pure CSS, not React-conditional, avoiding the
+   hydration flash a JS-state-driven render would cause under SSG (the
+   .lt / .dk class is on <html> before first paint). The hour changes
+   over the sky's own arc — 1.8s, longer than the room's 500ms dimming
+   (INTERACTION_DESIGN.md §"Dark Mode as Room Dimming" names the sky as
+   the one surface that takes longer than the sigh): the setting body
+   sinks a hand's width as it fades over the first 1.1s; the rising one
+   waits 0.7s and lifts into place over the same span, so the two never
+   overlap as an eclipse. Reduced motion collapses both to the instant
+   swap via the global block above (and drops the wait). */
+.constellation-daystar__sun,
+.constellation-daystar__moon {
+  transition:
+    opacity 1.1s ease,
+    transform 1.1s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* The theme-toggle window's blanket transition rule would replace this
+   pair for its 550ms; restated at higher specificity so the daystar
+   keeps its own arc (with the window's fill/stroke fades alongside). */
+.theme-transitioning .constellation-daystar__sun,
+.theme-transitioning .constellation-daystar__moon {
+  transition:
+    opacity 1.1s ease,
+    transform 1.1s cubic-bezier(0.23, 1, 0.32, 1),
+    fill 0.5s ease,
+    stroke 0.5s ease !important;
+}
+
+/* The rising body waits for the setting one — restated inside the
+   toggle window too, whose shorthand above would reset the delay. */
+.lt .constellation-daystar__sun,
+.dk .constellation-daystar__moon,
+.theme-transitioning.lt .constellation-daystar__sun,
+.theme-transitioning.dk .constellation-daystar__moon {
+  transition-delay: 0.7s !important;
+}
+
+.lt .constellation-daystar__moon,
 .dk .constellation-daystar__sun {
-  display: none;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .constellation-daystar__sun,
+  .constellation-daystar__moon {
+    transition-delay: 0s !important;
+  }
 }
 
 /* Arrival — the look-up, rebuilt (2026-06-13, with Danny). The

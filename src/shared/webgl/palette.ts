@@ -19,8 +19,11 @@ export interface SkyPalette {
   /** The four held accents in hue-index order:
    *  0 warm · 1 rose · 2 violet · 3 gold. */
   readonly accents: readonly [Rgb, Rgb, Rgb, Rgb];
-  /** --sky-grain-opacity — the paper-water grain strength. */
+  /** --sky-grain-opacity — the paper grain strength. */
   readonly grain: number;
+  /** --text-3 — the page's quiet ink. By day the chart's ruled
+   *  lines (polar rings, meridians) are drawn in it. */
+  readonly ink: Rgb;
   /** 1 in the dark hour, 0 in the light. Drives the day↔night
    *  ontology blend (pigment bleeds ↔ luminous halos). */
   readonly night: number;
@@ -93,6 +96,7 @@ export function buildSkyPalette(read: TokenReader, night: boolean): SkyPalette {
       colorOf(read, '--accent-gold').rgb,
     ],
     grain: Number.isNaN(grainRaw) ? 0.05 : grainRaw,
+    ink: colorOf(read, '--text-3').rgb,
     night: night ? 1 : 0,
   };
 }
@@ -121,6 +125,7 @@ export function blendSkyPalettes(from: SkyPalette, to: SkyPalette, t: number): S
       mixRgb(from.accents[3], to.accents[3]),
     ],
     grain: mix(from.grain, to.grain),
+    ink: mixRgb(from.ink, to.ink),
     night: mix(from.night, to.night),
   };
 }
