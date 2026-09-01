@@ -650,6 +650,15 @@ body::before {
   will-change: transform;
 }
 
+/* The sky's return link sits over the firmament, and a star can
+   drift beneath it. A soft halo of the page ground around the
+   letters keeps them legible without boxing them in chrome. */
+.sky-return-link {
+  text-shadow:
+    0 0 6px var(--bg),
+    0 0 14px var(--bg);
+}
+
 /* ─── Constellation atmosphere handoff ──────────────────────────
    The WebGL atmosphere paints the complete firmament when it can.
    The hook marks the frame with data-atmosphere="webgl" after the

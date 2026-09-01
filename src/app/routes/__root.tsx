@@ -59,7 +59,19 @@ function RootComponent() {
   // the last-clicked link in the persistent nav while the page content
   // changes underneath them. Focusing <main> on each pathname change
   // restores the orienting jump that a full document load gave for free.
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // The *rendered* page's path, not the pending destination. While a
+  // navigation loads, `location` already names where we're going but
+  // the outlet still shows the page we're leaving. Reading layout from
+  // the pending path dropped the nav, footer, and column from under
+  // the Foyer ~150ms before the sky mounted — and the view transition
+  // snapshotted that chrome-less frame. The committed matches flip in
+  // the same commit the new page appears.
+  const pathname = useRouterState({
+    select: (s) => s.matches.at(-1)?.pathname ?? s.location.pathname,
+  });
+  const isSky = useRouterState({
+    select: (s) => s.matches.some((m) => m.routeId === '/sky' || m.routeId === '/sky/$room/$slug'),
+  });
   const isInitialMount = useRef(true);
   // Pathnames the visitor has already seen in this session. First visit
   // to a URL resets scroll to the top; return visits let the router's
@@ -121,8 +133,8 @@ function RootComponent() {
   // committed: *the whole website slides down and gives way to the
   // viewport.* In layout terms, that means the chrome is conditionally
   // hidden and the column constraints are dropped, while the skip-link
-  // and main landmark stay so the surface remains accessible.
-  const isSky = pathname === '/sky' || pathname.startsWith('/sky/');
+  // and main landmark stay so the surface remains accessible. `isSky`
+  // is derived above from the rendered matches.
 
   return (
     <RootDocument>
@@ -187,7 +199,7 @@ const CFWA_TOKEN: string = __CFWA_TOKEN__;
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
         <meta name="theme-color" content="#f5f1eb" media="(prefers-color-scheme: light)" />
