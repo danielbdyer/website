@@ -210,8 +210,12 @@ When a proposal seems harmless ("just a small badge showing how many works exist
 Every constellation surface speaks in this small vocabulary. Designers should use these words in mocks, microcopy, and annotations; engineers should respect them in identifiers and comments. New terms enter the lexicon only when an existing one cannot carry the meaning.
 
 - **Star** — a single work. Addressable. Always a real link.
-- **Thread** — a relationship between two stars. Decorative in assistive output; meaningful visually. (Facet co-membership today; wikilinks once the resolver activates.)
-- **Basin** — a collection of stars the cursor can settle into. A named gathering — the editorial equivalent of an asterism. *Note: the per-star gravitational well that draws the cursor is referenced in code as `BASIN_RADIUS_RAD`; for design conversation, "basin" means the named cluster.*
+- **Thread** — a stroke of a facet's figure between two stars, and a path the visitor can walk. Decorative in assistive output; meaningful visually. (The figures are spanning trees of each facet's members; wikilinks once the resolver activates.)
+- **Basin** — a named gathering of stars, the editorial equivalent of an asterism. *Held until the sky has enough stars to name patterns within.* (The per-star gravity well that once drew a cursor left with the drag; "basin" now means only the named cluster.)
+- **Bearing** — a facet as a direction from where you stand: the thread you would follow to the nearest star that carries it. The whisper offers them.
+- **Figure** — a facet's members joined by threads as one drawing across the sky. Eight, one per facet, each in the facet's hue.
+- **Here** — where the visitor stands: a star or the pole. The camera rests there; the names within a stroke of it show.
+- **The walk** — how the sky is traveled: from here to a named destination, along the figures, never by drag ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md)).
 - **Facet** — a curatorial angle works share. Eight in the site's vocabulary.
 - **Horizon** — the temporal edge. Where time lives in the chrome. The horizon strip's position is metaphor as much as layout.
 
@@ -221,7 +225,7 @@ The lexicon is not just a glossary; it is a *grammar* — an interlocking system
 
 **The metaphors compose:**
 
-The constellation is a **place** (you visit it, you wander, you return). The place has **stars** (points of light), **threads** (drawn between stars), **basins** (gatherings), and a **polestar** (still center). Above it sits a **sky**; beneath it is a **horizon** (the edge of the world); around the visitor is **atmosphere** (what light does in the medium). The visitor has a **companion glyph** (a body in this place) and **pinned places** (memory; held points of return). Time is **scrubbed** (raked across the surface); the corpus is **filtered** through **facets** (lenses).
+The constellation is a **place** (you visit it, you walk it, you return). The place has **stars** (points of light), **threads** (drawn between stars), **figures** (each facet's members drawn as one), **basins** (named gatherings, held), and a **polestar** (still center). The visitor is always **here**, and every **bearing** is a way to leave. Above it sits a **sky**; beneath it is a **horizon** (the edge of the world); around the visitor is **atmosphere** (what light does in the medium). The visitor has a **companion glyph** (a body in this place) and **pinned places** (memory; held points of return). Time is **scrubbed** (raked across the surface); the corpus is **filtered** through **facets** (lenses).
 
 Each metaphor implies the others. *Stars* require *sky* (where else would they sit?). *Sky* requires *horizon* (the edge of looking-up). *Horizon* requires *time* (horizons hold what was and what is to come). *Polestar* requires *navigation* (a still point implies a moving observer). The grammar is closed and self-referential — every term inside the system points to another term inside the system.
 
@@ -244,7 +248,7 @@ A designer working with one register (say, the astronomical) should be aware of 
 - **Pushing one register too far.** Treating the constellation purely astronomically (real star catalogues, real magnitudes, real coordinates) breaks the others; treating it purely navigationally (compass, distances, "9 km to the next city") makes it functional but loses the reverence. The sustainable register is the *intersection*, not any one direction.
 - **Importing metaphors from outside.** "Network," "graph," "timeline," "feed" — these come from other surfaces and bring their own loads. Using them in /sky's vocabulary leaks alien grammar into the system.
 - **Allegory creep.** The constellation should not become *about* something else. It is what it is. If a thread starts to mean "obligation" or a basin starts to mean "category," the metaphor has been forced into service of a parallel meaning that thins the original.
-- **Losing the ground.** The metaphors work because the constellation is *also* a literal thing — stars are real points on a sphere, threads connect them, the basin physics is real. The metaphor is *grounded* in mechanics that match it. When the metaphors stop being supported by the underlying mechanics, the surface becomes decorative; the words stop meaning anything.
+- **Losing the ground.** The metaphors work because the constellation is *also* a literal thing — stars are real points on a sphere placed by the compass of their facets, the figures are real spanning trees, travel is a real crossing of the great circle. The metaphor is *grounded* in mechanics that match it. When the metaphors stop being supported by the underlying mechanics, the surface becomes decorative; the words stop meaning anything.
 
 **Extending the lexicon:**
 
@@ -1757,7 +1761,9 @@ A one-page reference. Designers and engineers should be able to find any term th
 |---|---|---|
 | **Star** | A single work; addressable; always a real link | C2 |
 | **Thread** | A relationship between two stars; visual, not announced to assistive tech | C3 |
-| **Basin** | A collection of stars the cursor can settle into (the editorial cluster) | Lexicon |
+| **Basin** | A named gathering of stars (the editorial asterism); held | Lexicon |
+| **Bearing** | A facet as a direction from here — the thread to the nearest star that carries it | Lexicon |
+| **Figure** | A facet's members joined as one drawing; eight in the sky | Lexicon |
 | **Facet** | A curatorial angle works share; eight in the site's vocabulary | Lexicon |
 | **Horizon** | The temporal edge; where time lives in the chrome | Lexicon |
 | **Polestar** | The still center; the geometric figure at world center | C5 |
