@@ -586,6 +586,13 @@ body::before {
   font-size: 11px;
   opacity: 0;
   transition: opacity 400ms ease-out;
+  /* A halo of the page's ground behind the letters, so a name stays
+     legible across a thread or another star's glow. */
+  paint-order: stroke fill;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  stroke-opacity: 0.85;
 }
 
 /* Named at rest — here, its neighbors, and the stars its bearings lead
@@ -607,6 +614,31 @@ body::before {
 .constellation-star[data-visited='true'] .constellation-star__gold {
   transform: scale(1);
   opacity: 0.16;
+}
+
+/* Presence — from where you stand, a capped number of stars are near
+   in context; the rest recede to faint lights until the walk brings
+   them close (CONSTELLATION_WALK.md §"Presence"). They keep their
+   place: still there, not yet revealed. */
+.constellation-star[data-present] {
+  transition: opacity 900ms ease-out;
+}
+
+.constellation-star[data-present='false'] {
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+.constellation-star[data-present='false'] .constellation-star__label {
+  opacity: 0;
+}
+
+.constellation-thread-group[data-present='false'] .constellation-thread {
+  opacity: 0.05;
+}
+
+.constellation-thread-group[data-present='false'] .constellation-thread__hit {
+  pointer-events: none;
 }
 
 /* ─── Threshold previews ────────────────────────────────────────
@@ -771,6 +803,67 @@ body::before {
 
 .constellation-thread-group[data-walked='true'] .constellation-thread {
   opacity: 0.5;
+}
+
+/* The track — the thread the visitor is scrubbing along by drag
+   (CONSTELLATION_WALK.md §"Input"): lit end to end while the hand
+   holds it. The sky itself can be taken hold of; while it is held,
+   stars and threads stop catching the pointer. */
+.constellation-thread-group[data-track='true'] .constellation-thread {
+  opacity: 1;
+  stroke-width: 1.2;
+}
+
+.constellation {
+  cursor: grab;
+  user-select: none;
+}
+
+.constellation[data-scrubbing='true'] {
+  cursor: grabbing;
+}
+
+.constellation[data-scrubbing='true'] .constellation-star,
+.constellation[data-scrubbing='true'] .constellation-thread__hit {
+  pointer-events: none;
+}
+
+/* The compass lettered at the rim — each facet's name at its bearing,
+   small caps in the facet's hue over the quiet ink, brighter for the
+   facets of the star you stand at and the one you attend. It turns
+   with the heavens, since the bearings are of the sky. */
+.constellation-compass__name {
+  fill: var(--text-3);
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.14em;
+  opacity: 0.5;
+  transition: opacity 600ms ease-out;
+}
+
+.constellation-compass__name[data-hue='warm'] {
+  fill: color-mix(in oklab, var(--accent-warm) 55%, var(--text-3));
+}
+
+.constellation-compass__name[data-hue='rose'] {
+  fill: color-mix(in oklab, var(--accent-rose) 55%, var(--text-3));
+}
+
+.constellation-compass__name[data-hue='violet'] {
+  fill: color-mix(in oklab, var(--accent-violet) 55%, var(--text-3));
+}
+
+.constellation-compass__name[data-hue='gold'] {
+  fill: color-mix(in oklab, var(--accent-gold) 55%, var(--text-3));
+}
+
+.constellation-compass__name[data-attended='true'] {
+  opacity: 0.95;
+}
+
+.lt .constellation-compass__name {
+  opacity: 0.62;
 }
 
 /* ─── The whisper ──────────────────────────────────────────────────

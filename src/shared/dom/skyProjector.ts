@@ -20,6 +20,10 @@ import { NORTH_POLE } from '@/shared/geometry/sphere';
 import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
+import type { Vec3 } from '@/shared/geometry/sphere';
+import { COMPASS } from '@/shared/content/constellation';
+import { COMPASS_RIM } from '@/shared/content/skyWalk';
+import { chooseLabelSlots, type LabelItem } from './labelLayout';
 import { fitViewboxToCanvas } from '@/shared/webgl/atmosphereProjection';
 
 // Per-frame element lookups were the navigation tick's hidden cost:
@@ -293,8 +297,12 @@ export function broadcastCursorToFirmament(proj: ScreenProj, viewboxSize: number
 /** Hand the live camera to the WebGL atmosphere so its dome casts
  *  view rays through the same pinhole the structural projection
  *  uses. Broadcast once per tick alongside the cursor. */
-export function broadcastCameraToFirmament(camera: Camera, basis: CameraBasis): void {
-  setSkyCamera(camera, basis);
+export function broadcastCameraToFirmament(
+  camera: Camera,
+  basis: CameraBasis,
+  travel?: Vec3,
+): void {
+  setSkyCamera(camera, basis, travel);
 }
 
 /** Write the per-frame style channels the companion glyph reads:
@@ -318,4 +326,73 @@ export function writeGlyphChannels(
  *  the small remnant. */
 export function applyCameraYaw(el: SVGGElement, yaw: number): void {
   el.style.setProperty('--cam-yaw', yaw.toFixed(2));
+}
+
+/** Letter the compass — each facet's name at its bearing on the rim
+ *  (COMPASS_RIM, skyWalk.ts) — so the words turn with the heavens.
+ *  Behind-camera names park offscreen. */
+export function projectCompass(
+  cameraGroup: SVGGElement,
+  camera: Camera,
+  basis: CameraBasis,
+  viewboxSize: number,
+): void {
+  for (const facet of COMPASS) {
+    const el = cachedElement(cameraGroup, `[data-compass="${facet}"]`);
+    if (!el) continue;
+    const proj = projectToViewbox(COMPASS_RIM[facet], camera, basis, viewboxSize);
+    el.setAttribute('x', proj.inFront ? proj.x.toFixed(2) : '-9999');
+    el.setAttribute('y', proj.inFront ? proj.y.toFixed(2) : '-9999');
+  }
+}
+
+/**
+ * Lay the labels out so none sits on another or on a star
+ * (labelLayout.chooseLabelSlots), and write each label's anchor. The
+ * first keys in `named` are the labels visible at rest, in priority
+ * order; every other star's label gets a slot clear of those for when
+ * hover shows it. Runs on arrival and at the idle cadence — not a
+ * per-frame path.
+ *
+ * @bigO Time: O(N) projections + the layout's O(N · S · (K + N)).
+ */
+export function placeLabels(
+  cameraGroup: SVGGElement,
+  named: readonly string[],
+  nodes: readonly NavigableNode[],
+  camera: Camera,
+  basis: CameraBasis,
+  viewboxSize: number,
+): void {
+  const labelOf = (key: string) =>
+    cachedElement(cameraGroup, `[data-node-key="${key}"] .constellation-star__label`);
+  const namedSet = new Set(named);
+  const ordered = [...named, ...nodes.map((n) => n.key).filter((k) => !namedSet.has(k))];
+  const byKey = new Map(nodes.map((n) => [n.key, n]));
+  const items: LabelItem[] = ordered.flatMap((key) => {
+    const node = byKey.get(key);
+    const el = labelOf(key);
+    if (!node || !el) return [];
+    const proj = projectToViewbox(node.unitPos, camera, basis, viewboxSize);
+    if (!proj.inFront) return [];
+    return [{ key, x: proj.x, y: proj.y, chars: (el.textContent ?? '').length }];
+  });
+  const slots = chooseLabelSlots(items, named.length);
+  for (const [key, slot] of slots) {
+    const el = labelOf(key);
+    if (!el) continue;
+    el.setAttribute('x', slot.dx.toFixed(1));
+    el.setAttribute('y', slot.dy.toFixed(1));
+    el.setAttribute('text-anchor', slot.anchor);
+  }
+}
+
+/** Mark (or clear) the thread the visitor is scrubbing along by drag,
+ *  so CSS can light it end to end while the hand holds it. */
+export function markTrack(cameraGroup: SVGGElement, threadId: string | null): void {
+  const previous = cameraGroup.querySelector('[data-thread][data-track]');
+  previous?.removeAttribute('data-track');
+  if (threadId === null) return;
+  const next = cachedElement(cameraGroup, `[data-thread="${threadId}"]`);
+  next?.setAttribute('data-track', 'true');
 }

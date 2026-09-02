@@ -1,6 +1,7 @@
 import type { RefObject, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
 import type { Facet } from '@/shared/types/common';
+import { Compass, type CompassPoint } from '@/shared/atoms/Compass/Compass';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread, type ThreadWalk } from '@/shared/atoms/Thread/Thread';
 import { Star, type StarWalk, type StarWork } from '@/shared/molecules/Star/Star';
@@ -11,13 +12,14 @@ import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 // The inside of the travel camera. Extracted from Constellation so the
 // JSX depth at each layer fits the project's max-4 ceiling without
 // flattening the structural meaning of the tree (the pole, the
-// companion, threads and stars as sibling layers).
+// compass, the companion, threads and stars as sibling layers).
 
 /** The constellation's observable world — what Stage paints. The
  *  edges + nodes are the structural graph; the rest is the walk:
  *  where the visitor stands (hereKey; null at the pole), what they
- *  hover, what is named within a stroke of here, what they have
- *  visited and walked, and which figure is lit by attention.
+ *  hover, what is named within a stroke of here, what is present from
+ *  here (the contextual cap), what they have visited and walked, which
+ *  figure is lit by attention, and the compass's lettering.
  *  CONSTELLATION_WALK.md. Held in one shape so the organism's prop
  *  count fits the ≤7 ceiling (REACT_NORTH_STAR.md §"Organisms"). */
 export interface ConstellationWorld {
@@ -28,14 +30,17 @@ export interface ConstellationWorld {
   readonly activeHue: ConstellationHue | null;
   readonly overlayKey: string | null;
   readonly named: ReadonlySet<string>;
+  readonly present: ReadonlySet<string>;
   readonly visited: ReadonlySet<string>;
   readonly walked: ReadonlySet<string>;
   readonly litFacet: Facet | null;
+  readonly attended: ReadonlySet<Facet>;
+  readonly compass: readonly CompassPoint[];
 }
 
 /** Interaction handlers Stage forwards to its layers — the hover and
- *  focus sets for stars and threads. Clicks and keys attach at the svg
- *  level in the organism. */
+ *  focus sets for stars and threads. Clicks, keys, and the scrub
+ *  attach at the svg level in the organism. */
 export interface StageInteractions {
   readonly onStarHover: (e: SyntheticEvent<Element>) => void;
   readonly onStarLeave: () => void;
@@ -60,6 +65,7 @@ function threadWalkOf(world: ConstellationWorld, edge: ResolvedEdge): ThreadWalk
     active: attended === edge.sourceKey || attended === edge.targetKey,
     walked: world.walked.has(edge.id),
     lit: world.litFacet === edge.facet,
+    present: world.present.has(edge.sourceKey) && world.present.has(edge.targetKey),
   };
 }
 
@@ -69,6 +75,7 @@ function starWalkOf(world: ConstellationWorld, key: string): StarWalk {
     here: key === world.hereKey,
     named: world.named.has(key),
     visited: world.visited.has(key),
+    present: world.present.has(key),
   };
 }
 
@@ -153,6 +160,7 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
   return (
     <>
       <PoleGroup />
+      <Compass points={world.compass} attended={world.attended} />
       <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
       <g className="constellation-rotates">
         {/* Threads first so stars paint above them and win the hit test. */}

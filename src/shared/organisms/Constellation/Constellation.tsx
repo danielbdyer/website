@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import { useMatch } from '@tanstack/react-router';
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import { POLE_KEY, bearingsOf } from '@/shared/content/skyWalk';
 import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
@@ -19,8 +18,16 @@ import {
   resolveEdges,
   skyTitle,
 } from './layout';
-import { useSkyInteractions } from './useSkyInteractions';
-import { buildWorld, initialHere, navigableEdges, navigableNodes, whisperPlaceOf } from './walk';
+import { useOverlayKey, useSkyInteractions } from './useSkyInteractions';
+import {
+  buildWorld,
+  initialHere,
+  namedOrder,
+  navigableEdges,
+  navigableNodes,
+  whisperConcordantOf,
+  whisperPlaceOf,
+} from './walk';
 
 interface ConstellationProps {
   graph: ConstellationGraph;
@@ -38,7 +45,8 @@ interface ConstellationProps {
 
 // The sky as a walk (CONSTELLATION_WALK.md): the visitor is always
 // somewhere; the camera rests there; a named destination — a star, a
-// bearing, a thread, an arrow — is the only thing that moves it.
+// bearing, a thread, an arrow, a drag along a thread — is the only
+// thing that moves it.
 
 export function Constellation({
   graph,
@@ -59,23 +67,16 @@ export function Constellation({
     nodes: navigableNodes(nodes),
     edges: navigableEdges(edges, positioned),
     viewboxSize: VIEWBOX,
+    fit: fullViewport ? 'cover' : 'contain',
     here: walk.here,
+    namedKeys: namedOrder(graph, walk.here),
     onArrive: walk.arrive,
     cameraRef,
     glyphRef,
   });
-  const { hoverKey, onSkyClick, onPointerDown, stage } = useSkyInteractions({
-    graph,
-    walk,
-    travelTo: travel.travelTo,
-  });
-  // The open overlay's star drops its viewTransitionName so the panel
-  // owns the name across snapshots (star → panel on Open, back on
-  // Close). shouldThrow:false — /sky alone is a valid state.
-  const overlayMatch = useMatch({ from: '/sky/$room/$slug', shouldThrow: false });
-  const overlayKey = overlayMatch
-    ? `${overlayMatch.params.room}/${overlayMatch.params.slug}`
-    : null;
+  const interactions = useSkyInteractions({ graph, walk, travel });
+  const overlayKey = useOverlayKey();
+  const { hoverKey } = interactions;
   const world = buildWorld(graph, { edges, nodes, walk, hoverKey, overlayKey });
   const hereKey = walk.here === POLE_KEY ? null : walk.here;
 
@@ -87,14 +88,19 @@ export function Constellation({
       <h2 id={titleId} className="sr-only">
         {skyTitle(graph.nodes.length)}
       </h2>
-      <WebGLFirmament graph={graph} activeKey={hoverKey ?? hereKey} fullViewport={fullViewport} />
+      <WebGLFirmament
+        graph={graph}
+        activeKey={hoverKey ?? hereKey}
+        present={world.present}
+        fullViewport={fullViewport}
+      />
       <svg
         ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         preserveAspectRatio={fullViewport ? 'xMidYMid slice' : 'xMidYMid meet'}
-        onClick={onSkyClick}
-        onPointerDown={onPointerDown}
+        onClick={interactions.onSkyClick}
         onKeyDown={travel.onKeyDown}
+        onPointerDown={interactions.onPointerDown}
         {...travel.pointerHandlers}
         className={cn('constellation relative block w-full', fullViewport && 'h-full')}
       >
@@ -105,13 +111,14 @@ export function Constellation({
         </g>
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">
-            <Stage world={world} interactions={stage} glyphRef={glyphRef} />
+            <Stage world={world} interactions={interactions.stage} glyphRef={glyphRef} />
           </g>
         </g>
       </svg>
       <SkyWhisper
         place={whisperPlaceOf(graph, walk.here)}
         bearings={bearingsOf(graph, walk.here)}
+        concordant={whisperConcordantOf(graph, walk.here)}
         onBearing={travel.travelTo}
         onAttend={walk.attendFacet}
         className="absolute right-6 bottom-16 left-6 z-10 sm:right-auto sm:bottom-6"

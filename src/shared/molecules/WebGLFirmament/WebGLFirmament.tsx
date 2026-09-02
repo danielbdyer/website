@@ -7,7 +7,7 @@ import { cn } from '@/shared/utils/cn';
 // The shader-painted atmospheric layer — CONSTELLATION_HORIZON.md's
 // Layer 1 in its full form. A camera-aware WebGL firmament: the
 // pole-anchored sky gradient, the domain-warped watercolor wash,
-// the deep micro-starfield, the room quadrants' atmospheres, star
+// the deep micro-starfield, the compass's chromatic atmospheres, star
 // halos that twinkle beneath their structural anchors, drifting
 // motes, the cursor's pool of attention — all projected through
 // the same pinhole camera the SVG stars are.
@@ -22,9 +22,13 @@ import { cn } from '@/shared/utils/cn';
 
 interface WebGLFirmamentProps {
   graph: ConstellationGraph;
-  /** The star whose well currently claims the cursor (or hover /
-   *  focus), as `room/slug`. Drives the halo crescendo. */
+  /** The star the visitor stands at or hovers, as `room/slug`.
+   *  Drives the halo crescendo. */
   activeKey: string | null;
+  /** The stars present from where the visitor stands
+   *  (CONSTELLATION_WALK.md §"Presence"); absent halos recede.
+   *  Undefined: everything present. */
+  present?: ReadonlySet<string>;
   /** Mirrors the SVG's preserveAspectRatio so the canvas and the
    *  structural layer share one viewbox mapping. */
   fullViewport?: boolean;
@@ -34,16 +38,23 @@ interface WebGLFirmamentProps {
 export function WebGLFirmament({
   graph,
   activeKey,
+  present,
   fullViewport = false,
   className,
 }: WebGLFirmamentProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scene = buildAtmosphericScene(graph);
+  // A string, so the hook's effect fires only when the membership
+  // changes — not on every render that rebuilds the set.
+  const presence = present
+    ? scene.stars.map((s) => (present.has(s.key) ? '1' : '0')).join('')
+    : null;
   useWebGLFirmament(
     containerRef,
     scene,
     activeStarIndex(scene, activeKey),
     fullViewport ? 'cover' : 'contain',
+    presence,
   );
   return (
     <div

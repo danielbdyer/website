@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cameraBasis } from '@/shared/geometry/camera';
 import type { Camera } from '@/shared/geometry/camera';
 import { getSkyCamera, resetSkyCamera, setSkyCamera, subscribeSkyCamera } from './skyCamera';
+import { REST_DISTANCE } from '@/shared/content/skyWalk';
 
 afterEach(() => {
   resetSkyCamera();
@@ -10,7 +11,7 @@ afterEach(() => {
 describe('skyCamera signal', () => {
   test('defaults to the polestar orbit the prerendered SVG uses', () => {
     const { camera } = getSkyCamera();
-    expect(camera.position).toEqual({ x: 0, y: 0, z: -2.5 });
+    expect(camera.position).toEqual({ x: 0, y: 0, z: -REST_DISTANCE });
     expect(camera.fovY).toBeCloseTo(Math.PI / 4);
   });
 

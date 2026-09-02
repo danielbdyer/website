@@ -69,6 +69,7 @@ interface FrameBuffers {
   readonly starPositions: readonly Vec3[];
   readonly starCenters: Float32Array;
   readonly starActive: Float32Array;
+  readonly starPresence: Float32Array;
   readonly motePositions: MutableVec3[];
   readonly moteCenters: Float32Array;
 }
@@ -86,6 +87,9 @@ interface LoopState {
   readonly handles: AtmosphereHandles;
   readonly fitMode: 'cover' | 'contain';
   readonly activeIndexRef: RefObject<number>;
+  /** Per-star presence targets (index-aligned with the scene), or
+   *  null when everything is present. */
+  readonly presenceRef: RefObject<Float32Array | null>;
   /** Viewbox→buffer-px mapping, measured against the SVG's actual
    *  box (not the canvas box — the two can differ by chrome above
    *  the SVG). Recomputed on resize, read every frame. */
@@ -144,6 +148,7 @@ function allocateBuffers(scene: AtmosphericScene): FrameBuffers {
     starPositions: scene.stars.map((star) => star.unitPosition),
     starCenters: new Float32Array(scene.stars.length * 2),
     starActive: new Float32Array(scene.stars.length),
+    starPresence: new Float32Array(scene.stars.length).fill(1),
     motePositions: scene.motes.map((mote) => ({ ...mote.basePosition })),
     moteCenters: new Float32Array(scene.motes.length * 2),
   };
@@ -257,6 +262,26 @@ function easeActivations(state: LoopState, k: number): number {
   return residual;
 }
 
+// Presence settles slower than a claim: a star that recedes as the
+// walk moves on should fade like a light going out of view, not snap.
+const PRESENCE_EASE_RATE = 2.4;
+
+/** Ease per-star presence toward its target (1 when the caller has no
+ *  targets); returns the largest remaining delta. */
+function easePresence(state: LoopState, k: number): number {
+  const presence = state.buffers.starPresence;
+  const targets = state.presenceRef.current;
+  let residual = 0;
+  for (const i of presence.keys()) {
+    const goal = targets ? (targets[i] ?? 1) : 1;
+    const next = presence[i]! + (goal - presence[i]!) * k;
+    presence[i] = next;
+    const delta = Math.abs(goal - next);
+    if (delta > residual) residual = delta;
+  }
+  return residual;
+}
+
 /** Assemble and paint one atmosphere frame. `timeSeconds` is the
  *  loop clock (0 and frozen under reduced motion). The fit is
  *  computed against the drawing buffer, so every position handed to
@@ -265,7 +290,7 @@ function easeActivations(state: LoopState, k: number): number {
  *  loop can halve its cadence when the sky is calm. */
 function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: number): number {
   const { els, handles, buffers, fit, chain, frame } = state;
-  const { camera, basis } = getSkyCamera();
+  const { camera, basis, travel } = getSkyCamera();
   const dt = state.lastTime === 0 ? 0.016 : Math.min(timeSeconds - state.lastTime, 0.1);
   state.lastTime = timeSeconds;
   const parallaxResidual = advanceChains(els, chain, dt);
@@ -292,6 +317,10 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
     state,
     motion === 0 ? 1 : 1 - Math.exp(-ACTIVE_EASE_RATE * dt),
   );
+  const presenceResidual = easePresence(
+    state,
+    motion === 0 ? 1 : 1 - Math.exp(-PRESENCE_EASE_RATE * dt),
+  );
   const cursor = getConstellationCursor();
   const poolTarget = cursor.active ? 1 : 0;
   state.poolStrength += (poolTarget - state.poolStrength) * (1 - Math.exp(-POOL_EASE_RATE * dt));
@@ -312,13 +341,21 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
   // The heavens' phase, for the dome's depth cue (the deep field turns
   // a little slower than the stars so the backdrop reads farther).
   frame.spin = camera.roll ?? 0;
+  frame.travel.x = travel.x * motion;
+  frame.travel.y = travel.y * motion;
+  frame.travel.z = travel.z * motion;
   frame.pool.x = fit.offsetX + pool.x * fit.scale;
   frame.pool.y = fit.offsetY + pool.y * fit.scale;
   frame.pool.strength = state.poolStrength * motion;
   frame.daystar.x = fit.offsetX + (DAYSTAR_VIEWBOX.x + chain.parFirX) * fit.scale;
   frame.daystar.y = fit.offsetY + (DAYSTAR_VIEWBOX.y + chain.parFirY) * fit.scale;
   handles.render(frame);
-  return Math.max(activeResidual, parallaxResidual, Math.abs(poolTarget - state.poolStrength));
+  return Math.max(
+    activeResidual,
+    presenceResidual,
+    parallaxResidual,
+    Math.abs(poolTarget - state.poolStrength),
+  );
 }
 
 function prefersStillAtmosphere(): boolean {
@@ -380,6 +417,7 @@ async function mountAtmosphere(
   scene: AtmosphericScene,
   fitMode: 'cover' | 'contain',
   activeIndexRef: RefObject<number>,
+  presenceRef: RefObject<Float32Array | null>,
 ): Promise<MountedAtmosphere | null> {
   await arrivalSettled(container);
   // Probe with our own canvas before ogl gets the chance to
@@ -408,6 +446,7 @@ async function mountAtmosphere(
     handles,
     fitMode,
     activeIndexRef,
+    presenceRef,
     fit: { scale: 1, offsetX: 0, offsetY: 0 },
     chain: newChainState(),
     frame: {
@@ -418,10 +457,12 @@ async function mountAtmosphere(
       fit: { scale: 1, offsetX: 0, offsetY: 0 },
       domeShift: { x: 0, y: 0 },
       spin: 0,
+      travel: { x: 0, y: 0, z: 0 },
       pool: { x: 0, y: 0, strength: 0 },
       daystar: { x: 0, y: 0 },
       starCenters: buffers.starCenters,
       starActive: buffers.starActive,
+      starPresence: buffers.starPresence,
       moteCenters: buffers.moteCenters,
     },
     poolStrength: 0,
@@ -635,18 +676,28 @@ function wireAtmosphere(
   };
 }
 
+/** A presence signature — one '1' or '0' per star in scene order — as
+ *  the per-star targets the loop eases toward; null for all present. */
+function presenceTargets(signature: string | null): Float32Array | null {
+  return signature === null ? null : Float32Array.from(signature, (ch) => (ch === '1' ? 1 : 0));
+}
+
 /** Mount the WebGL atmosphere inside `containerRef`'s div. The
  *  scene is the precomputed atmospheric contract for the current
  *  graph; `activeIndex` names the star whose halo is claimed
- *  (-1 for none); `fit` mirrors the SVG's preserveAspectRatio. */
+ *  (-1 for none); `fit` mirrors the SVG's preserveAspectRatio;
+ *  `presence` is a per-star signature ('1'/'0' in scene order) for
+ *  the contextual cap, or null for everything present. */
 export function useWebGLFirmament(
   containerRef: RefObject<HTMLDivElement | null>,
   scene: AtmosphericScene,
   activeIndex: number,
   fit: 'cover' | 'contain',
+  presence: string | null = null,
 ) {
   const mountedRef = useRef<MountedAtmosphere | null>(null);
   const activeIndexRef = useRef(activeIndex);
+  const presenceRef = useRef<Float32Array | null>(presenceTargets(presence));
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -654,11 +705,16 @@ export function useWebGLFirmament(
   }, [activeIndex]);
 
   useEffect(() => {
+    presenceRef.current = presenceTargets(presence);
+    mountedRef.current?.repaint();
+  }, [presence]);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     if (!shouldRenderWebGL()) return;
     let cancelled = false;
-    void mountAtmosphere(container, scene, fit, activeIndexRef)
+    void mountAtmosphere(container, scene, fit, activeIndexRef, presenceRef)
       .then((mounted) => {
         if (!mounted) return;
         if (cancelled) {

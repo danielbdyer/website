@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import type { FocusEvent, MouseEvent, SyntheticEvent } from 'react';
+import type { FocusEvent, MouseEvent, PointerEvent, SyntheticEvent } from 'react';
+import { useMatch } from '@tanstack/react-router';
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import type { Place } from '@/shared/content/skyWalk';
 import type { Facet } from '@/shared/types/common';
@@ -22,7 +23,10 @@ import { clickTargetOf, farEndOf, starKeyOf } from './walk';
 interface UseSkyInteractionsArgs {
   readonly graph: ConstellationGraph;
   readonly walk: SkyWalk;
-  readonly travelTo: (place: Place, alongEdgeId?: string) => void;
+  readonly travel: {
+    readonly travelTo: (place: Place, alongEdgeId?: string) => void;
+    readonly beginScrub: (e: PointerEvent<SVGSVGElement>) => void;
+  };
 }
 
 const isPlainClick = (e: MouseEvent): boolean =>
@@ -32,12 +36,16 @@ const isPlainClick = (e: MouseEvent): boolean =>
 // keyboard focus travels (a Tab is a step, a press is a choice).
 const POINTER_FOCUS_WINDOW_MS = 500;
 
-export function useSkyInteractions({ graph, walk, travelTo }: UseSkyInteractionsArgs) {
+export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsArgs) {
+  const { travelTo, beginScrub } = travel;
   const delegate = useInternalLinkDelegation<SVGSVGElement>();
   const hover = useStarHoverState(null);
   const lastPointerDown = useRef(0);
-  const onPointerDown = () => {
+  // A press stamps the time (so the focus it causes is not a step) and
+  // may begin a scrub along a thread.
+  const onPointerDown = (e: PointerEvent<SVGSVGElement>) => {
     lastPointerDown.current = Date.now();
+    beginScrub(e);
   };
 
   const onSkyClick = (e: MouseEvent<SVGSVGElement>) => {
@@ -77,4 +85,13 @@ export function useSkyInteractions({ graph, walk, travelTo }: UseSkyInteractions
   };
 
   return { hoverKey: hover.activeKey, onSkyClick, onPointerDown, stage };
+}
+
+/** The open overlay's star, as `room/slug`, or null when /sky stands
+ *  alone. That star drops its viewTransitionName so the panel owns
+ *  the name across snapshots (star → panel on Open, back on Close).
+ *  shouldThrow:false — the overlay is optional. */
+export function useOverlayKey(): string | null {
+  const match = useMatch({ from: '/sky/$room/$slug', shouldThrow: false });
+  return match ? `${match.params.room}/${match.params.slug}` : null;
 }

@@ -22,11 +22,13 @@ export interface ThreadFigure {
  *  focused, or stood at — the thread blooms. `walked`: the visitor
  *  has traveled along it this session — it keeps a little of the
  *  light. `lit`: its facet's whole figure is under attention (a
- *  hovered bearing or sibling thread). */
+ *  hovered bearing or sibling thread). `present`: both ends are
+ *  present from where the visitor stands; otherwise it recedes. */
 export interface ThreadWalk {
   readonly active?: boolean;
   readonly walked?: boolean;
   readonly lit?: boolean;
+  readonly present?: boolean;
 }
 
 interface ThreadProps {
@@ -38,6 +40,12 @@ interface ThreadProps {
   walk?: ThreadWalk;
   className?: string;
 }
+
+// Adjacent facets share a hue (FACET_HUE), so within each pair the
+// second draws its figure in a dotted hairline — the way an atlas
+// distinguishes two systems of lines in one ink — and the eight
+// figures stay tellable apart.
+const DOTTED_FACETS: ReadonlySet<Facet> = new Set(['body', 'language', 'becoming', 'relation']);
 
 const HUE_CSS_VAR: Record<ConstellationHue, string> = {
   warm: 'var(--accent-warm)',
@@ -61,7 +69,7 @@ const HIT_STROKE_WIDTH = 14;
 
 export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadProps) {
   const { facet, hue } = figure;
-  const { active = false, walked = false, lit = false } = walk;
+  const { active = false, walked = false, lit = false, present = true } = walk;
   const geometry = { x1: endpoints.x1, y1: endpoints.y1, x2: endpoints.x2, y2: endpoints.y2 };
   return (
     <g
@@ -71,6 +79,7 @@ export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadPr
       data-active={active ? 'true' : undefined}
       data-walked={walked ? 'true' : undefined}
       data-lit={lit ? 'true' : undefined}
+      data-present={present ? 'true' : 'false'}
       aria-hidden="true"
       className={cn('constellation-thread-group', className)}
     >
@@ -79,6 +88,7 @@ export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadPr
         stroke={HUE_CSS_VAR[hue]}
         strokeWidth={active ? 1.1 : 0.45}
         strokeLinecap="round"
+        strokeDasharray={DOTTED_FACETS.has(facet) ? '2.4 3.6' : undefined}
         // The brushstroke filter (feTurbulence + feDisplacementMap)
         // re-runs per frame for every thread; held. Active threads
         // keep the vespers bloom — there are few at once.

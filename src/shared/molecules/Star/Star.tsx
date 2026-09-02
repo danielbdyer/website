@@ -35,6 +35,9 @@ export interface StarWalk {
   readonly here?: boolean;
   readonly named?: boolean;
   readonly visited?: boolean;
+  /** Present from where the visitor stands (the contextual cap);
+   *  absent stars recede to faint lights. Default true. */
+  readonly present?: boolean;
 }
 
 interface StarProps {
@@ -65,7 +68,7 @@ interface StarProps {
 
 export function Star({ work, twinkleDelay, walk = {}, viewTransitionName }: StarProps) {
   const { href, label, visibleLabel, hue, isPreview = false } = work;
-  const { active = false, here = false, named = false, visited = false } = walk;
+  const { active = false, here = false, named = false, visited = false, present = true } = walk;
   return (
     <a
       href={href}
@@ -80,6 +83,7 @@ export function Star({ work, twinkleDelay, walk = {}, viewTransitionName }: Star
       data-here={here ? 'true' : undefined}
       data-named={named ? 'true' : undefined}
       data-visited={visited ? 'true' : undefined}
+      data-present={present ? 'true' : 'false'}
       style={viewTransitionName ? { viewTransitionName } : undefined}
     >
       <StarMark

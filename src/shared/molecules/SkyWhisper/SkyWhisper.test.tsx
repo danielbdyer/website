@@ -16,15 +16,12 @@ const BEARINGS: readonly Bearing[] = [
   },
 ];
 
+const HERE = { title: 'small weather', room: 'the Garden' };
+
 describe('SkyWhisper molecule', () => {
   test('says where you are: title and room, in second voice', () => {
     render(
-      <SkyWhisper
-        place={{ title: 'small weather', room: 'the Garden' }}
-        bearings={BEARINGS}
-        onBearing={() => {}}
-        onAttend={() => {}}
-      />,
+      <SkyWhisper place={HERE} bearings={BEARINGS} onBearing={() => {}} onAttend={() => {}} />,
     );
     expect(screen.getByText('small weather')).toBeInTheDocument();
     expect(screen.getByText('the Garden')).toBeInTheDocument();
@@ -39,28 +36,18 @@ describe('SkyWhisper molecule', () => {
 
   test('each bearing is a button; one with nowhere to go is disabled', () => {
     render(
-      <SkyWhisper
-        place={{ title: 'small weather', room: 'the Garden' }}
-        bearings={BEARINGS}
-        onBearing={() => {}}
-        onAttend={() => {}}
-      />,
+      <SkyWhisper place={HERE} bearings={BEARINGS} onBearing={() => {}} onAttend={() => {}} />,
     );
     expect(screen.getByRole('button', { name: /travel along body/i })).toBeEnabled();
     expect(screen.getByRole('button', { name: /language: nothing yet/i })).toBeDisabled();
   });
 
-  test('taking a bearing reports the star it leads to; hovering attends its facet', async () => {
+  test('taking a bearing reports the star and the thread; hovering attends its facet', async () => {
     const user = userEvent.setup();
     const onBearing = vi.fn();
     const onAttend = vi.fn();
     render(
-      <SkyWhisper
-        place={{ title: 'small weather', room: 'the Garden' }}
-        bearings={BEARINGS}
-        onBearing={onBearing}
-        onAttend={onAttend}
-      />,
+      <SkyWhisper place={HERE} bearings={BEARINGS} onBearing={onBearing} onAttend={onAttend} />,
     );
     const relation = screen.getByRole('button', { name: /travel along relation/i });
     await user.hover(relation);
@@ -71,11 +58,36 @@ describe('SkyWhisper molecule', () => {
     expect(onAttend).toHaveBeenLastCalledWith(null);
   });
 
+  test('names the work in concordance and travels to it on click', async () => {
+    const user = userEvent.setup();
+    const onBearing = vi.fn();
+    render(
+      <SkyWhisper
+        place={HERE}
+        bearings={BEARINGS}
+        concordant={{ key: 'salon/part', title: 'Arvo Pärt and the room between notes' }}
+        onBearing={onBearing}
+        onAttend={() => {}}
+      />,
+    );
+    expect(screen.getByText('in concordance')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /arvo pärt/i }));
+    expect(onBearing).toHaveBeenCalledWith('salon/part');
+  });
+
+  test('is silent about concordance when there is none', () => {
+    render(
+      <SkyWhisper place={HERE} bearings={BEARINGS} onBearing={() => {}} onAttend={() => {}} />,
+    );
+    expect(screen.queryByText('in concordance')).toBeNull();
+  });
+
   test('has no axe-detectable violations', async () => {
     const { container } = render(
       <SkyWhisper
-        place={{ title: 'small weather', room: 'the Garden' }}
+        place={HERE}
         bearings={BEARINGS}
+        concordant={{ key: 'salon/part', title: 'Arvo Pärt' }}
         onBearing={() => {}}
         onAttend={() => {}}
       />,

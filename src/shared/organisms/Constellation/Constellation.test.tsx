@@ -133,6 +133,13 @@ describe('Constellation organism', () => {
     expect(container.querySelectorAll('line[data-thread-id]')).toHaveLength(1);
   });
 
+  test('letters the compass at the rim; a small sky is wholly present', async () => {
+    const { container } = renderConstellation(SAMPLE_GRAPH);
+    await screen.findByRole('link', { name: /small weather/i });
+    expect(container.querySelectorAll('[data-compass]')).toHaveLength(8);
+    expect(container.querySelectorAll('.constellation-star[data-present="true"]')).toHaveLength(2);
+  });
+
   test('opens at the pole and whispers the bearings that lead away', async () => {
     renderConstellation(SAMPLE_GRAPH);
     expect(await screen.findByText('the polestar')).toBeInTheDocument();

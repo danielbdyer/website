@@ -4,6 +4,7 @@ import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { diskToHemisphere, geodesicDistance } from '@/shared/geometry/sphere';
 import { isPreviewWork } from './preview';
 import { getDisplayWorksByRoomSync } from './display';
+import { buildConcordance, type Concordance } from './concordance';
 
 // ─── The Constellation Graph ───────────────────────────────────────
 //
@@ -129,6 +130,9 @@ export interface ConstellationGraph {
   /** Facet → hue mapping, exposed so the renderer can color a
    *  figure without re-deriving the assignment. */
   facetHues: Readonly<Record<Facet, ConstellationHue>>;
+  /** How near works are in their words (concordance.ts); feeds the
+   *  sky's presence. Absent when a graph was built without texts. */
+  concordance?: Concordance;
 }
 
 // ─── Deterministic positioning ────────────────────────────────────
@@ -176,7 +180,7 @@ const TWINKLE_DURATION_SECONDS = 4.5;
 const FACET_ANCHOR_RADIUS = 0.52;
 // Nothing sits inside the polestar figure: the still center stays empty.
 const RADIUS_MIN = 0.16;
-const RADIUS_MAX = 0.66;
+export const RADIUS_MAX = 0.66;
 const JITTER_RADIUS = 0.04;
 const JITTER_AZIMUTH_DEG = 9;
 
@@ -390,7 +394,13 @@ export function getConstellationGraphSync(): ConstellationGraph {
     };
   });
   const edges = deriveFacetFigures(nodes);
-  return { nodes, edges, facetHues: FACET_HUE };
+  const concordance = buildConcordance(
+    allWorks.map(({ room, work }) => ({
+      key: `${room}/${work.slug}`,
+      text: `${work.title} ${work.summary ?? ''} ${work.body}`,
+    })),
+  );
+  return { nodes, edges, facetHues: FACET_HUE, concordance };
 }
 
 // Async barrel signature, mirroring the rest of the content API

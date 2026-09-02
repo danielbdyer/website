@@ -1,13 +1,23 @@
 import type { ConstellationGraph } from '@/shared/content/constellation';
-import { POLE_KEY, findNode, namedFrom, placePosition, type Place } from '@/shared/content/skyWalk';
+import { concordantFrom, presentFrom } from '@/shared/content/presence';
+import {
+  POLE_KEY,
+  bearingsOf,
+  findNode,
+  namedFrom,
+  neighborsOf,
+  placePosition,
+  type Place,
+} from '@/shared/content/skyWalk';
 import type { NavigableEdge } from '@/shared/dom/skyProjector';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 import { geodesicDistance } from '@/shared/geometry/sphere';
 import type { SkyWalk } from '@/shared/hooks/useSkyWalk';
-import type { WhisperPlace } from '@/shared/molecules/SkyWhisper/SkyWhisper';
+import type { WhisperConcordant, WhisperPlace } from '@/shared/molecules/SkyWhisper/SkyWhisper';
 import {
   ROOM_LABEL,
   activeHueOf,
+  compassPoints,
   type PositionedNode,
   type RenderableNode,
   type ResolvedEdge,
@@ -19,7 +29,7 @@ import type { ConstellationWorld } from './Stage';
 
 /** Where the visitor stands when the sky opens: the star a look-up
  *  jumped to, if it exists, else the pole. The session's remembered
- *  place is applied after mount (useSkyWalk) because prerendered
+ *  place is applied after mount (useSkyTravel) because prerendered
  *  markup cannot know it. */
 export function initialHere(graph: ConstellationGraph, focusKey?: string): Place {
   return focusKey && findNode(graph, focusKey) ? focusKey : POLE_KEY;
@@ -28,6 +38,27 @@ export function initialHere(graph: ConstellationGraph, focusKey?: string): Place
 export function whisperPlaceOf(graph: ConstellationGraph, here: Place): WhisperPlace | null {
   const node = findNode(graph, here);
   return node ? { title: node.title, room: ROOM_LABEL[node.room] } : null;
+}
+
+export function whisperConcordantOf(
+  graph: ConstellationGraph,
+  here: Place,
+): WhisperConcordant | null {
+  const concordant = concordantFrom(graph, here);
+  const node = concordant ? findNode(graph, concordant.key) : null;
+  return concordant && node ? { key: concordant.key, title: node.title } : null;
+}
+
+/** The labels visible at rest, in the priority the layout honors:
+ *  here, then its neighbors along the figures, then the stars its
+ *  bearings lead to. */
+export function namedOrder(graph: ConstellationGraph, here: Place): readonly string[] {
+  const ordered = [
+    ...(findNode(graph, here) ? [here] : []),
+    ...neighborsOf(graph, here).map((n) => n.key),
+    ...bearingsOf(graph, here).flatMap((b) => (b.to ? [b.to] : [])),
+  ];
+  return [...new Set(ordered)];
 }
 
 export type ClickTarget =
@@ -91,6 +122,7 @@ export function buildWorld(
   { edges, nodes, walk, hoverKey, overlayKey }: WorldInputs,
 ): ConstellationWorld {
   const hereKey = walk.here === POLE_KEY ? null : walk.here;
+  const hereFacets = findNode(graph, walk.here)?.facets ?? [];
   return {
     edges,
     nodes,
@@ -99,8 +131,11 @@ export function buildWorld(
     overlayKey,
     activeHue: activeHueOf(nodes, hoverKey ?? hereKey),
     named: namedFrom(graph, walk.here),
+    present: presentFrom(graph, walk.here),
     visited: walk.visited,
     walked: walk.walked,
     litFacet: walk.litFacet,
+    attended: new Set([...hereFacets, ...(walk.litFacet ? [walk.litFacet] : [])]),
+    compass: compassPoints(graph),
   };
 }

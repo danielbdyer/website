@@ -8,7 +8,9 @@ import type { Facet, Room } from '@/shared/types/common';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { cameraBasis, project } from '@/shared/geometry/camera';
-import { REST_DISTANCE } from '@/shared/content/skyWalk';
+import { COMPASS } from '@/shared/content/constellation';
+import { COMPASS_RIM, REST_DISTANCE } from '@/shared/content/skyWalk';
+import type { CompassPoint } from '@/shared/atoms/Compass/Compass';
 
 // Layout primitives for the constellation. Pure functions — no React,
 // no DOM — so the rendering layer reduces to "data → pixels" with
@@ -188,5 +190,15 @@ export function activeHueOf(
  *  graph type is re-exported here as a convenience for tests of the
  *  layout module without forcing them to depend on constellation.ts
  *  directly. */
+
+/** The compass's eight names at the resting camera's projection of
+ *  their rim points — the prerendered positions the projector then
+ *  carries each tick (skyProjector.projectCompass). */
+export function compassPoints(graph: ConstellationGraph): CompassPoint[] {
+  return COMPASS.map((facet) => {
+    const projected = projectToViewbox(COMPASS_RIM[facet]);
+    return { facet, hue: graph.facetHues[facet], x: projected.x, y: projected.y };
+  });
+}
 
 export { type ConstellationGraph } from '@/shared/content/constellation';

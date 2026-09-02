@@ -1,7 +1,17 @@
 import { describe, expect, test } from 'vitest';
 import { diskToHemisphere } from '@/shared/geometry/sphere';
 import type { ConstellationGraph, ConstellationNode } from './constellation';
-import { POLE_KEY, bearingsOf, namedFrom, neighborToward, neighborsOf } from './skyWalk';
+import {
+  COMPASS_RIM,
+  COMPASS_RIM_THETA,
+  POLE_KEY,
+  REST_DISTANCE,
+  bearingsOf,
+  namedFrom,
+  neighborToward,
+  neighborsOf,
+  restDistanceFor,
+} from './skyWalk';
 
 const FACET_HUES = {
   craft: 'warm',
@@ -158,5 +168,45 @@ describe('neighborToward', () => {
 
   test('returns null when nothing lies that way', () => {
     expect(neighborToward(GRAPH, 'salon/far', { x: 0, y: 1, z: 0 })).toBeNull();
+  });
+});
+
+describe('restDistanceFor', () => {
+  test('a landscape frame rests near REST_DISTANCE', () => {
+    const d = restDistanceFor(1440, 900);
+    expect(d).toBeGreaterThan(REST_DISTANCE - 0.05);
+    expect(d).toBeLessThan(3.2);
+  });
+
+  test('a portrait phone stands farther back so no star is cropped', () => {
+    const d = restDistanceFor(390, 844);
+    expect(d).toBeGreaterThan(4);
+    expect(d).toBeLessThanOrEqual(4.8);
+  });
+
+  test('a contained square frame and a degenerate frame fall back to the base', () => {
+    expect(restDistanceFor(800, 800, 'contain')).toBeCloseTo(REST_DISTANCE, 5);
+    expect(restDistanceFor(0, 0)).toBe(REST_DISTANCE);
+  });
+});
+
+describe('COMPASS_RIM', () => {
+  test('letters every facet on its bearing, just outside the populated cap', () => {
+    const azimuths: Record<string, number> = {
+      craft: 0,
+      body: 45,
+      beauty: 90,
+      language: 135,
+      consciousness: 180,
+      becoming: 225,
+      leadership: 270,
+      relation: 315,
+    };
+    for (const [facet, p] of Object.entries(COMPASS_RIM)) {
+      expect(Math.hypot(p.x, p.y, p.z)).toBeCloseTo(1, 9);
+      expect(p.z).toBeCloseTo(Math.cos(COMPASS_RIM_THETA), 9);
+      const az = ((Math.atan2(p.y, p.x) * 180) / Math.PI + 360) % 360;
+      expect(az).toBeCloseTo(azimuths[facet]!, 6);
+    }
   });
 });
