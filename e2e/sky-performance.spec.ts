@@ -1,24 +1,23 @@
 import { expect, test } from '@playwright/test';
 
-// Real-browser performance guards for the constellation's
-// navigation surface. The vitest perf tests cover the JS hot path
-// in jsdom (basin field, nearest node, flick velocity); these
-// cover what a real browser does — paint, composite, the WebGL
-// firmament's draws, the camera transform's rasterizer cost.
+// Real-browser performance guards for the constellation's travel.
+// The vitest perf tests cover the JS hot path (projection, the
+// atmosphere frame); these cover what a real browser does — paint,
+// composite, the WebGL firmament's draws, the camera transform's
+// rasterizer cost — while the camera travels between stars.
 //
 // The metric: **long-task delta**, not absolute count or FPS. We
-// measure the page's idle long-task count first (that captures
-// WebGL firmament cost, the rotates animation, etc.), then again
-// during interaction. The delta is what the navigation contributes.
-// A clean implementation should add few or no long tasks beyond
-// the page's resting cost; a regression that blocks the main
-// thread on every frame would push the delta way above baseline.
+// measure the page's idle long-task count first (that captures the
+// WebGL firmament's cost, the heavens' idle cadence, etc.), then again
+// during travel. The delta is what travel contributes. A clean
+// implementation should add few or no long tasks beyond the page's
+// resting cost; a regression that blocks the main thread on every
+// frame would push the delta way above baseline.
 //
 // FPS is the metric people reach for first but it's unreliable in
 // headless and depends on GPU/display. Long-task delta is honest in
 // any environment because it measures *blocking work added*, not
-// frame production. CPU-only, software-rasterized headless picks
-// up paint cost as long tasks too — that goes into the baseline.
+// frame production.
 //
 // Tagged @perf so they run on demand:
 //   pnpm test:e2e --grep @perf
@@ -79,12 +78,6 @@ async function observeLongTasks(
   });
 }
 
-async function constellationBounds(page: import('@playwright/test').Page) {
-  const box = await page.locator('svg.constellation').boundingBox();
-  if (!box) throw new Error('Could not locate constellation SVG');
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2, w: box.width };
-}
-
 function annotate(t: import('@playwright/test').TestInfo, label: string, r: LongTaskReport): void {
   t.annotations.push({
     type: label,
@@ -92,78 +85,57 @@ function annotate(t: import('@playwright/test').TestInfo, label: string, r: Long
   });
 }
 
+async function openSkyAtRest(page: import('@playwright/test').Page) {
+  await page.goto('/sky');
+  await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
+  // Let the sky-arrival animation finish.
+  await page.waitForTimeout(1800);
+}
+
 test.describe('constellation main-thread health', () => {
   test(
-    'drag does not add long tasks beyond the page baseline',
+    'traveling to a star does not add long tasks beyond the baseline',
     PERF_TAG,
     async ({ page }, info) => {
-      await page.goto('/sky');
-      await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
-      // Let the sky-arrival animation finish.
-      await page.waitForTimeout(1800);
+      await openSkyAtRest(page);
 
-      // Baseline: page at rest — the WebGL firmament plus the navigation
+      // Baseline: page at rest — the WebGL firmament plus the travel
       // loop's idle cadence carrying the heavens' turn.
       const baseline = await observeLongTasks(page, 2000);
       annotate(info, 'baseline', baseline);
 
-      // Interaction: a continuous 360° drag for 2s.
-      const { x, y, w } = await constellationBounds(page);
-      const radius = Math.min(w * 0.18, 200);
-      await page.mouse.move(x, y);
-      await page.mouse.down();
-      const dragMeasurement = observeLongTasks(page, 2000);
-      const steps = 60;
-      for (let i = 0; i < steps; i++) {
-        const angle = (i / steps) * Math.PI * 2;
-        await page.mouse.move(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
-        await page.waitForTimeout(30);
-      }
-      await page.mouse.up();
-      const drag = await dragMeasurement;
-      annotate(info, 'drag', drag);
+      // Travel: the sky opens at the pole, so clicking any star starts a
+      // held-second crossing rather than opening it. Measure the whole
+      // travel window.
+      const stars = page.locator('svg.constellation a.constellation-star');
+      await stars.nth(2).click({ force: true });
+      const travel = await observeLongTasks(page, 2200);
+      annotate(info, 'travel', travel);
 
-      // The hook's per-frame cost is microseconds (vitest perf tests).
-      // What matters here is that interaction doesn't *add* long tasks
-      // beyond the page's resting cost. We allow drag.total to grow
-      // by 50% of baseline (generous; a real regression would multiply
-      // it). The longest task during drag must not exceed baseline by
-      // more than 50ms — a single new blocking frame.
-      // Total time is the meaningful aggregate; a regression that
-      // blocks every frame would multiply this. We allow the drag's
-      // total to grow by 50% of baseline (generous) plus 100ms
-      // headroom for browser variance.
-      expect(drag.total).toBeLessThan(baseline.total * 1.5 + 100);
-      // The longest single task during interaction shouldn't be
-      // dramatically longer than baseline's longest. 100ms headroom
-      // tolerates one frame of incidental browser work without
-      // flaking; an unbounded regression (e.g. an O(N²) loop) would
-      // produce tasks well beyond that.
-      expect(drag.longest).toBeLessThan(baseline.longest + 100);
+      // Travel must not *add* long tasks beyond the page's resting
+      // cost: total may grow by 50% of baseline plus 100ms headroom
+      // for browser variance; the longest task may exceed baseline's
+      // by at most 100ms — one incidental frame, not a systemic one.
+      expect(travel.total).toBeLessThan(baseline.total * 1.5 + 100);
+      expect(travel.longest).toBeLessThan(baseline.longest + 100);
     },
   );
 
-  test('flick coast settles without piling up long tasks', PERF_TAG, async ({ page }, info) => {
-    await page.goto('/sky');
-    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
-    await page.waitForTimeout(1800);
+  test(
+    'taking a bearing from the whisper travels without piling up long tasks',
+    PERF_TAG,
+    async ({ page }, info) => {
+      await openSkyAtRest(page);
 
-    const baseline = await observeLongTasks(page, 1500);
-    annotate(info, 'baseline', baseline);
+      const baseline = await observeLongTasks(page, 1500);
+      annotate(info, 'baseline', baseline);
 
-    const { x, y, w } = await constellationBounds(page);
-    const reach = Math.min(w * 0.3, 300);
-    await page.mouse.move(x - reach, y);
-    await page.mouse.down();
-    for (let i = 1; i <= 5; i++) {
-      await page.mouse.move(x - reach + (reach * 2 * i) / 5, y);
-      await page.waitForTimeout(15);
-    }
-    await page.mouse.up();
-    const coast = await observeLongTasks(page, 1500);
-    annotate(info, 'coast', coast);
+      await page.locator('.sky-whisper__bearing:enabled').first().click();
+      const travel = await observeLongTasks(page, 2200);
+      annotate(info, 'travel', travel);
 
-    expect(coast.total).toBeLessThan(baseline.total * 1.5 + 100);
-    expect(coast.longest).toBeLessThan(baseline.longest + 100);
-  });
+      expect(travel.total).toBeLessThan(baseline.total * 1.5 + 100);
+      expect(travel.longest).toBeLessThan(baseline.longest + 100);
+    },
+  );
 });

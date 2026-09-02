@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   RouterProvider,
   createRouter,
@@ -24,7 +25,7 @@ function renderConstellation(graph: ConstellationGraph) {
     routeTree: rootRoute,
     history: createMemoryHistory({ initialEntries: ['/'] }),
   });
-  return render(<RouterProvider router={router} />);
+  return { router, ...render(<RouterProvider router={router} />) };
 }
 
 const SAMPLE_GRAPH: ConstellationGraph = {
@@ -84,7 +85,32 @@ const EMPTY_GRAPH: ConstellationGraph = {
   edges: [],
 };
 
+/** Reduced motion makes travel an instant arrival, which lets the
+ *  walk's consequences be asserted synchronously. */
+function preferReducedMotion() {
+  vi.spyOn(globalThis, 'matchMedia').mockImplementation(
+    (query: string) =>
+      ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => true,
+      }) as MediaQueryList,
+  );
+}
+
 describe('Constellation organism', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   test('renders a star for every node, addressable by sky-overlay URL', async () => {
     // Stars open as overlays inside /sky, so their hrefs follow the
     // /sky/{room}/{slug} pattern; the work-page route at
@@ -105,6 +131,46 @@ describe('Constellation organism', () => {
     const { container } = renderConstellation(SAMPLE_GRAPH);
     await screen.findByRole('link', { name: /small weather/i });
     expect(container.querySelectorAll('line[data-thread-id]')).toHaveLength(1);
+  });
+
+  test('opens at the pole and whispers the bearings that lead away', async () => {
+    renderConstellation(SAMPLE_GRAPH);
+    expect(await screen.findByText('the polestar')).toBeInTheDocument();
+    // Every facet is a bearing at the pole; the ones no star carries
+    // yet are present but disabled.
+    expect(screen.getByRole('button', { name: /travel along language/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /beauty: nothing yet/i })).toBeDisabled();
+  });
+
+  test('clicking a star you are not at travels to it instead of opening it', async () => {
+    preferReducedMotion();
+    const user = userEvent.setup();
+    const { router } = renderConstellation(SAMPLE_GRAPH);
+    const star = await screen.findByRole('link', { name: /a second work/i });
+    await user.click(star);
+    // Arrived: the whisper now says where you stand, the star is the
+    // current location, and the router did not navigate.
+    expect(
+      await screen.findByText('a second work', { selector: '.sky-whisper span' }),
+    ).toBeVisible();
+    expect(screen.getByText('The Studio')).toBeInTheDocument();
+    expect(star).toHaveAttribute('aria-current', 'location');
+    expect(router.state.location.pathname).toBe('/');
+  });
+
+  test('taking a bearing from the whisper travels along it', async () => {
+    preferReducedMotion();
+    const user = userEvent.setup();
+    renderConstellation(SAMPLE_GRAPH);
+    await screen.findByText('the polestar');
+    await user.click(screen.getByRole('button', { name: /travel along craft/i }));
+    // craft's only star is the second work.
+    expect(
+      await screen.findByText('a second work', { selector: '.sky-whisper span' }),
+    ).toBeVisible();
+    // Standing at a star, the bearings are its own facets.
+    expect(screen.getByRole('button', { name: /travel along language/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /relation/i })).toBeNull();
   });
 
   test('honors the empty Foyer — zero nodes is a real empty set', async () => {

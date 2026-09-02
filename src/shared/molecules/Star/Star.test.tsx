@@ -45,9 +45,27 @@ describe('Star molecule', () => {
     expect(container.querySelector('[data-hue="violet"]')).not.toBeNull();
   });
 
-  test('isActive sets data-active on the anchor for CSS to hook', () => {
-    const { container } = render(withSvg(<Star work={baseWork({ hue: 'warm' })} isActive />));
+  test('an active state sets data-active on the anchor for CSS to hook', () => {
+    const { container } = render(
+      withSvg(<Star work={baseWork({ hue: 'warm' })} walk={{ active: true }} />),
+    );
     expect(container.querySelector('[data-active="true"]')).not.toBeNull();
+  });
+
+  test('its place in the walk lands as data attributes; here is the current location', () => {
+    const { container } = render(
+      withSvg(<Star work={baseWork()} walk={{ here: true, named: true, visited: true }} />),
+    );
+    const anchor = container.querySelector('a');
+    expect(anchor?.dataset.here).toBe('true');
+    expect(anchor?.dataset.named).toBe('true');
+    expect(anchor?.dataset.visited).toBe('true');
+    expect(anchor?.getAttribute('aria-current')).toBe('location');
+  });
+
+  test('a star that is not here carries no aria-current', () => {
+    const { container } = render(withSvg(<Star work={baseWork()} />));
+    expect(container.querySelector('a')?.getAttribute('aria-current')).toBeNull();
   });
 
   test('the visible label defaults to the accessible label when none is provided', () => {

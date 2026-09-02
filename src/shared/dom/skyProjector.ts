@@ -191,12 +191,21 @@ export function projectPole(
   );
 }
 
+function setEndpoints(el: Element, x1: string, y1: string, x2: string, y2: string): void {
+  el.setAttribute('x1', x1);
+  el.setAttribute('y1', y1);
+  el.setAttribute('x2', x2);
+  el.setAttribute('y2', y2);
+}
+
 /**
- * Position every thread's endpoints via the data-thread-id
- * selector. Threads connecting behind-camera endpoints render
- * off-canvas through the same far-offscreen trick.
+ * Position every thread's endpoints via the data-thread-id selector,
+ * and the wide transparent hit twin beside it (data-thread-hit) that
+ * makes the hairline able to be hovered and clicked. Threads connecting
+ * behind-camera endpoints render off-canvas through the same
+ * far-offscreen trick.
  *
- * @bigO Time: O(E) per call (one cached element lookup + two
+ * @bigO Time: O(E) per call (two cached element lookups + two
  *       matrix-multiplies per edge). Hot path: called once per RAF
  *       tick alongside projectStars.
  *       Space: O(E) for the element cache, O(1) per tick.
@@ -214,11 +223,14 @@ export function projectThreads(
     const el = cachedElement(cameraGroup, `[data-thread-id="${edge.id}"]`);
     if (!el) continue;
     projectInto(edge.sourcePos, camera, basis, 1, SCRATCH);
-    el.setAttribute('x1', (center + SCRATCH.screenX * radius).toFixed(2));
-    el.setAttribute('y1', (center - SCRATCH.screenY * radius).toFixed(2));
+    const x1 = (center + SCRATCH.screenX * radius).toFixed(2);
+    const y1 = (center - SCRATCH.screenY * radius).toFixed(2);
     projectInto(edge.targetPos, camera, basis, 1, SCRATCH);
-    el.setAttribute('x2', (center + SCRATCH.screenX * radius).toFixed(2));
-    el.setAttribute('y2', (center - SCRATCH.screenY * radius).toFixed(2));
+    const x2 = (center + SCRATCH.screenX * radius).toFixed(2);
+    const y2 = (center - SCRATCH.screenY * radius).toFixed(2);
+    setEndpoints(el, x1, y1, x2, y2);
+    const hit = cachedElement(cameraGroup, `[data-thread-hit="${edge.id}"]`);
+    if (hit) setEndpoints(hit, x1, y1, x2, y2);
   }
 }
 

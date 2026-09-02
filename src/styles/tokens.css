@@ -588,8 +588,25 @@ body::before {
   transition: opacity 400ms ease-out;
 }
 
-.constellation-star[data-active='true'] .constellation-star__label {
+/* Named at rest — here, its neighbors, and the stars its bearings lead
+   to carry their names without being asked, so the next step is always
+   legible (CONSTELLATION_WALK.md §"Semantic Context"). Here reads
+   fullest; hover still lifts any star. */
+.constellation-star[data-named='true'] .constellation-star__label {
+  opacity: 0.58;
+}
+
+.constellation-star[data-active='true'] .constellation-star__label,
+.constellation-star[data-here='true'] .constellation-star__label {
   opacity: 0.85;
+}
+
+/* Visited — a star stood at earlier this session keeps a little of the
+   gold: the walk's memory, drawn (CONSTELLATION_WALK.md §"The Walk's
+   Memory"). The claim rule above still lifts it fully. */
+.constellation-star[data-visited='true'] .constellation-star__gold {
+  transform: scale(1);
+  opacity: 0.16;
 }
 
 /* ─── Threshold previews ────────────────────────────────────────
@@ -726,15 +743,68 @@ body::before {
    settle. CONSTELLATION_DESIGN.md §"C3. Thread" V3.A and
    CONSTELLATION.md §"The Threads" both name this rhythm. */
 .constellation-thread {
+  opacity: 0.25;
   transition:
     opacity 600ms ease-out,
     stroke-width 600ms ease-out;
 }
 
-.constellation-thread[data-active='true'] {
+.constellation-thread-group[data-active='true'] .constellation-thread {
+  opacity: 0.95;
   transition:
     opacity 200ms ease-out,
     stroke-width 200ms ease-out;
+}
+
+/* A thread is a path (CONSTELLATION_WALK.md §"Input"). Hovering its
+   wide transparent twin lights the hairline end to end; hovering a
+   bearing in the whisper lights its facet's whole figure (data-lit);
+   a thread walked this session keeps a little of the light. */
+.constellation-thread-group:hover .constellation-thread,
+.constellation-thread-group[data-lit='true'] .constellation-thread {
+  opacity: 0.8;
+  stroke-width: 0.9;
+  transition:
+    opacity 200ms ease-out,
+    stroke-width 200ms ease-out;
+}
+
+.constellation-thread-group[data-walked='true'] .constellation-thread {
+  opacity: 0.5;
+}
+
+/* ─── The whisper ──────────────────────────────────────────────────
+   The sky's one voice, in second voice, low in the frame: where you
+   stand, then what leads away. The bearings are real buttons; the
+   block itself lets the pointer through to the sky. Text sits on the
+   firmament, so a soft ground shadow keeps it legible over stars.
+   CONSTELLATION_WALK.md §"The Whisper". */
+.sky-whisper {
+  pointer-events: none;
+  max-width: 26rem;
+  line-height: 1.6;
+  text-shadow: 0 0 14px var(--bg);
+}
+
+.sky-whisper__bearing {
+  pointer-events: auto;
+  color: var(--text-3);
+  font: inherit;
+  transition: color 200ms ease-out;
+}
+
+.sky-whisper__bearing:hover,
+.sky-whisper__bearing:focus-visible {
+  color: var(--accent-gold);
+}
+
+.sky-whisper__bearing:disabled {
+  opacity: 0.4;
+}
+
+.sky-arrival:has(.work-overlay) .sky-whisper {
+  opacity: 0;
+  transition: opacity 400ms ease-out;
 }
 
 /* Polestar wash — the soft watercolor halo around the geometric

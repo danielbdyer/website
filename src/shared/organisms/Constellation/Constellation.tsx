@@ -1,25 +1,26 @@
 import { useRef } from 'react';
 import { useMatch } from '@tanstack/react-router';
 import type { ConstellationGraph } from '@/shared/content/constellation';
+import { POLE_KEY, bearingsOf } from '@/shared/content/skyWalk';
 import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
 import { Daystar } from '@/shared/atoms/Daystar/Daystar';
 import { Firmament } from '@/shared/atoms/Firmament/Firmament';
 import { WebGLFirmament } from '@/shared/molecules/WebGLFirmament/WebGLFirmament';
-import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
+import { SkyWhisper } from '@/shared/molecules/SkyWhisper/SkyWhisper';
 import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
-import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
-import { useConstellationNavigation } from '@/shared/hooks/useConstellationNavigation';
-import type { NavigableEdge } from '@/shared/hooks/useConstellationNavigation';
+import { useSkyTravel } from '@/shared/hooks/useSkyTravel';
+import { useSkyWalk } from '@/shared/hooks/useSkyWalk';
 import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
 import {
   VIEWBOX,
-  activeHueOf,
   buildPositionedMap,
   buildRenderableNodes,
   resolveEdges,
   skyTitle,
 } from './layout';
+import { useSkyInteractions } from './useSkyInteractions';
+import { buildWorld, initialHere, navigableEdges, navigableNodes, whisperPlaceOf } from './walk';
 
 interface ConstellationProps {
   graph: ConstellationGraph;
@@ -27,13 +28,17 @@ interface ConstellationProps {
    *  fit) so the constellation occupies every available pixel rather
    *  than being letterboxed inside a column. */
   fullViewport?: boolean;
-  /** A node key (`{room}/{slug}`) to open centered on — the look-up
-   *  jump from a work lands on its star. Forwarded to the navigation
-   *  hook; null/absent opens at the polestar (or the restored cursor).
+  /** A node key (`{room}/{slug}`) to open standing at — the look-up
+   *  jump from a work lands on its star. Null/absent opens at the pole
+   *  (or the session's remembered place).
    *  CONSTELLATION_PARALLEL.md §"The Orientation Contract." */
   focusKey?: string | undefined;
   className?: string;
 }
+
+// The sky as a walk (CONSTELLATION_WALK.md): the visitor is always
+// somewhere; the camera rests there; a named destination — a star, a
+// bearing, a thread, an arrow — is the only thing that moves it.
 
 export function Constellation({
   graph,
@@ -41,7 +46,6 @@ export function Constellation({
   focusKey,
   className,
 }: ConstellationProps) {
-  const onSkyClick = useInternalLinkDelegation<SVGSVGElement>();
   const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const cameraRef = useRef<SVGGElement | null>(null);
   const glyphRef = useRef<SVGCircleElement | null>(null);
@@ -49,37 +53,31 @@ export function Constellation({
   const edges = resolveEdges(graph.edges, positioned);
   const nodes = buildRenderableNodes(graph.nodes, positioned);
   const titleId = 'constellation-title';
-  const { activeKey, handleActivate, handleMouseLeave, handleBlur, setActiveKey } =
-    useStarHoverState(null);
-  const activeHue = activeHueOf(nodes, activeKey);
-  // Read the overlay route's params, when it's open. The matching
-  // star suppresses its viewTransitionName so the overlay panel
-  // (which carries the same name) has unambiguous ownership of
-  // that name across snapshots — the View Transitions API's
-  // morph plays cleanly star → panel on Open and panel → star on
-  // Close. shouldThrow:false because the overlay is optional;
-  // /sky alone is a valid state.
+  const walk = useSkyWalk(initialHere(graph, focusKey));
+  const travel = useSkyTravel({
+    graph,
+    nodes: navigableNodes(nodes),
+    edges: navigableEdges(edges, positioned),
+    viewboxSize: VIEWBOX,
+    here: walk.here,
+    onArrive: walk.arrive,
+    cameraRef,
+    glyphRef,
+  });
+  const { hoverKey, onSkyClick, onPointerDown, stage } = useSkyInteractions({
+    graph,
+    walk,
+    travelTo: travel.travelTo,
+  });
+  // The open overlay's star drops its viewTransitionName so the panel
+  // owns the name across snapshots (star → panel on Open, back on
+  // Close). shouldThrow:false — /sky alone is a valid state.
   const overlayMatch = useMatch({ from: '/sky/$room/$slug', shouldThrow: false });
   const overlayKey = overlayMatch
     ? `${overlayMatch.params.room}/${overlayMatch.params.slug}`
     : null;
-  const navigableNodes = nodes.map(({ key, node }) => ({ key, unitPos: node.unitPosition }));
-  const navigableEdges: NavigableEdge[] = edges.flatMap((edge) => {
-    const source = positioned.get(edge.sourceKey);
-    const target = positioned.get(edge.targetKey);
-    if (!source || !target) return [];
-    return [{ id: edge.id, sourcePos: source.unitPosition, targetPos: target.unitPosition }];
-  });
-  const { dragHandlers, onKeyDown, onKeyUp } = useConstellationNavigation({
-    nodes: navigableNodes,
-    edges: navigableEdges,
-    viewboxSize: VIEWBOX,
-    fit: fullViewport ? 'cover' : 'contain',
-    setActiveKey,
-    cameraRef,
-    glyphRef,
-    focusKey,
-  });
+  const world = buildWorld(graph, { edges, nodes, walk, hoverKey, overlayKey });
+  const hereKey = walk.here === POLE_KEY ? null : walk.here;
 
   return (
     <nav
@@ -89,15 +87,15 @@ export function Constellation({
       <h2 id={titleId} className="sr-only">
         {skyTitle(graph.nodes.length)}
       </h2>
-      <WebGLFirmament graph={graph} activeKey={activeKey} fullViewport={fullViewport} />
+      <WebGLFirmament graph={graph} activeKey={hoverKey ?? hereKey} fullViewport={fullViewport} />
       <svg
         ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         preserveAspectRatio={fullViewport ? 'xMidYMid slice' : 'xMidYMid meet'}
         onClick={onSkyClick}
-        onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
-        {...dragHandlers}
+        onPointerDown={onPointerDown}
+        onKeyDown={travel.onKeyDown}
+        {...travel.pointerHandlers}
         className={cn('constellation relative block w-full', fullViewport && 'h-full')}
       >
         <ConstellationFilters />
@@ -107,18 +105,17 @@ export function Constellation({
         </g>
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">
-            <Stage
-              world={{ edges, nodes, activeKey, activeHue, overlayKey }}
-              interactions={{
-                onActivate: handleActivate,
-                onMouseLeave: handleMouseLeave,
-                onBlur: handleBlur,
-              }}
-              glyphRef={glyphRef}
-            />
+            <Stage world={world} interactions={stage} glyphRef={glyphRef} />
           </g>
         </g>
       </svg>
+      <SkyWhisper
+        place={whisperPlaceOf(graph, walk.here)}
+        bearings={bearingsOf(graph, walk.here)}
+        onBearing={travel.travelTo}
+        onAttend={walk.attendFacet}
+        className="absolute right-6 bottom-16 left-6 z-10 sm:right-auto sm:bottom-6"
+      />
     </nav>
   );
 }
