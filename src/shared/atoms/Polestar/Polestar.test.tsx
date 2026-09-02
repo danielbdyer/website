@@ -17,7 +17,21 @@ describe('Polestar atom', () => {
     const { container } = render(withSvg(<Polestar cx={500} cy={500} />));
     expect(container.querySelectorAll('rect').length).toBe(2);
     expect(container.querySelectorAll('line').length).toBe(4);
-    expect(container.querySelectorAll('circle').length).toBe(1);
+    expect(container.querySelectorAll('circle.constellation-polestar__ornament').length).toBe(1);
+  });
+
+  test("circles the figure with the chart's two rings, drawn after the figure", () => {
+    const { container } = render(withSvg(<Polestar cx={500} cy={500} half={60} />));
+    const rings = container.querySelectorAll('circle.constellation-polestar__ring');
+    expect(rings.length).toBe(2);
+    expect(rings[0]?.getAttribute('fill')).toBe('none');
+    expect(Number(rings[1]?.getAttribute('r'))).toBeGreaterThan(
+      Number(rings[0]?.getAttribute('r')),
+    );
+    // The figure's own circle stays first in document order.
+    expect(
+      container.querySelector('circle')?.classList.contains('constellation-polestar__ornament'),
+    ).toBe(true);
   });
 
   test('positions the outer rect symmetrically around the center', () => {

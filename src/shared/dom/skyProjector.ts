@@ -16,6 +16,7 @@
 import type { Camera, CameraBasis, ProjectedPointMut } from '@/shared/geometry/camera';
 import { project, projectInto } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
+import { NORTH_POLE } from '@/shared/geometry/sphere';
 import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
@@ -167,6 +168,27 @@ export function projectStars(
         : 'translate(-9999 -9999)',
     );
   }
+}
+
+/** Position the pole group — the geometric figure and its wash — at
+ *  the world's north pole, so the still point stays where the sky
+ *  turns rather than riding the center of view. Behind-camera (never,
+ *  for a camera under the dome, but honest) parks it offscreen. */
+export function projectPole(
+  cameraGroup: SVGGElement,
+  camera: Camera,
+  basis: CameraBasis,
+  viewboxSize: number,
+): void {
+  const el = cachedElement(cameraGroup, '[data-polestar]');
+  if (!el) return;
+  const proj = projectToViewbox(NORTH_POLE, camera, basis, viewboxSize);
+  el.setAttribute(
+    'transform',
+    proj.inFront
+      ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)})`
+      : 'translate(-9999 -9999)',
+  );
 }
 
 /**

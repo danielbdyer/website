@@ -9,6 +9,7 @@ import {
   broadcastCursorToFirmament,
   clientToNormalized,
   projectGlyph,
+  projectPole,
   projectStars,
   projectThreads,
   projectTrail,
@@ -612,6 +613,7 @@ function projectScene(state: NavState, refs: RuntimeRefs): void {
   if (!cameraGroup) return;
   const { currentCamera: camera, currentBasis: basis } = state;
   const viewboxSize = refs.viewboxSize;
+  projectPole(cameraGroup, camera, basis, viewboxSize);
   projectStars(cameraGroup, refs.nodesRef.current, camera, basis, viewboxSize);
   projectThreads(cameraGroup, refs.edgesRef.current, camera, basis, viewboxSize);
   const cursorProj = projectGlyph(refs.glyphRef.current, state.pos, camera, basis, viewboxSize);

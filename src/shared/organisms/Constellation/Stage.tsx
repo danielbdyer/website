@@ -118,23 +118,30 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
   const { onActivate, onMouseLeave, onBlur } = interactions;
   return (
     <>
-      {/* Watercolor wash — soft halo of paper-warm light around
-          the polestar. CONSTELLATION_DESIGN.md §"Materials"
-          commits to washes around the polestar; the gradient
-          lives in ConstellationFilters as `cn-polestar-wash` and
-          renders as a large fill-only circle behind the
-          geometric figure. The wash sits inside the SVG so the
-          firmament's noise composes through it; a CSS overlay
-          would sit on top instead and read as chrome. */}
-      <circle
-        cx={500}
-        cy={500}
-        r={220}
-        fill="url(#cn-polestar-wash)"
-        aria-hidden="true"
-        className="constellation-polestar-wash pointer-events-none"
-      />
-      <Polestar cx={500} cy={500} />
+      {/* The pole. The geometric figure and its watercolor wash sit at
+          the world's north pole — the still point the heavens turn
+          about — and the navigation hook projects this group there
+          each tick (skyProjector.projectPole), so the figure stays
+          with the pole as the camera travels rather than riding the
+          center of view (where, drawn in gold, it framed whichever
+          star was active like a selection box). The prerendered
+          transform is the pole's position under the default camera,
+          which is the center. CONSTELLATION_DESIGN.md §"Living-
+          Document Behavior": *the polestar is constant — every visit,
+          every theme, every state — at the same world-position.* The
+          wash lives inside the SVG so the firmament's noise composes
+          through it. */}
+      <g data-polestar="true" transform="translate(500 500)">
+        <circle
+          cx={0}
+          cy={0}
+          r={220}
+          fill="url(#cn-polestar-wash)"
+          aria-hidden="true"
+          className="constellation-polestar-wash pointer-events-none"
+        />
+        <Polestar cx={0} cy={0} />
+      </g>
       <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
       <g className="constellation-rotates">
         <g aria-hidden="true">

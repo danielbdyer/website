@@ -235,7 +235,17 @@ export const DOME_FRAGMENT = /* glsl */ `
     float ringDist = abs(fract(polar * 4.4 + 0.5) - 0.5) / 4.4;
     float ring = smoothstep(0.005, 0.0, ringDist);
     float ringMask = smoothstep(1.3, 0.2, polar) * smoothstep(0.05, 0.1, polar);
-    sky += uAccentGold * ring * ringMask * breath * (0.022 + 0.042 * uNight);
+    // The chart's meridians — every 30° of azimuth, arc-length width so
+    // they don't thicken toward the pole, faded where they converge on
+    // it and beyond the drawn cap. By night they join the rings as gold
+    // hairlines; by day they are drawn in ink (below).
+    float phi = atan(P.y, P.x);
+    float meridianStep = 0.5235988;
+    float meridianGap = abs(fract(phi / meridianStep + 0.5) - 0.5) * meridianStep * sin(polar);
+    float meridian = smoothstep(0.0035, 0.0, meridianGap)
+      * smoothstep(0.07, 0.2, polar) * smoothstep(1.35, 1.05, polar);
+    sky += uAccentGold * (ring * ringMask * (0.022 + 0.05 * uNight) + meridian * 0.03 * uNight)
+      * breath;
     // The polestar's own gathered warmth, breathing with the rings.
     sky += mix(uGlowColor, uAccentGold, 0.5) * exp(-polar * polar * 7.0) * breath
       * (0.02 + 0.035 * uNight);
@@ -244,7 +254,6 @@ export const DOME_FRAGMENT = /* glsl */ `
     // Study SE violet, Salon NE gold. Felt near the rim of the
     // populated hemisphere, absent at the pole and below the
     // horizon; atmospheres of the sky, not borders within it.
-    float phi = atan(P.y, P.x);
     float roomBand = dot(P.xy, P.xy) * smoothstep(-0.45, 0.1, P.z);
     vec3 roomTint = uAccentWarm * sectorWeight(phi, 3.9270)
       + uAccentRose * sectorWeight(phi, 2.3562)
@@ -293,15 +302,9 @@ export const DOME_FRAGMENT = /* glsl */ `
     // The room washes come back over the paper — the chart's regional
     // tints, watercolor near the rim.
     sky = mix(sky, roomTint, roomBand * 0.08 * day);
-    // The chart's construction lines — meridians every 30° of azimuth,
-    // in the page's ink, thin as a ruling pen. Arc-length width so the
-    // lines don't thicken toward the pole; faded where they converge on
-    // it and beyond the drawn cap. The polar rings join them as the
-    // chart's circles of constant altitude.
-    float meridianStep = 0.5235988;
-    float meridianGap = abs(fract(phi / meridianStep + 0.5) - 0.5) * meridianStep * sin(polar);
-    float meridian = smoothstep(0.0035, 0.0, meridianGap)
-      * smoothstep(0.07, 0.2, polar) * smoothstep(1.35, 1.05, polar);
+    // The chart's construction lines, drawn in the page's ink by day:
+    // the polar rings as circles of constant altitude, the meridians
+    // computed above.
     float chartLines = ring * ringMask * 0.9 + meridian * 0.6;
     sky = mix(sky, uInk, chartLines * 0.2 * day);
 
@@ -343,6 +346,28 @@ export const DOME_FRAGMENT = /* glsl */ `
     sky = mix(sky, uGround, edge * 0.40);
     float bottom = smoothstep(0.72, 1.0, frag.y / uResolution.y);
     sky = mix(sky, uGround, bottom * 0.35);
+
+    // ── The ground. The visitor stands somewhere. A low ridge of the
+    // Foyer's umber earth runs along the foot of the frame — screen-
+    // anchored, because it is where you stand, not part of the heavens
+    // that turn above it — with the horizon's warmth gathering just
+    // over its line. By night a near-solid silhouette under a warm
+    // gather; by day a pale watercolor band at the foot of the page,
+    // the landscape vignette an old atlas keeps at its margin. A place,
+    // not a void. Two sines and one smooth value-noise shape the
+    // ridge — no simplex on this path.
+    float gx = frag.x / uResolution.x;
+    float ridgeCell = floor(gx * 9.0);
+    float ridgeFrac = smoothstep(0.0, 1.0, fract(gx * 9.0));
+    float ridgeVN = mix(hash21(vec2(ridgeCell, 3.7)), hash21(vec2(ridgeCell + 1.0, 3.7)), ridgeFrac);
+    float ridgeN = sin(gx * 8.3 + 0.7) * 0.45 + sin(gx * 21.9 + 2.3) * 0.2 + (ridgeVN - 0.5) * 0.7;
+    float ridgeH = 0.062 + 0.028 * ridgeN;
+    float yUp = 1.0 - frag.y / uResolution.y;
+    float ground = smoothstep(ridgeH + 0.014, ridgeH - 0.004, yUp);
+    float gather = smoothstep(ridgeH + 0.2, ridgeH, yUp) * (1.0 - ground);
+    sky += glowTone * gather * (0.06 + 0.16 * uNight);
+    vec3 groundTone = mix(uGround, uAccentWarm, 0.06 + 0.1 * day);
+    sky = mix(sky, groundTone, ground * (0.55 + 0.4 * uNight));
 
     gl_FragColor = vec4(sky, 1.0);
   }

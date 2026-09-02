@@ -757,6 +757,62 @@ body::before {
   opacity: 0.45;
 }
 
+/* The polestar in the sky is drawn in gold ink — the chart's compass
+   figure — rather than the Foyer figure's teal-and-umber hairlines,
+   which vanished against the firmament. Its two rings are the
+   chart's circles around the still center. Quieter by day, where
+   the page carries its own lines in ink. */
+.constellation-polestar rect,
+.constellation-polestar line,
+.constellation-polestar circle {
+  stroke: var(--accent-gold);
+}
+
+.constellation-polestar {
+  opacity: 0.62;
+}
+
+.lt .constellation-polestar {
+  opacity: 0.42;
+}
+
+/* The echo — when a star is claimed, two thin gold rings widen out
+   of it and hold, the way a struck bowl's tone spreads. CONSTELLATION_
+   DESIGN.md §"C10. RadialEcho" names the gesture; this is its first,
+   smallest form: rings, no labels. Present in the DOM at rest so the
+   claim animates rather than mounts; reduced motion collapses the
+   widening to the global instant. */
+.constellation-star__echo {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.55);
+  opacity: 0;
+  transition:
+    transform 700ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 700ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.constellation-star[data-active='true'] .constellation-star__echo {
+  transform: scale(1);
+}
+
+.constellation-star[data-active='true'] .constellation-star__echo--1 {
+  opacity: 0.55;
+}
+
+.constellation-star[data-active='true'] .constellation-star__echo--2 {
+  opacity: 0.3;
+}
+
+/* The work overlay's panel is framed like a plate in an atlas: a gold
+   hairline at the edge and a second, fainter line set in from it. The
+   frame is the constellation's voice marking the page as its own. */
+.work-overlay__panel {
+  border-color: color-mix(in oklab, var(--accent-gold) 42%, var(--border));
+  outline: 1px solid color-mix(in oklab, var(--accent-gold) 26%, transparent);
+  outline-offset: -8px;
+}
+
 /* Work overlay typographic registers — the deck (an invitation,
    not a summary) and the asterism divider that separates the
    metadata band from the body. CONSTELLATION_DESIGN.md
