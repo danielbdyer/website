@@ -142,20 +142,35 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** Stars are placed by the compass — the centroid of a work's facet anchors, spread apart where two would coincide ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"The Compass"). A work Danny wants somewhere specific has no way to say so.
 **Trigger:** The first work whose compass place feels wrong to Danny's eye. An optional `sky: { azimuth, radius }` in frontmatter is the smallest form.
 
-### Drag as an additional surface
-
-**Why:** The walk retired the drag: nothing pulls or coasts, and the sky moves only toward a named destination. Danny wanted more interaction surface than clicks alone; hover, clickable threads, the whisper's bearings, and the arrow keys carry it for now. A drag that *looks around* without committing — no wells, no flick — could return as one more surface if the viewport still feels empty of ways to touch it.
-**Trigger:** Danny's hand on the shipped walk saying the sky wants to be touched, not only aimed.
-
 ### The return flight on refresh
 
 **Why:** The session remembers where you stood (`hereStorage.ts`). Prerendered markup cannot know it, so the sky opens at the pole and flies you back — a one-to-two-second crossing on every refresh or return from a work page. It reads as the sky returning you; it may read as delay.
 **Trigger:** Danny's felt sense after living with it. The alternative is an instant re-place before first paint (a hydration-safe read), which trades the arrival for stillness.
 
-### Rest distance and the trench
+### The scrub's feel
 
-**Why:** The resting camera sits at 2.3 radii so the whole populated dome is in view; travel dips to 1.55 midway so the passing stars stream faster than the destination approaches. Both are first guesses tuned in one viewport. Single-facet works also gather along their facet's bearing in a near-straight string; a wider azimuth jitter for them may read more like a sky.
-**Trigger:** Danny's eye across a phone, a laptop, and a wide screen. The constants are `REST_DISTANCE` (`skyWalk.ts`), `ORBIT_NEAR` (`useSkyTravel.ts`), and the jitter in `constellation.ts`.
+**Why:** The drag returned as a scrub along a thread ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"): a press on the open sky picks the thread that leaves here in the hand's direction, and release past the midpoint arrives. The press-to-scrub threshold, the commit fraction, and how the hand's direction chooses among threads are first guesses.
+**Trigger:** Danny's hand on it across a mouse, a trackpad, and a thumb.
+
+### Rest distance and the streak
+
+**Why:** The resting camera fits the populated cap to the frame's shorter side (about three radii on a landscape screen, farther on a phone), and travel reads its velocity from the deep field's streak rather than a dolly. The fit margin, the streak's strength, and the glide's duration range are tuned in a few viewports. Single-facet works also gather along their facet's bearing in a near-straight string; a wider azimuth jitter for them may read more like a sky.
+**Trigger:** Danny's eye across a phone, a laptop, and a wide screen. The constants are `restDistanceFor` and `REST_DISTANCE` (`skyWalk.ts`), the streak in `atmosphereShaders.ts`, the durations in `useSkyTravel.ts`, and the jitter in `constellation.ts`.
+
+### The presence cap
+
+**Why:** From a star, at most `PRESENT_CAP` (12) stars are present, two of them strangers; the rest recede. With sixteen works the cap is felt but gentle; as the corpus grows it decides how much of the sky a visitor sees at once, and whether the reveal feels like a tree unfolding or like things going missing.
+**Trigger:** The corpus passing thirty works, or Danny's felt sense sooner. `PRESENT_CAP` and `STRANGER_COUNT` in `presence.ts`.
+
+### Embeddings behind the concordance
+
+**Why:** The concordance is a TF-IDF cosine over each work's prose — honest and free, but shallow. Danny has been playing with qmd for embeddings; a build-time step that reads an embeddings manifest would make "in concordance" mean something closer to what he means.
+**Trigger:** A manifest that can be produced deterministically at build time without a network call. `buildConcordance` (`concordance.ts`) is the seam; nothing downstream changes.
+
+### A celestial or a terrestrial compass
+
+**Why:** The compass turns with the heavens: a star is always in the sector its name says, but "beauty is up" cannot be learned across visits. A terrestrial compass would hold the names to the frame while the stars turned beneath, at the cost of that consistency. Also: a name at the rim can pass behind the daystar.
+**Trigger:** Living with it. If wayfinding wants the frame, the names stop projecting through the camera.
 
 ### Ghosts — agent-proposed stars
 

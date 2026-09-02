@@ -215,7 +215,9 @@ Every constellation surface speaks in this small vocabulary. Designers should us
 - **Bearing** — a facet as a direction from where you stand: the thread you would follow to the nearest star that carries it. The whisper offers them.
 - **Figure** — a facet's members joined by threads as one drawing across the sky. Eight, one per facet, each in the facet's hue.
 - **Here** — where the visitor stands: a star or the pole. The camera rests there; the names within a stroke of it show.
-- **The walk** — how the sky is traveled: from here to a named destination, along the figures, never by drag ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md)).
+- **The walk** — how the sky is traveled: from here to a named destination, along the figures, never by a free drag ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md)).
+- **Concordance** — how near two works are in their words; a library's word for a semantic weight, computed from the works' own prose. The whisper's third line.
+- **Presence** — which stars are shown from where you stand: the near-in-context, capped, with a couple of strangers kept for the edge. The rest recede until reached.
 - **Facet** — a curatorial angle works share. Eight in the site's vocabulary.
 - **Horizon** — the temporal edge. Where time lives in the chrome. The horizon strip's position is metaphor as much as layout.
 
@@ -1764,6 +1766,8 @@ A one-page reference. Designers and engineers should be able to find any term th
 | **Basin** | A named gathering of stars (the editorial asterism); held | Lexicon |
 | **Bearing** | A facet as a direction from here — the thread to the nearest star that carries it | Lexicon |
 | **Figure** | A facet's members joined as one drawing; eight in the sky | Lexicon |
+| **Concordance** | Nearness in words between two works; the whisper's third line | Lexicon |
+| **Presence** | The capped set of stars shown from here; the rest recede until reached | Lexicon |
 | **Facet** | A curatorial angle works share; eight in the site's vocabulary | Lexicon |
 | **Horizon** | The temporal edge; where time lives in the chrome | Lexicon |
 | **Polestar** | The still center; the geometric figure at world center | C5 |
