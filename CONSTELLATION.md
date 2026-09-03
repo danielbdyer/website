@@ -163,7 +163,7 @@ Everything the constellation does is in service of the visitor's attention. The 
 | **Click a thread** | Travel along it to its far end; the thread is remembered as walked | *The line you traced becomes the path* |
 | **Take a bearing (the whisper)** | Travel along that facet's figure to the nearest star that carries it | *Following the thread* |
 | **Arrow keys** | Travel to the nearest star in that screen direction, among the neighbors and the bearings' ends | *A step* |
-| **Press on the sky and drag** | The sky follows the hand: freely along a thread that leaves here, elastically anywhere else. Release past a thread's midpoint arrives at its star; otherwise the sky springs back to where you stood | *Taking hold of the sky; feeling where it will and will not go* |
+| **Press on the sky and drag** | The sky follows the hand — fully along a thread, at seven tenths elsewhere. The star nearest the center claims as you go; let go and the sky settles onto it, or springs home if none is near | *Taking hold of the sky, and aiming it* |
 | **Take the whisper's concordant line** | Travel to the work whose words echo this one though no facet joins them | *The edge you would not have thought to look for* |
 | **Tab to a star** | Travel to it; Enter opens it | *The same walk, by keyboard* |
 | **Scroll down (past the threshold)** | The carpet furls, the body descends, the Foyer returns | *Returning to the room* |

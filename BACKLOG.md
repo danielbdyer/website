@@ -149,7 +149,7 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ### The drag's feel
 
-**Why:** The drag follows the hand freely along a thread and elastically elsewhere, springing home on release ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"). Its constants are first guesses tuned with a mouse in headless Chromium: the press-to-drag threshold, the commit fraction, how nearly aligned the hand must be to take a thread (`TRACK_ALIGNMENT`) and how far along before the choice is held (`TRACK_HOLD`), the give's reach and readiness (`ELASTIC_LIMIT_VB`, `ELASTIC_GIVE`), and the spring's frequency, damping, and velocity cap (`useSkyTravel.ts`).
+**Why:** The drag follows the hand fully along a thread and at seven tenths elsewhere, aims at the star nearest the center, and settles onto it or springs home on release ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"). Its constants are first guesses tuned with a mouse in headless Chromium: the play off a thread (`PLAY`) and the give's far limit (`ELASTIC_LIMIT_VB`), the reticle's reach and the head start a graph step gets (`INTENT_RADIUS_VB`, `INTENT_STEP_BONUS_VB` in `intent.ts`), the commit fraction and alignment tolerance of a track, and the two springs' frequency, damping, and velocity cap (`useSkyTravel.ts`).
 **Trigger:** Danny's thumb on a phone, then a trackpad, then a mouse.
 
 ### The oculus's fit and the streak

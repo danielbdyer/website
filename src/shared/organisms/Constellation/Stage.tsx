@@ -28,6 +28,8 @@ export interface ConstellationWorld {
   readonly nodes: readonly RenderableNode[];
   readonly hereKey: string | null;
   readonly hoverKey: string | null;
+  /** The star a held sky is aiming at (useSkyWalk.intent). */
+  readonly intentKey: string | null;
   readonly activeHue: ConstellationHue | null;
   readonly overlayKey: string | null;
   readonly named: ReadonlyMap<string, NamedRank>;
@@ -61,7 +63,7 @@ interface StageProps {
 }
 
 function threadWalkOf(world: ConstellationWorld, edge: ResolvedEdge): ThreadWalk {
-  const attended = world.hoverKey ?? world.hereKey;
+  const attended = world.hoverKey ?? world.intentKey ?? world.hereKey;
   return {
     active: attended === edge.sourceKey || attended === edge.targetKey,
     walked: world.walked.has(edge.id),
@@ -72,7 +74,7 @@ function threadWalkOf(world: ConstellationWorld, edge: ResolvedEdge): ThreadWalk
 
 function starWalkOf(world: ConstellationWorld, key: string): StarWalk {
   return {
-    active: key === world.hoverKey || key === world.hereKey,
+    active: key === world.hoverKey || key === world.intentKey || key === world.hereKey,
     here: key === world.hereKey,
     named: world.named.get(key),
     visited: world.visited.has(key),

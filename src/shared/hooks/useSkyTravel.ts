@@ -44,6 +44,8 @@ import {
   type Place,
 } from '@/shared/content/skyWalk';
 import { readPersistedHere } from '@/shared/state/hereStorage';
+import type { SkyWalk } from '@/shared/hooks/useSkyWalk';
+import { chooseIntent, type IntentCandidate } from '@/shared/dom/intent';
 
 // Destination travel across the constellation's latent sphere.
 //
@@ -86,14 +88,13 @@ interface UseSkyTravelArgs {
   readonly viewboxSize: number;
   /** The SVG's fit inside its frame (mirrors preserveAspectRatio). */
   readonly fit: 'cover' | 'contain';
-  readonly here: Place;
+  /** The walk's state: where the visitor stands (travel follows a
+   *  change of `here`), arrivals are reported to it, and while a hand
+   *  holds the sky it is told what the hand is aiming at. */
+  readonly walk: SkyWalk;
   /** The labels visible at rest, in priority order (here first); the
    *  label layout keeps them off each other. */
   readonly namedKeys: readonly string[];
-  /** Called when travel completes (or immediately under reduced
-   *  motion) with the place arrived at and the edge traveled along,
-   *  if the travel followed a thread. */
-  readonly onArrive: (place: Place, alongEdgeId?: string) => void;
   readonly cameraRef: RefObject<SVGGElement | null>;
   readonly glyphRef: RefObject<SVGCircleElement | null>;
 }
@@ -121,22 +122,26 @@ const REST_EPSILON = 0.002;
 const IDLE_TICK_MS = 100;
 const MAX_DT_SECONDS = 0.1;
 // A press becomes a drag after this much travel of the hand. Release
-// past this fraction of a track arrives; before it, the sky springs
-// back. A track is taken when the hand's direction is within ~70° of
-// it, and held once the hand has come this far along it.
+// past this fraction of a track arrives at its star. A track is taken
+// when the hand's direction is within ~70° of it, and held once the
+// hand has come this far along it.
 const SCRUB_THRESHOLD_PX = 6;
 const SCRUB_COMMIT = 0.5;
 const TRACK_ALIGNMENT = 0.35;
 const TRACK_HOLD = 0.25;
-// The give: how far the sky can be pulled where no thread leads, in
-// viewbox units, and how readily it moves at first.
-const ELASTIC_LIMIT_VB = 80;
-const ELASTIC_GIVE = 0.6;
+// The play. Along a track the sky follows the hand one to one; off it,
+// this fraction — the graph is a groove, not a rail. The give only
+// bites at the far end of a pull, so the sky never runs away.
+const PLAY = 0.7;
+const ELASTIC_LIMIT_VB = 380;
 // The spring home: a little under-damped, so the return has weight
 // and one small overshoot; the hand's parting velocity carries in,
-// capped so a flick cannot throw the sky.
+// capped so a flick cannot throw the sky. The settle onto an aimed
+// star is firmer, so it lands rather than bounces.
 const SPRING_OMEGA = 13;
 const SPRING_ZETA = 0.62;
+const SNAP_OMEGA = 11;
+const SNAP_ZETA = 0.8;
 const SPRING_VELOCITY_CAP = 5;
 const SPRING_REST_RAD = 1e-4;
 // The click a drag ends with is not a click.
@@ -183,6 +188,10 @@ interface Scrub {
   engaged: boolean;
   tracks: readonly Track[];
   track: Track | null;
+  /** The places one step from here, with the thread to each. */
+  steps: ReadonlyMap<string, string | undefined>;
+  /** The star nearest the center of view, in reach — the likely intent. */
+  intent: string | null;
   /** Progress along the track ∈ [0, 1]. */
   t: number;
   /** The tangent offset from the anchor the hand currently holds. */
@@ -191,7 +200,14 @@ interface Scrub {
   lastMoveAt: number;
 }
 
+/** A damped return: home to the anchor, or onto the star the hand
+ *  aimed at, which becomes here when the spring settles. */
 interface Spring {
+  readonly to: UnitVector3;
+  readonly place: Place | null;
+  readonly alongEdgeId: string | undefined;
+  readonly omega: number;
+  readonly zeta: number;
   u: MutableVec3;
   v: MutableVec3;
 }
@@ -232,7 +248,7 @@ interface Refs {
   readonly nodesRef: RefObject<readonly NavigableNode[]>;
   readonly edgesRef: RefObject<readonly NavigableEdge[]>;
   readonly namedRef: RefObject<readonly string[]>;
-  readonly onArriveRef: RefObject<UseSkyTravelArgs['onArrive']>;
+  readonly walkRef: RefObject<SkyWalk>;
   readonly viewboxRef: RefObject<number>;
   readonly fitRef: RefObject<'cover' | 'contain'>;
   readonly cameraRef: RefObject<SVGGElement | null>;
@@ -338,43 +354,51 @@ function shiftTrail(state: TravelState): void {
   setVec(tr[0]!, state.pos);
 }
 
+/** Arrive: the destination becomes here and the anchor, the labels
+ *  re-lay, and the walk is told. */
+function arriveAt(
+  state: TravelState,
+  refs: Refs,
+  to: UnitVector3,
+  place: Place,
+  alongEdgeId?: string,
+): void {
+  setVec(state.pos, to);
+  setVec(state.anchor, to);
+  state.here = place;
+  state.labelsAt = 0;
+  refs.walkRef.current.arrive(place, alongEdgeId);
+}
+
 /** Advance an in-flight travel: glide the surface point along the
- *  great circle; on completion settle exactly on the destination,
- *  make it the anchor, and report the arrival. */
+ *  great circle; on completion arrive. */
 function advanceTravel(state: TravelState, refs: Refs, now: number): void {
   const travel = state.travel;
   if (!travel) return;
   const t = clamp01((now - travel.startTime) / travel.durationMs);
   setVec(state.pos, slerp(travel.from, travel.to, easeInOutSine(t)));
   if (t >= 1) {
-    setVec(state.pos, travel.to);
-    setVec(state.anchor, travel.to);
     state.travel = null;
-    state.here = travel.toPlace;
-    state.labelsAt = 0;
-    refs.onArriveRef.current?.(travel.toPlace, travel.alongEdgeId);
+    arriveAt(state, refs, travel.to, travel.toPlace, travel.alongEdgeId);
   }
 }
 
-/** Let the spring carry the sky home: a damped oscillator on the
- *  tangent offset from the anchor, advanced in closed form so a long
- *  frame (a stall at release) lands where the spring would be, never
- *  past it. */
-function advanceSpring(state: TravelState, dt: number): void {
+/** Let the spring carry the sky: home, or onto the aimed star. A
+ *  damped oscillator on the tangent offset from where it settles,
+ *  advanced in closed form so a long frame (a stall at release) lands
+ *  where the spring would be, never past it. */
+function advanceSpring(state: TravelState, refs: Refs, dt: number): void {
   const spring = state.spring;
   if (!spring || dt <= 0) return;
-  const { u, v } = spring;
-  const decay = Math.exp(-SPRING_ZETA * SPRING_OMEGA * dt);
-  const wd = SPRING_OMEGA * Math.sqrt(1 - SPRING_ZETA * SPRING_ZETA);
+  const { u, v, omega, zeta } = spring;
+  const decay = Math.exp(-zeta * omega * dt);
+  const wd = omega * Math.sqrt(1 - zeta * zeta);
   const cos = Math.cos(wd * dt);
   const sin = Math.sin(wd * dt);
   const step = (x: number, vx: number): [number, number] => {
-    const b = (vx + SPRING_ZETA * SPRING_OMEGA * x) / wd;
+    const b = (vx + zeta * omega * x) / wd;
     const next = decay * (x * cos + b * sin);
-    const rate =
-      decay *
-      ((b * wd - SPRING_ZETA * SPRING_OMEGA * x) * cos -
-        (x * wd + SPRING_ZETA * SPRING_OMEGA * b) * sin);
+    const rate = decay * ((b * wd - zeta * omega * x) * cos - (x * wd + zeta * omega * b) * sin);
     return [next, rate];
   };
   [u.x, v.x] = step(u.x, v.x);
@@ -382,10 +406,14 @@ function advanceSpring(state: TravelState, dt: number): void {
   [u.z, v.z] = step(u.z, v.z);
   if (Math.hypot(u.x, u.y, u.z) < SPRING_REST_RAD && Math.hypot(v.x, v.y, v.z) < 1e-3) {
     state.spring = null;
-    setVec(state.pos, state.anchor);
+    if (spring.place !== null) {
+      arriveAt(state, refs, spring.to, spring.place, spring.alongEdgeId);
+    } else {
+      setVec(state.pos, spring.to);
+    }
     return;
   }
-  setVec(state.pos, expMap(state.anchor, u));
+  setVec(state.pos, expMap(spring.to, u));
 }
 
 /** The sky's angular velocity this frame, from where it was to where
@@ -443,7 +471,7 @@ function tick(now: number, refs: Refs): void {
   state.lastTime = now;
   const before = { x: state.pos.x, y: state.pos.y, z: state.pos.z };
   advanceTravel(state, refs, now);
-  advanceSpring(state, dt);
+  advanceSpring(state, refs, dt);
   measureMotion(state, before, dt);
   shiftTrail(state);
   const lookT = 1 - Math.exp(-LOOK_EASE_RATE * dt);
@@ -454,7 +482,8 @@ function tick(now: number, refs: Refs): void {
   // The glyph claims fully when standing on a star; the trail asserts
   // itself only while the sky moves.
   const held = state.travel !== null || state.scrub !== null || state.spring !== null;
-  writeGlyphChannels(refs.glyphRef.current, held ? 0 : 1, state.lastSpeed);
+  const aimed = state.scrub?.intent !== null && state.scrub?.intent !== undefined;
+  writeGlyphChannels(refs.glyphRef.current, held && !aimed ? 0 : 1, state.lastSpeed);
   maybePlaceLabels(state, refs, now);
   const lookSettled =
     Math.abs(state.look.x - state.lookTarget.x) < LOOK_REST_EPSILON &&
@@ -490,15 +519,11 @@ function travelTo(refs: Refs, place: Place, alongEdgeId?: string): void {
   const to = placePosition(refs.graphRef.current, place);
   state.spring = null;
   if (prefersReducedMotion()) {
-    setVec(state.pos, to);
-    setVec(state.anchor, to);
-    state.here = place;
     for (const entry of state.trailHistory) setVec(entry, to);
     state.restDistance = state.restTarget;
+    arriveAt(state, refs, to, place, alongEdgeId);
     placeCamera(state, refs);
-    state.labelsAt = 0;
     maybePlaceLabels(state, refs, globalThis.performance.now());
-    refs.onArriveRef.current?.(place, alongEdgeId);
     return;
   }
   const from = { x: state.pos.x, y: state.pos.y, z: state.pos.z };
@@ -588,7 +613,7 @@ function holdOffset(state: TravelState, scrub: Scrub, hx: number, hy: number, si
   const ex = hx + (track ? track.dirX * onTrack : 0);
   const ey = hy + (track ? track.dirY * onTrack : 0);
   const eMag = Math.hypot(ex, ey);
-  const give = rubberBand(eMag, ELASTIC_LIMIT_VB, ELASTIC_GIVE);
+  const give = rubberBand(eMag, ELASTIC_LIMIT_VB, PLAY);
   const k = eMag > 1e-6 ? (give / eMag) * radiansPerViewboxUnit(state, size) : 0;
   // The sky moves with the finger, so the camera's point moves against
   // it; screen y grows downward, so the up axis is subtracted.
@@ -614,12 +639,40 @@ function holdOffset(state: TravelState, scrub: Scrub, hx: number, hy: number, si
 function engageScrub(refs: Refs, state: TravelState, scrub: Scrub): void {
   scrub.engaged = true;
   scrub.tracks = tracksFrom(refs, state);
+  scrub.steps = new Map(
+    stepsFrom(refs.graphRef.current, state.here).map((s) => [s.key, s.edgeId ?? undefined]),
+  );
   const svg = svgOf(refs);
   if (!svg) return;
   svg.dataset.scrubbing = 'true';
   // Capture only once the hand has moved: a capture at the press would
   // retarget the click, and a tap on a star must stay the star's.
   svg.setPointerCapture(scrub.pointerId);
+}
+
+/** The reticle is the center of view. Whichever star sits nearest it,
+ *  in reach, is what the hand is aiming at; a step along the graph
+ *  gets a head start. The walk is told when it changes, so the star
+ *  claims while the hand still holds the sky. */
+function aim(refs: Refs, state: TravelState, scrub: Scrub): void {
+  const size = refs.viewboxRef.current;
+  const center = size / 2;
+  const candidates = refs.nodesRef.current.flatMap((node): IntentCandidate[] => {
+    if (node.key === state.here) return [];
+    const p = projectToViewbox(node.unitPos, state.currentCamera, state.currentBasis, size);
+    if (!p.inFront) return [];
+    return [
+      {
+        key: node.key,
+        distance: Math.hypot(p.x - center, p.y - center),
+        step: scrub.steps.has(node.key),
+      },
+    ];
+  });
+  const intent = chooseIntent(candidates);
+  if (intent === scrub.intent) return;
+  scrub.intent = intent;
+  refs.walkRef.current.aim(intent);
 }
 
 function lightTrack(refs: Refs, scrub: Scrub, next: Track | null): void {
@@ -648,6 +701,8 @@ function beginScrub(refs: Refs, e: PointerEvent<SVGSVGElement>): void {
     engaged: false,
     tracks: [],
     track: null,
+    steps: new Map(),
+    intent: null,
     t: 0,
     u: { ...uBase },
     uPrev: { ...uBase },
@@ -674,13 +729,17 @@ function moveScrub(refs: Refs, e: PointerEvent<SVGSVGElement>): void {
   // has come a way along it; before that it may change its mind.
   if (scrub.t < TRACK_HOLD) lightTrack(refs, scrub, chooseTrack(scrub.tracks, hx, hy));
   holdOffset(state, scrub, hx, hy, refs.viewboxRef.current);
+  placeCamera(state, refs);
+  aim(refs, state, scrub);
   scrub.lastMoveAt = globalThis.performance.now();
   ensureRunning(refs);
 }
 
-/** Release: past the midpoint of a track the visitor arrives there;
- *  otherwise the sky springs back to where they stood, carrying the
- *  hand's parting velocity. A cancelled pointer always springs back. */
+/** Release. Past the midpoint of a track, or with a star in the
+ *  reticle's reach, the sky settles onto that star and it becomes
+ *  here; otherwise it springs back to where the visitor stood. Either
+ *  way it carries the hand's parting velocity. A cancelled pointer
+ *  always springs back. */
 function endScrub(refs: Refs, e: PointerEvent<SVGSVGElement>, cancelled: boolean): void {
   const state = refs.stateRef.current;
   const scrub = state.scrub;
@@ -693,22 +752,29 @@ function endScrub(refs: Refs, e: PointerEvent<SVGSVGElement>, cancelled: boolean
   const cameraGroup = refs.cameraRef.current;
   if (cameraGroup) markTrack(cameraGroup, null);
   delete e.currentTarget.dataset.scrubbing;
+  if (scrub.intent !== null) refs.walkRef.current.aim(null);
   state.scrubEndedAt = globalThis.performance.now();
-  if (!cancelled && scrub.track && scrub.t >= SCRUB_COMMIT) {
-    travelTo(refs, scrub.track.toPlace, scrub.track.alongEdgeId);
-    return;
-  }
   const dt = Math.max((state.scrubEndedAt - scrub.lastMoveAt) / 1000, 1 / 120);
-  const v = {
+  const vRaw = {
     x: (scrub.u.x - scrub.uPrev.x) / dt,
     y: (scrub.u.y - scrub.uPrev.y) / dt,
     z: (scrub.u.z - scrub.uPrev.z) / dt,
   };
-  const vm = Math.hypot(v.x, v.y, v.z);
+  const vm = Math.hypot(vRaw.x, vRaw.y, vRaw.z);
   const cap = vm > SPRING_VELOCITY_CAP ? SPRING_VELOCITY_CAP / vm : 1;
+  const v = { x: vRaw.x * cap, y: vRaw.y * cap, z: vRaw.z * cap };
+  const committed = scrub.track && scrub.t >= SCRUB_COMMIT ? scrub.track.toPlace : null;
+  const place = cancelled ? null : (committed ?? scrub.intent);
+  const alongEdgeId = place === null ? undefined : scrub.steps.get(place);
+  const to = place === null ? state.anchor : placePosition(refs.graphRef.current, place);
   state.spring = {
-    u: { ...logMap(state.anchor, state.pos) },
-    v: { x: v.x * cap, y: v.y * cap, z: v.z * cap },
+    to,
+    place,
+    alongEdgeId,
+    omega: place === null ? SPRING_OMEGA : SNAP_OMEGA,
+    zeta: place === null ? SPRING_ZETA : SNAP_ZETA,
+    u: { ...logMap(to, state.pos) },
+    v,
   };
   ensureRunning(refs);
 }
@@ -828,18 +894,18 @@ export function useSkyTravel({
   edges,
   viewboxSize,
   fit,
-  here,
+  walk,
   namedKeys,
-  onArrive,
   cameraRef,
   glyphRef,
 }: UseSkyTravelArgs) {
+  const here = walk.here;
   const stateRef = useRef<TravelState>(buildInitialState(graph, here));
   const graphRef = useRef(graph);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const namedRef = useRef(namedKeys);
-  const onArriveRef = useRef(onArrive);
+  const walkRef = useRef(walk);
   const viewboxRef = useRef(viewboxSize);
   const fitRef = useRef(fit);
   const refsRef = useRef<Refs>({
@@ -848,7 +914,7 @@ export function useSkyTravel({
     nodesRef,
     edgesRef,
     namedRef,
-    onArriveRef,
+    walkRef,
     viewboxRef,
     fitRef,
     cameraRef,
@@ -859,7 +925,7 @@ export function useSkyTravel({
     nodesRef.current = nodes;
     edgesRef.current = edges;
     namedRef.current = namedKeys;
-    onArriveRef.current = onArrive;
+    walkRef.current = walk;
     viewboxRef.current = viewboxSize;
     fitRef.current = fit;
   });
