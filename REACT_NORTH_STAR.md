@@ -602,7 +602,7 @@ Accessibility is not a feature. It is a constraint, like type safety.
 | Type-import discipline (`import type`) and exhaustive-switch checks | `@typescript-eslint/consistent-type-imports`, `@typescript-eslint/switch-exhaustiveness-check` |
 | `@ts-expect-error` requires a description (8+ chars); `@ts-ignore` and `@ts-nocheck` are banned | `@typescript-eslint/ban-ts-comment` (custom config) |
 | `console.log` banned in `src/` (info/warn/error allowed at boundaries; tests exempt) | `no-console` |
-| Performance-relevant functions carry a `@bigO` JSDoc tag naming time + space + the contract future agents must honor (e.g. "Hot path: O(N) per RAF tick — don't reintroduce the per-element clone") | Convention; the hot-path files (`useConstellationNavigation.ts`, `skyProjector.ts`, `wellPhysics.ts`) and content-build derivers (`constellation.ts`, `wikilinks.ts`) are the canonical examples. New functions in those modules earn a `@bigO` tag at write time |
+| Performance-relevant functions carry a `@bigO` JSDoc tag naming time + space + the contract future agents must honor (e.g. "Hot path: O(N) per RAF tick — don't reintroduce the per-element clone") | Convention; the rim files (`useSkyTravel.ts` as the shell, `skyProjector.ts`, `atmosphereRenderer.ts`) and content-build derivers (`constellation.ts`, `wikilinks.ts`) are the canonical examples; the sky's pure core (`src/shared/sky/`) carries none and needs no exemption — `CONSTELLATION_ARCHITECTURE.md`. New functions in those modules earn a `@bigO` tag at write time |
 | No unused variables/imports | ESLint + TypeScript |
 | Consistent naming | ESLint naming-convention rules |
 | Formatting | Prettier (on save and in CI) |
