@@ -359,7 +359,6 @@ export default tseslint.config(
       'src/shared/state/constellationCursor.ts',
       'src/shared/state/skyCamera.ts',
       'src/shared/geometry/camera.ts',
-      'src/shared/geometry/wellPhysics.ts',
       'src/shared/webgl/atmosphereProjection.ts',
       'src/shared/webgl/atmosphereRenderer.ts',
     ],

@@ -19,7 +19,7 @@ export interface IntentCandidate {
 /** How far (viewbox units) from the center a star can be and still be
  *  the intent; how much nearer a step along the graph counts as. */
 export const INTENT_RADIUS_VB = 90;
-export const INTENT_STEP_BONUS_VB = 45;
+export const INTENT_STEP_BONUS_VB = 15;
 
 export function chooseIntent(
   candidates: readonly IntentCandidate[],
