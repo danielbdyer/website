@@ -1,8 +1,7 @@
 import type { KeyboardEvent, MouseEvent, PointerEvent, RefObject } from 'react';
 import { useEffect, useRef } from 'react';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
-import { applyCameraLook, cameraBasis } from '@/shared/geometry/camera';
-import { heavensPhase } from '@/shared/geometry/heavens';
+import { cameraBasis } from '@/shared/geometry/camera';
 import type { UnitVector3, Vec3 } from '@/shared/geometry/sphere';
 import {
   geodesicDistance,
@@ -18,6 +17,7 @@ import {
   markTrack,
   placeLabels,
   projectCompass,
+  projectDaystar,
   projectGlyph,
   projectPole,
   projectStars,
@@ -64,12 +64,13 @@ import { readPersistedHere } from '@/shared/state/hereStorage';
 // release past the midpoint arrives, before it returns. The sky is
 // never thrown. §"Input".
 //
-// The heavens' roll rides the wall clock (heavens.ts); the loop keeps a
-// ten-frames-a-second idle cadence to carry it while the sky rests,
-// and runs at full rate only while traveling, scrubbing, easing the
-// rest distance, or while the mouse-look peer eases. Reduced motion
-// never runs the loop: travel is an instant arrival and the scene
-// projects once.
+// The chart is still. The heavens' turn lives in the atmosphere now —
+// the deep field and the weather drift on the wall clock behind the
+// stars — so a bearing can be learned: beauty is up. The loop runs at
+// full rate while traveling, scrubbing, easing the rest distance, or
+// while the gaze leans, and drops to an idle cadence otherwise.
+// Reduced motion never runs the loop: travel is an instant arrival and
+// the scene projects once.
 
 interface UseSkyTravelArgs {
   readonly graph: ConstellationGraph;
@@ -99,10 +100,11 @@ const CAMERA_FOV_Y = Math.PI / 4;
 const CAMERA_NEAR = 0.1;
 const CAMERA_FAR = 10;
 const WORLD_UP: UnitVector3 = { x: 0, y: 1, z: 0 };
-// The passive mouse-look peer — a degree or two of true perspective
-// toward the cursor, easing in and out, so the space breathes with
-// attention without committing anywhere.
-const MAX_LOOK_RAD = 0.07;
+// The gaze: the sky leans a little toward the cursor — the surface
+// point the camera rests on slides by this much, easing in and out —
+// so the space breathes with attention while the oculus itself holds
+// still on the page.
+const LOOK_LEAN = 0.04;
 const LOOK_EASE_RATE = 5;
 const LOOK_REST_EPSILON = 0.002;
 // The rest distance eases when the frame changes shape (a resize, a
@@ -262,6 +264,7 @@ function projectScene(state: TravelState, refs: Refs): void {
   const { currentCamera: camera, currentBasis: basis } = state;
   const size = refs.viewboxRef.current;
   projectPole(cameraGroup, camera, basis, size);
+  projectDaystar(cameraGroup.ownerSVGElement, size, refs.fitRef.current);
   projectCompass(cameraGroup, camera, basis, size);
   projectStars(cameraGroup, refs.nodesRef.current, camera, basis, size);
   projectThreads(cameraGroup, refs.edgesRef.current, camera, basis, size);
@@ -271,14 +274,16 @@ function projectScene(state: TravelState, refs: Refs): void {
   broadcastCameraToFirmament(camera, basis, state.omega);
 }
 
-/** Rebuild the camera for the current surface point, rest distance,
- *  look, and roll, then project. */
+/** Rebuild the camera for the current surface point, leaned by the
+ *  gaze, at the rest distance, then project. */
 function placeCamera(state: TravelState, refs: Refs): void {
-  state.currentCamera = applyCameraLook(
-    orbitalCamera(state.pos, state.restDistance, state.roll),
-    state.look.x * MAX_LOOK_RAD,
-    state.look.y * MAX_LOOK_RAD,
+  const { right, up } = state.currentBasis;
+  const gaze = unitVector(
+    state.pos.x + (right.x * state.look.x + up.x * state.look.y) * LOOK_LEAN,
+    state.pos.y + (right.y * state.look.x + up.y * state.look.y) * LOOK_LEAN,
+    state.pos.z + (right.z * state.look.x + up.z * state.look.y) * LOOK_LEAN,
   );
+  state.currentCamera = orbitalCamera(gaze, state.restDistance, 0);
   state.currentBasis = cameraBasis(state.currentCamera);
   projectScene(state, refs);
 }
@@ -367,7 +372,6 @@ function tick(now: number, refs: Refs): void {
   const state = refs.stateRef.current;
   const dt = state.lastTime === 0 ? 0 : Math.min((now - state.lastTime) / 1000, MAX_DT_SECONDS);
   state.lastTime = now;
-  state.roll = prefersReducedMotion() ? 0 : heavensPhase(Date.now());
   advanceTravel(state, refs, now, dt);
   shiftTrail(state);
   const lookT = 1 - Math.exp(-LOOK_EASE_RATE * dt);

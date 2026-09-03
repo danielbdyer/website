@@ -1,4 +1,5 @@
 import type { ConstellationHue } from '@/shared/content/constellation';
+import type { NamedRank } from '@/shared/content/skyWalk';
 import { StarMark } from '@/shared/atoms/StarMark/StarMark';
 import { cn } from '@/shared/utils/cn';
 
@@ -33,7 +34,7 @@ export interface StarWork {
 export interface StarWalk {
   readonly active?: boolean;
   readonly here?: boolean;
-  readonly named?: boolean;
+  readonly named?: NamedRank | undefined;
   readonly visited?: boolean;
   /** Present from where the visitor stands (the contextual cap);
    *  absent stars recede to faint lights. Default true. */
@@ -68,12 +69,13 @@ interface StarProps {
 
 export function Star({ work, twinkleDelay, walk = {}, viewTransitionName }: StarProps) {
   const { href, label, visibleLabel, hue, isPreview = false } = work;
-  const { active = false, here = false, named = false, visited = false, present = true } = walk;
+  const { active = false, here = false, named, visited = false, present = true } = walk;
   return (
     <a
       href={href}
       aria-label={isPreview ? `${label} (preview)` : label}
       aria-current={here ? 'location' : undefined}
+      tabIndex={present ? undefined : -1}
       className={cn(
         'constellation-star group focus-visible:outline-none',
         isPreview && 'constellation-star--preview',
@@ -81,7 +83,7 @@ export function Star({ work, twinkleDelay, walk = {}, viewTransitionName }: Star
       data-hue={hue}
       data-active={active ? 'true' : undefined}
       data-here={here ? 'true' : undefined}
-      data-named={named ? 'true' : undefined}
+      data-named={named}
       data-visited={visited ? 'true' : undefined}
       data-present={present ? 'true' : 'false'}
       style={viewTransitionName ? { viewTransitionName } : undefined}
@@ -95,8 +97,9 @@ export function Star({ work, twinkleDelay, walk = {}, viewTransitionName }: Star
           aria-hidden because the addressable name is on the anchor
           itself; this label is for sighted readers only. */}
       <text
-        y={16}
+        y={0}
         textAnchor="middle"
+        style={{ transform: 'translate(0px, 16px)' }}
         aria-hidden="true"
         className="constellation-star__label pointer-events-none"
       >

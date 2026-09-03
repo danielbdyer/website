@@ -11,6 +11,7 @@ import {
 import { buildSkyPalette } from '@/shared/webgl/palette';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
 import { getSkyCamera, subscribeSkyCamera } from '@/shared/state/skyCamera';
+import { heavensPhase } from '@/shared/geometry/heavens';
 import type { Camera } from '@/shared/geometry/camera';
 
 // The atmospheric layer's runtime — CONSTELLATION_HORIZON.md's
@@ -36,6 +37,18 @@ import type { Camera } from '@/shared/geometry/camera';
 const VIEWBOX = 1000;
 const VIEWBOX_CENTER = VIEWBOX / 2;
 const DAYSTAR_VIEWBOX = { x: 500, y: 240 };
+
+/** The daystar's live viewbox position, read from the wrapper the
+ *  travel hook seats on the page each tick (skyProjector.projectDaystar). */
+function daystarX(wrapper: SVGGElement | null): number {
+  const list = wrapper?.transform.baseVal;
+  return list && list.numberOfItems > 0 ? list.getItem(0).matrix.e : DAYSTAR_VIEWBOX.x;
+}
+
+function daystarY(wrapper: SVGGElement | null): number {
+  const list = wrapper?.transform.baseVal;
+  return list && list.numberOfItems > 0 ? list.getItem(0).matrix.f : DAYSTAR_VIEWBOX.y;
+}
 const ACTIVE_EASE_RATE = 7;
 const POOL_EASE_RATE = 5;
 // The parallax multipliers tokens.css applies to the two layered
@@ -57,6 +70,7 @@ interface SkyDomElements {
   readonly parallaxSky: Element;
   readonly cameraGroup: Element;
   readonly glyph: SVGCircleElement | null;
+  readonly daystar: SVGGElement | null;
 }
 
 interface MutableVec3 {
@@ -140,6 +154,7 @@ function locateSkyDom(container: HTMLElement): SkyDomElements | null {
     parallaxSky,
     cameraGroup,
     glyph: frame.querySelector<SVGCircleElement>('[data-companion]'),
+    daystar: frame.querySelector<SVGGElement>('[data-daystar]'),
   };
 }
 
@@ -264,7 +279,7 @@ function easeActivations(state: LoopState, k: number): number {
 
 // Presence settles slower than a claim: a star that recedes as the
 // walk moves on should fade like a light going out of view, not snap.
-const PRESENCE_EASE_RATE = 2.4;
+const PRESENCE_EASE_RATE = 3.3;
 
 /** Ease per-star presence toward its target (1 when the caller has no
  *  targets); returns the largest remaining delta. */
@@ -338,17 +353,17 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
   // the painted backdrop drifts with the cursor parallax.
   frame.domeShift.x = -chain.parFirX / 440;
   frame.domeShift.y = chain.parFirY / 440;
-  // The heavens' phase, for the dome's depth cue (the deep field turns
-  // a little slower than the stars so the backdrop reads farther).
-  frame.spin = camera.roll ?? 0;
+  // The heavens' turn lives here: the chart holds still, and the deep
+  // field and the weather drift on the wall clock behind it.
+  frame.spin = heavensPhase(Date.now());
   frame.travel.x = travel.x * motion;
   frame.travel.y = travel.y * motion;
   frame.travel.z = travel.z * motion;
   frame.pool.x = fit.offsetX + pool.x * fit.scale;
   frame.pool.y = fit.offsetY + pool.y * fit.scale;
   frame.pool.strength = state.poolStrength * motion;
-  frame.daystar.x = fit.offsetX + (DAYSTAR_VIEWBOX.x + chain.parFirX) * fit.scale;
-  frame.daystar.y = fit.offsetY + (DAYSTAR_VIEWBOX.y + chain.parFirY) * fit.scale;
+  frame.daystar.x = fit.offsetX + (daystarX(els.daystar) + chain.parFirX) * fit.scale;
+  frame.daystar.y = fit.offsetY + (daystarY(els.daystar) + chain.parFirY) * fit.scale;
   handles.render(frame);
   return Math.max(
     activeResidual,

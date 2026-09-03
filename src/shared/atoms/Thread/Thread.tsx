@@ -86,7 +86,7 @@ export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadPr
       <line
         {...geometry}
         stroke={HUE_CSS_VAR[hue]}
-        strokeWidth={active ? 1.1 : 0.45}
+        strokeWidth={active ? 1.1 : 0.55}
         strokeLinecap="round"
         strokeDasharray={DOTTED_FACETS.has(facet) ? '2.4 3.6' : undefined}
         // The brushstroke filter (feTurbulence + feDisplacementMap)

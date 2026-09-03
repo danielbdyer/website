@@ -172,20 +172,20 @@ describe('neighborToward', () => {
 });
 
 describe('restDistanceFor', () => {
-  test('a landscape frame rests near REST_DISTANCE', () => {
+  test('a landscape frame rests near REST_DISTANCE, the oculus filling its height', () => {
     const d = restDistanceFor(1440, 900);
-    expect(d).toBeGreaterThan(REST_DISTANCE - 0.05);
-    expect(d).toBeLessThan(3.2);
+    expect(d).toBeGreaterThan(REST_DISTANCE - 0.1);
+    expect(d).toBeLessThan(REST_DISTANCE + 0.1);
   });
 
-  test('a portrait phone stands farther back so no star is cropped', () => {
+  test('a portrait phone stands farther back so the oculus fits its width', () => {
     const d = restDistanceFor(390, 844);
-    expect(d).toBeGreaterThan(4);
-    expect(d).toBeLessThanOrEqual(4.8);
+    expect(d).toBeGreaterThan(4.9);
+    expect(d).toBeLessThanOrEqual(5.6);
   });
 
-  test('a contained square frame and a degenerate frame fall back to the base', () => {
-    expect(restDistanceFor(800, 800, 'contain')).toBeCloseTo(REST_DISTANCE, 5);
+  test('a contained square frame holds the nearest rest; a degenerate frame falls back', () => {
+    expect(restDistanceFor(800, 800, 'contain')).toBeGreaterThanOrEqual(3.2);
     expect(restDistanceFor(0, 0)).toBe(REST_DISTANCE);
   });
 });

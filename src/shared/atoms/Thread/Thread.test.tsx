@@ -80,7 +80,7 @@ describe('Thread atom', () => {
     const line = container.querySelector('line[data-thread-id]');
     expect(line?.getAttribute('filter')).toBeNull();
     expect(container.querySelector<SVGGElement>('g[data-thread]')?.dataset.active).toBeUndefined();
-    expect(line?.getAttribute('stroke-width')).toBe('0.45');
+    expect(line?.getAttribute('stroke-width')).toBe('0.55');
   });
 
   test('when active, applies the vespers bloom filter and a wider stroke', () => {

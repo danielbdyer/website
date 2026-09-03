@@ -1,5 +1,6 @@
 import type { RefObject, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
+import type { NamedRank } from '@/shared/content/skyWalk';
 import type { Facet } from '@/shared/types/common';
 import { Compass, type CompassPoint } from '@/shared/atoms/Compass/Compass';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
@@ -29,7 +30,7 @@ export interface ConstellationWorld {
   readonly hoverKey: string | null;
   readonly activeHue: ConstellationHue | null;
   readonly overlayKey: string | null;
-  readonly named: ReadonlySet<string>;
+  readonly named: ReadonlyMap<string, NamedRank>;
   readonly present: ReadonlySet<string>;
   readonly visited: ReadonlySet<string>;
   readonly walked: ReadonlySet<string>;
@@ -46,8 +47,8 @@ export interface StageInteractions {
   readonly onStarLeave: () => void;
   readonly onStarFocus: (e: FocusEvent<Element>) => void;
   readonly onStarBlur: (e: FocusEvent<Element>) => void;
-  readonly onThreadHover: (e: SyntheticEvent<Element>) => void;
-  readonly onThreadLeave: () => void;
+  readonly onFacetHover: (e: SyntheticEvent<Element>) => void;
+  readonly onFacetLeave: () => void;
 }
 
 interface StageProps {
@@ -73,7 +74,7 @@ function starWalkOf(world: ConstellationWorld, key: string): StarWalk {
   return {
     active: key === world.hoverKey || key === world.hereKey,
     here: key === world.hereKey,
-    named: world.named.has(key),
+    named: world.named.get(key),
     visited: world.visited.has(key),
     present: world.present.has(key),
   };
@@ -160,14 +161,16 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
   return (
     <>
       <PoleGroup />
-      <Compass points={world.compass} attended={world.attended} />
+      <g onMouseOver={interactions.onFacetHover} onMouseLeave={interactions.onFacetLeave}>
+        <Compass points={world.compass} attended={world.attended} />
+      </g>
       <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
       <g className="constellation-rotates">
         {/* Threads first so stars paint above them and win the hit test. */}
         <g
           aria-hidden="true"
-          onMouseOver={interactions.onThreadHover}
-          onMouseLeave={interactions.onThreadLeave}
+          onMouseOver={interactions.onFacetHover}
+          onMouseLeave={interactions.onFacetLeave}
         >
           {edges.map((edge) => (
             <Thread

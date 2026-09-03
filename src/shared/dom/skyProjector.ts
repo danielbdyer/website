@@ -22,8 +22,8 @@ import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 import type { Vec3 } from '@/shared/geometry/sphere';
 import { COMPASS } from '@/shared/content/constellation';
-import { COMPASS_RIM } from '@/shared/content/skyWalk';
-import { chooseLabelSlots, type LabelItem } from './labelLayout';
+import { COMPASS_RIM, daystarViewboxPoint } from '@/shared/content/skyWalk';
+import { chooseLabelSlots, slotOffset, type LabelItem } from './labelLayout';
 import { fitViewboxToCanvas } from '@/shared/webgl/atmosphereProjection';
 
 // Per-frame element lookups were the navigation tick's hidden cost:
@@ -378,12 +378,14 @@ export function placeLabels(
     return [{ key, x: proj.x, y: proj.y, chars: (el.textContent ?? '').length }];
   });
   const slots = chooseLabelSlots(items, named.length);
-  for (const [key, slot] of slots) {
-    const el = labelOf(key);
-    if (!el) continue;
-    el.setAttribute('x', slot.dx.toFixed(1));
-    el.setAttribute('y', slot.dy.toFixed(1));
-    el.setAttribute('text-anchor', slot.anchor);
+  const byItem = new Map(items.map((item) => [item.key, item]));
+  for (const [key, side] of slots) {
+    const el = labelOf(key) as SVGTextElement | null;
+    const item = byItem.get(key);
+    if (!el || !item) continue;
+    // A translate, not x/y: CSS carries a change of side as a glide.
+    const { dx, dy } = slotOffset(item, side);
+    el.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
   }
 }
 
@@ -395,4 +397,21 @@ export function markTrack(cameraGroup: SVGGElement, threadId: string | null): vo
   if (threadId === null) return;
   const next = cachedElement(cameraGroup, `[data-thread="${threadId}"]`);
   next?.setAttribute('data-track', 'true');
+}
+
+/** Seat the daystar on the page in the frame's upper right — the
+ *  plate's corner emblem — wherever the live frame puts that corner.
+ *  Writes the wrapper's transform; the WebGL atmosphere reads it back
+ *  for the glow and the page light. */
+export function projectDaystar(
+  svg: SVGSVGElement | null,
+  viewboxSize: number,
+  fit: 'cover' | 'contain',
+): void {
+  if (!svg) return;
+  const el = cachedElement(svg, '[data-daystar]');
+  if (!el) return;
+  const rect = svg.getBoundingClientRect();
+  const p = daystarViewboxPoint(rect.width, rect.height, viewboxSize, fit);
+  el.setAttribute('transform', `translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})`);
 }

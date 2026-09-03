@@ -51,11 +51,8 @@ export function SkyWhisper({
   className,
 }: SkyWhisperProps) {
   return (
-    <div
-      className={cn('sky-whisper font-body text-list text-text-3 italic', className)}
-      aria-live="polite"
-    >
-      <p className="sky-whisper__here m-0">
+    <div className={cn('sky-whisper font-body text-list text-text-3 italic', className)}>
+      <p className="sky-whisper__here m-0" aria-live="polite">
         {place ? (
           <>
             <span className="text-text-2">{place.title}</span>

@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import type { FocusEvent, MouseEvent, PointerEvent, SyntheticEvent } from 'react';
 import { useMatch } from '@tanstack/react-router';
 import type { ConstellationGraph } from '@/shared/content/constellation';
-import type { Place } from '@/shared/content/skyWalk';
+import { bearingsOf, type Place } from '@/shared/content/skyWalk';
 import type { Facet } from '@/shared/types/common';
 import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
 import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
@@ -16,7 +16,8 @@ import { clickTargetOf, farEndOf, starKeyOf } from './walk';
 //   click the star you are at     → open it (the anchor's own link)
 //   click a thread                → travel along it to its far end
 //   focus a star (Tab)            → travel to it; Enter then opens it
-//   hover a star / thread         → the halo claims / the figure lights
+//   hover a star / thread / name  → the halo claims / the figure lights
+//   click a name at the rim       → take that bearing
 //
 // Modified clicks (new tab, etc.) are left to the browser.
 
@@ -49,6 +50,14 @@ export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsAr
   };
 
   const onSkyClick = (e: MouseEvent<SVGSVGElement>) => {
+    const named = isPlainClick(e)
+      ? (e.target as Element).closest<SVGElement>('[data-compass]')?.dataset.compass
+      : undefined;
+    if (named) {
+      const bearing = bearingsOf(graph, walk.here).find((b) => b.facet === named);
+      if (bearing?.to) travelTo(bearing.to, bearing.edgeId ?? undefined);
+      return;
+    }
     const target = isPlainClick(e) ? clickTargetOf(e.target as Element) : null;
     if (target?.kind === 'star' && target.key !== walk.here) {
       e.preventDefault();
@@ -70,8 +79,8 @@ export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsAr
     if (key && key !== walk.here) travelTo(key);
   };
 
-  const onThreadHover = (e: SyntheticEvent<Element>) => {
-    const facet = (e.target as Element).closest<SVGGElement>('[data-thread]')?.dataset.facet;
+  const onFacetHover = (e: SyntheticEvent<Element>) => {
+    const facet = (e.target as Element).closest<SVGElement>('[data-facet]')?.dataset.facet;
     walk.attendFacet((facet as Facet | undefined) ?? null);
   };
 
@@ -80,8 +89,8 @@ export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsAr
     onStarLeave: hover.handleMouseLeave,
     onStarFocus,
     onStarBlur: hover.handleBlur,
-    onThreadHover,
-    onThreadLeave: () => walk.attendFacet(null),
+    onFacetHover,
+    onFacetLeave: () => walk.attendFacet(null),
   };
 
   return { hoverKey: hover.activeKey, onSkyClick, onPointerDown, stage };

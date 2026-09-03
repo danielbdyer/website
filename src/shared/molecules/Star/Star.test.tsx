@@ -54,11 +54,11 @@ describe('Star molecule', () => {
 
   test('its place in the walk lands as data attributes; here is the current location', () => {
     const { container } = render(
-      withSvg(<Star work={baseWork()} walk={{ here: true, named: true, visited: true }} />),
+      withSvg(<Star work={baseWork()} walk={{ here: true, named: 'near', visited: true }} />),
     );
     const anchor = container.querySelector('a');
     expect(anchor?.dataset.here).toBe('true');
-    expect(anchor?.dataset.named).toBe('true');
+    expect(anchor?.dataset.named).toBe('near');
     expect(anchor?.dataset.visited).toBe('true');
     expect(anchor?.getAttribute('aria-current')).toBe('location');
   });

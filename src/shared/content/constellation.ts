@@ -177,10 +177,10 @@ const TWINKLE_DURATION_SECONDS = 4.5;
 // anchors, pulled inward. The bounds keep the polestar's center clear
 // and hold the populated dome within the camera's resting view. A small
 // deterministic jitter separates works that share a facet set exactly.
-const FACET_ANCHOR_RADIUS = 0.52;
+const FACET_ANCHOR_RADIUS = 0.62;
 // Nothing sits inside the polestar figure: the still center stays empty.
-const RADIUS_MIN = 0.16;
-export const RADIUS_MAX = 0.66;
+const RADIUS_MIN = 0.18;
+export const RADIUS_MAX = 0.78;
 const JITTER_RADIUS = 0.04;
 const JITTER_AZIMUTH_DEG = 9;
 
@@ -227,7 +227,7 @@ export function placeWork(slug: string, facets: readonly Facet[]): NodePlacement
 // away from each other a few times — deterministic, so the sky is the
 // same on every build. Placement stays honest: a star moves only as
 // far as it must to be seen.
-const MIN_SEPARATION = 0.085;
+const MIN_SEPARATION = 0.095;
 const SPREAD_ITERATIONS = 12;
 // Coincident points have no direction between them; they part along a
 // golden-angle fan keyed by index so the split is stable and even.

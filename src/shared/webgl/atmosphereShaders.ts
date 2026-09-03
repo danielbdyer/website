@@ -162,7 +162,7 @@ export const DOME_FRAGMENT = /* glsl */ `
     float d = length(vec2(along * stretch, length(perp)));
     float tw = 0.7 + 0.3 * sin(time * (0.6 + n * 1.7) + n * 31.4);
     return smoothstep(0.16, 0.0, d) * tw * step(sparsity, n) * (0.4 + 0.6 * fract(n * 9.7))
-      * (0.55 + 0.45 * stretch);
+      * (0.7 + 0.3 * stretch);
   }
 
   void main() {
@@ -236,9 +236,9 @@ export const DOME_FRAGMENT = /* glsl */ `
     vec3 wd = vec3(spin * w.xy, w.z);
     float zc = 1.0 + max(Pd.z, -0.85);
     vec2 chartDir = (wd.xy * zc - Pd.xy * wd.z) / (zc * zc);
-    float streakMag = clamp(length(uTravel) / 2.2, 0.0, 1.0) * uMotion;
+    float streakMag = clamp(length(uTravel) / 1.1, 0.0, 1.0) * uMotion;
     vec2 streakDir = length(chartDir) > 1e-6 ? normalize(chartDir) : vec2(1.0, 0.0);
-    float stretch = 1.0 / (1.0 + 1.7 * streakMag);
+    float stretch = 1.0 / (1.0 + 2.6 * streakMag);
     float starGain = (0.45 + 0.55 * zen) * (0.55 + 2.1 * vein * (0.35 + 0.65 * washN));
     float t = uTime * uMotion;
     float deep = starLayer(chart * 96.0, 0.78, t, streakDir, stretch) * 0.30
@@ -276,8 +276,8 @@ export const DOME_FRAGMENT = /* glsl */ `
     float meridianGap = abs(fract(phi / meridianStep + 0.5) - 0.5) * meridianStep * sin(polar);
     float meridian = smoothstep(0.0035, 0.0, meridianGap)
       * smoothstep(0.07, 0.2, polar) * smoothstep(1.35, 1.05, polar);
-    sky += uAccentGold * ring * ringMask * (0.022 + 0.05 * uNight) * breath
-      + mix(uAccentGold, facetHue, 0.6) * meridian * 0.04 * uNight * breath;
+    sky += mix(uGlowColor, uHorizon, 0.5) * ring * ringMask * (0.014 + 0.02 * uNight) * breath
+      + mix(uGlowColor, facetHue, 0.55) * meridian * 0.032 * uNight * breath;
     // The polestar's own gathered warmth, breathing with the rings.
     sky += mix(uGlowColor, uAccentGold, 0.5) * exp(-polar * polar * 7.0) * breath
       * (0.02 + 0.035 * uNight);
@@ -294,7 +294,7 @@ export const DOME_FRAGMENT = /* glsl */ `
       + uAccentRose * sectorWeight(phi, 1.9635)
       + uAccentViolet * sectorWeight(phi, 3.5343)
       + uAccentGold * sectorWeight(phi, 5.1051);
-    sky = mix(sky, roomTint, roomBand * (0.09 - 0.04 * uNight));
+    sky = mix(sky, roomTint, roomBand * (0.12 - 0.03 * uNight));
 
     // ── The horizon — a luminous gather where the sky meets the
     // ground, hugging the frame's bottom where the Foyer waits
@@ -336,7 +336,7 @@ export const DOME_FRAGMENT = /* glsl */ `
     sky = mix(sky, paper, day * 0.85);
     // The room washes come back over the paper — the chart's regional
     // tints, watercolor near the rim.
-    sky = mix(sky, roomTint, roomBand * 0.08 * day);
+    sky = mix(sky, roomTint, roomBand * 0.11 * day);
     // The chart's construction lines, drawn in the page's ink by day:
     // the polar rings as circles of constant altitude, the meridians
     // computed above.
@@ -368,17 +368,21 @@ export const DOME_FRAGMENT = /* glsl */ `
     float lum = dot(sky, vec3(0.299, 0.587, 0.114));
     sky = mix(vec3(lum), sky, 1.0 + pool * 0.22);
 
-    // ── The horizon of the sphere. Where a pixel's ray only grazes the
-    // world (disc → 0) the dome ends: by night a thin luminous rim —
-    // the edge that reads as an event horizon — and beyond it a deep
-    // void the dust does not reach; by day the chart's bounding circle,
-    // drawn in ink, with the page continuing past it.
-    float inside = smoothstep(0.0, 0.05, disc);
-    float rim = exp(-abs(disc) * 30.0);
-    vec3 voidTone = mix(paper, mix(uGround, vec3(0.0), 0.72), uNight);
-    sky = mix(sky, voidTone, (1.0 - inside) * (0.35 + 0.6 * uNight));
-    sky += mix(uAccentGold, uGlowColor, 0.4) * rim * (0.04 + 0.34 * uNight);
-    sky = mix(sky, uInk, rim * 0.3 * day);
+    // ── The oculus. Where a pixel's ray only grazes the sphere (disc → 0)
+    // the sky ends and the room's ceiling begins: the page itself, dark
+    // umber paper by night and the chart's own sheet by day. The edge is
+    // luminous by contrast — the sky gathers a little light toward its
+    // limb, the way a real sky brightens toward the horizon — not by a
+    // drawn ring. By day the plate's edge is a single line of ink.
+    float inside = smoothstep(0.0, 0.03, disc);
+    float limbGather = smoothstep(0.32, 0.0, disc) * inside;
+    vec3 pageNight = mix(uGround, uHorizon, 0.18) * 0.92;
+    vec3 page = mix(paper, pageNight, uNight);
+    sky += mix(uGlowColor, uHorizon, 0.35) * limbGather * (0.05 + 0.13 * uNight);
+    float rimLine = exp(-abs(disc) * 44.0);
+    sky = mix(sky, page, 1.0 - inside);
+    sky += uGlowColor * rimLine * 0.07 * uNight;
+    sky = mix(sky, uInk, rimLine * 0.3 * day);
 
     // Paper grain — static, like the sheet itself. Scaled by the
     // local luminance so the dark hour's grain reads as stardust

@@ -585,27 +585,34 @@ body::before {
   font-style: italic;
   font-size: 11px;
   opacity: 0;
-  transition: opacity 400ms ease-out;
-  /* A halo of the page's ground behind the letters, so a name stays
-     legible across a thread or another star's glow. */
+  /* A soft halo of the page's ground behind the letters, so a name
+     stays legible across a thread; and a glide when the layout moves
+     a name to another side of its star. */
   paint-order: stroke fill;
   stroke: var(--bg);
-  stroke-width: 3px;
+  stroke-width: 2px;
   stroke-linejoin: round;
-  stroke-opacity: 0.85;
+  stroke-opacity: 0.6;
+  transition:
+    opacity 400ms ease-out,
+    transform 600ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Named at rest — here, its neighbors, and the stars its bearings lead
-   to carry their names without being asked, so the next step is always
-   legible (CONSTELLATION_WALK.md §"Semantic Context"). Here reads
-   fullest; hover still lifts any star. */
-.constellation-star[data-named='true'] .constellation-star__label {
-  opacity: 0.58;
+   to carry their names without being asked, at three volumes: the star
+   you stand at, a neighbor one stroke along a figure, a bearing's end
+   (CONSTELLATION_WALK.md §"Semantic Context"). Hover still lifts any. */
+.constellation-star[data-named='far'] .constellation-star__label {
+  opacity: 0.4;
+}
+
+.constellation-star[data-named='near'] .constellation-star__label {
+  opacity: 0.66;
 }
 
 .constellation-star[data-active='true'] .constellation-star__label,
 .constellation-star[data-here='true'] .constellation-star__label {
-  opacity: 0.85;
+  opacity: 0.92;
 }
 
 /* Visited — a star stood at earlier this session keeps a little of the
@@ -775,7 +782,7 @@ body::before {
    settle. CONSTELLATION_DESIGN.md §"C3. Thread" V3.A and
    CONSTELLATION.md §"The Threads" both name this rhythm. */
 .constellation-thread {
-  opacity: 0.25;
+  opacity: 0.4;
   transition:
     opacity 600ms ease-out,
     stroke-width 600ms ease-out;
@@ -842,6 +849,22 @@ body::before {
   transition: opacity 600ms ease-out;
 }
 
+.constellation-compass__name:hover {
+  opacity: 0.95;
+}
+
+/* On a phone the viewbox scales down with the frame's width; the small
+   type would fall under legibility, so it grows in viewbox units. */
+@media (width <= 640px) {
+  .constellation-compass__name {
+    font-size: 13px;
+  }
+
+  .constellation-star__label {
+    font-size: 14px;
+  }
+}
+
 .constellation-compass__name[data-hue='warm'] {
   fill: color-mix(in oklab, var(--accent-warm) 55%, var(--text-3));
 }
@@ -883,7 +906,43 @@ body::before {
   pointer-events: auto;
   color: var(--text-3);
   font: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in oklab, currentcolor 40%, transparent);
+  text-underline-offset: 0.22em;
   transition: color 200ms ease-out;
+}
+
+/* Each bearing wears its facet's hue quietly at rest — the compass read
+   as words — and fully when attended. */
+.sky-whisper__bearing[data-hue='warm'] {
+  color: color-mix(in oklab, var(--accent-warm) 45%, var(--text-3));
+}
+
+.sky-whisper__bearing[data-hue='rose'] {
+  color: color-mix(in oklab, var(--accent-rose) 45%, var(--text-3));
+}
+
+.sky-whisper__bearing[data-hue='violet'] {
+  color: color-mix(in oklab, var(--accent-violet) 45%, var(--text-3));
+}
+
+.sky-whisper__bearing[data-hue='gold'] {
+  color: color-mix(in oklab, var(--accent-gold) 45%, var(--text-3));
+}
+
+.sky-whisper__bearing[data-hue='warm']:hover,
+.sky-whisper__bearing[data-hue='warm']:focus-visible {
+  color: var(--accent-warm);
+}
+
+.sky-whisper__bearing[data-hue='rose']:hover,
+.sky-whisper__bearing[data-hue='rose']:focus-visible {
+  color: var(--accent-rose);
+}
+
+.sky-whisper__bearing[data-hue='violet']:hover,
+.sky-whisper__bearing[data-hue='violet']:focus-visible {
+  color: var(--accent-violet);
 }
 
 .sky-whisper__bearing:hover,

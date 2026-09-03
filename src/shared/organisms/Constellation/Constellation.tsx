@@ -12,6 +12,7 @@ import { useSkyWalk } from '@/shared/hooks/useSkyWalk';
 import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
 import {
+  DAYSTAR_REST_TRANSFORM,
   VIEWBOX,
   buildPositionedMap,
   buildRenderableNodes,
@@ -107,7 +108,9 @@ export function Constellation({
         <ConstellationFilters />
         <g className="constellation-parallax--firmament">
           <Firmament size={VIEWBOX} />
-          <Daystar cx={500} cy={240} />
+          <g data-daystar="true" transform={DAYSTAR_REST_TRANSFORM}>
+            <Daystar cx={0} cy={0} />
+          </g>
         </g>
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">

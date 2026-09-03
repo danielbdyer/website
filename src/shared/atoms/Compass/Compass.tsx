@@ -13,16 +13,19 @@ export interface CompassPoint {
 interface CompassProps {
   points: readonly CompassPoint[];
   /** Facets under attention — those of the star the visitor stands
-   *  at, and the one a hovered bearing or thread lights. */
+   *  at, and the one a hovered bearing, thread, or name lights. */
   attended: ReadonlySet<Facet>;
 }
 
-// The compass lettered at the rim. Eight words, one per facet, at the
-// bearing each facet owns on the dome — so the sky says why a star is
-// where it is (CONSTELLATION_WALK.md §"The Compass"). Small caps in the
-// facet's hue over the quiet ink; the attended ones brighten. They turn
-// with the heavens because the bearings are of the sky. aria-hidden:
-// the whisper carries the facets for assistive output.
+// The compass lettered at the rim of the oculus. Eight words, one per
+// facet, at the bearing each facet owns on the dome — so the sky says
+// why a star is where it is (CONSTELLATION_WALK.md §"The Compass").
+// Small caps in the facet's hue over the quiet ink; the attended ones
+// brighten. The chart holds still, so a name can be learned: beauty is
+// up. Each name is also a bearing to take — hovering lights the figure,
+// and the organism travels along the facet on click (the words carry
+// `data-facet` like a thread does). aria-hidden: the whisper carries
+// the same bearings for assistive output, as real buttons.
 
 export function Compass({ points, attended }: CompassProps) {
   return (
@@ -35,9 +38,10 @@ export function Compass({ points, attended }: CompassProps) {
           textAnchor="middle"
           dominantBaseline="middle"
           data-compass={point.facet}
+          data-facet={point.facet}
           data-hue={point.hue}
           data-attended={attended.has(point.facet) ? 'true' : undefined}
-          className="constellation-compass__name pointer-events-none"
+          className="constellation-compass__name cursor-pointer"
         >
           {point.facet}
         </text>

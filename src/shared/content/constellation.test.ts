@@ -54,8 +54,8 @@ describe('getConstellationGraphSync — content', () => {
       // The compass placement keeps the polestar's center clear and the
       // stars inside the resting camera's view (RADIUS_MIN / RADIUS_MAX
       // in constellation.ts; radius × 90° = degrees from the pole).
-      expect(node.radius).toBeGreaterThanOrEqual(0.16);
-      expect(node.radius).toBeLessThanOrEqual(0.66);
+      expect(node.radius).toBeGreaterThanOrEqual(0.18);
+      expect(node.radius).toBeLessThanOrEqual(0.78);
     }
   });
 
@@ -167,8 +167,8 @@ describe('placeWork', () => {
   test('a single-facet work sits on its bearing, a jitter away', () => {
     const p = placeWork('a-work-of-beauty', ['beauty']);
     expect(angleDiff(p.angleDeg, FACET_AZIMUTH_DEG.beauty)).toBeLessThanOrEqual(9);
-    expect(p.radius).toBeGreaterThan(0.45);
-    expect(p.radius).toBeLessThan(0.6);
+    expect(p.radius).toBeGreaterThan(0.55);
+    expect(p.radius).toBeLessThan(0.7);
   });
 
   test('two adjacent facets pull a work between their bearings, a little inward', () => {
@@ -220,9 +220,9 @@ describe('spreadPlacements', () => {
 
   test('two works with identical facets no longer share a star', () => {
     const twins = [placeWork('one', ['craft', 'body']), placeWork('one', ['craft', 'body'])];
-    expect(gap(twins[0]!, twins[1]!)).toBeLessThan(0.085);
+    expect(gap(twins[0]!, twins[1]!)).toBeLessThan(0.095);
     const [a, b] = spreadPlacements(twins);
-    expect(gap(a!, b!)).toBeGreaterThanOrEqual(0.084);
+    expect(gap(a!, b!)).toBeGreaterThanOrEqual(0.094);
   });
 
   test('leaves already-separated placements where they are', () => {
@@ -235,10 +235,10 @@ describe('spreadPlacements', () => {
   test('the built sky keeps every pair of stars a label apart, and none inside the pole', () => {
     const g = getConstellationGraphSync();
     for (const a of g.nodes) {
-      expect(a.radius).toBeGreaterThanOrEqual(0.16 - 1e-9);
+      expect(a.radius).toBeGreaterThanOrEqual(0.18 - 1e-9);
       for (const b of g.nodes) {
         if (a === b) continue;
-        expect(gap(a, b)).toBeGreaterThanOrEqual(0.084);
+        expect(gap(a, b)).toBeGreaterThanOrEqual(0.094);
       }
     }
   });

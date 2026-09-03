@@ -20,7 +20,7 @@ import { POLE_KEY, bearingsOf, findNode, neighborsOf, placePosition, type Place 
 
 /** The most stars present at once from a star. At the pole, the
  *  overview, everything is present. */
-export const PRESENT_CAP = 12;
+export const PRESENT_CAP = 24;
 /** Of the cap, how many are strangers — the delicious edge. */
 export const STRANGER_COUNT = 2;
 
