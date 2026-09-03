@@ -167,6 +167,21 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** The concordance is a TF-IDF cosine over each work's prose — honest and free, but shallow. Danny has been playing with qmd for embeddings; a build-time step that reads an embeddings manifest would make "in concordance" mean something closer to what he means.
 **Trigger:** A manifest that can be produced deterministically at build time without a network call. `buildConcordance` (`concordance.ts`) is the seam; nothing downstream changes.
 
+### One frame, two painters
+
+**Why:** The sky is projected twice each frame — once by the SVG projector, once by the WebGL hook replaying the SVG's transform chain — and they agree only by construction. `CONSTELLATION_ARCHITECTURE.md` §"What Remains" names the target: a pure `projectFrame` returning every screen position and the label layout as data, and two painters that write it.
+**Trigger:** The next change that has to be made in two projections at once.
+
+### Gestures as data
+
+**Why:** The shell still reads pointer and keyboard events directly. A pure `gestureOf(event, geometry)` would make every gesture a value the core can be tested against without the DOM.
+**Trigger:** The first gesture that is hard to test through the DOM.
+
+### The event log
+
+**Why:** Arrivals, aims, and attentions are already values. Kept as a log they are the walk's memory in full, the transparency layer's material, and the generative horizon's seam — a proposal is an event the author blesses.
+**Trigger:** The first proposal.
+
 ### Ghosts — agent-proposed stars
 
 **Why:** The generative horizon ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"The Generative Horizon"): stars proposed in conversation, drawn faintly until blessed. Danny's decision: author-only until he blesses them into public view.

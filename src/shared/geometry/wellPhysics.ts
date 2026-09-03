@@ -4,9 +4,7 @@
 // (CONSTELLATION_WALK.md §"What This Supersedes"): the navigable-node
 // shape the DOM projector reads, and the tangent-direction synthesis
 // that turns an arrow key into a direction on the sphere so
-// `neighborToward` (skyWalk.ts) can pick the star it points at. The
-// attractor forces, the flick velocity, and the nearest-well search
-// are gone with the drag.
+// `neighborToward` (skyWalk.ts) can pick the star it points at.
 
 import type { CameraBasis } from '@/shared/geometry/camera';
 import type { UnitVector3, Vec3 } from '@/shared/geometry/sphere';
@@ -18,6 +16,8 @@ export interface NavigableNode {
   readonly unitPos: UnitVector3;
 }
 
+const ZERO: Vec3 = { x: 0, y: 0, z: 0 };
+
 /** Tangent direction at `pos` synthesized from held arrow keys.
  *  Up/down map to ±camera-up projected onto the tangent plane;
  *  left/right map to ±camera-right. The result is normalized so
@@ -27,21 +27,21 @@ export function tangentHoldDirection(
   basis: CameraBasis,
   pos: UnitVector3,
 ): Vec3 {
-  let upWeight = 0;
-  let rightWeight = 0;
-  if (heldKeys.has('ArrowUp')) upWeight += 1;
-  if (heldKeys.has('ArrowDown')) upWeight -= 1;
-  if (heldKeys.has('ArrowRight')) rightWeight += 1;
-  if (heldKeys.has('ArrowLeft')) rightWeight -= 1;
-  if (upWeight === 0 && rightWeight === 0) return { x: 0, y: 0, z: 0 };
+  const upWeight = (heldKeys.has('ArrowUp') ? 1 : 0) - (heldKeys.has('ArrowDown') ? 1 : 0);
+  const rightWeight = (heldKeys.has('ArrowRight') ? 1 : 0) - (heldKeys.has('ArrowLeft') ? 1 : 0);
+  if (upWeight === 0 && rightWeight === 0) return ZERO;
   // Compose then re-tangent (project off the radial component) and
   // normalize so the magnitude is 1 regardless of how the basis
   // happens to align with the tangent plane.
-  const wx = basis.up.x * upWeight + basis.right.x * rightWeight;
-  const wy = basis.up.y * upWeight + basis.right.y * rightWeight;
-  const wz = basis.up.z * upWeight + basis.right.z * rightWeight;
-  const tangent = projectOntoTangentPlane({ x: wx, y: wy, z: wz }, pos);
+  const tangent = projectOntoTangentPlane(
+    {
+      x: basis.up.x * upWeight + basis.right.x * rightWeight,
+      y: basis.up.y * upWeight + basis.right.y * rightWeight,
+      z: basis.up.z * upWeight + basis.right.z * rightWeight,
+    },
+    pos,
+  );
   const m = Math.hypot(tangent.x, tangent.y, tangent.z);
-  if (m < 1e-9) return { x: 0, y: 0, z: 0 };
+  if (m < 1e-9) return ZERO;
   return { x: tangent.x / m, y: tangent.y / m, z: tangent.z / m };
 }
