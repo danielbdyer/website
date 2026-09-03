@@ -218,6 +218,7 @@ Every constellation surface speaks in this small vocabulary. Designers should us
 - **The walk** — how the sky is traveled: from here to a named destination, along the figures, never by a free drag ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md)).
 - **Concordance** — how near two works are in their words; a library's word for a semantic weight, computed from the works' own prose. The whisper's third line.
 - **Presence** — which stars are shown from where you stand: the near-in-context, capped, with a couple of strangers kept for the edge. The rest recede until reached.
+- **Oculus** — the round opening in the room's ceiling through which the sky is seen; the whole sphere at rest, the page beyond its limb. The sky's frame, and the reason the daystar sits in the margin.
 - **Facet** — a curatorial angle works share. Eight in the site's vocabulary.
 - **Horizon** — the temporal edge. Where time lives in the chrome. The horizon strip's position is metaphor as much as layout.
 
@@ -1768,6 +1769,7 @@ A one-page reference. Designers and engineers should be able to find any term th
 | **Figure** | A facet's members joined as one drawing; eight in the sky | Lexicon |
 | **Concordance** | Nearness in words between two works; the whisper's third line | Lexicon |
 | **Presence** | The capped set of stars shown from here; the rest recede until reached | Lexicon |
+| **Oculus** | The round opening through which the room sees the sky; the sphere's frame at rest | Lexicon |
 | **Facet** | A curatorial angle works share; eight in the site's vocabulary | Lexicon |
 | **Horizon** | The temporal edge; where time lives in the chrome | Lexicon |
 | **Polestar** | The still center; the geometric figure at world center | C5 |

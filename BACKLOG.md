@@ -152,25 +152,20 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** The drag returned as a scrub along a thread ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"): a press on the open sky picks the thread that leaves here in the hand's direction, and release past the midpoint arrives. The press-to-scrub threshold, the commit fraction, and how the hand's direction chooses among threads are first guesses.
 **Trigger:** Danny's hand on it across a mouse, a trackpad, and a thumb.
 
-### Rest distance and the streak
+### The oculus's fit and the streak
 
-**Why:** The resting camera fits the populated cap to the frame's shorter side (about three radii on a landscape screen, farther on a phone), and travel reads its velocity from the deep field's streak rather than a dolly. The fit margin, the streak's strength, and the glide's duration range are tuned in a few viewports. Single-facet works also gather along their facet's bearing in a near-straight string; a wider azimuth jitter for them may read more like a sky.
+**Why:** The resting camera fits the whole sphere — the oculus — to the frame's shorter side at 92% (about 3.85 radii on a landscape screen, farther on a phone), and travel reads its velocity from the deep field's streak rather than a dolly. The fill, the streak's strength, and the glide's duration range are tuned in a few viewports. Single-facet works also gather along their facet's bearing in a near-straight string; a wider azimuth jitter for them may read more like a sky.
 **Trigger:** Danny's eye across a phone, a laptop, and a wide screen. The constants are `restDistanceFor` and `REST_DISTANCE` (`skyWalk.ts`), the streak in `atmosphereShaders.ts`, the durations in `useSkyTravel.ts`, and the jitter in `constellation.ts`.
 
 ### The presence cap
 
-**Why:** From a star, at most `PRESENT_CAP` (12) stars are present, two of them strangers; the rest recede. With sixteen works the cap is felt but gentle; as the corpus grows it decides how much of the sky a visitor sees at once, and whether the reveal feels like a tree unfolding or like things going missing.
+**Why:** From a star, at most `PRESENT_CAP` (24) stars are present, two of them strangers; the rest recede. The cap sits above the corpus today, so the reveal has not yet begun; as the corpus grows past it, the cap decides how much of the sky a visitor sees at once, and whether the reveal feels like a tree unfolding or like things going missing.
 **Trigger:** The corpus passing thirty works, or Danny's felt sense sooner. `PRESENT_CAP` and `STRANGER_COUNT` in `presence.ts`.
 
 ### Embeddings behind the concordance
 
 **Why:** The concordance is a TF-IDF cosine over each work's prose — honest and free, but shallow. Danny has been playing with qmd for embeddings; a build-time step that reads an embeddings manifest would make "in concordance" mean something closer to what he means.
 **Trigger:** A manifest that can be produced deterministically at build time without a network call. `buildConcordance` (`concordance.ts`) is the seam; nothing downstream changes.
-
-### A celestial or a terrestrial compass
-
-**Why:** The compass turns with the heavens: a star is always in the sector its name says, but "beauty is up" cannot be learned across visits. A terrestrial compass would hold the names to the frame while the stars turned beneath, at the cost of that consistency. Also: a name at the rim can pass behind the daystar.
-**Trigger:** Living with it. If wayfinding wants the frame, the names stop projecting through the camera.
 
 ### Ghosts — agent-proposed stars
 

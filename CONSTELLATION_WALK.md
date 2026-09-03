@@ -24,7 +24,7 @@ These were agreed on 2026-09-01 and are the spine of this file. The rest is cons
 4. **The visitor is always somewhere.** *Here* is a star or the pole. Its neighborhood is named; farther stars are lights. Choosing a neighbor travels; entering *here* opens the work.
 5. **Facets are the bearings.** The eight facets are the polestar's eight points — the compass of the sky. A work sits where its facets pull it. Each facet's stars form one figure, lit when attended. From any star, its facets are the bearings it offers.
 6. **Stars are uniform.** A work is a work. Hue is the primary facet; gold is attention.
-7. **A place has a ground and a still point.** The ridge and the Foyer beneath; the polestar at the pole; the heavens turning about it on the clock. Two hours, one chart, dusk between (`CONSTELLATION.md`).
+7. **A place has a ground and a still point.** The ridge and the Foyer beneath; the polestar at the pole; the chart still, the weather turning behind it on the clock; the sky seen through the room's oculus. Two hours, one chart, dusk between (`CONSTELLATION.md`).
 8. **No new content, no chrome.** Every star is a real link; no-JS and reduced motion get a still chart; the sky refuses legend, search, zoom, selection, and metrics. The only words are the whisper.
 9. **It grows like a garden.** A new work adds a star and extends its figures by a stroke; nothing else moves. The returning visitor finds the sky where the hour has carried it, and sees what is new bloom (held: `CONSTELLATION_DESIGN.md` §"C14. NewStarBloom").
 10. **The horizon is generative.** Proposals will appear as ghost stars and ghost threads awaiting blessing. Nothing built now may foreclose that.
@@ -41,7 +41,7 @@ The eight facets take the eight points of the polestar. Adjacent points share a 
 
 **The compass is drawn.** The sky says why each star is where it is. The chart's meridians fall on the eight bearings — one hairline per facet, every 45° of azimuth, each carrying a breath of its facet pair's hue over the chart's gold. The atmosphere carries the same compass in color: a warm arc to the east where craft and body gather, rose to the north for beauty and language, violet to the west for consciousness and becoming, gold to the south for leadership and relation — so a star sits inside the weather of its own facets. And the facets' names are lettered at the rim, small caps in the facet's hue, just outside the populated cap; the names of the star you stand at, and of the bearing you attend, brighten. Within each hue pair the second facet draws its figure dotted, the way an atlas keeps two systems of lines apart in one ink, so the eight figures stay tellable.
 
-**The compass is celestial.** It turns with the heavens on the clock, because the bearings are of the sky: a star is always in the sector its name says. *Held: whether a terrestrial compass — names fixed to the frame while the stars turn beneath — would serve wayfinding better. Living with it decides.*
+**The chart holds still.** The compass can only be learned if it stays put: beauty is up, craft is to the right, consciousness to the left. So the stars no longer roll with the hour. The heavens' turn lives in the atmosphere now — the deep field and the weather drift on the wall clock behind the chart, at the pace the old roll gave the backdrop — and a returning visitor still finds the sky moved on. The names at the rim are bearings too: hovering one lights its figure, and clicking it travels along that facet, the same step the whisper offers in words. Within each hue pair the second facet draws its figure dotted, the way an atlas keeps two systems of lines apart in one ink, and gold is kept for attention: the grid's rings and meridians are drawn in the glow and the facet hues, the rim by light rather than a stroke.
 
 **The pole** is where the visitor stands before any star — the still point, the polestar's figure. From the pole, all eight bearings are offered; each leads to the nearest star that carries that facet.
 
@@ -57,7 +57,7 @@ The eight facets take the eight points of the polestar. Adjacent points share a 
 
 **Stars are uniform.** No magnitude. Hue from the primary facet. The active star carries gold: the echo, the halo's claim, the label.
 
-**Names belong to the neighborhood.** Only *here*, its neighbors along the figures, and the stars its bearings lead to carry labels at rest. Everything farther is light. Context grows exactly as far as the visitor can reach, which is what makes reaching feel like a decision. The names are laid out so none sits on another or on a star — below by habit, else above or to a side — and each carries a halo of the page's ground so it stays legible across a thread.
+**Names belong to the neighborhood, at three volumes.** Only *here*, its neighbors along the figures, and the stars its bearings lead to carry labels at rest — and they speak at three volumes: the star you stand at fullest, a neighbor one stroke off quieter, a bearing's end quieter still. Everything farther is light. Context grows exactly as far as the visitor can reach, which is what makes reaching feel like a decision. The names are laid out so none sits on another or on a star — below by habit, else above or to a side — each carrying a soft halo of the page's ground so it stays legible across a thread, and a name that must move to another side of its star glides there rather than jumping.
 
 ---
 
@@ -71,7 +71,7 @@ The eight facets take the eight points of the polestar. Adjacent points share a 
 
 **The concordance speaks once.** When a work's words echo the one you stand at and no facet joins them, the whisper adds a third line — *in concordance · {title}* — and taking it travels there. This is the semantic layer made volitional rather than ambient.
 
-**Tunings, not truths.** The cap (`PRESENT_CAP`), the strangers (`STRANGER_COUNT`), the weights, and the concordance itself (TF-IDF today; embeddings from qmd or a model are one function swap away — `buildConcordance` is the seam) are named constants and held tunings, decided by living with the sky.
+**Tunings, not truths.** The cap (`PRESENT_CAP`, set above the corpus today so the reveal begins only when the sky has grown into it), the strangers (`STRANGER_COUNT`), the weights, and the concordance itself (TF-IDF today; embeddings from qmd or a model are one function swap away — `buildConcordance` is the seam) are named constants and held tunings, decided by living with the sky.
 
 ---
 
@@ -79,9 +79,11 @@ The eight facets take the eight points of the polestar. Adjacent points share a 
 
 **A destination, then motion.** Travel begins only when the visitor names where to go. The camera's surface point moves from *here* to *there* along the great circle in a held second or two — the *Held* register of `CONSTELLATION_DESIGN.md` §"Motion Register", 1.1–2.4 s scaled to the distance — on a sine glide: one unbroken gesture, no change of the camera's distance. The first scaffold dollied the lens in and out across each crossing to read as depth; it read as a pulse — a neck craning forward and settling back with every hop — and was set down. Velocity is read instead from what streams past: the atmosphere's deep field streaks along the travel's angular velocity, longest at mid-crossing, still at rest. This is the trench: motion read from the walls, not the lens.
 
-**The rest fits the frame.** At rest the camera stands far enough back that the whole populated cap is in view with the dome's limb near the frame's edge — about three radii on a landscape screen, farther on a phone held upright, so no star is ever cropped. The sky must work for every viewport it is given; the distance adapts to the frame and eases when the frame changes shape.
+**The rest is the oculus.** The first scaffold looked up from under the dome; its second pass stood outside a globe in a void. Neither was the room. The answer is the room's own ceiling with a round opening in it: the **oculus**. At rest the whole sphere is in view, fitted to the frame's shorter side with a margin, and what lies beyond its limb is not space but the page — the site's dark umber paper by night, the chart's own sheet by day, grained like the rest of the site. The edge is luminous by contrast: the sky gathers a little light toward its limb, the way a real sky brightens toward the horizon, and by day the plate's edge is a single line of ink. On a phone the oculus fits the width and the whisper sits beneath it on the page. The camera distance that does this is derived from the frame (`restDistanceFor`) and eases when the frame changes shape; the sky must work for every viewport it is given.
 
-**The horizon.** Where a pixel's ray only grazes the sphere the dome ends: by night a thin luminous rim — the edge that reads as an event horizon — and beyond it a deep void the dust does not reach; by day the chart's bounding circle, drawn in ink, with the page continuing past it.
+**The daystar is the plate's emblem.** The sun and moon do not sit in the sky; they sit on the page in the frame's upper right, the way an atlas keeps its sun and moon in the margin of a plate. By day the paper is lit from that corner.
+
+**The gaze leans the sky, not the window.** The mouse-look peer no longer swings the camera — that moved the oculus on the page. Instead the surface point the camera rests on slides a little toward the cursor, so the sky breathes inside a window that holds still.
 
 **Arrival acknowledges.** The destination becomes *here*: the echo widens, the label settles, the whisper changes, the new neighborhood's names fade in. The thread walked stays lit.
 
@@ -149,7 +151,7 @@ Danny's far image: a surface where he can author, or bless agent-authored additi
 
 The physics camera and everything built on it — the wells, the flick, the coast, the settle assist, the demonstration drift, the grab of 2026-09-01 — are set down. The first scaffold's dolly, which pulsed the lens across every crossing, is set down for the glide and the streak. The even (Fibonacci) placement is set down; the compass placement returns with its meaning now drawn into the sky. The complete co-membership mesh is set down in favor of figures. `CONSTELLATION.md` §"Interaction Vocabulary" is superseded by the table above; §"What the Constellation Shows" by the compass and figures here.
 
-What stays: the two hours and the dusk; the heavens' roll on the clock; the ground; the polestar at the pole; the echo; the work overlay and the work ↔ star jump; the return gesture; the accessibility floor; every star a real link.
+What stays: the two hours and the dusk; the weather's turn on the clock (the stars' roll is set down so the compass can be learned); the ground; the polestar at the pole; the echo; the work overlay and the work ↔ star jump; the return gesture; the accessibility floor; every star a real link.
 
 ---
 
@@ -158,7 +160,6 @@ What stays: the two hours and the dusk; the heavens' roll on the clock; the grou
 - The frontmatter placement override.
 - The scrub's feel — threshold, commit fraction, how the hand's direction chooses a thread (`BACKLOG.md`).
 - The presence cap and the strangers; embeddings behind the concordance (`BACKLOG.md`).
-- A celestial or a terrestrial compass (§"The Compass").
 - Where the time slider lands in the walk (it dims what did not yet exist; the walk's memory and the slider share the register of *what was*).
 - Constellation names lettered along their figures once the corpus can bear them (`CONSTELLATION.md` §"Held Questions").
 - Whether hovering a room's name in the whisper should light the room's stars as a region — rooms are atmospheres, not figures, and the compass is by facet; the room parallel (`CONSTELLATION_PARALLEL.md`) may want this.
@@ -172,5 +173,7 @@ What stays: the two hours and the dusk; the heavens' roll on the clock; the grou
 *Shipped 2026-09-01:* the compass placement, the spread, and the facet figures live in `src/shared/content/constellation.ts`; the neighborhood, bearings (with the thread each travels along), names within a stroke, and the arrow-key choice in `src/shared/content/skyWalk.ts`; destination travel in `src/shared/hooks/useSkyTravel.ts`, which replaced the physics navigation hook (the wells, the flick, the coast, and the demonstration drift are gone); the walk's state in `src/shared/hooks/useSkyWalk.ts` and `src/shared/state/hereStorage.ts`; the input grammar in `src/shared/organisms/Constellation/useSkyInteractions.ts` (a pointer press never triggers focus-travel; only keyboard focus does); the whisper in `src/shared/molecules/SkyWhisper/`; threads as paths in `src/shared/atoms/Thread/Thread.tsx` with the projector moving the hit twin.
 
 *Shipped 2026-09-02, the second pass with Danny:* the dolly is gone and travel is a sine glide with the deep field's streak (`uTravel` in `src/shared/webgl/atmosphereShaders.ts`, carried by `src/shared/state/skyCamera.ts`); the rest distance adapts to the frame (`restDistanceFor`, `skyWalk.ts`); the scrub along a track lives in `useSkyTravel.ts`; the compass is drawn — meridians and sector atmospheres in the dome shader, names at the rim in `src/shared/atoms/Compass/` projected by `skyProjector.projectCompass`, dotted second figures in `Thread.tsx`; the horizon rim in the dome shader; label layout in `src/shared/dom/labelLayout.ts` applied by `skyProjector.placeLabels`; the concordance in `src/shared/content/concordance.ts` and presence in `src/shared/content/presence.ts`, with absent stars receding in both the SVG (`data-present`) and the atmosphere (`aPresence`). Not yet built: the proposed state and its author gate, the placement override, embeddings behind the concordance.
+
+*Shipped 2026-09-02, the third pass — the oculus:* the rest distance fits the whole sphere to the frame's shorter side (`restDistanceFor`, `limbNdcAt`, `skyWalk.ts`), the page beyond the limb and the luminous limb in the dome shader, the daystar seated on the page as the plate's corner emblem (`daystarViewboxPoint`, `skyProjector.projectDaystar`, read back by the atmosphere), the chart held still with the heavens' turn moved into the atmosphere's spin (`useWebGLFirmament.ts`), the gaze as a lean of the surface point (`useSkyTravel.ts`), labels at three volumes moved by translate (`labelLayout.ts`, `data-named` ranks), the names at the rim as bearings (`useSkyInteractions.ts`), gold returned to attention in the grid and the whisper's bearings in their hues, and the presence cap set above the corpus.
 
 *If this document and the lived implementation disagree, the lived implementation is the present moment and this file is what it is reaching for. Catch the document up.*
