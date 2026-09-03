@@ -147,10 +147,10 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** The session remembers where you stood (`hereStorage.ts`). Prerendered markup cannot know it, so the sky opens at the pole and flies you back — a one-to-two-second crossing on every refresh or return from a work page. It reads as the sky returning you; it may read as delay.
 **Trigger:** Danny's felt sense after living with it. The alternative is an instant re-place before first paint (a hydration-safe read), which trades the arrival for stillness.
 
-### The scrub's feel
+### The drag's feel
 
-**Why:** The drag returned as a scrub along a thread ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"): a press on the open sky picks the thread that leaves here in the hand's direction, and release past the midpoint arrives. The press-to-scrub threshold, the commit fraction, and how the hand's direction chooses among threads are first guesses.
-**Trigger:** Danny's hand on it across a mouse, a trackpad, and a thumb.
+**Why:** The drag follows the hand freely along a thread and elastically elsewhere, springing home on release ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"). Its constants are first guesses tuned with a mouse in headless Chromium: the press-to-drag threshold, the commit fraction, how nearly aligned the hand must be to take a thread (`TRACK_ALIGNMENT`) and how far along before the choice is held (`TRACK_HOLD`), the give's reach and readiness (`ELASTIC_LIMIT_VB`, `ELASTIC_GIVE`), and the spring's frequency, damping, and velocity cap (`useSkyTravel.ts`).
+**Trigger:** Danny's thumb on a phone, then a trackpad, then a mouse.
 
 ### The oculus's fit and the streak
 
