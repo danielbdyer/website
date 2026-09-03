@@ -4,10 +4,18 @@ import type {
   ConstellationHue,
   ConstellationNode,
 } from '@/shared/content/constellation';
-import type { Room } from '@/shared/types/common';
+import type { Facet, Room } from '@/shared/types/common';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { cameraBasis, project } from '@/shared/geometry/camera';
+import { COMPASS } from '@/shared/content/constellation';
+import {
+  COMPASS_RIM,
+  DAYSTAR_REST_FRAME,
+  REST_DISTANCE,
+  daystarViewboxPoint,
+} from '@/shared/content/skyWalk';
+import type { CompassPoint } from '@/shared/atoms/Compass/Compass';
 
 // Layout primitives for the constellation. Pure functions — no React,
 // no DOM — so the rendering layer reduces to "data → pixels" with
@@ -16,19 +24,25 @@ import { cameraBasis, project } from '@/shared/geometry/camera';
 export const VIEWBOX = 1000;
 export const CENTER = VIEWBOX / 2;
 export const SKY_RADIUS = 440;
+/** Where the daystar is seated on the page for the prerender's assumed
+ *  landscape frame; the travel hook re-seats it for the live frame. */
+export const DAYSTAR_REST = daystarViewboxPoint(
+  DAYSTAR_REST_FRAME.width,
+  DAYSTAR_REST_FRAME.height,
+  VIEWBOX,
+);
+export const DAYSTAR_REST_TRANSFORM = `translate(${DAYSTAR_REST.x.toFixed(2)} ${DAYSTAR_REST.y.toFixed(2)})`;
 
-// Phase B camera: positioned beneath the firmament, looking up into
-// it. The distance (1.6 × the unit sphere's radius) places the visitor
-// *under the dome* rather than outside looking at a globe — the near
-// hemisphere fills the frame, the limb falls off all four edges, and
-// the polestar/zenith sits at center with the horizon at the rim. This
-// matches ORBIT_DISTANCE in useConstellationNavigation so the
-// prerendered first paint and the hydrated navigation camera agree
-// (no jump from far to close on hydration). The FOV stays narrow on
-// purpose: a wider lens captures more solid angle and lets the void
-// back in around the dome; the narrow lens is what envelops.
+// The resting camera: beneath the firmament, looking up through the
+// sphere's center at the far hemisphere — the dome. REST_DISTANCE
+// (skyWalk.ts) is shared with the travel hook so the prerendered first
+// paint and the hydrated camera agree (no jump on hydration). At this
+// distance the whole populated dome is in view at once, its limb at
+// the frame's edge; travel dollies in from here (useSkyTravel). The
+// FOV stays narrow on purpose: a wider lens lets the void back in
+// around the dome; the narrow lens is what envelops.
 export const STAGE_CAMERA: Camera = {
-  position: { x: 0, y: 0, z: -1.6 },
+  position: { x: 0, y: 0, z: -REST_DISTANCE },
   target: { x: 0, y: 0, z: 0 },
   up: { x: 0, y: 1, z: 0 },
   fovY: Math.PI / 4,
@@ -113,6 +127,7 @@ export function skyTitle(nodeCount: number): string {
 export interface ResolvedEdge {
   id: string;
   hue: ConstellationHue;
+  facet: Facet;
   sourceKey: string;
   targetKey: string;
   x1: number;
@@ -133,6 +148,7 @@ export function resolveEdges(
       {
         id: `${nodeKey(source)}|${nodeKey(target)}|${edge.facet}`,
         hue: edge.hue,
+        facet: edge.facet,
         sourceKey: nodeKey(source),
         targetKey: nodeKey(target),
         x1: source.x,
@@ -171,10 +187,31 @@ export function buildRenderableNodes(
   return placed.toSorted((a, b) => b.depth - a.depth);
 }
 
+/** The active star's facet hue, or null when no well is claimed. The
+ *  companion glyph mixes its amber toward this hue by the per-tick
+ *  --companion-claim the navigation hook writes. */
+export function activeHueOf(
+  nodes: readonly RenderableNode[],
+  activeKey: string | null,
+): ConstellationHue | null {
+  if (activeKey === null) return null;
+  return nodes.find(({ key }) => key === activeKey)?.node.hue ?? null;
+}
+
 /** Avoid an unused-import lint warning by re-exporting the type that
  *  consumers building their own resolvedEdge tests may want. The
  *  graph type is re-exported here as a convenience for tests of the
  *  layout module without forcing them to depend on constellation.ts
  *  directly. */
+
+/** The compass's eight names at the resting camera's projection of
+ *  their rim points — the prerendered positions the projector then
+ *  carries each tick (skyProjector.projectCompass). */
+export function compassPoints(graph: ConstellationGraph): CompassPoint[] {
+  return COMPASS.map((facet) => {
+    const projected = projectToViewbox(COMPASS_RIM[facet]);
+    return { facet, hue: graph.facetHues[facet], x: projected.x, y: projected.y };
+  });
+}
 
 export { type ConstellationGraph } from '@/shared/content/constellation';

@@ -22,6 +22,12 @@ interface PolestarProps {
 // shared GeometricFigureGeometry atom) is held intentionally — per
 // the design system's "anticipation > use repeats" discipline. If a
 // third use emerges, refactor.
+//
+// In the sky the figure is drawn in gold ink (tokens.css
+// `.constellation-polestar`) — the chart's compass figure — and two
+// thin rings circle it: the chart's circles around the still center.
+// The rings render after the figure so the figure's own circle stays
+// the first `<circle>` in document order.
 
 export function Polestar({ cx, cy, half = 60 }: PolestarProps) {
   const x = cx - half;
@@ -31,7 +37,7 @@ export function Polestar({ cx, cy, half = 60 }: PolestarProps) {
   const innerY = cy - innerHalf;
   const innerCorner = half * 0.25;
   return (
-    <g aria-hidden="true" opacity="0.85">
+    <g aria-hidden="true" opacity="0.85" className="constellation-polestar">
       <rect
         x={x}
         y={y}
@@ -52,38 +58,17 @@ export function Polestar({ cx, cy, half = 60 }: PolestarProps) {
         strokeWidth="0.3"
         stroke="var(--geo-color)"
       />
-      <line
-        x1={x}
-        y1={y}
-        x2={x + innerCorner}
-        y2={y + innerCorner}
-        strokeWidth="0.3"
-        stroke="var(--geo-color)"
-      />
-      <line
-        x1={x + half * 2}
-        y1={y}
-        x2={x + half * 2 - innerCorner}
-        y2={y + innerCorner}
-        strokeWidth="0.3"
-        stroke="var(--geo-color)"
-      />
-      <line
-        x1={x}
-        y1={y + half * 2}
-        x2={x + innerCorner}
-        y2={y + half * 2 - innerCorner}
-        strokeWidth="0.3"
-        stroke="var(--geo-color)"
-      />
-      <line
-        x1={x + half * 2}
-        y1={y + half * 2}
-        x2={x + half * 2 - innerCorner}
-        y2={y + half * 2 - innerCorner}
-        strokeWidth="0.3"
-        stroke="var(--geo-color)"
-      />
+      {CORNERS.map(([sx, sy]) => (
+        <line
+          key={`${sx}${sy}`}
+          x1={cx + sx * half}
+          y1={cy + sy * half}
+          x2={cx + sx * (half - innerCorner)}
+          y2={cy + sy * (half - innerCorner)}
+          strokeWidth="0.3"
+          stroke="var(--geo-color)"
+        />
+      ))}
       <circle
         cx={cx}
         cy={cy}
@@ -91,7 +76,37 @@ export function Polestar({ cx, cy, half = 60 }: PolestarProps) {
         fill="none"
         strokeWidth="0.3"
         stroke="var(--geo-accent)"
+        className="constellation-polestar__ornament"
       />
+      {RINGS.map((ring) => (
+        <circle
+          key={ring.scale}
+          cx={cx}
+          cy={cy}
+          r={half * ring.scale}
+          fill="none"
+          strokeWidth={ring.width}
+          stroke="var(--geo-color)"
+          opacity={ring.opacity}
+          className="constellation-polestar__ring"
+        />
+      ))}
     </g>
   );
 }
+
+/** The four diagonal ticks, one per corner of the outer square, each
+ *  running inward from the corner by a quarter of the half-side. */
+const CORNERS = [
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
+] as const;
+
+/** The chart's two circles around the still center — radii as
+ *  multiples of the figure's half-side, widening and fading outward. */
+const RINGS = [
+  { scale: 1.6, width: 0.35, opacity: 0.55 },
+  { scale: 2.35, width: 0.3, opacity: 0.32 },
+] as const;

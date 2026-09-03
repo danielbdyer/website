@@ -5,7 +5,10 @@ import {
   diskToHemisphere,
   geodesicDistance,
   projectOntoTangentPlane,
+  raySphereFarPoint,
   raySphereIntersect,
+  rotateAboutAxis,
+  rotationBetween,
   slerp,
   spherical,
   sphericalToUnit,
@@ -351,5 +354,90 @@ describe('raySphereIntersect', () => {
     const hit = raySphereIntersect(origin, dirUnit);
     expect(hit).not.toBeNull();
     expect(Math.hypot(hit!.x, hit!.y, hit!.z)).toBeCloseTo(1, 9);
+  });
+});
+
+describe('raySphereFarPoint', () => {
+  // The orbital camera sits at -1.6·s looking through the origin; the
+  // stars are on the far side. A center ray from under the pole must
+  // name the pole, not the empty antipode the near hit would give.
+  test('a center ray from under the dome names the pole, not the antipode', () => {
+    const far = raySphereFarPoint({ x: 0, y: 0, z: -1.6 }, { x: 0, y: 0, z: 1 });
+    approxEqualVec(far, NORTH_POLE);
+    const near = raySphereIntersect({ x: 0, y: 0, z: -1.6 }, { x: 0, y: 0, z: 1 });
+    approxEqualVec(near!, SOUTH_POLE);
+  });
+
+  test('an off-center ray lands on the same side of the sphere as the pointer', () => {
+    const dir = unitVector(0.3, 0, 1);
+    const far = raySphereFarPoint({ x: 0, y: 0, z: -1.6 }, dir);
+    expect(far.x).toBeGreaterThan(0);
+    expect(far.z).toBeGreaterThan(0);
+    expect(isUnitNorm(far)).toBe(true);
+  });
+
+  test('a ray that misses the silhouette returns the closest-approach direction', () => {
+    // From (0,0,-1.6), rays steeper than asin(1/1.6) ≈ 38.7° miss.
+    const dir = unitVector(1, 0, 1);
+    const far = raySphereFarPoint({ x: 0, y: 0, z: -1.6 }, dir);
+    expect(isUnitNorm(far)).toBe(true);
+    expect(far.x).toBeGreaterThan(0);
+    // Closest approach: t = -origin·dir = 1.6/√2, so the point is
+    // origin + t·dir = (0.8, 0, -0.8) — normalized onto the sphere.
+    approxEqualVec(far, unitVector(0.8, 0, -0.8));
+  });
+});
+
+describe('rotateAboutAxis', () => {
+  test('a quarter turn about +z carries +x onto +y', () => {
+    approxEqualVec(rotateAboutAxis({ x: 1, y: 0, z: 0 }, NORTH_POLE, Math.PI / 2), {
+      x: 0,
+      y: 1,
+      z: 0,
+    });
+  });
+
+  test('preserves magnitude and leaves the axis fixed', () => {
+    const v = { x: 0.3, y: -0.7, z: 0.2 };
+    const r = rotateAboutAxis(v, unitVector(1, 1, 0), 1.234);
+    expect(Math.hypot(r.x, r.y, r.z)).toBeCloseTo(Math.hypot(v.x, v.y, v.z), 9);
+    const axis = unitVector(1, 1, 0);
+    approxEqualVec(rotateAboutAxis(axis, axis, 2.5), axis);
+  });
+});
+
+describe('rotationBetween', () => {
+  test('carries `from` exactly onto `to`', () => {
+    const from = unitVector(0.2, 0.1, 0.97);
+    const to = unitVector(-0.4, 0.3, 0.86);
+    const turn = rotationBetween(from, to);
+    expect(turn).not.toBeNull();
+    approxEqualVec(rotateAboutAxis(from, turn!.axis, turn!.angle), to);
+    expect(turn!.angle).toBeCloseTo(geodesicDistance(from, to), 9);
+  });
+
+  test('coincident points need no turn', () => {
+    expect(rotationBetween(NORTH_POLE, NORTH_POLE)).toBeNull();
+  });
+
+  test('antipodal points are ambiguous and return null', () => {
+    expect(rotationBetween(NORTH_POLE, SOUTH_POLE)).toBeNull();
+  });
+
+  test('the grab: turning the camera point by the pointed→grabbed rotation brings the grabbed point under the hand', () => {
+    // Camera looks at s; the hand pointed at P but grabbed G. After
+    // turning s by the rotation P→G, the world point G sits where P
+    // was relative to the new view — i.e. under the hand.
+    const s = NORTH_POLE;
+    const grabbed = unitVector(0.1, 0.05, 0.99);
+    const pointed = unitVector(0.3, 0.05, 0.95);
+    const turn = rotationBetween(pointed, grabbed)!;
+    const sNext = rotateAboutAxis(s, turn.axis, turn.angle);
+    // Relative geometry is rigid: the angle from the new camera point
+    // to G equals the angle from the old camera point to P.
+    expect(geodesicDistance(unitVector(sNext.x, sNext.y, sNext.z), grabbed)).toBeCloseTo(
+      geodesicDistance(s, pointed),
+      9,
+    );
   });
 });

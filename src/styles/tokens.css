@@ -178,15 +178,15 @@
   --geo-color: rgb(74, 124, 106, 0.12);
   --geo-accent: rgb(200, 118, 77, 0.15);
 
-  /* Constellation sky — sea-painted dome by day. The umber palette
-     breathed up into a luminous expanse: warmer, paler, paper-water.
-     Zenith is the firmament's top tone; horizon is where the sky
-     blends back into the Foyer ground (--bg). The glow is the
-     daystar's warmth gathering near the upper-mid of the sky. Grain
-     is the paper-water texture (subtler in light mode where the
+  /* Constellation sky — the chart by day. The sky drawn on the site's
+     own paper: zenith is the sheet's lit tone, horizon is where the
+     page settles back into the Foyer ground (--bg). The glow is the
+     gilded sun's warmth gathering near the upper-mid of the page.
+     Grain is the paper's texture (subtler in light mode where the
      ground itself already carries paper-grain at 0.025; the sky's
-     extra grain compounds gently). See CONSTELLATION.md
-     §"Two Render Modes" — daylight: watercolor ocean. */
+     extra grain compounds gently). The chart's lines are drawn in
+     --text-3, the page's quiet ink. See CONSTELLATION.md §"Two Render
+     Modes" — daylight: the chart. */
   --sky-zenith: #fcf8f1;
   --sky-horizon: var(--bg);
   --sky-grain-opacity: 0.04;
@@ -384,50 +384,33 @@ body::before {
 }
 
 /* ─── Constellation motion ──────────────────────────────────────
-   Three slow, restrained gestures that give the sky a body. All
-   three honor prefers-reduced-motion via the global block above —
-   the rotation pauses, twinkle stops, parallax returns to neutral.
-   See CONSTELLATION.md §"What Shipped (First Form)" and
-   CONSTELLATION_HORIZON.md Phase 3 for the felt rationale.
+   Three slow, restrained gestures give the sky a body — the heavens'
+   turn, the twinkle, the cursor parallax. All honor
+   prefers-reduced-motion: the turn holds, twinkle stops, parallax
+   returns to neutral. See CONSTELLATION.md §"What Shipped (First
+   Form)" and CONSTELLATION_HORIZON.md Phase 3 for the felt rationale.
 
-   The spin cycle is 600s (10 minutes) — the slowest motion on the
-   site, an order of magnitude beyond the geometric figure. So slow
-   the visitor only notices if they sit. The transform-origin pins
-   to the polestar at the center of the 1000-unit viewBox.
+   The heavens' turn — one revolution every 600s, the slowest motion
+   on the site — no longer lives here. It was a CSS rotation of the
+   .constellation-rotates group, which turned the stars' labels with
+   them (titles read vertically after two and a half minutes) and
+   turned the visible stars away from where the pointer ray-cast,
+   the companion glyph, and the keyboard frame believed them to be.
+   It is now a roll carried by the navigation camera itself
+   (src/shared/geometry/heavens.ts, useConstellationNavigation), on a
+   wall-clock phase: every consumer of the camera basis sees one sky,
+   and labels stay upright because only positions turn. The group
+   remains as structure, without a transform.
 
    The twinkle cycle is 4.5s — short enough that a static visitor
    reads the starfield as alive, slow enough that it does not
    announce itself. Per-star animation-delay (set inline by the
    organism from constellation.ts's twinklePhase) breaks the chord
-   into a distributed shimmer. */
-@keyframes constellation-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* The star-twinkle keyframes were held back: 16 halos with a
-   continuously-animating opacity, each carrying the watercolor
-   filter, inside the rotating group, forced per-frame rasterizer
-   work that compounded with the rotation cost into visible
-   stutter. The twinkle returns when there's a non-filter way to
-   express it (a tiny per-star CSS class swap, a static lighter
-   halo, an ambient WebGL noise contribution). */
-
-.constellation-rotates {
-  transform-origin: 500px 500px;
-  animation: constellation-spin 600s linear infinite;
-  /* Promote the rotating group to its own compositing layer so the
-     rotation transform happens on the GPU compositor without
-     repainting the rasterized children. With the at-rest twinkle
-     dropped, the children are stable inside the layer and the
-     filter results cache cleanly across frames. */
-  will-change: transform;
-}
+   into a distributed shimmer. The star-twinkle keyframes themselves
+   were held back — 16 halos with a continuously-animating opacity,
+   each carrying the watercolor filter, forced per-frame rasterizer
+   work that read as stutter — and the twinkle now lives in the WebGL
+   halo sprites instead. */
 
 /* The navigation camera. Wraps the world (polestar + rotates layer)
    so a small pan-and-yaw can follow the visitor's selection without
@@ -602,11 +585,67 @@ body::before {
   font-style: italic;
   font-size: 11px;
   opacity: 0;
-  transition: opacity 400ms ease-out;
+  /* A soft halo of the page's ground behind the letters, so a name
+     stays legible across a thread; and a glide when the layout moves
+     a name to another side of its star. */
+  paint-order: stroke fill;
+  stroke: var(--bg);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  stroke-opacity: 0.6;
+  transition:
+    opacity 400ms ease-out,
+    transform 600ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.constellation-star[data-active='true'] .constellation-star__label {
-  opacity: 0.85;
+/* Named at rest — here, its neighbors, and the stars its bearings lead
+   to carry their names without being asked, at three volumes: the star
+   you stand at, a neighbor one stroke along a figure, a bearing's end
+   (CONSTELLATION_WALK.md §"Semantic Context"). Hover still lifts any. */
+.constellation-star[data-named='far'] .constellation-star__label {
+  opacity: 0.4;
+}
+
+.constellation-star[data-named='near'] .constellation-star__label {
+  opacity: 0.66;
+}
+
+.constellation-star[data-active='true'] .constellation-star__label,
+.constellation-star[data-here='true'] .constellation-star__label {
+  opacity: 0.92;
+}
+
+/* Visited — a star stood at earlier this session keeps a little of the
+   gold: the walk's memory, drawn (CONSTELLATION_WALK.md §"The Walk's
+   Memory"). The claim rule above still lifts it fully. */
+.constellation-star[data-visited='true'] .constellation-star__gold {
+  transform: scale(1);
+  opacity: 0.16;
+}
+
+/* Presence — from where you stand, a capped number of stars are near
+   in context; the rest recede to faint lights until the walk brings
+   them close (CONSTELLATION_WALK.md §"Presence"). They keep their
+   place: still there, not yet revealed. */
+.constellation-star[data-present] {
+  transition: opacity 900ms ease-out;
+}
+
+.constellation-star[data-present='false'] {
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+.constellation-star[data-present='false'] .constellation-star__label {
+  opacity: 0;
+}
+
+.constellation-thread-group[data-present='false'] .constellation-thread {
+  opacity: 0.05;
+}
+
+.constellation-thread-group[data-present='false'] .constellation-thread__hit {
+  pointer-events: none;
 }
 
 /* ─── Threshold previews ────────────────────────────────────────
@@ -648,6 +687,15 @@ body::before {
   opacity: min(calc(var(--reveal, 0) * 8), 1);
   background: linear-gradient(to top, var(--bg) 55%, transparent);
   will-change: transform;
+}
+
+/* The sky's return link sits over the firmament, and a star can
+   drift beneath it. A soft halo of the page ground around the
+   letters keeps them legible without boxing them in chrome. */
+.sky-return-link {
+  text-shadow:
+    0 0 6px var(--bg),
+    0 0 14px var(--bg);
 }
 
 /* ─── Constellation atmosphere handoff ──────────────────────────
@@ -734,15 +782,181 @@ body::before {
    settle. CONSTELLATION_DESIGN.md §"C3. Thread" V3.A and
    CONSTELLATION.md §"The Threads" both name this rhythm. */
 .constellation-thread {
+  opacity: 0.4;
   transition:
     opacity 600ms ease-out,
     stroke-width 600ms ease-out;
 }
 
-.constellation-thread[data-active='true'] {
+.constellation-thread-group[data-active='true'] .constellation-thread {
+  opacity: 0.95;
   transition:
     opacity 200ms ease-out,
     stroke-width 200ms ease-out;
+}
+
+/* A thread is a path (CONSTELLATION_WALK.md §"Input"). Hovering its
+   wide transparent twin lights the hairline end to end; hovering a
+   bearing in the whisper lights its facet's whole figure (data-lit);
+   a thread walked this session keeps a little of the light. */
+.constellation-thread-group:hover .constellation-thread,
+.constellation-thread-group[data-lit='true'] .constellation-thread {
+  opacity: 0.8;
+  stroke-width: 0.9;
+  transition:
+    opacity 200ms ease-out,
+    stroke-width 200ms ease-out;
+}
+
+.constellation-thread-group[data-walked='true'] .constellation-thread {
+  opacity: 0.5;
+}
+
+/* The track — the thread the visitor is scrubbing along by drag
+   (CONSTELLATION_WALK.md §"Input"): lit end to end while the hand
+   holds it. The sky itself can be taken hold of; while it is held,
+   stars and threads stop catching the pointer. */
+.constellation-thread-group[data-track='true'] .constellation-thread {
+  opacity: 1;
+  stroke-width: 1.2;
+}
+
+.constellation {
+  cursor: grab;
+  user-select: none;
+}
+
+.constellation[data-scrubbing='true'] {
+  cursor: grabbing;
+}
+
+.constellation[data-scrubbing='true'] .constellation-star,
+.constellation[data-scrubbing='true'] .constellation-thread__hit {
+  pointer-events: none;
+}
+
+/* The compass lettered at the rim — each facet's name at its bearing,
+   small caps in the facet's hue over the quiet ink, brighter for the
+   facets of the star you stand at and the one you attend. It turns
+   with the heavens, since the bearings are of the sky. */
+.constellation-compass__name {
+  fill: var(--text-3);
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.14em;
+  opacity: 0.5;
+  transition: opacity 600ms ease-out;
+}
+
+.constellation-compass__name:hover {
+  opacity: 0.95;
+}
+
+/* On a phone the viewbox scales down with the frame's width; the small
+   type would fall under legibility, so it grows in viewbox units. */
+@media (width <= 640px) {
+  .constellation-compass__name {
+    font-size: 13px;
+  }
+
+  .constellation-star__label {
+    font-size: 14px;
+  }
+}
+
+.constellation-compass__name[data-hue='warm'] {
+  fill: color-mix(in oklab, var(--accent-warm) 55%, var(--text-3));
+}
+
+.constellation-compass__name[data-hue='rose'] {
+  fill: color-mix(in oklab, var(--accent-rose) 55%, var(--text-3));
+}
+
+.constellation-compass__name[data-hue='violet'] {
+  fill: color-mix(in oklab, var(--accent-violet) 55%, var(--text-3));
+}
+
+.constellation-compass__name[data-hue='gold'] {
+  fill: color-mix(in oklab, var(--accent-gold) 55%, var(--text-3));
+}
+
+.constellation-compass__name[data-attended='true'] {
+  opacity: 0.95;
+}
+
+.lt .constellation-compass__name {
+  opacity: 0.62;
+}
+
+/* ─── The whisper ──────────────────────────────────────────────────
+   The sky's one voice, in second voice, low in the frame: where you
+   stand, then what leads away. The bearings are real buttons; the
+   block itself lets the pointer through to the sky. Text sits on the
+   firmament, so a soft ground shadow keeps it legible over stars.
+   CONSTELLATION_WALK.md §"The Whisper". */
+.sky-whisper {
+  pointer-events: none;
+  max-width: 26rem;
+  line-height: 1.6;
+  text-shadow: 0 0 14px var(--bg);
+}
+
+.sky-whisper__bearing {
+  pointer-events: auto;
+  color: var(--text-3);
+  font: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in oklab, currentcolor 40%, transparent);
+  text-underline-offset: 0.22em;
+  transition: color 200ms ease-out;
+}
+
+/* Each bearing wears its facet's hue quietly at rest — the compass read
+   as words — and fully when attended. */
+.sky-whisper__bearing[data-hue='warm'] {
+  color: color-mix(in oklab, var(--accent-warm) 45%, var(--text-3));
+}
+
+.sky-whisper__bearing[data-hue='rose'] {
+  color: color-mix(in oklab, var(--accent-rose) 45%, var(--text-3));
+}
+
+.sky-whisper__bearing[data-hue='violet'] {
+  color: color-mix(in oklab, var(--accent-violet) 45%, var(--text-3));
+}
+
+.sky-whisper__bearing[data-hue='gold'] {
+  color: color-mix(in oklab, var(--accent-gold) 45%, var(--text-3));
+}
+
+.sky-whisper__bearing[data-hue='warm']:hover,
+.sky-whisper__bearing[data-hue='warm']:focus-visible {
+  color: var(--accent-warm);
+}
+
+.sky-whisper__bearing[data-hue='rose']:hover,
+.sky-whisper__bearing[data-hue='rose']:focus-visible {
+  color: var(--accent-rose);
+}
+
+.sky-whisper__bearing[data-hue='violet']:hover,
+.sky-whisper__bearing[data-hue='violet']:focus-visible {
+  color: var(--accent-violet);
+}
+
+.sky-whisper__bearing:hover,
+.sky-whisper__bearing:focus-visible {
+  color: var(--accent-gold);
+}
+
+.sky-whisper__bearing:disabled {
+  opacity: 0.4;
+}
+
+.sky-arrival:has(.work-overlay) .sky-whisper {
+  opacity: 0;
+  transition: opacity 400ms ease-out;
 }
 
 /* Polestar wash — the soft watercolor halo around the geometric
@@ -756,6 +970,69 @@ body::before {
 .constellation-polestar-wash {
   transform-box: fill-box;
   transform-origin: center;
+}
+
+/* By day the wash sits on paper, where the warm halo at full strength
+   read as a stain rather than a wash; it quiets to a suggestion. By
+   night the dark ground carries it at full strength. */
+.lt .constellation-polestar-wash {
+  opacity: 0.45;
+}
+
+/* The polestar in the sky is drawn in gold ink — the chart's compass
+   figure — rather than the Foyer figure's teal-and-umber hairlines,
+   which vanished against the firmament. Its two rings are the
+   chart's circles around the still center. Quieter by day, where
+   the page carries its own lines in ink. */
+.constellation-polestar rect,
+.constellation-polestar line,
+.constellation-polestar circle {
+  stroke: var(--accent-gold);
+}
+
+.constellation-polestar {
+  opacity: 0.62;
+}
+
+.lt .constellation-polestar {
+  opacity: 0.42;
+}
+
+/* The echo — when a star is claimed, two thin gold rings widen out
+   of it and hold, the way a struck bowl's tone spreads. CONSTELLATION_
+   DESIGN.md §"C10. RadialEcho" names the gesture; this is its first,
+   smallest form: rings, no labels. Present in the DOM at rest so the
+   claim animates rather than mounts; reduced motion collapses the
+   widening to the global instant. */
+.constellation-star__echo {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.55);
+  opacity: 0;
+  transition:
+    transform 700ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 700ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.constellation-star[data-active='true'] .constellation-star__echo {
+  transform: scale(1);
+}
+
+.constellation-star[data-active='true'] .constellation-star__echo--1 {
+  opacity: 0.55;
+}
+
+.constellation-star[data-active='true'] .constellation-star__echo--2 {
+  opacity: 0.3;
+}
+
+/* The work overlay's panel is framed like a plate in an atlas: a gold
+   hairline at the edge and a second, fainter line set in from it. The
+   frame is the constellation's voice marking the page as its own. */
+.work-overlay__panel {
+  border-color: color-mix(in oklab, var(--accent-gold) 42%, var(--border));
+  outline: 1px solid color-mix(in oklab, var(--accent-gold) 26%, transparent);
+  outline-offset: -8px;
 }
 
 /* Work overlay typographic registers — the deck (an invitation,
@@ -832,18 +1109,57 @@ body::before {
   transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Daystar — theme-conditional visibility. Both bodies render in the
-   DOM so the switch is pure CSS, not React-conditional, avoiding the
-   hydration flash a JS-state-driven render would cause under SSG.
-   The .lt / .dk classes on <html> are applied pre-paint by the
-   inline init script in __root.tsx; the daystar is correct from
-   first paint. */
-.lt .constellation-daystar__moon {
-  display: none;
+/* Daystar — sun by day, moon by night. Both bodies render in the DOM
+   so the switch is pure CSS, not React-conditional, avoiding the
+   hydration flash a JS-state-driven render would cause under SSG (the
+   .lt / .dk class is on <html> before first paint). The hour changes
+   over the sky's own arc — 1.8s, longer than the room's 500ms dimming
+   (INTERACTION_DESIGN.md §"Dark Mode as Room Dimming" names the sky as
+   the one surface that takes longer than the sigh): the setting body
+   sinks a hand's width as it fades over the first 1.1s; the rising one
+   waits 0.7s and lifts into place over the same span, so the two never
+   overlap as an eclipse. Reduced motion collapses both to the instant
+   swap via the global block above (and drops the wait). */
+.constellation-daystar__sun,
+.constellation-daystar__moon {
+  transition:
+    opacity 1.1s ease,
+    transform 1.1s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* The theme-toggle window's blanket transition rule would replace this
+   pair for its 550ms; restated at higher specificity so the daystar
+   keeps its own arc (with the window's fill/stroke fades alongside). */
+.theme-transitioning .constellation-daystar__sun,
+.theme-transitioning .constellation-daystar__moon {
+  transition:
+    opacity 1.1s ease,
+    transform 1.1s cubic-bezier(0.23, 1, 0.32, 1),
+    fill 0.5s ease,
+    stroke 0.5s ease !important;
+}
+
+/* The rising body waits for the setting one — restated inside the
+   toggle window too, whose shorthand above would reset the delay. */
+.lt .constellation-daystar__sun,
+.dk .constellation-daystar__moon,
+.theme-transitioning.lt .constellation-daystar__sun,
+.theme-transitioning.dk .constellation-daystar__moon {
+  transition-delay: 0.7s !important;
+}
+
+.lt .constellation-daystar__moon,
 .dk .constellation-daystar__sun {
-  display: none;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .constellation-daystar__sun,
+  .constellation-daystar__moon {
+    transition-delay: 0s !important;
+  }
 }
 
 /* Arrival — the look-up, rebuilt (2026-06-13, with Danny). The

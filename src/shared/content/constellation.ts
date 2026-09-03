@@ -1,23 +1,23 @@
 import type { DisplayWork } from './preview';
 import type { Facet, Room } from '@/shared/types/common';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
-import { diskToHemisphere } from '@/shared/geometry/sphere';
+import { diskToHemisphere, geodesicDistance } from '@/shared/geometry/sphere';
 import { isPreviewWork } from './preview';
 import { getDisplayWorksByRoomSync } from './display';
+import { buildConcordance, type Concordance } from './concordance';
 
 // ─── The Constellation Graph ───────────────────────────────────────
 //
 // A projection of the site's content as a sky. Each work becomes a star;
-// each shared facet becomes a faint thread between the works that carry
-// it. The data layer is pure — it derives the constellation from the
-// existing display works without knowing anything about rendering.
+// each facet's stars are joined into a figure. The data layer is pure —
+// it derives the constellation from the existing display works without
+// knowing anything about rendering.
 //
-// Deterministic per corpus: a given set of works produces the same graph,
-// the stars spread evenly across the dome by a Fibonacci spiral over a
-// stable order (see placeNode). Adding a work re-spaces the spiral — the
-// sky reorganizes as it grows rather than holding old positions fixed.
-// CONSTELLATION.md §"What the Constellation Shows" describes the visible
-// result; this file is the data the renderer consumes.
+// Deterministic per work: a star's place depends only on its own facets
+// (and a jitter hashed from its slug), so adding a work never moves
+// another. CONSTELLATION_WALK.md §"The Compass" and §"What the Sky Draws
+// at Rest" describe the visible result; this file is the data the
+// renderer consumes.
 //
 // The Foyer is excluded. The Foyer is the ground we look up from, not
 // a region of the sky. (DOMAIN_MODEL.md §"Invariants" — the Foyer is a
@@ -30,21 +30,37 @@ const CONSTELLATION_ROOMS: readonly Exclude<Room, 'foyer'>[] = [
   'salon',
 ];
 
-// Placement is even, not clustered — the stars are spread equidistantly
-// across the dome (a Fibonacci spiral; see placeNode below), so the
-// content is *omnipresent*: in any direction the next star is a short,
-// predictable hop away, never a long empty stretch. Earlier passes tried
-// a room-quadrant layout and then a facet-relational one; both left empty
-// gaps that read as "where did the content go?" at this corpus size, so
-// the sky now favors even spacing. A work's room is still its identity,
-// its link, and its atmosphere; its hue still reads its facet (FACET_HUE
-// below). CONSTELLATION.md §"What the Constellation Shows."
+// ─── The compass ───────────────────────────────────────────────────
+//
+// The eight facets take the eight points of the polestar: each is a
+// bearing, an azimuth on the dome. Adjacent bearings share a hue, so the
+// dome reads as four chromatic arcs (warm, rose, violet, gold — see
+// FACET_HUE). A work sits where its facets pull it: at the centroid of
+// its facets' anchors, which places a single-facet work on its bearing
+// and pulls a many-faceted work inward toward the pole, the still center.
+// CONSTELLATION_WALK.md §"The Compass".
+export const FACET_AZIMUTH_DEG: Record<Facet, number> = {
+  craft: 0,
+  body: 45,
+  beauty: 90,
+  language: 135,
+  consciousness: 180,
+  becoming: 225,
+  leadership: 270,
+  relation: 315,
+};
+
+/** The compass in bearing order, for surfaces that offer every
+ *  bearing (the whisper at the pole). */
+export const COMPASS: readonly Facet[] = (Object.keys(FACET_AZIMUTH_DEG) as Facet[]).toSorted(
+  (a, b) => FACET_AZIMUTH_DEG[a] - FACET_AZIMUTH_DEG[b],
+);
 
 // Editorial assignment of the held accent vocabulary to the eight
 // facets. DESIGN_SYSTEM.md §"Held accents" reserved the four hues as
 // vocabulary; the constellation is the first surface where they speak.
 // Some facets share a hue by design — the difference is carried by
-// position and label, not by an exhaustive eight-hue palette.
+// bearing and label, not by an exhaustive eight-hue palette.
 //
 // The mapping is editorial, named here so a future revision is one
 // edit. The facet chips elsewhere on the site do *not* adopt these
@@ -74,33 +90,31 @@ export interface ConstellationNode {
   isPreview: boolean;
   /** Polar coordinates within a unit circle: angleDeg ∈ [0, 360),
    *  radius ∈ [0, 1]. Center is the firmament's polestar; rim is
-   *  the horizon. Position is deterministic per corpus (the work's
-   *  index on the even Fibonacci spiral — see placeNode). */
+   *  the horizon. Deterministic in the work's own facets and slug. */
   angleDeg: number;
   radius: number;
-  /** Position on the latent unit sphere — the topology Pass 2's
-   *  navigation orbits. The 2D `(angleDeg, radius)` is the
-   *  azimuthal-equidistant projection of this 3D position onto the
-   *  upper hemisphere: the disk's center is the north pole, the rim
-   *  is the equator. Adding this field is un-projecting — restoring
-   *  the z component the disk dropped. The 2D renderer ignores it;
-   *  the held cairn rendering will consume it. */
+  /** Position on the latent unit sphere — the topology the camera
+   *  travels. The 2D `(angleDeg, radius)` is the azimuthal-equidistant
+   *  projection of this 3D position onto the upper hemisphere: the
+   *  disk's center is the north pole, the rim is the equator. */
   unitPosition: UnitVector3;
   /** Hue of the work's first-listed facet, or 'gold' as a quiet
    *  default for facetless works. The renderer paints the star in
-   *  this hue; thread blooms toward this star adopt their own
-   *  facet's hue, not the star's. */
+   *  this hue; a figure's strokes carry their own facet's hue. */
   hue: ConstellationHue;
   /** Twinkle phase offset in seconds, deterministic per slug, used
    *  as the halo's animation-delay so adjacent stars don't pulse in
-   *  sync. The phase is bounded by the twinkle duration in CSS
-   *  (`star-twinkle` keyframes); any value in [0, duration) yields a
-   *  stable, lightly-randomized starfield. */
+   *  sync. Bounded by the twinkle duration in CSS (`star-twinkle`
+   *  keyframes); any value in [0, duration) yields a stable, lightly
+   *  randomized starfield. */
   twinklePhase: number;
 }
 
+/** One stroke of a facet's figure — the two stars it joins and the
+ *  facet it belongs to. A figure is the spanning tree of its facet's
+ *  members (CONSTELLATION_WALK.md §"What the Sky Draws at Rest"). */
 export interface ConstellationEdge {
-  /** The facet that joins these two works. */
+  /** The facet whose figure this stroke belongs to. */
   facet: Facet;
   /** Hue derived from the facet via FACET_HUE. */
   hue: ConstellationHue;
@@ -113,23 +127,24 @@ export interface ConstellationEdge {
 export interface ConstellationGraph {
   nodes: readonly ConstellationNode[];
   edges: readonly ConstellationEdge[];
-  /** Facet → hue mapping, exposed so the renderer can color thread
-   *  blooms without re-deriving the assignment. */
+  /** Facet → hue mapping, exposed so the renderer can color a
+   *  figure without re-deriving the assignment. */
   facetHues: Readonly<Record<Facet, ConstellationHue>>;
+  /** How near works are in their words (concordance.ts); feeds the
+   *  sky's presence. Absent when a graph was built without texts. */
+  concordance?: Concordance;
 }
 
 // ─── Deterministic positioning ────────────────────────────────────
 //
-// A small string-hash producing a stable 32-bit integer. Used to pick
-// each work's offset within its room's sector. Crypto-strength is not
-// needed; the only requirement is that the same input produces the
-// same output across builds and platforms.
+// A small string-hash producing a stable 32-bit integer. Used for the
+// per-slug jitter and twinkle phase. Crypto-strength is not needed; the
+// only requirement is that the same input produces the same output
+// across builds and platforms.
 
 function hash(input: string): number {
   // FNV-1a (32-bit). Functional fold over the input's code points;
-  // identical bit-for-bit to the imperative form. Spread allocates
-  // an intermediate per call, but `hash` runs once per work-id at
-  // build time, not on the hot path.
+  // identical bit-for-bit to the imperative form.
   return (
     [...input].reduce(
       (h, ch) => Math.imul(h ^ (ch.codePointAt(0) ?? 0), 16_777_619),
@@ -141,8 +156,7 @@ function hash(input: string): number {
 // 2^32 - 1, the maximum value `hash()` can return. Inlined as a
 // computed constant rather than the hex literal `0xFFFFFFFF` because
 // stylistic-prettier normalizes hex casing to lowercase, which
-// then trips unicorn/number-literal-case. The constant form is
-// stable across the formatters.
+// then trips unicorn/number-literal-case.
 const UINT32_MAX = 2 ** 32 - 1;
 
 function unitOffset(seed: string): number {
@@ -157,104 +171,214 @@ function unitOffset(seed: string): number {
 // changes too — the value is paired, not free.
 const TWINKLE_DURATION_SECONDS = 4.5;
 
-// The dome cap the stars fill, in degrees from the polestar (+z), and
-// the golden angle that spaces the Fibonacci spiral. The inner bound
-// keeps the polestar's center clear; the outer bound stays within the
-// camera's enveloped view. The cap is generous enough that the stars
-// read as a sky spread overhead, and (with the even spiral) dense enough
-// that there are no empty gaps to get lost in. radius × 90° = degrees
-// from the pole, so unitPosition is the exact un-projection of
-// (radius, angle) and the 2D and 3D layouts agree.
-const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-const DOME_INNER_DEG = 12;
-const DOME_OUTER_DEG = 60;
+// Each facet's anchor sits this far from the pole (as a fraction of the
+// disk; radius × 90° = degrees from the pole, so ≈47°). A single-facet
+// work lands on its anchor; a many-faceted work at the centroid of its
+// anchors, pulled inward. The bounds keep the polestar's center clear
+// and hold the populated dome within the camera's resting view. A small
+// deterministic jitter separates works that share a facet set exactly.
+const FACET_ANCHOR_RADIUS = 0.62;
+// Nothing sits inside the polestar figure: the still center stays empty.
+const RADIUS_MIN = 0.18;
+export const RADIUS_MAX = 0.78;
+const JITTER_RADIUS = 0.04;
+const JITTER_AZIMUTH_DEG = 9;
 
-interface NodePlacement {
+export interface NodePlacement {
   readonly angleDeg: number;
   readonly radius: number;
   readonly unitPosition: UnitVector3;
 }
 
-// Pure pipeline: a work's `index` in the stable-ordered corpus maps to a
-// point on a Fibonacci spiral over the dome — area-uniform colatitude
-// (its cosine linear in index, so the areal density is even) and golden-angle
-// azimuth (so successive points never line up). The result is an
-// equidistant scatter; the next star is always a short hop away.
-// Deterministic per corpus; adding a work re-spaces the spiral (the sky
-// reorganizes as it grows, per CLAUDE.md's garden). unitPosition is the
-// exact un-projection of (radius, angleDeg).
-function placeNode(index: number, total: number): NodePlacement {
-  const cosInner = Math.cos((DOME_INNER_DEG * Math.PI) / 180);
-  const cosOuter = Math.cos((DOME_OUTER_DEG * Math.PI) / 180);
-  const u = total <= 1 ? 0.5 : (index + 0.5) / total;
-  const theta = Math.acos(cosOuter + u * (cosInner - cosOuter));
-  const angleRad = (index * GOLDEN_ANGLE) % (2 * Math.PI);
-  const radius = theta / (Math.PI / 2);
-  const angleDeg = ((((angleRad * 180) / Math.PI) % 360) + 360) % 360;
-  const unitPosition = diskToHemisphere(radius, angleRad);
+/** Where a work sits: the centroid of its facets' anchors on the disk,
+ *  jittered per slug, un-projected onto the upper hemisphere.
+ *  Facetless works, and works whose facets pull in every direction
+ *  and cancel, rest near the pole with a hashed bearing — a true thing
+ *  to say about them. Exported so the placement rule is testable
+ *  without the corpus. */
+export function placeWork(slug: string, facets: readonly Facet[]): NodePlacement {
+  const centroid = facets.reduce(
+    (acc, facet) => {
+      const az = (FACET_AZIMUTH_DEG[facet] * Math.PI) / 180;
+      return {
+        x: acc.x + (FACET_ANCHOR_RADIUS * Math.cos(az)) / facets.length,
+        y: acc.y + (FACET_ANCHOR_RADIUS * Math.sin(az)) / facets.length,
+      };
+    },
+    { x: 0, y: 0 },
+  );
+  const pull = Math.hypot(centroid.x, centroid.y);
+  const jitterR = (unitOffset(`${slug}/jitter-r`) - 0.5) * 2 * JITTER_RADIUS;
+  const jitterA = (unitOffset(`${slug}/jitter-a`) - 0.5) * 2 * JITTER_AZIMUTH_DEG;
+  const baseAngleDeg =
+    pull < 1e-9
+      ? unitOffset(`${slug}/angle`) * 360
+      : (Math.atan2(centroid.y, centroid.x) * 180) / Math.PI;
+  const radius = Math.min(Math.max(pull + jitterR, RADIUS_MIN), RADIUS_MAX);
+  const angleDeg = (((baseAngleDeg + jitterA) % 360) + 360) % 360;
+  const unitPosition = diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
   return { angleDeg, radius, unitPosition };
 }
 
-// ─── Edge derivation ───────────────────────────────────────────────
-//
-// Today: facet co-membership only. For each facet, the works carrying
-// it form a thread cluster — one edge per pair. Wikilink-derived edges
-// will arrive in a future pass once the wikilink resolver is activated
-// by the second authored work (see BACKLOG.md §Content / "Wikilink
-// resolution in the loader").
-//
-// Edges are deduplicated within a (sourceKey, targetKey, facet)
-// triple, and the source/target ordering is stable (lexicographic on
-// the room+slug key) so the same graph produces the same edge list
-// every time.
+// Two works with the same facets land on the same centroid, and works
+// whose facets face each other across the compass all pull toward the
+// center. The spread keeps every star at least MIN_SEPARATION apart in
+// the disk (about a label's height at rest) by nudging close pairs
+// away from each other a few times — deterministic, so the sky is the
+// same on every build. Placement stays honest: a star moves only as
+// far as it must to be seen.
+const MIN_SEPARATION = 0.095;
+const SPREAD_ITERATIONS = 12;
+// Coincident points have no direction between them; they part along a
+// golden-angle fan keyed by index so the split is stable and even.
+const GOLDEN_ANGLE_RAD = 2.399_963;
 
-function nodeKey(n: { room: Exclude<Room, 'foyer'>; slug: string }): string {
+interface DiskPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+const toDisk = (p: NodePlacement): DiskPoint => ({
+  x: p.radius * Math.cos((p.angleDeg * Math.PI) / 180),
+  y: p.radius * Math.sin((p.angleDeg * Math.PI) / 180),
+});
+
+const clampDisk = (p: DiskPoint): DiskPoint => {
+  const r = Math.hypot(p.x, p.y);
+  const clamped = Math.min(Math.max(r, RADIUS_MIN), RADIUS_MAX);
+  if (r < 1e-9) return { x: clamped, y: 0 };
+  return { x: (p.x / r) * clamped, y: (p.y / r) * clamped };
+};
+
+function pushApart(points: readonly DiskPoint[]): DiskPoint[] {
+  return points.map((p, i) =>
+    clampDisk(
+      points.reduce((acc, q, j) => {
+        if (i === j) return acc;
+        const dx = p.x - q.x;
+        const dy = p.y - q.y;
+        const d = Math.hypot(dx, dy);
+        if (d >= MIN_SEPARATION) return acc;
+        const step = (MIN_SEPARATION - d) / 2;
+        const ux = d > 1e-9 ? dx / d : Math.cos(i * GOLDEN_ANGLE_RAD);
+        const uy = d > 1e-9 ? dy / d : Math.sin(i * GOLDEN_ANGLE_RAD);
+        return { x: acc.x + ux * step, y: acc.y + uy * step };
+      }, p),
+    ),
+  );
+}
+
+/** Separate placements that would sit on top of each other. Pure;
+ *  order-preserving; idempotent once settled. */
+export function spreadPlacements(placements: readonly NodePlacement[]): NodePlacement[] {
+  const settled = Array.from({ length: SPREAD_ITERATIONS }).reduce<DiskPoint[]>(
+    (pts) => pushApart(pts),
+    placements.map(toDisk),
+  );
+  return settled.map((p) => {
+    const radius = Math.hypot(p.x, p.y);
+    const angleDeg = ((((Math.atan2(p.y, p.x) * 180) / Math.PI) % 360) + 360) % 360;
+    return { angleDeg, radius, unitPosition: diskToHemisphere(radius, (angleDeg * Math.PI) / 180) };
+  });
+}
+
+// ─── Figures ───────────────────────────────────────────────────────
+//
+// Each facet's member stars are joined by the fewest strokes that
+// connect them — a spanning tree over geodesic distance (Prim's method,
+// grown from the first member in stable key order). The tree is the
+// facet's figure: a few lines a visitor can recognize and remember, in
+// place of the complete co-membership graph, which drew a line between
+// every pair and said nothing. Derived relation shows as attention (the
+// lit figure), never as a resting mesh. CONSTELLATION_WALK.md §"What the
+// Sky Draws at Rest".
+
+export function nodeKey(n: { room: Exclude<Room, 'foyer'>; slug: string }): string {
   return `${n.room}/${n.slug}`;
 }
 
+type Stroke = readonly [ConstellationNode, ConstellationNode];
+
+interface Growing {
+  readonly inTree: readonly ConstellationNode[];
+  readonly outside: readonly ConstellationNode[];
+  readonly strokes: readonly Stroke[];
+}
+
+/** The nearest (tree node, outside node) pair by geodesic distance —
+ *  the next stroke Prim's method adds. Ties resolve to the earlier
+ *  outside node in stable order, so the figure is deterministic. */
+function nearestStroke(acc: Growing): { from: ConstellationNode; to: ConstellationNode } {
+  return acc.outside.reduce(
+    (best, candidate) => {
+      const nearest = acc.inTree.reduce(
+        (bt, t) => {
+          const d = geodesicDistance(t.unitPosition, candidate.unitPosition);
+          return d < bt.d ? { node: t, d } : bt;
+        },
+        { node: acc.inTree[0]!, d: Number.POSITIVE_INFINITY },
+      );
+      return nearest.d < best.d ? { from: nearest.node, to: candidate, d: nearest.d } : best;
+    },
+    { from: acc.inTree[0]!, to: acc.outside[0]!, d: Number.POSITIVE_INFINITY },
+  );
+}
+
 /**
- * Pure pipeline that derives facet co-membership edges:
- *   1. flatMap each node into one (facet, node) pair per facet
- *   2. group those pairs by facet via Map.groupBy (ES2024)
- *   3. sort each facet group by node key
- *   4. flatMap the sorted group to one edge per unordered pair
+ * The spanning strokes of a figure over `members` (stable key order).
  *
- * @bigO Time: O(F·N + Σ k_f² + Σ k_f log k_f) where F = facets/node,
- *       N = nodes, k_f = nodes carrying facet f. The Σ k_f² (pair
- *       emission) dominates once any facet attracts many works.
- *       Don't reintroduce per-element clone-and-set or O(N) lookup
- *       inside the inner flatMap.
- *       Space: O(P) for the (facet, node) pair list, where P = Σ k_f.
+ * @bigO Time: O(n³) in the facet's member count — n rounds, each
+ *       scanning outside × tree. Runs once per facet at build time on
+ *       a corpus of tens, never on the hot path.
  */
-function deriveFacetEdges(nodes: readonly ConstellationNode[]): ConstellationEdge[] {
+function spanningStrokes(members: readonly ConstellationNode[]): readonly Stroke[] {
+  if (members.length < 2) return [];
+  const [first, ...rest] = members;
+  const grown = rest.reduce<Growing>(
+    (acc) => {
+      const next = nearestStroke(acc);
+      return {
+        inTree: [...acc.inTree, next.to],
+        outside: acc.outside.filter((n) => n !== next.to),
+        strokes: [...acc.strokes, [next.from, next.to]],
+      };
+    },
+    { inTree: [first!], outside: rest, strokes: [] },
+  );
+  return grown.strokes;
+}
+
+/** Every facet's figure as edges. Source/target are ordered by key so
+ *  the same graph yields the same edge list every time. */
+function deriveFacetFigures(nodes: readonly ConstellationNode[]): ConstellationEdge[] {
   const facetPairs = nodes.flatMap((node) => node.facets.map((facet) => [facet, node] as const));
   const facetGroups = Map.groupBy(facetPairs, ([facet]) => facet);
   return [...facetGroups].flatMap(([facet, entries]) => {
-    const sorted = entries
+    const members = entries
       .map(([, node]) => node)
       .toSorted((a, b) => nodeKey(a).localeCompare(nodeKey(b)));
-    return sorted.flatMap((a, i) =>
-      sorted.slice(i + 1).map((b) => ({
+    return spanningStrokes(members).map(([a, b]) => {
+      const [source, target] = nodeKey(a) <= nodeKey(b) ? [a, b] : [b, a];
+      return {
         facet,
         hue: FACET_HUE[facet],
-        source: { room: a.room, slug: a.slug },
-        target: { room: b.room, slug: b.slug },
-      })),
-    );
+        source: { room: source.room, slug: source.slug },
+        target: { room: target.room, slug: target.slug },
+      };
+    });
   });
 }
 
 // ─── Public API ────────────────────────────────────────────────────
 
 export function getConstellationGraphSync(): ConstellationGraph {
-  // Stable order (room/slug) so the spiral is deterministic per corpus;
-  // the index into this order is the star's place on the Fibonacci
-  // spiral (placeNode).
   const allWorks = CONSTELLATION_ROOMS.flatMap((room) =>
     getDisplayWorksByRoomSync(room).map((work) => ({ room, work })),
   ).toSorted((a, b) => `${a.room}/${a.work.slug}`.localeCompare(`${b.room}/${b.work.slug}`));
-  const total = allWorks.length;
-  const nodes: ConstellationNode[] = allWorks.map(({ room, work }, index) => {
+  const placements = spreadPlacements(
+    allWorks.map(({ work }) => placeWork(work.slug, work.facets)),
+  );
+  const nodes: ConstellationNode[] = allWorks.map(({ room, work }, i) => {
     const primaryFacet = work.facets[0];
     return {
       room,
@@ -266,11 +390,17 @@ export function getConstellationGraphSync(): ConstellationGraph {
       isPreview: isPreviewWork(work),
       hue: primaryFacet ? FACET_HUE[primaryFacet] : 'gold',
       twinklePhase: unitOffset(`${room}/${work.slug}/twinkle`) * TWINKLE_DURATION_SECONDS,
-      ...placeNode(index, total),
+      ...(placements[i] ?? placeWork(work.slug, work.facets)),
     };
   });
-  const edges = deriveFacetEdges(nodes);
-  return { nodes, edges, facetHues: FACET_HUE };
+  const edges = deriveFacetFigures(nodes);
+  const concordance = buildConcordance(
+    allWorks.map(({ room, work }) => ({
+      key: `${room}/${work.slug}`,
+      text: `${work.title} ${work.summary ?? ''} ${work.body}`,
+    })),
+  );
+  return { nodes, edges, facetHues: FACET_HUE, concordance };
 }
 
 // Async barrel signature, mirroring the rest of the content API

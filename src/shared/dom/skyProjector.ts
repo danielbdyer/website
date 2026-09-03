@@ -16,9 +16,15 @@
 import type { Camera, CameraBasis, ProjectedPointMut } from '@/shared/geometry/camera';
 import { project, projectInto } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
+import { NORTH_POLE } from '@/shared/geometry/sphere';
 import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
+import type { Vec3 } from '@/shared/geometry/sphere';
+import { COMPASS } from '@/shared/content/constellation';
+import { COMPASS_RIM, daystarViewboxPoint } from '@/shared/content/skyWalk';
+import { chooseLabelSlots, slotOffset, type LabelItem } from './labelLayout';
+import { fitViewboxToCanvas } from '@/shared/webgl/atmosphereProjection';
 
 // Per-frame element lookups were the navigation tick's hidden cost:
 // ~100 querySelector walks per frame at production density (one per
@@ -97,6 +103,40 @@ export function projectToViewbox(
   };
 }
 
+/** The frame the sky is drawn in: its box on the page and how the
+ *  square viewbox fits it — `cover` for the full-viewport sky
+ *  (xMidYMid slice), `contain` otherwise (xMidYMid meet). */
+export interface SkyFrame {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+  readonly fit: 'cover' | 'contain';
+}
+
+/** Inverse of projectToViewbox's screen mapping: a client position →
+ *  normalized image coords (±1 at the frustum edge, +y up), through
+ *  the viewbox's actual preserveAspectRatio fit. A cover-fit landscape
+ *  frame crops the square viewbox top and bottom, so normalizing over
+ *  the box's own width and height — as the pointer mapping once did —
+ *  stretched x and squeezed y, and every ray-cast named a place some
+ *  distance from the one under the pointer. Null when the frame has
+ *  no size. */
+export function clientToNormalized(
+  clientX: number,
+  clientY: number,
+  frame: SkyFrame,
+  viewboxSize: number,
+): { x: number; y: number } | null {
+  if (frame.width === 0 || frame.height === 0) return null;
+  const fit = fitViewboxToCanvas(frame.width, frame.height, viewboxSize, frame.fit);
+  const vbX = (clientX - frame.left - fit.offsetX) / fit.scale;
+  const vbY = (clientY - frame.top - fit.offsetY) / fit.scale;
+  const center = viewboxSize / 2;
+  const radius = viewboxSize * 0.44;
+  return { x: (vbX - center) / radius, y: -(vbY - center) / radius };
+}
+
 /**
  * Position every star's wrapper group via the data-node-key
  * selector. Behind-camera points (theoretically possible if a node
@@ -134,12 +174,42 @@ export function projectStars(
   }
 }
 
+/** Position the pole group — the geometric figure and its wash — at
+ *  the world's north pole, so the still point stays where the sky
+ *  turns rather than riding the center of view. Behind-camera (never,
+ *  for a camera under the dome, but honest) parks it offscreen. */
+export function projectPole(
+  cameraGroup: SVGGElement,
+  camera: Camera,
+  basis: CameraBasis,
+  viewboxSize: number,
+): void {
+  const el = cachedElement(cameraGroup, '[data-polestar]');
+  if (!el) return;
+  const proj = projectToViewbox(NORTH_POLE, camera, basis, viewboxSize);
+  el.setAttribute(
+    'transform',
+    proj.inFront
+      ? `translate(${proj.x.toFixed(2)} ${proj.y.toFixed(2)})`
+      : 'translate(-9999 -9999)',
+  );
+}
+
+function setEndpoints(el: Element, x1: string, y1: string, x2: string, y2: string): void {
+  el.setAttribute('x1', x1);
+  el.setAttribute('y1', y1);
+  el.setAttribute('x2', x2);
+  el.setAttribute('y2', y2);
+}
+
 /**
- * Position every thread's endpoints via the data-thread-id
- * selector. Threads connecting behind-camera endpoints render
- * off-canvas through the same far-offscreen trick.
+ * Position every thread's endpoints via the data-thread-id selector,
+ * and the wide transparent hit twin beside it (data-thread-hit) that
+ * makes the hairline able to be hovered and clicked. Threads connecting
+ * behind-camera endpoints render off-canvas through the same
+ * far-offscreen trick.
  *
- * @bigO Time: O(E) per call (one cached element lookup + two
+ * @bigO Time: O(E) per call (two cached element lookups + two
  *       matrix-multiplies per edge). Hot path: called once per RAF
  *       tick alongside projectStars.
  *       Space: O(E) for the element cache, O(1) per tick.
@@ -157,11 +227,14 @@ export function projectThreads(
     const el = cachedElement(cameraGroup, `[data-thread-id="${edge.id}"]`);
     if (!el) continue;
     projectInto(edge.sourcePos, camera, basis, 1, SCRATCH);
-    el.setAttribute('x1', (center + SCRATCH.screenX * radius).toFixed(2));
-    el.setAttribute('y1', (center - SCRATCH.screenY * radius).toFixed(2));
+    const x1 = (center + SCRATCH.screenX * radius).toFixed(2);
+    const y1 = (center - SCRATCH.screenY * radius).toFixed(2);
     projectInto(edge.targetPos, camera, basis, 1, SCRATCH);
-    el.setAttribute('x2', (center + SCRATCH.screenX * radius).toFixed(2));
-    el.setAttribute('y2', (center - SCRATCH.screenY * radius).toFixed(2));
+    const x2 = (center + SCRATCH.screenX * radius).toFixed(2);
+    const y2 = (center - SCRATCH.screenY * radius).toFixed(2);
+    setEndpoints(el, x1, y1, x2, y2);
+    const hit = cachedElement(cameraGroup, `[data-thread-hit="${edge.id}"]`);
+    if (hit) setEndpoints(hit, x1, y1, x2, y2);
   }
 }
 
@@ -224,8 +297,12 @@ export function broadcastCursorToFirmament(proj: ScreenProj, viewboxSize: number
 /** Hand the live camera to the WebGL atmosphere so its dome casts
  *  view rays through the same pinhole the structural projection
  *  uses. Broadcast once per tick alongside the cursor. */
-export function broadcastCameraToFirmament(camera: Camera, basis: CameraBasis): void {
-  setSkyCamera(camera, basis);
+export function broadcastCameraToFirmament(
+  camera: Camera,
+  basis: CameraBasis,
+  travel?: Vec3,
+): void {
+  setSkyCamera(camera, basis, travel);
 }
 
 /** Write the per-frame style channels the companion glyph reads:
@@ -249,4 +326,92 @@ export function writeGlyphChannels(
  *  the small remnant. */
 export function applyCameraYaw(el: SVGGElement, yaw: number): void {
   el.style.setProperty('--cam-yaw', yaw.toFixed(2));
+}
+
+/** Letter the compass — each facet's name at its bearing on the rim
+ *  (COMPASS_RIM, skyWalk.ts) — so the words turn with the heavens.
+ *  Behind-camera names park offscreen. */
+export function projectCompass(
+  cameraGroup: SVGGElement,
+  camera: Camera,
+  basis: CameraBasis,
+  viewboxSize: number,
+): void {
+  for (const facet of COMPASS) {
+    const el = cachedElement(cameraGroup, `[data-compass="${facet}"]`);
+    if (!el) continue;
+    const proj = projectToViewbox(COMPASS_RIM[facet], camera, basis, viewboxSize);
+    el.setAttribute('x', proj.inFront ? proj.x.toFixed(2) : '-9999');
+    el.setAttribute('y', proj.inFront ? proj.y.toFixed(2) : '-9999');
+  }
+}
+
+/**
+ * Lay the labels out so none sits on another or on a star
+ * (labelLayout.chooseLabelSlots), and write each label's anchor. The
+ * first keys in `named` are the labels visible at rest, in priority
+ * order; every other star's label gets a slot clear of those for when
+ * hover shows it. Runs on arrival and at the idle cadence — not a
+ * per-frame path.
+ *
+ * @bigO Time: O(N) projections + the layout's O(N · S · (K + N)).
+ */
+export function placeLabels(
+  cameraGroup: SVGGElement,
+  named: readonly string[],
+  nodes: readonly NavigableNode[],
+  camera: Camera,
+  basis: CameraBasis,
+  viewboxSize: number,
+): void {
+  const labelOf = (key: string) =>
+    cachedElement(cameraGroup, `[data-node-key="${key}"] .constellation-star__label`);
+  const namedSet = new Set(named);
+  const ordered = [...named, ...nodes.map((n) => n.key).filter((k) => !namedSet.has(k))];
+  const byKey = new Map(nodes.map((n) => [n.key, n]));
+  const items: LabelItem[] = ordered.flatMap((key) => {
+    const node = byKey.get(key);
+    const el = labelOf(key);
+    if (!node || !el) return [];
+    const proj = projectToViewbox(node.unitPos, camera, basis, viewboxSize);
+    if (!proj.inFront) return [];
+    return [{ key, x: proj.x, y: proj.y, chars: (el.textContent ?? '').length }];
+  });
+  const slots = chooseLabelSlots(items, named.length);
+  const byItem = new Map(items.map((item) => [item.key, item]));
+  for (const [key, side] of slots) {
+    const el = labelOf(key) as SVGTextElement | null;
+    const item = byItem.get(key);
+    if (!el || !item) continue;
+    // A translate, not x/y: CSS carries a change of side as a glide.
+    const { dx, dy } = slotOffset(item, side);
+    el.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+  }
+}
+
+/** Mark (or clear) the thread the visitor is scrubbing along by drag,
+ *  so CSS can light it end to end while the hand holds it. */
+export function markTrack(cameraGroup: SVGGElement, threadId: string | null): void {
+  const previous = cameraGroup.querySelector('[data-thread][data-track]');
+  previous?.removeAttribute('data-track');
+  if (threadId === null) return;
+  const next = cachedElement(cameraGroup, `[data-thread="${threadId}"]`);
+  next?.setAttribute('data-track', 'true');
+}
+
+/** Seat the daystar on the page in the frame's upper right — the
+ *  plate's corner emblem — wherever the live frame puts that corner.
+ *  Writes the wrapper's transform; the WebGL atmosphere reads it back
+ *  for the glow and the page light. */
+export function projectDaystar(
+  svg: SVGSVGElement | null,
+  viewboxSize: number,
+  fit: 'cover' | 'contain',
+): void {
+  if (!svg) return;
+  const el = cachedElement(svg, '[data-daystar]');
+  if (!el) return;
+  const rect = svg.getBoundingClientRect();
+  const p = daystarViewboxPoint(rect.width, rect.height, viewboxSize, fit);
+  el.setAttribute('transform', `translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})`);
 }

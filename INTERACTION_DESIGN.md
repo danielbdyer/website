@@ -84,6 +84,8 @@ The header has its own 500ms transition on `background` to stay continuous with 
 
 **Why 500ms.** Anything under ~300ms feels like a flicker; anything over ~800ms feels like the page is broken. 500ms is long enough that the visitor registers the change as a deliberate event and short enough to feel like a single gesture. It is the duration of a sigh.
 
+**The one longer arc.** The constellation's atmosphere on `/sky` is the exception the rule allows: the farthest surface in the house, it changes its hour over 1.8s rather than 500ms, passing through a dusk that belongs to neither hour (`CONSTELLATION.md` §"Night: the firmament"). The room's own chrome on that page — the return link, the labels, the star bodies — still dims in the sigh; only the sky behind them takes longer, and the sun and moon set and rise in sequence across the same arc. A sky that snapped its hour in 500ms read as a slide changing; a sky that takes a breath longer reads as weather. This is decided (2026-09-01) and scoped to the firmament; no other surface inherits it.
+
 **No icon animation on the toggle.** When the visitor clicks the theme button, the icon swaps (sun → moon or vice versa) instantly. The room around the icon does the dimming; the icon itself just changes its hand. Animating the icon would compete with the room's transition for attention; the toggle should be the smallest motion, the room the largest.
 
 **No flash of wrong theme.** The theme store applies the DOM class at module load (`applyToDOM(isDark())` in `src/app/providers/theme-store.ts`), before React renders. The first paint is already in the visitor's preferred theme. This is honored as an invariant: any future change that introduces a flash of wrong theme is a regression, not a tradeoff.

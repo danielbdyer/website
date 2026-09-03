@@ -1,56 +1,83 @@
 import type { RefObject, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
+import type { NamedRank } from '@/shared/content/skyWalk';
+import type { Facet } from '@/shared/types/common';
+import { Compass, type CompassPoint } from '@/shared/atoms/Compass/Compass';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
-import { Thread } from '@/shared/atoms/Thread/Thread';
-import { Star, type StarWork } from '@/shared/molecules/Star/Star';
+import { Thread, type ThreadWalk } from '@/shared/atoms/Thread/Thread';
+import { Star, type StarWalk, type StarWork } from '@/shared/molecules/Star/Star';
+import { TRAIL_LENGTH } from '@/shared/dom/skyProjector';
 import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
 import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 
-// The inside of the navigation camera. Extracted from Constellation
-// so the JSX depth at each layer fits the project's max-4 ceiling
-// without flattening the structural meaning of the tree (Polestar
-// alongside the rotates layer, threads and stars as sibling groups
-// inside it).
+// The inside of the travel camera. Extracted from Constellation so the
+// JSX depth at each layer fits the project's max-4 ceiling without
+// flattening the structural meaning of the tree (the pole, the
+// compass, the companion, threads and stars as sibling layers).
 
 /** The constellation's observable world — what Stage paints. The
- *  edges + nodes are the structural graph; activeKey + activeHue
- *  + overlayKey are the visitor's place in it. Held in one shape
- *  so the organism's prop count fits the ≤7 ceiling
- *  (REACT_NORTH_STAR.md §"Organisms"). */
+ *  edges + nodes are the structural graph; the rest is the walk:
+ *  where the visitor stands (hereKey; null at the pole), what they
+ *  hover, what is named within a stroke of here, what is present from
+ *  here (the contextual cap), what they have visited and walked, which
+ *  figure is lit by attention, and the compass's lettering.
+ *  CONSTELLATION_WALK.md. Held in one shape so the organism's prop
+ *  count fits the ≤7 ceiling (REACT_NORTH_STAR.md §"Organisms"). */
 export interface ConstellationWorld {
   readonly edges: readonly ResolvedEdge[];
   readonly nodes: readonly RenderableNode[];
-  readonly activeKey: string | null;
+  readonly hereKey: string | null;
+  readonly hoverKey: string | null;
   readonly activeHue: ConstellationHue | null;
   readonly overlayKey: string | null;
+  readonly named: ReadonlyMap<string, NamedRank>;
+  readonly present: ReadonlySet<string>;
+  readonly visited: ReadonlySet<string>;
+  readonly walked: ReadonlySet<string>;
+  readonly litFacet: Facet | null;
+  readonly attended: ReadonlySet<Facet>;
+  readonly compass: readonly CompassPoint[];
 }
 
-/** Interaction handlers Stage forwards to its inner star group —
- *  the hover/focus set only. The drag and keyboard handlers attach
- *  at the svg level (the whole sky is the drag surface; a press on
- *  a star below the drag threshold stays a click). */
+/** Interaction handlers Stage forwards to its layers — the hover and
+ *  focus sets for stars and threads. Clicks, keys, and the scrub
+ *  attach at the svg level in the organism. */
 export interface StageInteractions {
-  readonly onActivate: (e: SyntheticEvent<Element>) => void;
-  readonly onMouseLeave: () => void;
-  readonly onBlur: (e: FocusEvent<Element>) => void;
+  readonly onStarHover: (e: SyntheticEvent<Element>) => void;
+  readonly onStarLeave: () => void;
+  readonly onStarFocus: (e: FocusEvent<Element>) => void;
+  readonly onStarBlur: (e: FocusEvent<Element>) => void;
+  readonly onFacetHover: (e: SyntheticEvent<Element>) => void;
+  readonly onFacetLeave: () => void;
 }
 
 interface StageProps {
   world: ConstellationWorld;
   interactions: StageInteractions;
-  /** The companion glyph — a small mote at the cursor's projected
-   *  screen position. The navigation hook updates its cx/cy each
-   *  RAF tick. Sibling of the rotates layer so the slow background
-   *  rotation doesn't drag it around. */
+  /** The companion glyph — the visitor's body in the sky. The travel
+   *  hook updates its cx/cy each tick through the same camera the
+   *  stars project through, so it turns with the heavens as they do. */
   glyphRef: RefObject<SVGCircleElement | null>;
 }
 
-/** A thread is "active" when one of its endpoints is the cursor's
- *  current basin claim. CSS uses data-active to drive the
- *  vespers bloom; the predicate is pure and stays at module scope
- *  rather than as a Stage prop. */
-function isThreadActive(activeKey: string | null, sourceKey: string, targetKey: string): boolean {
-  return activeKey === sourceKey || activeKey === targetKey;
+function threadWalkOf(world: ConstellationWorld, edge: ResolvedEdge): ThreadWalk {
+  const attended = world.hoverKey ?? world.hereKey;
+  return {
+    active: attended === edge.sourceKey || attended === edge.targetKey,
+    walked: world.walked.has(edge.id),
+    lit: world.litFacet === edge.facet,
+    present: world.present.has(edge.sourceKey) && world.present.has(edge.targetKey),
+  };
+}
+
+function starWalkOf(world: ConstellationWorld, key: string): StarWalk {
+  return {
+    active: key === world.hoverKey || key === world.hereKey,
+    here: key === world.hereKey,
+    named: world.named.get(key),
+    visited: world.visited.has(key),
+    present: world.present.has(key),
+  };
 }
 
 /** Build the StarWork shape from a renderable node — pure projection. */
@@ -64,10 +91,27 @@ function starWorkFor(node: RenderableNode['node']): StarWork {
   };
 }
 
-// Number of ghost positions trailing the cursor. Mirrors TRAIL_LENGTH
-// in useConstellationNavigation; the hook positions each ghost's
-// cx/cy by querying [data-companion-trail="N"] each frame.
-const TRAIL_LENGTH = 4;
+// The pole. The geometric figure and its watercolor wash sit at the
+// world's north pole — the still point the heavens turn about — and
+// the travel hook projects this group there each tick
+// (skyProjector.projectPole). The prerendered transform is the pole's
+// position under the default camera, which is the center. The wash
+// lives inside the SVG so the firmament's noise composes through it.
+function PoleGroup() {
+  return (
+    <g data-polestar="true" transform="translate(500 500)">
+      <circle
+        cx={0}
+        cy={0}
+        r={220}
+        fill="url(#cn-polestar-wash)"
+        aria-hidden="true"
+        className="constellation-polestar-wash pointer-events-none"
+      />
+      <Polestar cx={0} cy={0} />
+    </g>
+  );
+}
 
 interface CompanionGroupProps {
   glyphRef: RefObject<SVGCircleElement | null>;
@@ -76,12 +120,12 @@ interface CompanionGroupProps {
 
 // The visitor's surface position plus its ghost-decay trail. Trail
 // circles render before the glyph so the live mark paints on top.
-// The navigation hook positions each per RAF tick via data-companion
-// / data-companion-trail queries; CSS handles the visual register
+// The travel hook positions each per tick via data-companion /
+// data-companion-trail queries; CSS handles the visual register
 // (paper-amber by default, mixed toward the active facet hue by
 // --companion-claim, ghosts modulated by --trail-strength).
-// aria-hidden because keyboard / screen-reader focus moves through
-// the addressable star anchors, not this visual marker.
+// aria-hidden because keyboard / screen-reader focus moves through the
+// addressable star anchors, not this visual marker.
 function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
   return (
     <g
@@ -113,58 +157,48 @@ function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
 }
 
 export function Stage({ world, interactions, glyphRef }: StageProps) {
-  const { edges, nodes, activeKey, activeHue, overlayKey } = world;
-  const { onActivate, onMouseLeave, onBlur } = interactions;
+  const { edges, nodes, activeHue, overlayKey } = world;
   return (
     <>
-      {/* Watercolor wash — soft halo of paper-warm light around
-          the polestar. CONSTELLATION_DESIGN.md §"Materials"
-          commits to washes around the polestar; the gradient
-          lives in ConstellationFilters as `cn-polestar-wash` and
-          renders as a large fill-only circle behind the
-          geometric figure. The wash sits inside the SVG so the
-          firmament's noise composes through it; a CSS overlay
-          would sit on top instead and read as chrome. */}
-      <circle
-        cx={500}
-        cy={500}
-        r={220}
-        fill="url(#cn-polestar-wash)"
-        aria-hidden="true"
-        className="constellation-polestar-wash pointer-events-none"
-      />
-      <Polestar cx={500} cy={500} />
+      <PoleGroup />
+      <g onMouseOver={interactions.onFacetHover} onMouseLeave={interactions.onFacetLeave}>
+        <Compass points={world.compass} attended={world.attended} />
+      </g>
       <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
       <g className="constellation-rotates">
-        <g aria-hidden="true">
+        {/* Threads first so stars paint above them and win the hit test. */}
+        <g
+          aria-hidden="true"
+          onMouseOver={interactions.onFacetHover}
+          onMouseLeave={interactions.onFacetLeave}
+        >
           {edges.map((edge) => (
             <Thread
               key={edge.id}
               id={edge.id}
+              figure={{ facet: edge.facet, hue: edge.hue }}
               endpoints={{ x1: edge.x1, y1: edge.y1, x2: edge.x2, y2: edge.y2 }}
-              hue={edge.hue}
-              active={isThreadActive(activeKey, edge.sourceKey, edge.targetKey)}
+              walk={threadWalkOf(world, edge)}
             />
           ))}
         </g>
         <g
-          onMouseOver={onActivate}
-          onMouseLeave={onMouseLeave}
-          onFocus={onActivate}
-          onBlur={onBlur}
+          onMouseOver={interactions.onStarHover}
+          onMouseLeave={interactions.onStarLeave}
+          onFocus={interactions.onStarFocus}
+          onBlur={interactions.onStarBlur}
         >
           {nodes.map(({ node, pos, key }) => (
-            // Wrapping group's transform places the star at its
-            // projected viewbox position. The hook overwrites this
-            // attribute each RAF tick when the camera orbits; the
-            // initial value here is the Phase B static projection
-            // so first paint matches the rest of the scene before
-            // the loop wakes up.
+            // The wrapping group's transform places the star at its
+            // projected viewbox position; the travel hook overwrites it
+            // each tick. The initial value is the resting camera's
+            // static projection so first paint matches the hydrated
+            // scene before the loop wakes.
             <g key={key} data-node-key={key} transform={`translate(${pos.x} ${pos.y})`}>
               <Star
                 work={starWorkFor(node)}
                 twinkleDelay={node.twinklePhase}
-                isActive={key === activeKey}
+                walk={starWalkOf(world, key)}
                 {...(key === overlayKey
                   ? {}
                   : { viewTransitionName: skyStarTransitionName(node.room, node.slug) })}

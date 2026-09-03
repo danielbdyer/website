@@ -88,6 +88,17 @@ export function ConstellationFilters() {
         <stop offset="40%" stopColor="var(--accent-warm)" stopOpacity="0.08" />
         <stop offset="100%" stopColor="var(--accent-warm)" stopOpacity="0" />
       </radialGradient>
+
+      {/* Gold leaf — the daystar's disc by day. Gold gathering toward
+          an off-center highlight, warming to the umber accent at the
+          rim where the leaf meets the paper: the chart's sun as a
+          gilded mark (CONSTELLATION.md §"Daylight: the chart"), kin to
+          the gold ground the Salon keeps. */}
+      <radialGradient id="cn-sun-leaf" cx="40%" cy="36%" r="72%">
+        <stop offset="0%" stopColor="var(--accent-gold)" stopOpacity="0.5" />
+        <stop offset="55%" stopColor="var(--accent-gold)" stopOpacity="0.82" />
+        <stop offset="100%" stopColor="var(--accent-warm)" stopOpacity="0.95" />
+      </radialGradient>
     </defs>
   );
 }

@@ -10,7 +10,9 @@ import {
 } from '@/shared/webgl/atmosphereProjection';
 import { buildSkyPalette } from '@/shared/webgl/palette';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
-import { getSkyCamera, getSkyCameraVersion, subscribeSkyCamera } from '@/shared/state/skyCamera';
+import { getSkyCamera, subscribeSkyCamera } from '@/shared/state/skyCamera';
+import { heavensPhase } from '@/shared/geometry/heavens';
+import type { Camera } from '@/shared/geometry/camera';
 
 // The atmospheric layer's runtime — CONSTELLATION_HORIZON.md's
 // Layer 1, in its full Phase 2 + 3 form. The hook owns what the
@@ -35,6 +37,18 @@ import { getSkyCamera, getSkyCameraVersion, subscribeSkyCamera } from '@/shared/
 const VIEWBOX = 1000;
 const VIEWBOX_CENTER = VIEWBOX / 2;
 const DAYSTAR_VIEWBOX = { x: 500, y: 240 };
+
+/** The daystar's live viewbox position, read from the wrapper the
+ *  travel hook seats on the page each tick (skyProjector.projectDaystar). */
+function daystarX(wrapper: SVGGElement | null): number {
+  const list = wrapper?.transform.baseVal;
+  return list && list.numberOfItems > 0 ? list.getItem(0).matrix.e : DAYSTAR_VIEWBOX.x;
+}
+
+function daystarY(wrapper: SVGGElement | null): number {
+  const list = wrapper?.transform.baseVal;
+  return list && list.numberOfItems > 0 ? list.getItem(0).matrix.f : DAYSTAR_VIEWBOX.y;
+}
 const ACTIVE_EASE_RATE = 7;
 const POOL_EASE_RATE = 5;
 // The parallax multipliers tokens.css applies to the two layered
@@ -55,8 +69,8 @@ interface SkyDomElements {
   readonly parallaxFirmament: Element;
   readonly parallaxSky: Element;
   readonly cameraGroup: Element;
-  readonly rotates: Element;
   readonly glyph: SVGCircleElement | null;
+  readonly daystar: SVGGElement | null;
 }
 
 interface MutableVec3 {
@@ -69,6 +83,7 @@ interface FrameBuffers {
   readonly starPositions: readonly Vec3[];
   readonly starCenters: Float32Array;
   readonly starActive: Float32Array;
+  readonly starPresence: Float32Array;
   readonly motePositions: MutableVec3[];
   readonly moteCenters: Float32Array;
 }
@@ -86,6 +101,9 @@ interface LoopState {
   readonly handles: AtmosphereHandles;
   readonly fitMode: 'cover' | 'contain';
   readonly activeIndexRef: RefObject<number>;
+  /** Per-star presence targets (index-aligned with the scene), or
+   *  null when everything is present. */
+  readonly presenceRef: RefObject<Float32Array | null>;
   /** Viewbox→buffer-px mapping, measured against the SVG's actual
    *  box (not the canvas box — the two can differ by chrome above
    *  the SVG). Recomputed on resize, read every frame. */
@@ -128,16 +146,15 @@ function locateSkyDom(container: HTMLElement): SkyDomElements | null {
   const parallaxFirmament = frame.querySelector('.constellation-parallax--firmament');
   const parallaxSky = frame.querySelector('.constellation-parallax--sky');
   const cameraGroup = frame.querySelector('.constellation-camera');
-  const rotates = frame.querySelector('.constellation-rotates');
-  if (!svg || !parallaxFirmament || !parallaxSky || !cameraGroup || !rotates) return null;
+  if (!svg || !parallaxFirmament || !parallaxSky || !cameraGroup) return null;
   return {
     frame,
     svg,
     parallaxFirmament,
     parallaxSky,
     cameraGroup,
-    rotates,
     glyph: frame.querySelector<SVGCircleElement>('[data-companion]'),
+    daystar: frame.querySelector<SVGGElement>('[data-daystar]'),
   };
 }
 
@@ -146,6 +163,7 @@ function allocateBuffers(scene: AtmosphericScene): FrameBuffers {
     starPositions: scene.stars.map((star) => star.unitPosition),
     starCenters: new Float32Array(scene.stars.length * 2),
     starActive: new Float32Array(scene.stars.length),
+    starPresence: new Float32Array(scene.stars.length).fill(1),
     motePositions: scene.motes.map((mote) => ({ ...mote.basePosition })),
     moteCenters: new Float32Array(scene.motes.length * 2),
   };
@@ -186,9 +204,6 @@ interface ChainState {
   parSkyY: number;
   parFirX: number;
   parFirY: number;
-  spin: number;
-  rotation: Animation | null;
-  rotationDurationMs: number;
   world: MutableAffine;
   glyphChain: MutableAffine;
 }
@@ -199,9 +214,6 @@ function newChainState(): ChainState {
     parSkyY: 0,
     parFirX: 0,
     parFirY: 0,
-    spin: 0,
-    rotation: null,
-    rotationDurationMs: 0,
     world: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
     glyphChain: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
   };
@@ -211,24 +223,6 @@ function inlineVar(el: Element, name: string): number {
   const raw = (el as Element & ElementCSSInlineStyle).style.getPropertyValue(name);
   const value = Number.parseFloat(raw);
   return Number.isNaN(value) ? 0 : value;
-}
-
-/** Locate the 600s heavens animation once; read its clock per frame.
- *  Animation.currentTime is a plain property — unlike a computed
- *  transform it costs no style recalc. Under reduced motion the
- *  global CSS collapses the duration and the angle parks near 0. */
-function readSpin(els: SkyDomElements, chain: ChainState): number {
-  if (!chain.rotation) {
-    const animations = els.rotates.getAnimations?.() ?? [];
-    chain.rotation = animations[0] ?? null;
-    if (chain.rotation) {
-      const timing = chain.rotation.effect?.getTiming();
-      chain.rotationDurationMs = typeof timing?.duration === 'number' ? timing.duration : 600_000;
-    }
-  }
-  const t = chain.rotation?.currentTime;
-  if (typeof t !== 'number' || chain.rotationDurationMs <= 0) return 0;
-  return ((t % chain.rotationDurationMs) / chain.rotationDurationMs) * Math.PI * 2;
 }
 
 /** Build a rotation-about-viewbox-center plus translate, in place. */
@@ -244,12 +238,14 @@ function writeRotationAffine(out: MutableAffine, angle: number, tx: number, ty: 
 }
 
 /** Advance the chain replay one frame: smooth the parallax vars
- *  toward their targets (matching the CSS consumers' 800ms arrival),
- *  read the heavens' clock, and rebuild the two affines. The camera
- *  group's yaw and the rotates group's spin share the same pivot, so
- *  their rotations compose by addition. (--cam-x/--cam-y are part of
- *  the camera transform's vocabulary but nothing writes them today;
- *  if they come alive, read them here the same way.) */
+ *  toward their targets (matching the CSS consumers' 800ms arrival)
+ *  and rebuild the two affines from the camera group's yaw. The
+ *  heavens' turn is no longer a CSS transform to replay — it rides
+ *  the camera itself as a roll, so projecting through the shared
+ *  basis already places halos beneath their turned stars. (--cam-x/
+ *  --cam-y are part of the camera transform's vocabulary but nothing
+ *  writes them today; if they come alive, read them here the same
+ *  way.) */
 function advanceChains(els: SkyDomElements, chain: ChainState, dt: number): number {
   const k = 1 - Math.exp(-PARALLAX_EASE_RATE * dt);
   const targetX = inlineVar(els.svg, '--parallax-x') * PARALLAX_SKY_PX;
@@ -259,8 +255,7 @@ function advanceChains(els: SkyDomElements, chain: ChainState, dt: number): numb
   chain.parFirX = (chain.parSkyX * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
   chain.parFirY = (chain.parSkyY * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
   const yaw = (inlineVar(els.cameraGroup, '--cam-yaw') * Math.PI) / 180;
-  chain.spin = readSpin(els, chain);
-  writeRotationAffine(chain.world, yaw + chain.spin, chain.parSkyX, chain.parSkyY);
+  writeRotationAffine(chain.world, yaw, chain.parSkyX, chain.parSkyY);
   writeRotationAffine(chain.glyphChain, yaw, chain.parSkyX, chain.parSkyY);
   // Residual in viewbox px, normalized so ~0.07px reads as settled.
   return (Math.abs(targetX - chain.parSkyX) + Math.abs(targetY - chain.parSkyY)) / 14;
@@ -282,6 +277,26 @@ function easeActivations(state: LoopState, k: number): number {
   return residual;
 }
 
+// Presence settles slower than a claim: a star that recedes as the
+// walk moves on should fade like a light going out of view, not snap.
+const PRESENCE_EASE_RATE = 3.3;
+
+/** Ease per-star presence toward its target (1 when the caller has no
+ *  targets); returns the largest remaining delta. */
+function easePresence(state: LoopState, k: number): number {
+  const presence = state.buffers.starPresence;
+  const targets = state.presenceRef.current;
+  let residual = 0;
+  for (const i of presence.keys()) {
+    const goal = targets ? (targets[i] ?? 1) : 1;
+    const next = presence[i]! + (goal - presence[i]!) * k;
+    presence[i] = next;
+    const delta = Math.abs(goal - next);
+    if (delta > residual) residual = delta;
+  }
+  return residual;
+}
+
 /** Assemble and paint one atmosphere frame. `timeSeconds` is the
  *  loop clock (0 and frozen under reduced motion). The fit is
  *  computed against the drawing buffer, so every position handed to
@@ -290,7 +305,7 @@ function easeActivations(state: LoopState, k: number): number {
  *  loop can halve its cadence when the sky is calm. */
 function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: number): number {
   const { els, handles, buffers, fit, chain, frame } = state;
-  const { camera, basis } = getSkyCamera();
+  const { camera, basis, travel } = getSkyCamera();
   const dt = state.lastTime === 0 ? 0.016 : Math.min(timeSeconds - state.lastTime, 0.1);
   state.lastTime = timeSeconds;
   const parallaxResidual = advanceChains(els, chain, dt);
@@ -317,6 +332,10 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
     state,
     motion === 0 ? 1 : 1 - Math.exp(-ACTIVE_EASE_RATE * dt),
   );
+  const presenceResidual = easePresence(
+    state,
+    motion === 0 ? 1 : 1 - Math.exp(-PRESENCE_EASE_RATE * dt),
+  );
   const cursor = getConstellationCursor();
   const poolTarget = cursor.active ? 1 : 0;
   state.poolStrength += (poolTarget - state.poolStrength) * (1 - Math.exp(-POOL_EASE_RATE * dt));
@@ -334,14 +353,24 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
   // the painted backdrop drifts with the cursor parallax.
   frame.domeShift.x = -chain.parFirX / 440;
   frame.domeShift.y = chain.parFirY / 440;
-  frame.spin = chain.spin;
+  // The heavens' turn lives here: the chart holds still, and the deep
+  // field and the weather drift on the wall clock behind it.
+  frame.spin = heavensPhase(Date.now());
+  frame.travel.x = travel.x * motion;
+  frame.travel.y = travel.y * motion;
+  frame.travel.z = travel.z * motion;
   frame.pool.x = fit.offsetX + pool.x * fit.scale;
   frame.pool.y = fit.offsetY + pool.y * fit.scale;
   frame.pool.strength = state.poolStrength * motion;
-  frame.daystar.x = fit.offsetX + (DAYSTAR_VIEWBOX.x + chain.parFirX) * fit.scale;
-  frame.daystar.y = fit.offsetY + (DAYSTAR_VIEWBOX.y + chain.parFirY) * fit.scale;
+  frame.daystar.x = fit.offsetX + (daystarX(els.daystar) + chain.parFirX) * fit.scale;
+  frame.daystar.y = fit.offsetY + (daystarY(els.daystar) + chain.parFirY) * fit.scale;
   handles.render(frame);
-  return Math.max(activeResidual, parallaxResidual, Math.abs(poolTarget - state.poolStrength));
+  return Math.max(
+    activeResidual,
+    presenceResidual,
+    parallaxResidual,
+    Math.abs(poolTarget - state.poolStrength),
+  );
 }
 
 function prefersStillAtmosphere(): boolean {
@@ -367,6 +396,16 @@ function shouldRenderWebGL(): boolean {
 interface MountedAtmosphere {
   dispose: () => void;
   repaint: () => void;
+  /** Mark the frame as painted by this mount (data-atmosphere="webgl").
+   *  Called only for a mount the effect keeps. A client-side crossing
+   *  into /sky mounts the layer twice in quick succession — both async
+   *  inits finish, and whichever finishes second used to win the frame
+   *  attribute: if that was the cancelled one, its dispose unmarked the
+   *  frame the live mount had just claimed, leaving the SVG firmament
+   *  visible over a canvas still painting every frame. Claiming only
+   *  from the kept mount, and releasing only what this mount claimed,
+   *  closes the race. */
+  claim: () => void;
 }
 
 /** Wait out the sky's arrival animation before paying for context
@@ -393,6 +432,7 @@ async function mountAtmosphere(
   scene: AtmosphericScene,
   fitMode: 'cover' | 'contain',
   activeIndexRef: RefObject<number>,
+  presenceRef: RefObject<Float32Array | null>,
 ): Promise<MountedAtmosphere | null> {
   await arrivalSettled(container);
   // Probe with our own canvas before ogl gets the chance to
@@ -421,6 +461,7 @@ async function mountAtmosphere(
     handles,
     fitMode,
     activeIndexRef,
+    presenceRef,
     fit: { scale: 1, offsetX: 0, offsetY: 0 },
     chain: newChainState(),
     frame: {
@@ -431,10 +472,12 @@ async function mountAtmosphere(
       fit: { scale: 1, offsetX: 0, offsetY: 0 },
       domeShift: { x: 0, y: 0 },
       spin: 0,
+      travel: { x: 0, y: 0, z: 0 },
       pool: { x: 0, y: 0, strength: 0 },
       daystar: { x: 0, y: 0 },
       starCenters: buffers.starCenters,
       starActive: buffers.starActive,
+      starPresence: buffers.starPresence,
       moteCenters: buffers.moteCenters,
     },
     poolStrength: 0,
@@ -481,12 +524,27 @@ interface PaintLoop {
   wake(): void;
 }
 
+/** The camera's pose — where it stands and what it looks at — apart
+ *  from its roll. The heavens' roll advances on every broadcast, so a
+ *  changed camera is not by itself motion; only a moved pose is. */
+function samePose(a: Camera, b: Camera): boolean {
+  return (
+    a.position.x === b.position.x &&
+    a.position.y === b.position.y &&
+    a.position.z === b.position.z &&
+    a.target.x === b.target.x &&
+    a.target.y === b.target.y &&
+    a.target.z === b.target.z &&
+    a.fovY === b.fovY
+  );
+}
+
 /** The paint scheduler. Owns the calm cadence: when the world is
- *  still (no camera writes, pool and halo claim settled, parallax
- *  arrived, no theme fade), the loop paints every other frame —
- *  twinkle and drift at 30fps are indistinguishable at their
- *  periods, and the GPU rests with the sky. Any disturbance
- *  restores the full rate on the next frame. */
+ *  still (the camera's pose unmoved, pool and halo claim settled,
+ *  parallax arrived, no theme fade), the loop paints every other
+ *  frame — twinkle, drift, and the heavens' slow roll at 30fps are
+ *  indistinguishable at their periods, and the GPU rests with the
+ *  sky. Any disturbance restores the full rate on the next frame. */
 function createPaintLoop(
   state: LoopState,
   env: AtmosphereEnv,
@@ -496,7 +554,7 @@ function createPaintLoop(
   let unsettled = 1;
   let calmFrames = 0;
   let frameParity = 0;
-  let lastCameraVersion = -1;
+  let lastPose: Camera | null = null;
   const paint = (timeSeconds: number) => {
     try {
       unsettled = renderAtmosphereFrame(state, timeSeconds, env.still ? 0 : 1);
@@ -506,9 +564,9 @@ function createPaintLoop(
   };
   return {
     step(now: number) {
-      const cameraVersion = getSkyCameraVersion();
-      const still = cameraVersion === lastCameraVersion && unsettled < 0.005;
-      lastCameraVersion = cameraVersion;
+      const { camera } = getSkyCamera();
+      const still = lastPose !== null && samePose(lastPose, camera) && unsettled < 0.005;
+      lastPose = camera;
       calmFrames = still ? calmFrames + 1 : 0;
       frameParity ^= 1;
       if (calmFrames < CALM_AFTER_FRAMES || frameParity === 0) {
@@ -521,6 +579,24 @@ function createPaintLoop(
     wake() {
       calmFrames = 0;
       unsettled = 1;
+    },
+  };
+}
+
+/** Ownership of the frame's data-atmosphere attribute. Only the mount
+ *  the effect keeps claims it; a mount releases only what it claimed,
+ *  so a cancelled sibling resolving late can never unmark the live one. */
+function frameClaim(frame: HTMLElement): { claim: () => void; release: () => void } {
+  let claimed = false;
+  return {
+    claim() {
+      claimed = true;
+      frame.dataset.atmosphere = 'webgl';
+    },
+    release() {
+      if (!claimed) return;
+      claimed = false;
+      delete frame.dataset.atmosphere;
     },
   };
 }
@@ -542,6 +618,13 @@ function wireAtmosphere(
   const canvas = handles.canvas;
   dressCanvas(canvas);
   container.append(canvas);
+  const { claim, release } = frameClaim(els.frame);
+  let halted = false;
+  const halt = () => {
+    halted = true;
+    canvas.style.display = 'none';
+    release();
+  };
   const resize = () => {
     const rect = container.getBoundingClientRect();
     handles.setSize(rect.width || 1, rect.height || 1);
@@ -549,7 +632,6 @@ function wireAtmosphere(
   };
   resize();
   let raf = 0;
-  let halted = false;
   const startTime = performance.now();
   const watchBudget = createBudgetWatcher(() => {
     handles.setDpr(1);
@@ -559,11 +641,7 @@ function wireAtmosphere(
     loop.wake();
     loop.repaint();
   });
-  const loop = createPaintLoop(state, env, startTime, () => {
-    halted = true;
-    canvas.style.display = 'none';
-    delete els.frame.dataset.atmosphere;
-  });
+  const loop = createPaintLoop(state, env, startTime, halt);
   const repaint = () => {
     if (halted) return;
     loop.repaint();
@@ -580,7 +658,6 @@ function wireAtmosphere(
     };
     raf = requestAnimationFrame(tick);
   }
-  els.frame.dataset.atmosphere = 'webgl';
   const unsubscribeCamera = env.still ? subscribeSkyCamera(repaint) : undefined;
   const themeObserver = new MutationObserver(() => {
     handles.setPalette(buildSkyPalette(env.readToken, env.isDark()), env.still);
@@ -597,39 +674,45 @@ function wireAtmosphere(
     repaint();
   });
   resizeObserver.observe(container);
-  const onContextLost = () => {
-    halted = true;
-    canvas.style.display = 'none';
-    delete els.frame.dataset.atmosphere;
-  };
-  canvas.addEventListener('webglcontextlost', onContextLost);
+  canvas.addEventListener('webglcontextlost', halt);
   return {
     repaint,
+    claim,
     dispose() {
       halted = true;
       cancelAnimationFrame(raf);
       unsubscribeCamera?.();
       themeObserver.disconnect();
       resizeObserver.disconnect();
-      canvas.removeEventListener('webglcontextlost', onContextLost);
-      delete els.frame.dataset.atmosphere;
+      canvas.removeEventListener('webglcontextlost', halt);
+      release();
       handles.dispose();
     },
   };
 }
 
+/** A presence signature — one '1' or '0' per star in scene order — as
+ *  the per-star targets the loop eases toward; null for all present. */
+function presenceTargets(signature: string | null): Float32Array | null {
+  return signature === null ? null : Float32Array.from(signature, (ch) => (ch === '1' ? 1 : 0));
+}
+
 /** Mount the WebGL atmosphere inside `containerRef`'s div. The
  *  scene is the precomputed atmospheric contract for the current
  *  graph; `activeIndex` names the star whose halo is claimed
- *  (-1 for none); `fit` mirrors the SVG's preserveAspectRatio. */
+ *  (-1 for none); `fit` mirrors the SVG's preserveAspectRatio;
+ *  `presence` is a per-star signature ('1'/'0' in scene order) for
+ *  the contextual cap, or null for everything present. */
 export function useWebGLFirmament(
   containerRef: RefObject<HTMLDivElement | null>,
   scene: AtmosphericScene,
   activeIndex: number,
   fit: 'cover' | 'contain',
+  presence: string | null = null,
 ) {
   const mountedRef = useRef<MountedAtmosphere | null>(null);
   const activeIndexRef = useRef(activeIndex);
+  const presenceRef = useRef<Float32Array | null>(presenceTargets(presence));
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -637,11 +720,16 @@ export function useWebGLFirmament(
   }, [activeIndex]);
 
   useEffect(() => {
+    presenceRef.current = presenceTargets(presence);
+    mountedRef.current?.repaint();
+  }, [presence]);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     if (!shouldRenderWebGL()) return;
     let cancelled = false;
-    void mountAtmosphere(container, scene, fit, activeIndexRef)
+    void mountAtmosphere(container, scene, fit, activeIndexRef, presenceRef)
       .then((mounted) => {
         if (!mounted) return;
         if (cancelled) {
@@ -649,6 +737,7 @@ export function useWebGLFirmament(
           return;
         }
         mountedRef.current = mounted;
+        mounted.claim();
       })
       .catch(() => {
         // Init failed (context creation, shader compile, ogl

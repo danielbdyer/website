@@ -41,6 +41,9 @@ export interface AtmosphereFrameInput {
   domeShift: { x: number; y: number };
   /** The heavens' current rotation phase in radians. */
   spin: number;
+  /** The visitor's travel as a world angular velocity (rad/s); zero at
+   *  rest. The dome streaks its deep field along it. */
+  travel: { x: number; y: number; z: number };
   /** Cursor pool in buffer px + smoothed strength ∈ [0, 1]. */
   pool: { x: number; y: number; strength: number };
   /** Daystar anchor in buffer px. */
@@ -48,6 +51,8 @@ export interface AtmosphereFrameInput {
   /** Caller-projected star centers (2·N) and eased activation (N). */
   starCenters: Float32Array;
   starActive: Float32Array;
+  /** Eased presence per star ∈ [0, 1] — the contextual cap's dimming. */
+  starPresence: Float32Array;
   /** Caller-projected mote centers (2·M). */
   moteCenters: Float32Array;
 }
@@ -66,14 +71,20 @@ export interface AtmosphereHandles {
   dispose(): void;
 }
 
-const THEME_FADE_SECONDS = 0.5;
+// The sky's hour changes over a longer arc than the room's 500ms
+// dimming: the atmosphere is the farthest surface, and dawn is not a
+// switch. The shader passes through a horizon flush midway
+// (`4·n·(1−n)` of the blended night value) and lets the deep field
+// leave early. INTERACTION_DESIGN.md §"Dark Mode as Room Dimming"
+// names this as the one surface that takes longer than the sigh.
+const THEME_FADE_SECONDS = 1.8;
 // Halo, mote, and pool extents in viewbox units — scaled to pixels
 // through the live fit so the paint keeps its proportion to the
 // structural layer at every viewport.
 const STAR_HALO_VIEWBOX_RADIUS = 36;
-// The day pigment bleed is a tighter mark than the night glow —
-// a blot of color, not a luminous field.
-const STAR_PIGMENT_VIEWBOX_RADIUS = 15;
+// The day pigment point is a tighter mark than the night glow —
+// a painted point on the chart, not a luminous field.
+const STAR_PIGMENT_VIEWBOX_RADIUS = 17;
 const MOTE_VIEWBOX_RADIUS = 3.4;
 const POOL_VIEWBOX_RADIUS = 320;
 
@@ -139,6 +150,7 @@ function paletteUniforms(palette: SkyPalette) {
     uAccentViolet: { value: [...palette.accents[2]] },
     uAccentGold: { value: [...palette.accents[3]] },
     uGrain: { value: palette.grain },
+    uInk: { value: [...palette.ink] },
     uNight: { value: palette.night },
   };
 }
@@ -170,6 +182,7 @@ function writePalette(program: Program, palette: SkyPalette): void {
     uAccentViolet: palette.accents[2],
     uAccentGold: palette.accents[3],
     uGrain: palette.grain,
+    uInk: palette.ink,
     uNight: palette.night,
   };
   for (const [name, value] of Object.entries(colors)) {
@@ -232,6 +245,7 @@ function buildDomeMesh(ogl: OglModule, gl: OGLRenderingContext, palette: SkyPale
         uTanHalfFov: { value: Math.tan(Math.PI / 8) },
         uDomeShift: { value: [0, 0] },
         uSpin: { value: 0 },
+        uTravel: { value: [0, 0, 0] },
         uPool: { value: [0, 0, 0] },
         uPoolRadius: { value: 100 },
         uDaystar: { value: [0, 0] },
@@ -272,6 +286,7 @@ function buildStarMeshes(
     aPhase: { instanced: 1, size: 1, data: stars.phase },
     aSeed: { instanced: 1, size: 1, data: stars.seed },
     aActive: { instanced: 1, size: 1, data: new Float32Array(n) },
+    aPresence: { instanced: 1, size: 1, data: new Float32Array(n).fill(1) },
     aSize: { instanced: 1, size: 1, data: stars.size },
   });
   const pigmentProgram = new ogl.Program(gl, {
@@ -396,6 +411,7 @@ function writeFrameUniforms(passes: PassSet, frame: AtmosphereFrameInput): void 
   (du.uDomeShift!.value as number[])[0] = frame.domeShift.x;
   (du.uDomeShift!.value as number[])[1] = frame.domeShift.y;
   du.uSpin!.value = frame.spin;
+  writeVec3(du.uTravel!, frame.travel);
   const pool = du.uPool!.value as number[];
   pool[0] = frame.pool.x;
   pool[1] = frame.pool.y;
@@ -425,6 +441,9 @@ function writeFrameAttributes(passes: PassSet, frame: AtmosphereFrameInput): voi
   const aActive = starGeometry.attributes.aActive!;
   (aActive.data as Float32Array).set(frame.starActive);
   aActive.needsUpdate = true;
+  const aPresence = starGeometry.attributes.aPresence!;
+  (aPresence.data as Float32Array).set(frame.starPresence);
+  aPresence.needsUpdate = true;
   const moteCenter = passes.motes.geometry.attributes.aCenter!;
   (moteCenter.data as Float32Array).set(frame.moteCenters);
   moteCenter.needsUpdate = true;

@@ -48,11 +48,7 @@ function FoyerPage() {
           CONSTELLATION.md; until they pull, this small italic line is
           the door from the Foyer to the firmament above it. */}
         <p className="max-w-deck font-body text-list leading-body text-text-3 mt-4 italic">
-          <Link
-            to="/sky"
-            className="hover:text-text-2 no-underline transition-colors duration-200"
-            viewTransition={false}
-          >
+          <Link to="/sky" className="hover:text-text-2 no-underline transition-colors duration-200">
             ↑ Look up
           </Link>
         </p>

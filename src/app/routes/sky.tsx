@@ -47,7 +47,7 @@ export const Route = createFileRoute('/sky')({
 });
 
 const RETURN_LINK_CLASS =
-  'font-body text-list text-text-3 hover:text-text-2 absolute bottom-8 left-1/2 z-10 -translate-x-1/2 italic no-underline transition-colors duration-200';
+  'sky-return-link font-body text-list text-text-3 hover:text-text-2 absolute bottom-8 left-1/2 z-10 -translate-x-1/2 italic no-underline transition-colors duration-200';
 
 function SkyPage() {
   const { graph } = Route.useLoaderData();

@@ -17,6 +17,7 @@
 // basis collapses to a stable default rather than producing NaN.
 
 import type { UnitVector3 } from './sphere';
+import { rotateAboutAxis } from './sphere';
 
 export interface Vec3 {
   readonly x: number;
@@ -32,6 +33,12 @@ export interface Camera {
   readonly fovY: number;
   readonly near: number;
   readonly far: number;
+  /** Roll about the forward axis, in radians — the heavens' slow
+   *  turn, carried by the camera so every consumer of the basis (the
+   *  structural projector, the pointer ray-cast, the keyboard frame,
+   *  the atmosphere's view rays) sees one consistent sky. Absent or
+   *  0 means no roll. */
+  readonly roll?: number;
 }
 
 export interface CameraBasis {
@@ -88,27 +95,19 @@ function normalize(v: Vec3, fallback: UnitVector3): UnitVector3 {
  *  forward) collapse to a stable default rather than producing NaN. */
 export function cameraBasis(camera: Camera): CameraBasis {
   const forward = normalize(sub(camera.target, camera.position), DEFAULT_FORWARD);
-  const right = normalize(cross(camera.up, forward), DEFAULT_RIGHT);
-  const up = normalize(cross(forward, right), DEFAULT_UP);
+  const levelRight = normalize(cross(camera.up, forward), DEFAULT_RIGHT);
+  const levelUp = normalize(cross(forward, levelRight), DEFAULT_UP);
+  const roll = camera.roll ?? 0;
+  if (roll === 0) return { forward, right: levelRight, up: levelUp };
+  // Roll turns the image plane about the view axis; forward is
+  // untouched, so the look-at point stays at image center while the
+  // sky around it turns.
+  const right = normalize(rotateAboutAxis(levelRight, forward, roll), DEFAULT_RIGHT);
+  const up = normalize(rotateAboutAxis(levelUp, forward, roll), DEFAULT_UP);
   return { forward, right, up };
 }
 
-/** Rotate a vector around a unit axis by `angle` radians (Rodrigues'
- *  rotation formula). Pure; the magnitude of `v` is preserved. */
-function rotateAroundAxis(v: Vec3, axis: UnitVector3, angle: number): Vec3 {
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  const dotKV = axis.x * v.x + axis.y * v.y + axis.z * v.z;
-  const crossX = axis.y * v.z - axis.z * v.y;
-  const crossY = axis.z * v.x - axis.x * v.z;
-  const crossZ = axis.x * v.y - axis.y * v.x;
-  const k = (1 - c) * dotKV;
-  return {
-    x: v.x * c + crossX * s + axis.x * k,
-    y: v.y * c + crossY * s + axis.y * k,
-    z: v.z * c + crossZ * s + axis.z * k,
-  };
-}
+const rotateAroundAxis = rotateAboutAxis;
 
 /** Orbit a camera around its look-at target by a small yaw (about the
  *  camera's up) and pitch (about camera-right), keeping the target, up,

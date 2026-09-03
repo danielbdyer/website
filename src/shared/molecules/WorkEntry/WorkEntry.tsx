@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { Work } from '@/shared/content/schema';
 import { FacetChip } from '@/shared/atoms/FacetChip/FacetChip';
+import { formatWorkDate } from '@/shared/utils/format-date';
 import {
   workCardTransitionName,
   workMetaTransitionName,
@@ -28,11 +29,7 @@ interface WorkEntryProps {
 // just runs without a hero participant for these rooms; the title and
 // meta still travel.
 export function WorkEntry({ work, variant = 'default' }: WorkEntryProps) {
-  const formattedDate = work.date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const formattedDate = formatWorkDate(work.date);
   return (
     <article style={{ viewTransitionName: workCardTransitionName(work.room, work.slug) }}>
       <Link

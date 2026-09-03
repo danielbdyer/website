@@ -11,6 +11,7 @@ import {
   workTitleTransitionName,
 } from '@/shared/utils/view-transition-names';
 import { cn } from '@/shared/utils/cn';
+import { formatWorkDate } from '@/shared/utils/format-date';
 
 const ROOM_LABELS = {
   foyer: 'the foyer',
@@ -82,11 +83,7 @@ function FacetCardImage({
 // component reusable in other contexts (a related-works rail, a search
 // result list) where masonry isn't the layout.
 export function FacetCard({ work, size, hideFacets = [] }: FacetCardProps) {
-  const formattedDate = work.date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const formattedDate = formatWorkDate(work.date);
   const thumbLabel = isPreviewWork(work) ? work.preview.thumbLabel : undefined;
   const visibleFacets = work.facets.filter((f) => !hideFacets.includes(f));
 

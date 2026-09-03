@@ -37,6 +37,38 @@ describe('cameraBasis', () => {
     expect(Number.isFinite(basis.forward.y)).toBe(true);
     expect(Number.isFinite(basis.forward.z)).toBe(true);
   });
+
+  test('roll turns right and up about forward, leaving forward alone', () => {
+    const rolled = cameraBasis({ ...LOOKING_UP, roll: Math.PI / 2 });
+    expect(rolled.forward).toEqual({ x: 0, y: 0, z: 1 });
+    // A quarter roll carries the old right (+x) onto the old up (+y).
+    expect(rolled.right.x).toBeCloseTo(0, 9);
+    expect(rolled.right.y).toBeCloseTo(1, 9);
+    expect(rolled.up.x).toBeCloseTo(-1, 9);
+    expect(rolled.up.y).toBeCloseTo(0, 9);
+  });
+
+  test('a rolled camera keeps its look-at point at image center', () => {
+    const rolled: Camera = { ...LOOKING_UP, roll: 0.7 };
+    const p = project(rolled.target, rolled, cameraBasis(rolled), 1);
+    expect(p.screenX).toBeCloseTo(0, 9);
+    expect(p.screenY).toBeCloseTo(0, 9);
+  });
+
+  test('roll rotates an off-center point on screen by the roll angle', () => {
+    const point = { x: 0.4, y: 0, z: 0 };
+    const level = project(point, LOOKING_UP, cameraBasis(LOOKING_UP), 1);
+    const rolled: Camera = { ...LOOKING_UP, roll: Math.PI / 2 };
+    const turned = project(point, rolled, cameraBasis(rolled), 1);
+    // The same world point moves from the +x screen axis to the -y axis;
+    // its distance from center is unchanged.
+    expect(Math.hypot(turned.screenX, turned.screenY)).toBeCloseTo(
+      Math.hypot(level.screenX, level.screenY),
+      9,
+    );
+    expect(turned.screenX).toBeCloseTo(0, 9);
+    expect(turned.screenY).toBeCloseTo(-level.screenX, 9);
+  });
 });
 
 describe('project', () => {

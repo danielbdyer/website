@@ -352,7 +352,7 @@ export default tseslint.config(
   // their fields is the exact thing a tick is for.
   {
     files: [
-      'src/shared/hooks/useConstellationNavigation.ts',
+      'src/shared/hooks/useSkyTravel.ts',
       'src/shared/hooks/useThresholdReveal.ts',
       'src/shared/hooks/useWebGLFirmament.ts',
       'src/shared/dom/skyProjector.ts',

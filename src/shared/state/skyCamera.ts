@@ -1,9 +1,13 @@
-// Shared signal for the constellation's live camera. The navigation
-// hook writes the camera + basis each tick (alongside the cursor
-// signal); the WebGL atmosphere reads it each render frame to cast
-// per-pixel view rays through the same pinhole the structural layer
-// projects through. One camera, two renderers — the seam that keeps
-// the painted sky and the addressable sky in the same world.
+// Shared signal for the constellation's live camera. The travel hook
+// writes the camera + basis each tick (alongside the cursor signal);
+// the WebGL atmosphere reads it each render frame to cast per-pixel
+// view rays through the same pinhole the structural layer projects
+// through. One camera, two renderers — the seam that keeps the
+// painted sky and the addressable sky in the same world.
+//
+// The signal also carries the visitor's travel as a world angular
+// velocity, so the atmosphere can streak its deep field along the
+// motion (the trench's velocity cue) without a second channel.
 //
 // Module-level mutable state for the same reason constellationCursor
 // is: exactly one sky camera at a time, both writers and readers on
@@ -13,13 +17,15 @@
 
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import { cameraBasis } from '@/shared/geometry/camera';
+import type { Vec3 } from '@/shared/geometry/sphere';
+import { REST_DISTANCE } from '@/shared/content/skyWalk';
 
-// Mirrors the navigation hook's initial orbital camera (cursor at
-// the north pole, ORBIT_DISTANCE 2.5) and layout.ts's STAGE_CAMERA,
-// so the atmosphere's first frame agrees with the prerendered SVG
-// before the navigation loop wakes.
+// Mirrors the travel hook's resting camera (standing at the pole,
+// REST_DISTANCE back) and layout.ts's STAGE_CAMERA, so the
+// atmosphere's first frame agrees with the prerendered SVG before the
+// travel loop wakes.
 const DEFAULT_CAMERA: Camera = {
-  position: { x: 0, y: 0, z: -2.5 },
+  position: { x: 0, y: 0, z: -REST_DISTANCE },
   target: { x: 0, y: 0, z: 0 },
   up: { x: 0, y: 1, z: 0 },
   fovY: Math.PI / 4,
@@ -27,17 +33,26 @@ const DEFAULT_CAMERA: Camera = {
   far: 10,
 };
 
+const AT_REST: Vec3 = { x: 0, y: 0, z: 0 };
+
 export interface SkyCameraState {
   readonly camera: Camera;
   readonly basis: CameraBasis;
+  /** The visitor's travel as a world angular velocity (rad/s). Zero
+   *  at rest; the deep field streaks along it while it is not. */
+  readonly travel: Vec3;
 }
 
-let current: SkyCameraState = { camera: DEFAULT_CAMERA, basis: cameraBasis(DEFAULT_CAMERA) };
+let current: SkyCameraState = {
+  camera: DEFAULT_CAMERA,
+  basis: cameraBasis(DEFAULT_CAMERA),
+  travel: AT_REST,
+};
 let version = 0;
 const listeners = new Set<() => void>();
 
-export function setSkyCamera(camera: Camera, basis: CameraBasis): void {
-  current = { camera, basis };
+export function setSkyCamera(camera: Camera, basis: CameraBasis, travel: Vec3 = AT_REST): void {
+  current = { camera, basis, travel };
   version += 1;
   for (const listener of listeners) listener();
 }
@@ -63,7 +78,7 @@ export function subscribeSkyCamera(listener: () => void): () => void {
 
 /** Test-only helper — restore the default camera between tests. */
 export function resetSkyCamera(): void {
-  current = { camera: DEFAULT_CAMERA, basis: cameraBasis(DEFAULT_CAMERA) };
+  current = { camera: DEFAULT_CAMERA, basis: cameraBasis(DEFAULT_CAMERA), travel: AT_REST };
   version = 0;
   listeners.clear();
 }

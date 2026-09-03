@@ -14,10 +14,10 @@
 //   2. The star halos — instanced sprites pinned to the structural
 //      stars' screen positions. By night they are luminous glows
 //      that twinkle (the held twinkle, returned as shader work the
-//      way tokens.css's archaeology asked); by day they are
-//      watercolor pigment bleeds with wobbled, edge-darkened rims.
-//      uNight crossfades the two ontologies through the theme
-//      transition.
+//      way tokens.css's archaeology asked); by day they are the
+//      chart's painted points — watercolor pigment with wobbled,
+//      edge-darkened rims. uNight crossfades the two ontologies
+//      through the sky's 1.8s dawn.
 //
 //   3. The motes — small drifting dust on shells just above the
 //      sphere, projected through the same camera so they parallax
@@ -117,6 +117,7 @@ export const DOME_FRAGMENT = /* glsl */ `
   uniform vec3 uGround;
   uniform vec3 uGlowColor;
   uniform float uGlowStrength;
+  uniform vec3 uInk;
   uniform vec3 uAccentWarm;
   uniform vec3 uAccentRose;
   uniform vec3 uAccentViolet;
@@ -130,30 +131,38 @@ export const DOME_FRAGMENT = /* glsl */ `
   uniform float uTanHalfFov;
   uniform vec2 uDomeShift;
   uniform float uSpin;
+  uniform vec3 uTravel;
   uniform vec3 uPool;
   uniform float uPoolRadius;
   uniform vec2 uDaystar;
 
   ${NOISE_LIB}
 
-  // Gaussian weight on wrapped angular distance — the room
-  // quadrants' chromatic neighborhoods.
+  // Gaussian weight on wrapped angular distance — the compass's
+  // chromatic arcs, one per facet pair.
   float sectorWeight(float phi, float center) {
     float d = abs(mod(phi - center + 3.14159265, 6.28318531) - 3.14159265);
-    return exp(-d * d * 2.1);
+    return exp(-d * d * 3.0);
   }
 
   // One layer of deep stars. Each cell holds at most one candidate,
   // confined away from cell borders so the field never pops while
   // the heavens turn.
-  float starLayer(vec2 uv, float sparsity, float time) {
+  float starLayer(vec2 uv, float sparsity, float time, vec2 streakDir, float stretch) {
     vec2 cell = floor(uv);
     vec2 f = fract(uv);
     float n = hash21(cell);
     vec2 starPos = vec2(hash21(cell + 17.0), hash21(cell + 43.0)) * 0.55 + 0.225;
-    float d = length(f - starPos);
+    // Travel streaks the dust along its own direction: the distance
+    // field is compressed along streakDir, so each point elongates
+    // into a short trail and dims as it stretches.
+    vec2 rel = f - starPos;
+    float along = dot(rel, streakDir);
+    vec2 perp = rel - streakDir * along;
+    float d = length(vec2(along * stretch, length(perp)));
     float tw = 0.7 + 0.3 * sin(time * (0.6 + n * 1.7) + n * 31.4);
-    return smoothstep(0.16, 0.0, d) * tw * step(sparsity, n) * (0.4 + 0.6 * fract(n * 9.7));
+    return smoothstep(0.16, 0.0, d) * tw * step(sparsity, n) * (0.4 + 0.6 * fract(n * 9.7))
+      * (0.7 + 0.3 * stretch);
   }
 
   void main() {
@@ -164,7 +173,7 @@ export const DOME_FRAGMENT = /* glsl */ `
 
     // Where this pixel's ray meets the latent sphere. The far
     // intersection, not the near: the orbital camera sits at
-    // -2.5·s looking through the origin, so the world the
+    // -REST_DISTANCE·s looking through the origin, so the world the
     // structural layer projects — the populated hemisphere around
     // the pole — is the far side. Rays that miss continue smoothly
     // from the closest-approach direction.
@@ -173,9 +182,11 @@ export const DOME_FRAGMENT = /* glsl */ `
     float hitT = -b + sqrt(max(disc, 0.0));
     vec3 P = normalize(uCamPos + ray * hitT);
 
-    // The heavens' slow turn, applied to the deep field at a
-    // reduced rate so the backdrop reads farther than the stars.
-    float sp = uSpin * 0.62;
+    // The heavens' turn rides the camera as a roll, so the world the
+    // ray meets already turns with the stars. The deep field is held
+    // back a little (-0.38 of the roll → it turns at 0.62× the stars'
+    // rate) so the backdrop reads farther than the stars.
+    float sp = -uSpin * 0.38;
     mat2 spin = mat2(cos(sp), -sin(sp), sin(sp), cos(sp));
     vec3 Pd = vec3(spin * P.xy, P.z);
 
@@ -185,6 +196,11 @@ export const DOME_FRAGMENT = /* glsl */ `
     // edge to the pole with no flat band reading as a rim.
     float zen = smoothstep(-0.42, 0.95, P.z);
     vec3 sky = mix(uHorizon, uZenith, zen);
+
+    // The dark hour's deep field — vein, nebula, dust — leaves early in
+    // the dawn and returns late in the dusk: the faint stars go first
+    // as the sky pales, the way they do.
+    float nightDeep = smoothstep(0.35, 0.85, uNight);
 
     // ── Fields: one low-frequency mass + one warped fbm. The mass
     // field shapes cloud banks and warps the wash; the wash carries
@@ -203,20 +219,32 @@ export const DOME_FRAGMENT = /* glsl */ `
     float vein = exp(-veinD * veinD * 24.0);
     float veinBody = vein * smoothstep(0.25, 0.85, washN);
     vec3 veinTone = uZenith * 2.2 + uAccentViolet * 0.30 + vec3(0.015, 0.022, 0.05);
-    sky += veinTone * veinBody * 0.42 * uNight;
+    sky += veinTone * veinBody * 0.42 * nightDeep;
 
     // A whisper of nebula beyond the vein.
-    sky += (uZenith * 1.4 + uAccentViolet * 0.12) * max(washN - 0.62, 0.0) * 0.45 * uNight;
+    sky += (uZenith * 1.4 + uAccentViolet * 0.12) * max(washN - 0.62, 0.0) * 0.45 * nightDeep;
 
     // ── Deep starfield — three depths of dust on a stereographic
     // chart, denser inside the vein the way real dust gathers.
     vec2 chart = Pd.xy / (1.0 + max(Pd.z, -0.85));
+    // The trench: while the visitor travels, the deep dust streaks
+    // along the sky's apparent motion — velocity read as depth, with
+    // no change to the camera's distance. uTravel is the world
+    // angular velocity; a sky-fixed point moves with its cross
+    // product, taken here into the chart's tangent space.
+    vec3 w = cross(uTravel, P);
+    vec3 wd = vec3(spin * w.xy, w.z);
+    float zc = 1.0 + max(Pd.z, -0.85);
+    vec2 chartDir = (wd.xy * zc - Pd.xy * wd.z) / (zc * zc);
+    float streakMag = clamp(length(uTravel) / 1.1, 0.0, 1.0) * uMotion;
+    vec2 streakDir = length(chartDir) > 1e-6 ? normalize(chartDir) : vec2(1.0, 0.0);
+    float stretch = 1.0 / (1.0 + 2.6 * streakMag);
     float starGain = (0.45 + 0.55 * zen) * (0.55 + 2.1 * vein * (0.35 + 0.65 * washN));
     float t = uTime * uMotion;
-    float deep = starLayer(chart * 96.0, 0.78, t) * 0.30
-      + starLayer(chart * 40.0, 0.90, t * 0.9 + 11.0) * 0.62
-      + starLayer(chart * 17.0, 0.955, t * 0.8 + 7.0) * 1.05;
-    sky += vec3(0.93, 0.94, 1.0) * deep * starGain * uNight;
+    float deep = starLayer(chart * 96.0, 0.78, t, streakDir, stretch) * 0.30
+      + starLayer(chart * 40.0, 0.90, t * 0.9 + 11.0, streakDir, stretch) * 0.62
+      + starLayer(chart * 17.0, 0.955, t * 0.8 + 7.0, streakDir, stretch) * 1.05;
+    sky += vec3(0.93, 0.94, 1.0) * deep * starGain * nightDeep;
 
     // ── The chart's gold rings — hairline circles of constant
     // angular distance from the polestar, breathing on the 30s
@@ -227,22 +255,46 @@ export const DOME_FRAGMENT = /* glsl */ `
     float ringDist = abs(fract(polar * 4.4 + 0.5) - 0.5) / 4.4;
     float ring = smoothstep(0.005, 0.0, ringDist);
     float ringMask = smoothstep(1.3, 0.2, polar) * smoothstep(0.05, 0.1, polar);
-    sky += uAccentGold * ring * ringMask * breath * (0.022 + 0.042 * uNight);
+    // The compass drawn: one meridian per facet bearing, every 45° of
+    // azimuth (CONSTELLATION_WALK.md §"The Compass"), arc-length width
+    // so they don't thicken toward the pole, faded where they converge
+    // on it and beyond the drawn cap. Each carries a breath of its
+    // facet pair's hue over the chart's gold — craft and body warm to
+    // the east, beauty and language rose to the north, consciousness
+    // and becoming violet to the west, leadership and relation gold to
+    // the south — so the sky says why each star is where it is. By day
+    // they are drawn in ink (below).
+    float phi = atan(P.y, P.x);
+    float meridianStep = 0.7853982;
+    float phiN = mod(phi + 6.28318531, 6.28318531);
+    float sector = mod(floor(phiN / meridianStep + 0.5), 8.0);
+    float hueSlot = floor(sector / 2.0 + 0.01);
+    vec3 facetHue = hueSlot < 0.5 ? uAccentWarm
+      : hueSlot < 1.5 ? uAccentRose
+      : hueSlot < 2.5 ? uAccentViolet
+      : uAccentGold;
+    float meridianGap = abs(fract(phi / meridianStep + 0.5) - 0.5) * meridianStep * sin(polar);
+    float meridian = smoothstep(0.0035, 0.0, meridianGap)
+      * smoothstep(0.07, 0.2, polar) * smoothstep(1.35, 1.05, polar);
+    sky += mix(uGlowColor, uHorizon, 0.5) * ring * ringMask * (0.014 + 0.02 * uNight) * breath
+      + mix(uGlowColor, facetHue, 0.55) * meridian * 0.032 * uNight * breath;
     // The polestar's own gathered warmth, breathing with the rings.
     sky += mix(uGlowColor, uAccentGold, 0.5) * exp(-polar * polar * 7.0) * breath
       * (0.02 + 0.035 * uNight);
 
-    // Room atmospheres — Studio NW warm, Garden SW rose,
-    // Study SE violet, Salon NE gold. Felt near the rim of the
-    // populated hemisphere, absent at the pole and below the
-    // horizon; atmospheres of the sky, not borders within it.
-    float phi = atan(P.y, P.x);
+    // The compass in color — each facet pair's arc of the dome carries
+    // its hue as a chromatic atmosphere: warm east (craft, body), rose
+    // north (beauty, language), violet west (consciousness, becoming),
+    // gold south (leadership, relation). Felt near the rim of the
+    // populated hemisphere, absent at the pole; atmospheres of the
+    // sky, not borders within it. A star sits inside the weather of
+    // its own facets, so the placement can be read from the air.
     float roomBand = dot(P.xy, P.xy) * smoothstep(-0.45, 0.1, P.z);
-    vec3 roomTint = uAccentWarm * sectorWeight(phi, 3.9270)
-      + uAccentRose * sectorWeight(phi, 2.3562)
-      + uAccentViolet * sectorWeight(phi, 0.7854)
-      + uAccentGold * sectorWeight(phi, 5.4978);
-    sky = mix(sky, roomTint, roomBand * (0.075 - 0.035 * uNight));
+    vec3 roomTint = uAccentWarm * sectorWeight(phi, 0.3927)
+      + uAccentRose * sectorWeight(phi, 1.9635)
+      + uAccentViolet * sectorWeight(phi, 3.5343)
+      + uAccentGold * sectorWeight(phi, 5.1051);
+    sky = mix(sky, roomTint, roomBand * (0.12 - 0.03 * uNight));
 
     // ── The horizon — a luminous gather where the sky meets the
     // ground, hugging the frame's bottom where the Foyer waits
@@ -257,53 +309,55 @@ export const DOME_FRAGMENT = /* glsl */ `
     float weather = smoothstep(0.5, 0.85, massN) * nearHorizon;
     sky += glowTone * horizonGlow * (0.07 + 0.16 * uNight) * (1.0 - weather * 0.6);
     vec3 weatherTone = mix(uHorizon * 0.97, mix(uZenith, uHorizon, 0.45) * 0.85, uNight);
-    sky = mix(sky, weatherTone, weather * (0.12 + 0.22 * uNight) * (0.3 + 0.7 * bw));
+    sky = mix(sky, weatherTone, weather * (0.04 + 0.30 * uNight) * (0.3 + 0.7 * bw));
 
     // Umber warmth breathing up from the horizon — quieter now that
     // the luminous gather carries most of the hour's warmth.
     float horizonBand = smoothstep(-0.38, -0.02, P.z) * (1.0 - smoothstep(0.02, 0.38, P.z));
     sky = mix(sky, uAccentWarm, horizonBand * 0.035);
 
-    // ── Day: the reflecting pool. The firmament read as still water —
-    // umber, not blue; calm, faintly refractive. A slow ripple bends the
-    // light the surface holds; the wash pools with more body than a dry
-    // sheet; the umber bed gathers through the near water. Night you look
-    // up at the firmament; day you look down into the pool that holds it.
-    // CONSTELLATION.md §"Daylight: the reflecting pool."
+    // ── Day: the chart. By night the visitor stands under the
+    // firmament; by day they sit with its drawing — the same sky as
+    // ink and pigment on the site's paper. No weather, no water: a
+    // sheet lit from the daystar's side, the polar rings and meridians
+    // of a celestial chart drawn faintly in the page's ink, the room
+    // tints as regional watercolor washes near the rim. Still, the way
+    // a page is still. CONSTELLATION.md §"Daylight: the chart."
     float day = 1.0 - uNight;
-    // Daylight as a clear reflecting pool — a *smooth* calm surface, not
-    // the billowing noise that read as smoke (both the warm and cool
-    // mottled versions read as gas, not water). Cool, still water at the
-    // edge of morning, holding the firmament on a glassy surface.
-    vec3 waterTone = mix(sky, vec3(0.66, 0.72, 0.76), 0.5);
-    sky = mix(sky, waterTone, day);
-    // Depth toward the near water (bottom of the view) — the pool's body.
-    vec3 poolDeep = mix(sky, vec3(0.36, 0.44, 0.49), 0.55);
-    float bedDepth = smoothstep(0.45, 1.0, frag.y / uResolution.y);
-    sky = mix(sky, poolDeep, bedDepth * 0.4 * day);
-    // Still-water ripples — clean horizontal bands of light by altitude,
-    // drifting slowly, gently warped so they read as a calm surface
-    // rather than a venetian blind. Smooth and lined, never cloudy: this
-    // is what reads as water rather than smoke.
-    float rt = uTime * 0.22 * uMotion;
-    float warp = fbm(vec3(P.xy * 2.5, uTime * 0.03 * uMotion)) * 0.14;
-    float bands = sin((P.z + warp) * 52.0 - rt) * 0.5 + 0.5;
-    float bands2 = sin((P.z + warp) * 21.0 + rt * 0.6 + 1.7) * 0.5 + 0.5;
-    float ripples = bands * 0.62 + bands2 * 0.38;
-    sky *= 1.0 + (ripples - 0.5) * 0.14 * day;
+    // Window light on the paper — screen-space, because the sheet is
+    // the desk, not the sky: brightest toward the daystar, settling to
+    // the ground tone at the foot of the page. It drifts by a hair
+    // over minutes — the afternoon moving across the table.
+    vec2 lightAt = uDaystar
+      + vec2(sin(uTime * 0.011 * uMotion), cos(uTime * 0.008 * uMotion)) * uFitScale * 18.0;
+    float ld = distance(frag, lightAt) / max(uFitScale * 980.0, 1.0);
+    float pageLight = exp(-ld * ld * 1.4);
+    vec3 paper = mix(uHorizon, uZenith, 0.35 + 0.65 * pageLight);
+    sky = mix(sky, paper, day * 0.85);
+    // The room washes come back over the paper — the chart's regional
+    // tints, watercolor near the rim.
+    sky = mix(sky, roomTint, roomBand * 0.11 * day);
+    // The chart's construction lines, drawn in the page's ink by day:
+    // the polar rings as circles of constant altitude, the meridians
+    // computed above.
+    float chartLines = ring * ringMask * 0.9 + meridian * 0.6;
+    sky = mix(sky, uInk, chartLines * 0.2 * day);
 
-    // The daystar's gathered glow.
+    // The daystar's gathered glow — by day a warmth on the page around
+    // the gilded sun; by night the moon's silver-rose gathering.
     float gd = distance(frag, uDaystar) / max(uFitScale * 330.0, 1.0);
     sky += uGlowColor * (uGlowStrength * (1.6 + 1.2 * uNight)) * exp(-gd * gd * 1.7);
 
-    // By day, the daystar reflects on the surface — a glade falling
-    // toward the viewer, broken into horizontal glints by the ripple
-    // bands: a sun on water, not a flame.
-    float gx = (frag.x - uDaystar.x) / max(uFitScale * 80.0, 1.0);
-    float gy = (frag.y - uDaystar.y) / max(uFitScale * 520.0, 1.0);
-    float gladeBelow = smoothstep(0.0, 50.0, frag.y - uDaystar.y);
-    float glade = exp(-gx * gx) * exp(-gy * gy) * gladeBelow * (0.35 + 0.65 * bands * bands);
-    sky += vec3(0.95, 0.97, 1.0) * glade * (uGlowStrength * 1.6 + 0.2) * day;
+    // Dawn and dusk. The hour changes over a longer arc than the room's
+    // dimming, and the way between paper and night is not the grey a
+    // straight blend would give: the sky passes through a dusk that
+    // belongs to neither hour — violet overhead, rose-gold toward the
+    // foot of the frame, a flush along the horizon — fullest halfway,
+    // gone at both ends.
+    float dawn = 4.0 * uNight * (1.0 - uNight);
+    vec3 duskTint = mix(uAccentViolet, mix(uAccentRose, uAccentGold, 0.5), bw);
+    sky = mix(sky, duskTint, dawn * 0.32);
+    sky += mix(uAccentRose, uAccentGold, 0.45) * dawn * 0.22 * hb * bw;
 
     // The pool of attention — brightens and saturates where the
     // visitor's cursor lives on the sphere.
@@ -313,6 +367,22 @@ export const DOME_FRAGMENT = /* glsl */ `
     sky += poolTone * pool * (0.05 + 0.06 * uNight);
     float lum = dot(sky, vec3(0.299, 0.587, 0.114));
     sky = mix(vec3(lum), sky, 1.0 + pool * 0.22);
+
+    // ── The oculus. Where a pixel's ray only grazes the sphere (disc → 0)
+    // the sky ends and the room's ceiling begins: the page itself, dark
+    // umber paper by night and the chart's own sheet by day. The edge is
+    // luminous by contrast — the sky gathers a little light toward its
+    // limb, the way a real sky brightens toward the horizon — not by a
+    // drawn ring. By day the plate's edge is a single line of ink.
+    float inside = smoothstep(0.0, 0.03, disc);
+    float limbGather = smoothstep(0.32, 0.0, disc) * inside;
+    vec3 pageNight = mix(uGround, uHorizon, 0.18) * 0.92;
+    vec3 page = mix(paper, pageNight, uNight);
+    sky += mix(uGlowColor, uHorizon, 0.35) * limbGather * (0.05 + 0.13 * uNight);
+    float rimLine = exp(-abs(disc) * 44.0);
+    sky = mix(sky, page, 1.0 - inside);
+    sky += uGlowColor * rimLine * 0.07 * uNight;
+    sky = mix(sky, uInk, rimLine * 0.3 * day);
 
     // Paper grain — static, like the sheet itself. Scaled by the
     // local luminance so the dark hour's grain reads as stardust
@@ -328,6 +398,28 @@ export const DOME_FRAGMENT = /* glsl */ `
     float bottom = smoothstep(0.72, 1.0, frag.y / uResolution.y);
     sky = mix(sky, uGround, bottom * 0.35);
 
+    // ── The ground. The visitor stands somewhere. A low ridge of the
+    // Foyer's umber earth runs along the foot of the frame — screen-
+    // anchored, because it is where you stand, not part of the heavens
+    // that turn above it — with the horizon's warmth gathering just
+    // over its line. By night a near-solid silhouette under a warm
+    // gather; by day a pale watercolor band at the foot of the page,
+    // the landscape vignette an old atlas keeps at its margin. A place,
+    // not a void. Two sines and one smooth value-noise shape the
+    // ridge — no simplex on this path.
+    float gx = frag.x / uResolution.x;
+    float ridgeCell = floor(gx * 9.0);
+    float ridgeFrac = smoothstep(0.0, 1.0, fract(gx * 9.0));
+    float ridgeVN = mix(hash21(vec2(ridgeCell, 3.7)), hash21(vec2(ridgeCell + 1.0, 3.7)), ridgeFrac);
+    float ridgeN = sin(gx * 8.3 + 0.7) * 0.45 + sin(gx * 21.9 + 2.3) * 0.2 + (ridgeVN - 0.5) * 0.7;
+    float ridgeH = 0.062 + 0.028 * ridgeN;
+    float yUp = 1.0 - frag.y / uResolution.y;
+    float ground = smoothstep(ridgeH + 0.014, ridgeH - 0.004, yUp);
+    float gather = smoothstep(ridgeH + 0.2, ridgeH, yUp) * (1.0 - ground);
+    sky += glowTone * gather * (0.06 + 0.16 * uNight);
+    vec3 groundTone = mix(uGround, uAccentWarm, 0.06 + 0.1 * day);
+    sky = mix(sky, groundTone, ground * (0.55 + 0.4 * uNight));
+
     gl_FragColor = vec4(sky, 1.0);
   }
 `;
@@ -340,6 +432,7 @@ const SPRITE_VERTEX_BODY = /* glsl */ `
   attribute float aSeed;
   attribute float aActive;
   attribute float aSize;
+  attribute float aPresence;
   uniform vec2 uResolution;
   uniform float uTime;
   uniform float uMotion;
@@ -353,9 +446,11 @@ const SPRITE_VERTEX_BODY = /* glsl */ `
   varying float vTwinkle;
   varying float vActive;
   varying float vSeed;
+  varying float vPresence;
   void main() {
     vQuad = position;
     vActive = aActive;
+    vPresence = aPresence;
     vSeed = aSeed;
     // 4.5s cycle — the same beat the structural twinkle kept.
     vTwinkle = sin((uTime + aPhase) * 1.39626 + aSeed * 6.28318) * uMotion;
@@ -382,6 +477,7 @@ export const GLOW_FRAGMENT = /* glsl */ `
   varying float vTwinkle;
   varying float vActive;
   varying float vSeed;
+  varying float vPresence;
   void main() {
     float d = length(vQuad);
     // The window takes every profile to zero before the quad edge —
@@ -398,7 +494,8 @@ export const GLOW_FRAGMENT = /* glsl */ `
       * (1.0 + 0.22 * vTwinkle);
     vec3 col = mix(vColor, vec3(1.0, 0.98, 0.94), core * 0.5);
     col = mix(col, uAccentGold, vActive * 0.22);
-    gl_FragColor = vec4(col * lumin * uNight * (0.8 + 0.5 * vActive), 0.0);
+    // Absent stars (the contextual cap) recede to a tenth of their light.
+    gl_FragColor = vec4(col * lumin * uNight * (0.8 + 0.5 * vActive) * mix(0.10, 1.0, vPresence), 0.0);
   }
 `;
 
@@ -413,6 +510,7 @@ export const PIGMENT_FRAGMENT = /* glsl */ `
   varying float vTwinkle;
   varying float vActive;
   varying float vSeed;
+  varying float vPresence;
   float hash21(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
     p += dot(p, p + 45.32);
@@ -427,8 +525,9 @@ export const PIGMENT_FRAGMENT = /* glsl */ `
     float body = smoothstep(0.9, 0.18, r);
     float rimDark = smoothstep(0.45, 0.82, r) * smoothstep(1.0, 0.82, r);
     float granulation = 0.7 + 0.3 * hash21(vQuad * 19.0 + vSeed * 87.0);
-    float a = (body * 0.22 + rimDark * 0.17) * granulation
-      * (1.0 + 0.6 * vActive) * (1.0 + 0.08 * vTwinkle) * (1.0 - uNight);
+    float a = (body * 0.28 + rimDark * 0.2) * granulation
+      * (1.0 + 0.6 * vActive) * (1.0 + 0.08 * vTwinkle) * (1.0 - uNight)
+      * mix(0.15, 1.0, vPresence);
     gl_FragColor = vec4(vColor * a, a);
   }
 `;

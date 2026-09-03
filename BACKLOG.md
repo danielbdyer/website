@@ -129,8 +129,48 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ### Visible graph surface
 
-**State:** Substantially shipped at `/sky`. The structural future state in pure SVG/CSS is real (layered firmament with paper-grain noise, watercolor-filtered halos, vespers thread bloom, slow rotation, cursor parallax, the daystar, the polestar, the carpet rolling out on first paint), and the atmospheric WebGL layer has since shipped in its full form — a camera-aware firmament (`src/shared/webgl/`) that paints the complete sky when WebGL is available: per-pixel view rays through the live navigation camera, domain-warped watercolor weather, a deep micro-starfield, the room quadrants' chromatic atmospheres, shader-based per-star halos pixel-registered with the structural anchors (pigment by day, twinkling glow by night), and drifting motes with real depth. The SVG firmament remains the complete fallback behind every gate. `CONSTELLATION.md` §"What Shipped (First Form)" and `CONSTELLATION_HORIZON.md` Phases 0–4, 7 enumerate every shipped element. *What remains held*: the strata layer, the time slider integration, audio in the Salon's region, per-room sub-skies, the overscroll-from-Foyer reveal, the daystar's cross-page morph.
+**State:** Substantially shipped at `/sky`. The structural future state in pure SVG/CSS is real (layered firmament with paper-grain noise, watercolor-filtered halos, vespers thread bloom, slow rotation, cursor parallax, the daystar, the polestar, the carpet rolling out on first paint), and the atmospheric WebGL layer has since shipped in its full form — a camera-aware firmament (`src/shared/webgl/`) that paints the complete sky when WebGL is available: per-pixel view rays through the live navigation camera, domain-warped watercolor weather, a deep micro-starfield, the room quadrants' chromatic atmospheres, shader-based per-star halos pixel-registered with the structural anchors (pigment by day, twinkling glow by night), and drifting motes with real depth. The SVG firmament remains the complete fallback behind every gate. `CONSTELLATION.md` §"What Shipped (First Form)" and `CONSTELLATION_HORIZON.md` Phases 0–4, 7 enumerate every shipped element. Since then (2026-09-01): the drag became a grab, the 600s turn of the heavens moved into the camera on a wall-clock phase, and the daylight mode became the chart — the sky drawn on paper — with a 1.8s dusk between the hours (`CONSTELLATION.md` §"What Shipped"). Then the walk ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md), 2026-09-01): stars placed by the compass of their facets and spread apart where they would coincide, figures as per-facet spanning trees, destination travel in place of the drag, the whisper, threads as paths, names within a stroke of here, and the walk's session memory. *What remains held*: the strata layer, the time slider integration, audio in the Salon's region, per-room sub-skies.
 **Trigger for the next moves:** each named with its own trigger in `CONSTELLATION_HORIZON.md`; a Salon work that asks for sound remains the audio trigger.
+
+### Framing the focused star when it sits at the dome's edge
+
+**Why:** The work ↔ star jump (`CONSTELLATION_PARALLEL.md`) opens the sky centered on the work's star. When that star sits near the edge of the populated cap, centering it pushes most of the constellation off one side of the frame and leaves the other half empty sky. The star is where it should be; the framing around it could be more generous — the camera aimed a little toward the polestar so the star lands off-center among its relations, or the cap's edge stars given a wider margin.
+**Trigger:** A second surface that orients the sky (the room parallel, the facet parallel) — the orientation function they share is the right place to decide framing once, rather than special-casing the work jump.
+
+### Placement override in frontmatter
+
+**Why:** Stars are placed by the compass — the centroid of a work's facet anchors, spread apart where two would coincide ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"The Compass"). A work Danny wants somewhere specific has no way to say so.
+**Trigger:** The first work whose compass place feels wrong to Danny's eye. An optional `sky: { azimuth, radius }` in frontmatter is the smallest form.
+
+### The return flight on refresh
+
+**Why:** The session remembers where you stood (`hereStorage.ts`). Prerendered markup cannot know it, so the sky opens at the pole and flies you back — a one-to-two-second crossing on every refresh or return from a work page. It reads as the sky returning you; it may read as delay.
+**Trigger:** Danny's felt sense after living with it. The alternative is an instant re-place before first paint (a hydration-safe read), which trades the arrival for stillness.
+
+### The scrub's feel
+
+**Why:** The drag returned as a scrub along a thread ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"): a press on the open sky picks the thread that leaves here in the hand's direction, and release past the midpoint arrives. The press-to-scrub threshold, the commit fraction, and how the hand's direction chooses among threads are first guesses.
+**Trigger:** Danny's hand on it across a mouse, a trackpad, and a thumb.
+
+### The oculus's fit and the streak
+
+**Why:** The resting camera fits the whole sphere — the oculus — to the frame's shorter side at 92% (about 3.85 radii on a landscape screen, farther on a phone), and travel reads its velocity from the deep field's streak rather than a dolly. The fill, the streak's strength, and the glide's duration range are tuned in a few viewports. Single-facet works also gather along their facet's bearing in a near-straight string; a wider azimuth jitter for them may read more like a sky.
+**Trigger:** Danny's eye across a phone, a laptop, and a wide screen. The constants are `restDistanceFor` and `REST_DISTANCE` (`skyWalk.ts`), the streak in `atmosphereShaders.ts`, the durations in `useSkyTravel.ts`, and the jitter in `constellation.ts`.
+
+### The presence cap
+
+**Why:** From a star, at most `PRESENT_CAP` (24) stars are present, two of them strangers; the rest recede. The cap sits above the corpus today, so the reveal has not yet begun; as the corpus grows past it, the cap decides how much of the sky a visitor sees at once, and whether the reveal feels like a tree unfolding or like things going missing.
+**Trigger:** The corpus passing thirty works, or Danny's felt sense sooner. `PRESENT_CAP` and `STRANGER_COUNT` in `presence.ts`.
+
+### Embeddings behind the concordance
+
+**Why:** The concordance is a TF-IDF cosine over each work's prose — honest and free, but shallow. Danny has been playing with qmd for embeddings; a build-time step that reads an embeddings manifest would make "in concordance" mean something closer to what he means.
+**Trigger:** A manifest that can be produced deterministically at build time without a network call. `buildConcordance` (`concordance.ts`) is the seam; nothing downstream changes.
+
+### Ghosts — agent-proposed stars
+
+**Why:** The generative horizon ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"The Generative Horizon"): stars proposed in conversation, drawn faintly until blessed. Danny's decision: author-only until he blesses them into public view.
+**Trigger:** The first conversation that produces a work worth placing before it is written. The data shape — a proposed state on a node, an author gate — precedes any UI.
 
 ### Time-slider drawer
 
