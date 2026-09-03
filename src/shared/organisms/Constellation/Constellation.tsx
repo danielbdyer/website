@@ -69,9 +69,8 @@ export function Constellation({
     edges: navigableEdges(edges, positioned),
     viewboxSize: VIEWBOX,
     fit: fullViewport ? 'cover' : 'contain',
-    here: walk.here,
+    walk,
     namedKeys: namedOrder(graph, walk.here),
-    onArrive: walk.arrive,
     cameraRef,
     glyphRef,
   });
@@ -91,7 +90,7 @@ export function Constellation({
       </h2>
       <WebGLFirmament
         graph={graph}
-        activeKey={hoverKey ?? hereKey}
+        activeKey={hoverKey ?? walk.intent ?? hereKey}
         present={world.present}
         fullViewport={fullViewport}
       />

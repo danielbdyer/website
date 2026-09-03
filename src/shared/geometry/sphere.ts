@@ -256,3 +256,26 @@ function clamp(value: number, min: number, max: number): number {
   if (value > max) return max;
   return value;
 }
+
+/** Walk from `anchor` along the tangent `u` for |u| radians — the
+ *  exponential map. A zero tangent returns the anchor. */
+export function expMap(anchor: UnitVector3, u: Vec3): UnitVector3 {
+  const m = Math.hypot(u.x, u.y, u.z);
+  if (m < 1e-12) return anchor;
+  const c = Math.cos(m);
+  const s = Math.sin(m) / m;
+  return unitVector(anchor.x * c + u.x * s, anchor.y * c + u.y * s, anchor.z * c + u.z * s);
+}
+
+/** The tangent at `anchor` that expMap would walk to reach `p`: its
+ *  direction toward p, its length the geodesic distance. Zero when
+ *  the points coincide; the antipode has no unique answer and gets the
+ *  x axis. */
+export function logMap(anchor: UnitVector3, p: UnitVector3): Vec3 {
+  const angle = geodesicDistance(anchor, p);
+  if (angle < 1e-9) return { x: 0, y: 0, z: 0 };
+  const t = tangentTowards(anchor, p);
+  const m = Math.hypot(t.x, t.y, t.z);
+  if (m < 1e-12) return { x: angle, y: 0, z: 0 };
+  return { x: (t.x / m) * angle, y: (t.y / m) * angle, z: (t.z / m) * angle };
+}
