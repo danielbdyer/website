@@ -764,6 +764,9 @@ body::before {
 
 .sky-arrival:has(.work-overlay) .constellation {
   opacity: 0.3;
+  /* The sky owns the touch: without this the browser starts a scroll
+     after a few pixels and cancels the pointer, and no swipe lands. */
+  touch-action: none;
 }
 
 .sky-arrival:has(.work-overlay) .webgl-firmament {
