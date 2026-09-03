@@ -106,12 +106,11 @@ The eight facets take the eight points of the polestar. Adjacent points share a 
 | **Click a bearing** | Travel along that facet to its nearest star |
 | **Arrow keys** | Travel to the neighbor in that screen direction |
 | **Tab** | Focus moves through the stars in stable order; Enter travels or opens |
-| **Press on the open sky and drag** | A scrub along a track: the hand's direction picks the thread that leaves here that way (or the thread under the hand), and the hand carries the visitor along it. Release past the midpoint arrives; before it, the sky returns you |
-| **Drag a thread** | The same scrub, along that thread |
+| **Press on the sky and drag** | The sky follows the hand. Along a thread that leaves here it moves freely, one to one, and the thread lights; in any other direction it gives like a rubber band, less the further it is pulled. Release past the midpoint of a thread arrives at its star; otherwise the sky springs back to where you stood, with a little weight |
 | **Click the whisper's concordant line** | Travel to the work in concordance with this one |
 | **Scroll down at rest, ArrowDown, Escape, the return link** | Look down: the ground returns |
 
-**Drag is a scrub, never a throw.** The earlier physics drag was the thing that made the sky feel like a machine, and free flight has no place in a walk. What returned instead is a controlled drag on a permissible track: the visitor can take hold of the sky, but only along a thread that leaves where they stand, and the sky never carries momentum they did not give it. It works at every viewport and every corpus size because the track is the graph's, not the screen's. The mouse-look peer stays at a degree or two of parallax so the space breathes with attention.
+**The drag has two regimes in one gesture.** Along an illuminated line — a thread that leaves where you stand — the sky follows the finger without friction: pull the far star toward the center and it comes, and past the midpoint it is yours. In every other direction the sky *gives*: a rubber band, moving almost with the hand at first and less and less as it is pulled, never far, so the tension itself says *nothing leads this way*. Let go and it springs home to the star you stood at, carrying the hand's parting velocity, a little under-damped so the return has weight and one small breath of overshoot. The earlier physics drag threw the sky and let it coast; this one never carries momentum the hand did not give it, and the tracks are the graph's, so it works at every viewport and every corpus size. The sky owns the touch (`touch-action: none`) so a phone's swipe reaches it instead of scrolling the page. The mouse-look peer stays at a degree or two of lean so the space breathes with attention.
 
 ---
 
