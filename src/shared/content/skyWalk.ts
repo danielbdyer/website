@@ -211,6 +211,23 @@ export function namedRanks(graph: ConstellationGraph, here: Place): ReadonlyMap<
   return new Map([...far, ...near, ...self]);
 }
 
+/** Every place one step from here: the neighbors along the figures,
+ *  each with its thread, and the ends of the bearings — the tracks a
+ *  drag can follow. Deduplicated; neighbors first. */
+export interface Step {
+  readonly key: string;
+  readonly edgeId: string | null;
+}
+
+export function stepsFrom(graph: ConstellationGraph, here: Place): readonly Step[] {
+  const neighbors = neighborsOf(graph, here).map((n) => ({ key: n.key, edgeId: n.edgeId }));
+  const seen = new Set(neighbors.map((n) => n.key));
+  const ends = bearingsOf(graph, here).flatMap((b) =>
+    b.to && !seen.has(b.to) ? [{ key: b.to, edgeId: b.edgeId }] : [],
+  );
+  return [...neighbors, ...ends];
+}
+
 /** The star nearest to a screen direction from `here`, for the arrow
  *  keys: among the neighbors and the stars the bearings lead to (so
  *  the pole, which has no neighbors, still answers), the one whose
