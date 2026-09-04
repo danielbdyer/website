@@ -282,6 +282,47 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ---
 
+## The Cathedral
+
+Held phases of `CATHEDRALS.md`, the founding document of the workspace the house shares with Danny's knowledge-graph engine. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
+
+### The sky reads a slice
+
+**Why:** The sky's graph layer builds from works directly and draws only the emergent figures; the declared wikilinks between works are not drawn, and origin is not named. Consuming a `Slice` (`@dby/slice`) gives the sky the words: declared threads solid, discovered dotted, emergent hairline, predicate spoken by the whisper, ghosts drawn from `pending`.
+**Trigger:** Danny blesses `CATHEDRALS.md`.
+
+### The engine enters the workspace
+
+**Why:** `cathedrals` becomes `packages/hg` by `git subtree add`, history intact; `hg slice --json` emits a slice; the vault's claims render as a second sky with its pending proposals as ghosts.
+**Trigger:** Danny's `cathedrals` repository is reachable from this one.
+
+### The third repository
+
+**Why:** Danny has a third repository that deepens the same shape. A place is kept.
+**Trigger:** Danny says now.
+
+### The site moves under `apps/`
+
+**Why:** Today the site lives at the root and the workspace grows by packages. When something else needs the root, the site moves to `apps/site`, the Workers Builds root directory follows, and the movements of `CATHEDRALS.md` become the root `CLAUDE.md`.
+**Trigger:** A second app, or the engine's Worker, needs the root.
+
+### Blessing from the sky
+
+**Why:** A web verb for blessing is request-time behavior in the page — the second of `RENDERING_STRATEGY.md`'s two triggers for a runtime — scoped to one route. Until then blessing happens in the terminal and the sky shows the ghost before and the star after.
+**Trigger:** Danny wants to bless from a phone, or a second author appears.
+
+### The dotting collision
+
+**Why:** The sky dots the second facet of each hue pair to keep adjacent facets apart; the contract wants dotting for origin. One yields.
+**Trigger:** Phase 1, with the item above.
+
+### One frontmatter for works and claims
+
+**Why:** A work has title, date, facets, type; a vault claim has type, status, origin, confidence, evidence, constellations. They rhyme and do not match; the engine's markdown reader wants one shape.
+**Trigger:** Phase 2's markdown reader.
+
+---
+
 ## Code Quality
 
 ### Frontmatter validation in the pre-commit hook

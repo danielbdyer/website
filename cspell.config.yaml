@@ -58,6 +58,10 @@ words:
   - garden
   - study
   - spanda
+  # The engine's vocabulary, carried across the wall (CATHEDRALS.md)
+  - midground
+  - privated
+  - recomputable
   - umber
   - eyebrow
   - workpage
