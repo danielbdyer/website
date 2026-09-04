@@ -1,6 +1,6 @@
 import { Link, Outlet, createFileRoute, useMatch, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
-import { Constellation } from '@dby/sky';
+import { Constellation } from '@dbd/sky';
 import { useReturnGesture } from '@/shared/hooks/useReturnGesture';
 import { useThresholdReveal } from '@/shared/hooks/useThresholdReveal';
 import { getConstellationGraph } from '@/shared/content/constellation';

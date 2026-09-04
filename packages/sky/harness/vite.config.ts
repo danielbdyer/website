@@ -28,9 +28,9 @@ export default defineConfig({
   resolve: {
     alias: {
       // The package surface — the harness consumes Constellation
-      // through `@dby/sky` so it goes through the same boundary
+      // through `@dbd/sky` so it goes through the same boundary
       // the host application uses.
-      '@dby/sky': path.resolve(monorepoRoot, 'packages/sky/src/index.ts'),
+      '@dbd/sky': path.resolve(monorepoRoot, 'packages/sky/src/index.ts'),
       // Internal alias the shim's transitive imports still rely on
       // until Phase 2 physically relocates the modules into the
       // package. Once those moves land, this alias retires.

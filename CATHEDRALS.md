@@ -12,6 +12,8 @@ A cathedral is one building made of rooms that do not know they are separate. Th
 
 Danny built two things without a wall between them. The house is this repository: five rooms, eight facets, a sky that is walked. The engine is `cathedrals`: a knowledge graph whose constitution is one sentence long — *agents propose; the author blesses.* The house grew from a sentence about containers: he builds rooms where others become more themselves. The engine grew from three operations its manifesto calls the knife, the thread, and the vessel — differentiation, relation, persistence. Read side by side, they are the same three. A container is a differentiation that holds. A facet is a thread. The enough is a persistence that knows when to stop.
 
+Both grew from a third, older repository: the Living Graph of December 2025, which Danny calls Dyerverse. The engine kept its constitution. The house kept its design brief. The sky kept its constellation and set down its canvas. Phase 3 brings it in as lineage.
+
 This document does not merge them. It names the ground they stand on, draws the wall they share, cuts one door through it, and says which builder keeps which keys.
 
 ---
@@ -110,9 +112,9 @@ cathedrals/                   the workspace: the site's repository, renamed when
 ├── apps/
 │   └── site/                 danielbdyer.com, the rooms and the sky (at the root until Phase 4)
 ├── packages/
-│   ├── slice/                @dby/slice: the contract that crosses the wall (types, schema, invariants)
-│   ├── sky/                  @dby/sky: the surface (a shim today; the pure core moves in with a second consumer)
-│   └── hg/                   @dby/hg: the engine, entered by subtree with its history (Phase 2)
+│   ├── slice/                @dbd/slice: the contract that crosses the wall (types, schema, invariants)
+│   ├── sky/                  @dbd/sky: the surface (a shim today; the pure core moves in with a second consumer)
+│   └── hg/                   @dbd/hg: the engine, entered by subtree with its history (Phase 2)
 ├── vault/                    the claim vault: markdown in git, imported by no code, read through an adapter
 ├── .claude/skills/           the house's five outcomes; the vault's sixteen verbs (held: fold them into one outcome)
 └── pnpm-workspace.yaml
@@ -122,9 +124,9 @@ cathedrals/                   the workspace: the site's repository, renamed when
 
 ```mermaid
 flowchart LR
-  site["apps/site — the rooms and the sky"] --> slice["@dby/slice — the contract"]
-  sky["@dby/sky — the surface"] --> slice
-  hg["@dby/hg — the engine"] --> slice
+  site["apps/site — the rooms and the sky"] --> slice["@dbd/slice — the contract"]
+  sky["@dbd/sky — the surface"] --> slice
+  hg["@dbd/hg — the engine"] --> slice
   hg -. reads through an adapter .-> vault["vault/ — claims in git"]
   site -. reads through an adapter .-> content["src/content — works in git"]
 ```
@@ -135,7 +137,7 @@ flowchart LR
 
 ### Dependency injection, without a container
 
-Both codebases already practice inversion: the engine through Effect's `Context.Tag` and layers; the house through the async barrel, whose implementation is synchronous today and whose signature is the seam. The workspace adds no container. A port is a TypeScript interface in `@dby/slice`; an adapter implements it at an edge; the top of each program wires them.
+Both codebases already practice inversion: the engine through Effect's `Context.Tag` and layers; the house through the async barrel, whose implementation is synchronous today and whose signature is the seam. The workspace adds no container. A port is a TypeScript interface in `@dbd/slice`; an adapter implements it at an edge; the top of each program wires them.
 
 | Port | Adapters | Composition root |
 |---|---|---|
@@ -148,7 +150,7 @@ Inside the engine, Effect layers keep doing what they do. The contract is the on
 
 ## The Contract: The Slice
 
-What crosses the wall is a **slice** — the engine's own word for a bounded view of the graph loaded for one turn (`graph.slice.load` in its protocol). A slice is plain JSON with a zod schema of record in `@dby/slice`. It carries:
+What crosses the wall is a **slice** — the engine's own word for a bounded view of the graph loaded for one turn (`graph.slice.load` in its protocol). A slice is plain JSON with a zod schema of record in `@dbd/slice`. It carries:
 
 | Field | What it holds |
 |---|---|
@@ -195,12 +197,12 @@ Danny asked for the successor to be driven by preference, not by attachment to d
 2. **The contract is TypeScript and zod, and nothing else.** Zod is already the house's schema of record. The engine validates its own outputs with its own schema, and the slice with the slice's. One schema of record per boundary, never two.
 3. **No rewrite for taste.** The engine's ten thousand lines and seventy-five test files are preserved as they stand. They enter the workspace by `git subtree add` from Danny's repository, history intact — never from a snapshot. The taste profile's own rule governs: do not fragment the system to satisfy purity aesthetics.
 4. **Closed vocabularies.** Eight predicates plus `resonates`; three origins; five metabolic states. Extended by decision record only.
-5. **Each package keeps its own rim.** The house's FP selectors and boundaries apply in full to `@dby/slice` and to the site. The engine keeps its architecture tests as its boundary proof; the FP selectors run over it as warnings until a decision promotes them. A rim is named file by file, never a lifestyle.
+5. **Each package keeps its own rim.** The house's FP selectors and boundaries apply in full to `@dbd/slice` and to the site. The engine keeps its architecture tests as its boundary proof; the FP selectors run over it as warnings until a decision promotes them. A rim is named file by file, never a lifestyle.
 6. **Invariant ids cross the wall.** The contract's invariants carry `INV-SLC-*` ids in the engine's ledger style, each with a test.
 7. **Maximum strictness everywhere.** The root `tsconfig.json` already holds it. Packages extend it and add nothing.
 8. **pnpm workspaces, and nothing more, until the trigger.** A task runner with caching arrives when a full build crosses a minute or a second app exists.
 9. **Deployment does not change.** The site remains static assets served by Workers Builds. The engine, when it runs in the cloud, is its own Worker with its own D1, on its own route or zone.
-10. **Names.** The scope is `@dby/`, already in use. `@dby/slice` for the contract, `@dby/sky` for the surface, `@dby/hg` for the engine, whose CLI is already `hg`. The workspace takes the engine's name, `cathedrals`, when Danny renames the repository; GitHub keeps the old address. All of these are his to bless.
+10. **Names.** The scope is `@dbd/`, Danny's initials. It was `@dby/` when the sky package was extracted; he corrected it when he blessed this document. `@dbd/slice` for the contract, `@dbd/sky` for the surface, `@dbd/hg` for the engine, whose CLI is already `hg`. The workspace takes a name when Danny renames the repository — the engine's, `cathedrals`, or the seed's, Dyerverse (held, below); GitHub keeps the old address. All of these are his to bless.
 
 ---
 
@@ -239,13 +241,13 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 ### Phase 0 — The ground and the door (now)
 
 - **Pull:** Danny asked for the document and the first seam.
-- **Scope:** This document. `@dby/slice`: the vocabularies, the schema, the invariants, their tests. The works adapter in the site, `sliceFromWorks`, proving the contract holds the house's graph — its published works as nodes, its wikilinks as declared `references`, its eight facets as axes. The lint rim extended over the package.
+- **Scope:** This document. `@dbd/slice`: the vocabularies, the schema, the invariants, their tests. The works adapter in the site, `sliceFromWorks`, proving the contract holds the house's graph — its published works as nodes, its wikilinks as declared `references`, its eight facets as axes. The lint rim extended over the package.
 - **Exit:** Typecheck, lint, and tests green. Nothing visible changes.
 - **Held:** Every name in "Preferences" §10.
 
 ### Phase 1 — The sky reads a slice
 
-- **Pull:** Danny blesses this document.
+- **Pull:** Danny blesses this document. He did, on 2026-09-03; the phase is open.
 - **Scope:** The sky's graph layer consumes a `Slice` instead of the works directly. Facets generalize to axes with no visible change to the compass. Declared threads are drawn for the first time. The whisper speaks predicates. Ghosts are drawn from `pending` — empty for the site until Phase 2.
 - **Exit:** The sky is identical at rest under the works adapter, plus the declared threads. `CONSTELLATION_WALK.md` records origin as stroke.
 - **Held:** The dotting collision.
@@ -257,10 +259,13 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 - **Exit:** `pnpm test` green across both packages; the vault's sky opens at a route Danny names.
 - **Held:** One frontmatter for works and claims. Folding the vault's sixteen verbs into one outcome skill.
 
-### Phase 3 — The third repository
+### Phase 3 — The seed
 
-- **Pull:** Danny says now. He has said not yet.
-- **Scope:** Unknown, by design. A place is kept.
+- **Pull:** Danny says now. He did, on 2026-09-03, by setting the third repository beside the other two: Dyerverse, the Living Graph of December 2025, the oldest of the three.
+- **What it is:** The seed both grew from. Its constitution (v2.0.0, ratified 2025-12-20) is the text the engine's constitution descends from, preamble for preamble: a thinking, seeing, living engine that exists to give haecceity a home. Its design brief is where the house's soul first appears — not a feed but a foyer; a warm ground like good paper; a house someone built for their own mind to live in. Its constellation brief and the reference implementation in `components/` — a canvas editor with an aperture, lenses, clusters, paths, an inspector, a minimap, and edge creation by gesture — are the sky's ancestor and the sky's unbuilt half, authoring. Its domain code is a smaller sibling of the engine's, with `related_to` still in the vocabulary the engine later normalized to `references` (Decision 28). Its `bootstrap.md` is Danny's own first-person account of why: one graph, one ontology, many faces.
+- **Scope:** No code enters; the engine's domain supersedes it. Its documents enter whole as lineage at `lineage/dyerverse/` when the repository is reachable: the constitution the two descend from, the two briefs, `bootstrap.md`, and the reference implementation as the source for Phase 5's verbs. `CLAUDE.md` and this document each gain one line naming the descent.
+- **Exit:** The lineage is in the workspace and cited from the two constitutions it fathered.
+- **Held:** Whether the workspace takes the seed's name.
 
 ### Phase 4 — The site moves under `apps/`
 
@@ -277,9 +282,10 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 ## Held
 
 - **Dotting.** The sky dots the second facet of each hue pair to keep adjacent facets apart; the contract wants dotting for origin. One yields — a fifth hue, a different pair cue, or predicate as stroke with origin as opacity. Trigger: Phase 1.
-- **The names** `@dby/hg`, `cathedrals` as the workspace, and the route of the vault's sky. Trigger: Danny's word.
+- **The names.** `@dbd/hg` for the engine, and the route of the vault's sky. Trigger: Danny's word.
+- **The whole's name.** The third repository, Dyerverse, is the seed both projects grew from (Phase 3). The workspace could take its name, with `cathedrals` kept for the engine: the seed names the whole, the engine names the engine. Trigger: Danny's word.
 - **One frontmatter.** A work has title, date, facets, type; a claim has type, status, origin, confidence, evidence, constellations. They rhyme and do not match. Trigger: Phase 2's markdown reader.
-- **The sky's pure core as a package.** `src/shared/sky/` and `src/shared/geometry/` are pure and React-free; they move into `@dby/sky` when a second consumer exists. Trigger: the vault's sky, if it wants its own painter, or a native surface.
+- **The sky's pure core as a package.** `src/shared/sky/` and `src/shared/geometry/` are pure and React-free; they move into `@dbd/sky` when a second consumer exists. Trigger: the vault's sky, if it wants its own painter, or a native surface.
 - **The vault's verbs as an outcome.** Sixteen process skills beside five outcome skills is two grammars. Trigger: the first session that runs both.
 
 ---
@@ -298,9 +304,9 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 
 Today:
 
-- `@dby/slice` at [packages/slice/src/index.ts](./packages/slice/src/index.ts): the vocabularies, the zod schema of record, `groundingIssues` as a pure function, `parseSlice`. Its tests hold INV-SLC-001 through INV-SLC-003 and the round trip through JSON.
+- `@dbd/slice` at [packages/slice/src/index.ts](./packages/slice/src/index.ts): the vocabularies, the zod schema of record, `groundingIssues` as a pure function, `parseSlice`. Its tests hold INV-SLC-001 through INV-SLC-003 and the round trip through JSON.
 - The works adapter at [src/shared/content/slice.ts](./src/shared/content/slice.ts): published works as nodes, backlinks as declared `references`, the eight facets as axes with their azimuths and hues. Its test holds INV-SLC-004 and INV-SLC-005 for the house's graph.
-- The workspace: `pnpm-workspace.yaml`; the `@dby/slice` alias in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`; the FP rim extended over `packages/slice/src` in `eslint.config.js`.
+- The workspace: `pnpm-workspace.yaml`; the `@dbd/slice` alias in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`; the FP rim extended over `packages/slice/src` in `eslint.config.js`.
 
 Not yet: everything from Phase 1 on. The engine is not in this repository. The sky does not read a slice. No consent verb exists on the web, by design.
 
@@ -308,6 +314,6 @@ Not yet: everything from Phase 1 on. The engine is not in this repository. The s
 
 ## Dependencies
 
-**This spec depends on:** `CLAUDE.md`, `MEDIUM.md`, `TRANSPARENCY.md`, `DOMAIN_MODEL.md`, `GRAPH_AND_LINKING.md`, `REACT_NORTH_STAR.md`, `RENDERING_STRATEGY.md`, `CONSTELLATION_WALK.md`, `CONSTELLATION_ARCHITECTURE.md`; and, in the engine's repository, `manifesto.md`, `source.md`, `AGENTS.md`, `.agent/TASTE_PROFILE.md`, `docs/foundations/CONSTITUTION.md`, `docs/architecture/DECISIONS.md`, `docs/architecture/GRAPH_PROTOCOL.md`, `docs/architecture/SPACE_MODEL.md`, `docs/contracts/UI_SPEC.md`, `vault/ops/derivation.md`.
+**This spec depends on:** `CLAUDE.md`, `MEDIUM.md`, `TRANSPARENCY.md`, `DOMAIN_MODEL.md`, `GRAPH_AND_LINKING.md`, `REACT_NORTH_STAR.md`, `RENDERING_STRATEGY.md`, `CONSTELLATION_WALK.md`, `CONSTELLATION_ARCHITECTURE.md`; and, in the engine's repository, `manifesto.md`, `source.md`, `AGENTS.md`, `.agent/TASTE_PROFILE.md`, `docs/foundations/CONSTITUTION.md`, `docs/architecture/DECISIONS.md`, `docs/architecture/GRAPH_PROTOCOL.md`, `docs/architecture/SPACE_MODEL.md`, `docs/contracts/UI_SPEC.md`, `vault/ops/derivation.md`; and, in the seed, `CONSTITUTION.md`, `DESIGN.md`, `bootstrap.md`, `components/`.
 
 **This spec is depended on by:** `BACKLOG.md`, which holds the phases with their triggers, and every spec the engine brings with it when it enters.

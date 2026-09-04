@@ -147,7 +147,7 @@ export default tseslint.config(
   // selectors are unchanged. REACT_NORTH_STAR.md §"FP discipline"
   // is the canonical reference.
   //
-  // The contract package (@dby/slice) is held to the same bar in full:
+  // The contract package (@dbd/slice) is held to the same bar in full:
   // it is pure data and pure functions, and it is what the site and
   // the engine share (CATHEDRALS.md §"Preferences" 5).
   {

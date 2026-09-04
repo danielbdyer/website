@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// ─── @dby/slice — the contract that crosses the wall ───────────────
+// ─── @dbd/slice — the contract that crosses the wall ───────────────
 //
 // A slice is a bounded view of a graph, cut for one turn: the engine's
 // own word (`graph.slice.load` in its protocol). It is plain data with

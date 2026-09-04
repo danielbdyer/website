@@ -288,18 +288,18 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 ### The sky reads a slice
 
-**Why:** The sky's graph layer builds from works directly and draws only the emergent figures; the declared wikilinks between works are not drawn, and origin is not named. Consuming a `Slice` (`@dby/slice`) gives the sky the words: declared threads solid, discovered dotted, emergent hairline, predicate spoken by the whisper, ghosts drawn from `pending`.
-**Trigger:** Danny blesses `CATHEDRALS.md`.
+**Why:** The sky's graph layer builds from works directly and draws only the emergent figures; the declared wikilinks between works are not drawn, and origin is not named. Consuming a `Slice` (`@dbd/slice`) gives the sky the words: declared threads solid, discovered dotted, emergent hairline, predicate spoken by the whisper, ghosts drawn from `pending`.
+**Trigger:** Danny blesses `CATHEDRALS.md`. Fired 2026-09-03; the work is open.
 
 ### The engine enters the workspace
 
 **Why:** `cathedrals` becomes `packages/hg` by `git subtree add`, history intact; `hg slice --json` emits a slice; the vault's claims render as a second sky with its pending proposals as ghosts.
 **Trigger:** Danny's `cathedrals` repository is reachable from this one.
 
-### The third repository
+### The seed enters as lineage
 
-**Why:** Danny has a third repository that deepens the same shape. A place is kept.
-**Trigger:** Danny says now.
+**Why:** The third repository, Dyerverse (the Living Graph, December 2025), is the seed both the house and the engine grew from: the engine kept its constitution, the house kept its design brief, the sky kept its constellation and set down its canvas. No code enters; its documents do, whole, at `lineage/dyerverse/`, cited from the two constitutions they fathered. Its reference implementation of a canvas editor is the source for the sky's authoring verbs (Phase 5).
+**Trigger:** Fired 2026-09-03. Waits on the repository being reachable as a remote, alongside the engine's.
 
 ### The site moves under `apps/`
 

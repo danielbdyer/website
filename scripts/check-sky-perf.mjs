@@ -157,7 +157,7 @@ async function main() {
 }
 
 function bootHarness() {
-  // `pnpm --filter @dby/sky harness` boots the dev server; the dev
+  // `pnpm --filter @dbd/sky harness` boots the dev server; the dev
   // server includes React refresh + sourcemaps so the perf numbers
   // here are slightly worse than a production build. That's the
   // right side of the bias — pass in dev means pass in prod.
@@ -165,7 +165,7 @@ function bootHarness() {
   // `detached: true` makes the child a process-group leader, so
   // `process.kill(-pid)` later takes down pnpm AND the underlying
   // vite. Without it, SIGTERM only reaches pnpm and vite leaks.
-  const child = spawn('pnpm', ['--filter', '@dby/sky', 'harness'], {
+  const child = spawn('pnpm', ['--filter', '@dbd/sky', 'harness'], {
     stdio: ['ignore', 'pipe', 'pipe'],
     cwd: new URL('../', import.meta.url).pathname,
     detached: true,

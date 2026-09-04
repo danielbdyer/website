@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groundingIssues } from '@dby/slice';
+import { groundingIssues } from '@dbd/slice';
 import type { Work } from './schema';
 import { facetAxes, sliceFromWorks, SITE_SPACE } from './slice';
 

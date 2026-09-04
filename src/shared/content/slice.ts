@@ -1,4 +1,4 @@
-import { parseSlice, type Axis, type Slice, type SliceEdge, type SliceNode } from '@dby/slice';
+import { parseSlice, type Axis, type Slice, type SliceEdge, type SliceNode } from '@dbd/slice';
 import type { Work } from './schema';
 import { isPublished } from './schema';
 import { COMPASS, FACET_AZIMUTH_DEG, FACET_HUE } from './constellation';

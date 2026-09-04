@@ -11,7 +11,7 @@
 // edges) form at production density. Same input → same graph,
 // so perf comparisons across runs are honest.
 
-import type { ConstellationGraph, ConstellationNode, ConstellationEdge } from '@dby/sky';
+import type { ConstellationGraph, ConstellationNode, ConstellationEdge } from '@dbd/sky';
 
 const ROOMS = ['studio', 'garden', 'study', 'salon'] as const;
 type HarnessRoom = (typeof ROOMS)[number];
