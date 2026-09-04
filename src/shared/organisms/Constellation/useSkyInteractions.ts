@@ -3,7 +3,6 @@ import type { FocusEvent, MouseEvent, PointerEvent, SyntheticEvent } from 'react
 import { useMatch } from '@tanstack/react-router';
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import { bearingsOf, type Place } from '@/shared/content/skyWalk';
-import type { Facet } from '@/shared/types/common';
 import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
 import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
 import type { SkyWalk } from '@/shared/hooks/useSkyWalk';
@@ -54,7 +53,7 @@ export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsAr
       ? (e.target as Element).closest<SVGElement>('[data-compass]')?.dataset.compass
       : undefined;
     if (named) {
-      const bearing = bearingsOf(graph, walk.here).find((b) => b.facet === named);
+      const bearing = bearingsOf(graph, walk.here).find((b) => b.axis === named);
       if (bearing?.to) travelTo(bearing.to, bearing.edgeId ?? undefined);
       return;
     }
@@ -79,9 +78,9 @@ export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsAr
     if (key && key !== walk.here) travelTo(key);
   };
 
-  const onFacetHover = (e: SyntheticEvent<Element>) => {
-    const facet = (e.target as Element).closest<SVGElement>('[data-facet]')?.dataset.facet;
-    walk.attendFacet((facet as Facet | undefined) ?? null);
+  const onAxisHover = (e: SyntheticEvent<Element>) => {
+    const axis = (e.target as Element).closest<SVGElement>('[data-axis]')?.dataset.axis;
+    walk.attendAxis(axis ?? null);
   };
 
   const stage: StageInteractions = {
@@ -89,8 +88,8 @@ export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsAr
     onStarLeave: hover.handleMouseLeave,
     onStarFocus,
     onStarBlur: hover.handleBlur,
-    onFacetHover,
-    onFacetLeave: () => walk.attendFacet(null),
+    onAxisHover,
+    onAxisLeave: () => walk.attendAxis(null),
   };
 
   return { hoverKey: hover.activeKey, onSkyClick, onPointerDown, stage };

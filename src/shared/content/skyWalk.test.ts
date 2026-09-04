@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { diskToHemisphere } from '@/shared/geometry/sphere';
-import type { ConstellationGraph, ConstellationNode } from './constellation';
+import { FACET_AXES, figure, relation, sky, star } from '@/test/sky-graph';
 import {
-  COMPASS_RIM,
   COMPASS_RIM_THETA,
   POLE_KEY,
   REST_DISTANCE,
@@ -13,84 +11,47 @@ import {
   restDistanceFor,
 } from './skyWalk';
 
-const FACET_HUES = {
-  craft: 'warm',
-  body: 'warm',
-  beauty: 'rose',
-  language: 'rose',
-  consciousness: 'violet',
-  becoming: 'violet',
-  leadership: 'gold',
-  relation: 'gold',
-} as const;
-
-function star(
-  room: ConstellationNode['room'],
-  slug: string,
-  facets: ConstellationNode['facets'],
-  angleDeg: number,
-  radius: number,
-): ConstellationNode {
-  return {
-    room,
-    slug,
-    title: slug,
-    date: new Date('2026-01-01'),
-    facets,
-    posture: undefined,
-    isPreview: false,
-    angleDeg,
-    radius,
-    unitPosition: diskToHemisphere(radius, (angleDeg * Math.PI) / 180),
-    hue: FACET_HUES[facets[0] ?? 'relation'],
-    twinklePhase: 0,
-  };
-}
-
 // A small sky: three stars of beauty in a line east of the pole, one
 // star of craft to the north, one lonely star of body.
-const beautyNear = star('garden', 'near', ['beauty'], 90, 0.2);
-const beautyMid = star('garden', 'mid', ['beauty', 'craft'], 90, 0.4);
-const beautyFar = star('salon', 'far', ['beauty'], 90, 0.6);
-const craftNorth = star('studio', 'north', ['craft'], 0, 0.4);
-const bodyAlone = star('study', 'alone', ['body'], 45, 0.5);
+const beautyNear = star('garden/near', ['beauty'], 90, 0.2);
+const beautyMid = star('garden/mid', ['beauty', 'craft'], 90, 0.4);
+const beautyFar = star('salon/far', ['beauty'], 90, 0.6);
+const craftNorth = star('studio/north', ['craft'], 0, 0.4);
+const bodyAlone = star('study/alone', ['body'], 45, 0.5);
 
-const GRAPH: ConstellationGraph = {
-  facetHues: FACET_HUES,
-  nodes: [beautyNear, beautyMid, beautyFar, craftNorth, bodyAlone],
-  edges: [
-    {
-      facet: 'beauty',
-      hue: 'rose',
-      source: { room: 'garden', slug: 'mid' },
-      target: { room: 'garden', slug: 'near' },
-    },
-    {
-      facet: 'beauty',
-      hue: 'rose',
-      source: { room: 'garden', slug: 'mid' },
-      target: { room: 'salon', slug: 'far' },
-    },
-    {
-      facet: 'craft',
-      hue: 'warm',
-      source: { room: 'garden', slug: 'mid' },
-      target: { room: 'studio', slug: 'north' },
-    },
+const GRAPH = sky(
+  [beautyNear, beautyMid, beautyFar, craftNorth, bodyAlone],
+  [
+    figure('garden/mid', 'garden/near', 'beauty'),
+    figure('garden/mid', 'salon/far', 'beauty'),
+    figure('garden/mid', 'studio/north', 'craft'),
   ],
-};
+);
 
 describe('neighborsOf', () => {
-  test('lists the stars one stroke away, with the facet and edge that join them', () => {
+  test('lists the stars one stroke away, with the axis and edge that join them', () => {
     const near = neighborsOf(GRAPH, 'garden/mid');
     expect(near.map((n) => n.key).toSorted()).toEqual(['garden/near', 'salon/far', 'studio/north']);
-    expect(near.find((n) => n.key === 'studio/north')?.facet).toBe('craft');
+    expect(near.find((n) => n.key === 'studio/north')?.axis).toBe('craft');
     expect(near.find((n) => n.key === 'garden/near')?.edgeId).toBe('garden/mid|garden/near|beauty');
   });
 
   test('a leaf star has one neighbor; the pole has none', () => {
     expect(neighborsOf(GRAPH, 'salon/far').map((n) => n.key)).toEqual(['garden/mid']);
     expect(neighborsOf(GRAPH, POLE_KEY)).toEqual([]);
+  });
+
+  test('a relation the slice carried is a neighbor too, with no axis', () => {
+    const linked = sky(GRAPH.nodes, [
+      ...GRAPH.edges,
+      relation('study/alone', 'salon/far', 'references'),
+    ]);
+    const alone = neighborsOf(linked, 'study/alone');
+    expect(alone).toEqual([
+      { key: 'salon/far', axis: null, edgeId: 'study/alone|salon/far|references' },
+    ]);
+    // A relation is a thread to walk, not a bearing of the compass.
+    expect(bearingsOf(linked, 'study/alone').map((b) => b.axis)).toEqual(['body']);
   });
 });
 
@@ -99,29 +60,30 @@ describe('bearingsOf', () => {
     const neighbors = neighborsOf(GRAPH, 'garden/mid');
     for (const b of bearingsOf(GRAPH, 'garden/mid')) {
       if (!b.to) continue;
-      expect(b.edgeId).toBe(neighbors.find((n) => n.key === b.to && n.facet === b.facet)?.edgeId);
-      expect(b.edgeId).toContain(b.facet);
+      expect(b.edgeId).toBe(neighbors.find((n) => n.key === b.to && n.axis === b.axis)?.edgeId);
+      expect(b.edgeId).toContain(b.axis);
     }
     for (const b of bearingsOf(GRAPH, POLE_KEY)) expect(b.edgeId).toBeNull();
   });
 
-  test("at a star, the bearings are its own facets in compass order, each leading along that facet's figure", () => {
+  test("at a star, the bearings are its own axes in compass order, each leading along that axis's figure", () => {
     const bearings = bearingsOf(GRAPH, 'garden/mid');
-    expect(bearings.map((b) => b.facet)).toEqual(['craft', 'beauty']);
-    expect(bearings.find((b) => b.facet === 'craft')?.to).toBe('studio/north');
+    expect(bearings.map((b) => b.axis)).toEqual(['craft', 'beauty']);
+    expect(bearings.map((b) => b.name)).toEqual(['craft', 'beauty']);
+    expect(bearings.find((b) => b.axis === 'craft')?.to).toBe('studio/north');
     // Two beauty neighbors; the nearer one is the bearing's destination.
-    expect(bearings.find((b) => b.facet === 'beauty')?.to).toBe('garden/near');
+    expect(bearings.find((b) => b.axis === 'beauty')?.to).toBe('garden/near');
   });
 
   test('a bearing with no other member yet leads nowhere', () => {
     const [body] = bearingsOf(GRAPH, 'study/alone');
-    expect(body?.facet).toBe('body');
+    expect(body?.axis).toBe('body');
     expect(body?.to).toBeNull();
   });
 
-  test('at the pole, all eight bearings are offered and lead to the nearest star that carries each', () => {
+  test('at the pole, every bearing is offered and leads to the nearest star that carries it', () => {
     const bearings = bearingsOf(GRAPH, POLE_KEY);
-    expect(bearings.map((b) => b.facet)).toEqual([
+    expect(bearings.map((b) => b.axis)).toEqual([
       'craft',
       'body',
       'beauty',
@@ -131,10 +93,10 @@ describe('bearingsOf', () => {
       'leadership',
       'relation',
     ]);
-    expect(bearings.find((b) => b.facet === 'beauty')?.to).toBe('garden/near');
-    expect(bearings.find((b) => b.facet === 'craft')?.to).toBe('garden/mid');
-    expect(bearings.find((b) => b.facet === 'relation')?.to).toBeNull();
-    expect(bearings.find((b) => b.facet === 'beauty')?.hue).toBe('rose');
+    expect(bearings.find((b) => b.axis === 'beauty')?.to).toBe('garden/near');
+    expect(bearings.find((b) => b.axis === 'craft')?.to).toBe('garden/mid');
+    expect(bearings.find((b) => b.axis === 'relation')?.to).toBeNull();
+    expect(bearings.find((b) => b.axis === 'beauty')?.hue).toBe('rose');
   });
 });
 
@@ -190,23 +152,14 @@ describe('restDistanceFor', () => {
   });
 });
 
-describe('COMPASS_RIM', () => {
-  test('letters every facet on its bearing, just outside the populated cap', () => {
-    const azimuths: Record<string, number> = {
-      craft: 0,
-      body: 45,
-      beauty: 90,
-      language: 135,
-      consciousness: 180,
-      becoming: 225,
-      leadership: 270,
-      relation: 315,
-    };
-    for (const [facet, p] of Object.entries(COMPASS_RIM)) {
+describe('the compass rim', () => {
+  test('letters every axis on its bearing, just outside the populated cap', () => {
+    for (const axis of FACET_AXES) {
+      const p = axis.rim;
       expect(Math.hypot(p.x, p.y, p.z)).toBeCloseTo(1, 9);
       expect(p.z).toBeCloseTo(Math.cos(COMPASS_RIM_THETA), 9);
       const az = ((Math.atan2(p.y, p.x) * 180) / Math.PI + 360) % 360;
-      expect(az).toBeCloseTo(azimuths[facet]!, 6);
+      expect(az).toBeCloseTo(axis.azimuthDeg, 6);
     }
   });
 });

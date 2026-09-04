@@ -1,42 +1,26 @@
 import { describe, expect, test } from 'vitest';
-import type { ConstellationGraph, ConstellationNode } from '@/shared/content/constellation';
-import { diskToHemisphere } from '@/shared/geometry/sphere';
+import { figure, relation, sky, star } from '@/test/sky-graph';
 import {
   CENTER,
   SKY_RADIUS,
   buildPositionedMap,
-  nodeKey,
+  groupLabelOf,
   polarToCartesian,
   presentationOrder,
+  resolveEdges,
   skyTitle,
 } from './layout';
 
-const projectToSphere = (angleDeg: number, radius: number) =>
-  diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
-
-const NODE_A: ConstellationNode = {
-  room: 'garden',
-  slug: 'small-weather',
+const NODE_A = star('garden/small-weather', ['relation'], 135, 0.6, {
   title: 'small weather',
   date: new Date('2026-04-24'),
-  facets: ['relation'],
-  posture: undefined,
-  isPreview: false,
-  angleDeg: 135,
-  radius: 0.6,
-  unitPosition: projectToSphere(135, 0.6),
-  hue: 'gold',
   twinklePhase: 1.2,
-};
+});
 
-const NODE_B: ConstellationNode = {
-  ...NODE_A,
-  room: 'studio',
-  slug: 'a-second-work',
+const NODE_B = star('studio/a-second-work', ['beauty'], 225, 0.7, {
   title: 'a second work',
   date: new Date('2026-05-01'),
-  hue: 'rose',
-};
+});
 
 describe('layout — polar/cartesian', () => {
   test('center maps to (CENTER, CENTER) at radius 0', () => {
@@ -59,22 +43,9 @@ describe('layout — polar/cartesian', () => {
 });
 
 describe('layout — buildPositionedMap', () => {
-  const graph: ConstellationGraph = {
-    facetHues: {
-      craft: 'warm',
-      body: 'warm',
-      beauty: 'rose',
-      language: 'rose',
-      consciousness: 'violet',
-      becoming: 'violet',
-      leadership: 'gold',
-      relation: 'gold',
-    },
-    nodes: [NODE_A, NODE_B],
-    edges: [],
-  };
+  const graph = sky([NODE_A, NODE_B], []);
 
-  test('keys nodes by room/slug and attaches xy coordinates', () => {
+  test('keys nodes by their key and attaches xy coordinates', () => {
     const map = buildPositionedMap(graph);
     expect(map.size).toBe(2);
     const a = map.get('garden/small-weather');
@@ -92,13 +63,7 @@ describe('layout — buildPositionedMap', () => {
   });
 
   test('a node at the polestar (radius = 0) projects to viewbox center', () => {
-    const center: ConstellationNode = {
-      ...NODE_A,
-      slug: 'centered',
-      angleDeg: 0,
-      radius: 0,
-      unitPosition: projectToSphere(0, 0),
-    };
+    const center = star('garden/centered', ['relation'], 0, 0);
     const map = buildPositionedMap({ ...graph, nodes: [center] });
     const placed = map.get('garden/centered');
     expect(placed?.x).toBeCloseTo(CENTER, 6);
@@ -107,31 +72,60 @@ describe('layout — buildPositionedMap', () => {
 });
 
 describe('layout — presentationOrder', () => {
-  test('sorts by room ascending then by date descending within a room', () => {
-    const garden2 = { ...NODE_A, slug: 'newer', date: new Date('2026-05-15') };
-    const ordered = presentationOrder([NODE_A, NODE_B, garden2]);
+  test('sorts by group ascending then by date descending within a group; ungrouped last', () => {
+    const garden2 = star('garden/newer', ['relation'], 100, 0.5, { date: new Date('2026-05-15') });
+    const loose = star('a-claim', [], 10, 0.3);
+    const ordered = presentationOrder([NODE_A, NODE_B, garden2, loose]);
     // garden < studio alphabetically
-    expect(ordered[0]?.room).toBe('garden');
-    expect(ordered[1]?.room).toBe('garden');
+    expect(ordered[0]?.group).toBe('garden');
+    expect(ordered[1]?.group).toBe('garden');
     // Within garden, newer first
-    expect(ordered[0]?.slug).toBe('newer');
-    expect(ordered[2]?.room).toBe('studio');
+    expect(ordered[0]?.key).toBe('garden/newer');
+    expect(ordered[2]?.group).toBe('studio');
+    expect(ordered[3]?.key).toBe('a-claim');
   });
 });
 
-describe('layout — nodeKey', () => {
-  test('produces room/slug', () => {
-    expect(nodeKey({ room: 'salon', slug: 'klimt' })).toBe('salon/klimt');
+describe('layout — groupLabelOf', () => {
+  test("names the house's rooms and passes other groups through", () => {
+    expect(groupLabelOf('salon')).toBe('The Salon');
+    expect(groupLabelOf('recognition')).toBe('recognition');
+    expect(groupLabelOf(null)).toBeNull();
+  });
+});
+
+describe('layout — resolveEdges', () => {
+  test("a figure's stroke keeps its axis's hue and dotting; a relation draws in ink", () => {
+    const graph = sky(
+      [NODE_A, NODE_B],
+      [
+        figure('garden/small-weather', 'studio/a-second-work', 'relation'),
+        relation('garden/small-weather', 'studio/a-second-work'),
+      ],
+    );
+    const edges = resolveEdges(graph, buildPositionedMap(graph));
+    expect(edges).toHaveLength(2);
+    const stroke = edges.find((e) => e.axis === 'relation');
+    expect(stroke).toMatchObject({ hue: 'gold', dotted: true, origin: 'emergent' });
+    expect(stroke?.id).toBe('garden/small-weather|studio/a-second-work|relation');
+    const link = edges.find((e) => e.axis === null);
+    expect(link).toMatchObject({ hue: null, dotted: false, origin: 'declared' });
+    expect(link?.id).toBe('garden/small-weather|studio/a-second-work|references');
+  });
+
+  test('drops an edge whose end is not positioned', () => {
+    const graph = sky([NODE_A], [figure('garden/small-weather', 'studio/gone', 'relation')]);
+    expect(resolveEdges(graph, buildPositionedMap(graph))).toEqual([]);
   });
 });
 
 describe('layout — skyTitle', () => {
-  test('uses singular form for one work', () => {
-    expect(skyTitle(1)).toMatch(/1 work\b/);
+  test('uses singular form for one star', () => {
+    expect(skyTitle(1)).toMatch(/1 star\b/);
   });
 
-  test('uses plural form for zero or multiple works', () => {
-    expect(skyTitle(0)).toMatch(/0 works/);
-    expect(skyTitle(7)).toMatch(/7 works/);
+  test('uses plural form for zero or multiple stars', () => {
+    expect(skyTitle(0)).toMatch(/0 stars/);
+    expect(skyTitle(7)).toMatch(/7 stars/);
   });
 });

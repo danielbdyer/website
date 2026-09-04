@@ -16,12 +16,12 @@ import { sphericalToUnit, spherical } from '@/shared/geometry/sphere';
 const HUE_INDEX = { warm: 0, rose: 1, violet: 2, gold: 3 } as const;
 
 export interface AtmosphericStar {
-  /** `room/slug` — pairs the sprite with its structural anchor. */
+  /** The node's key — pairs the sprite with its structural anchor. */
   readonly key: string;
   readonly unitPosition: UnitVector3;
   /** Index into the accent palette: 0 warm · 1 rose · 2 violet · 3 gold. */
   readonly hueIndex: number;
-  /** Twinkle phase in seconds, deterministic per slug (shared with
+  /** Twinkle phase in seconds, deterministic per key (shared with
    *  the structural layer's data so both breathe on the same beat). */
   readonly twinklePhase: number;
   /** Size variance ∈ [0.75, 1.25] — each star's halo tuned to a
@@ -130,11 +130,11 @@ export function buildAtmosphericScene(graph: ConstellationGraph): AtmosphericSce
   const cached = sceneCache.get(graph);
   if (cached) return cached;
   const stars = graph.nodes.map((node) => ({
-    key: `${node.room}/${node.slug}`,
+    key: node.key,
     unitPosition: node.unitPosition,
     hueIndex: HUE_INDEX[node.hue],
     twinklePhase: node.twinklePhase,
-    sizeVariance: 0.75 + unitOf(`${node.room}/${node.slug}/halo`) * 0.5,
+    sizeVariance: 0.75 + unitOf(`${node.key}/halo`) * 0.5,
   }));
   const scene: AtmosphericScene = { stars, motes: MOTES };
   sceneCache.set(graph, scene);

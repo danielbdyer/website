@@ -59,7 +59,7 @@ export function Constellation({
   const cameraRef = useRef<SVGGElement | null>(null);
   const glyphRef = useRef<SVGCircleElement | null>(null);
   const positioned = buildPositionedMap(graph);
-  const edges = resolveEdges(graph.edges, positioned);
+  const edges = resolveEdges(graph, positioned);
   const nodes = buildRenderableNodes(graph.nodes, positioned);
   const titleId = 'constellation-title';
   const walk = useSkyWalk(initialHere(graph, focusKey));
@@ -122,7 +122,7 @@ export function Constellation({
         bearings={bearingsOf(graph, walk.here)}
         concordant={whisperConcordantOf(graph, walk.here)}
         onBearing={travel.travelTo}
-        onAttend={walk.attendFacet}
+        onAttend={walk.attendAxis}
         className="absolute right-6 bottom-16 left-6 z-10 sm:right-auto sm:bottom-6"
       />
     </nav>

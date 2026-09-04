@@ -1,6 +1,6 @@
 import { geodesicDistance } from '@/shared/geometry/sphere';
 import { concordanceBetween } from './concordance';
-import { nodeKey, type ConstellationGraph } from './constellation';
+import type { ConstellationGraph } from './constellation';
 import { POLE_KEY, bearingsOf, findNode, neighborsOf, placePosition, type Place } from './skyWalk';
 
 // ─── Presence ──────────────────────────────────────────────────────
@@ -8,8 +8,8 @@ import { POLE_KEY, bearingsOf, findNode, neighborsOf, placePosition, type Place 
 // The sky does not show everything at once. From where the visitor
 // stands, a capped number of stars are *present* — near in context —
 // and the rest recede to faint lights until the walk brings them
-// close. Context is measured four ways and summed: strokes along the
-// figures, facets shared, words in concordance, and distance on the
+// close. Context is measured four ways and summed: threads between
+// them, axes shared, words in concordance, and distance on the
 // sphere. The cap always keeps here, its neighbors, and the stars its
 // bearings lead to, so every offered step is visible.
 //
@@ -17,6 +17,8 @@ import { POLE_KEY, bearingsOf, findNode, neighborsOf, placePosition, type Place 
 // present too, chosen deterministically for each place, so the sky
 // keeps offering what is not closely related — the thing you would
 // not have thought to look for. CONSTELLATION_WALK.md §"Presence".
+// The same function the engine's aperture names as focus levels
+// (CATHEDRALS.md §"What Is Blended").
 
 /** The most stars present at once from a star. At the pole, the
  *  overview, everything is present. */
@@ -26,7 +28,7 @@ export const STRANGER_COUNT = 2;
 
 const STROKE_WEIGHT: readonly number[] = [1, 0.9, 0.55, 0.3];
 const STROKE_FLOOR = 0.1;
-const FACET_WEIGHT = 0.25;
+const AXIS_WEIGHT = 0.25;
 const CONCORDANCE_WEIGHT = 0.45;
 const SPATIAL_WEIGHT = 0.2;
 
@@ -39,8 +41,8 @@ function hash(input: string): number {
   );
 }
 
-/** Strokes from `here` to every reachable star along the figures, up
- *  to STROKE_WEIGHT's reach. Breadth-first, functional. */
+/** Threads from `here` to every reachable star, up to STROKE_WEIGHT's
+ *  reach. Breadth-first, functional. */
 function strokesFrom(graph: ConstellationGraph, here: Place): ReadonlyMap<string, number> {
   const start = new Map(findNode(graph, here) ? [[here, 0]] : []);
   return STROKE_WEIGHT.slice(1).reduce<ReadonlyMap<string, number>>((reached, _w, i) => {
@@ -59,13 +61,13 @@ export function relevanceFrom(graph: ConstellationGraph, here: Place): ReadonlyM
   const strokes = strokesFrom(graph, here);
   return new Map(
     graph.nodes.map((node) => {
-      const key = nodeKey(node);
+      const key = node.key;
       if (key === here) return [key, 1];
       const depth = strokes.get(key);
       const byStroke = depth === undefined ? STROKE_FLOOR : (STROKE_WEIGHT[depth] ?? STROKE_FLOOR);
       const shared = hereNode
-        ? node.facets.filter((f) => hereNode.facets.includes(f)).length /
-          Math.max(hereNode.facets.length, 1)
+        ? node.axes.filter((a) => hereNode.axes.includes(a)).length /
+          Math.max(hereNode.axes.length, 1)
         : 0;
       const byWords = concordanceBetween(graph.concordance, here, key);
       const bySky = 1 - geodesicDistance(from, node.unitPosition) / Math.PI;
@@ -73,8 +75,8 @@ export function relevanceFrom(graph: ConstellationGraph, here: Place): ReadonlyM
         key,
         Math.min(
           0.999,
-          byStroke * (1 - FACET_WEIGHT - CONCORDANCE_WEIGHT - SPATIAL_WEIGHT) +
-            shared * FACET_WEIGHT +
+          byStroke * (1 - AXIS_WEIGHT - CONCORDANCE_WEIGHT - SPATIAL_WEIGHT) +
+            shared * AXIS_WEIGHT +
             byWords * CONCORDANCE_WEIGHT +
             bySky * SPATIAL_WEIGHT,
         ),
@@ -93,7 +95,7 @@ export function presentFrom(
   cap: number = PRESENT_CAP,
   strangers: number = STRANGER_COUNT,
 ): ReadonlySet<string> {
-  const keys = graph.nodes.map(nodeKey);
+  const keys = graph.nodes.map((node) => node.key);
   if (here === POLE_KEY || keys.length <= cap) return new Set(keys);
   const must = new Set([
     ...(findNode(graph, here) ? [here] : []),
@@ -114,7 +116,7 @@ export function presentFrom(
   return new Set([...must, ...kept, ...edge]);
 }
 
-/** The work most in concordance with `here` that no figure already
+/** The node most in concordance with `here` that no thread already
  *  joins to it — the whisper's third line. Null at the pole or when
  *  the words are too faint to name. */
 export function concordantFrom(

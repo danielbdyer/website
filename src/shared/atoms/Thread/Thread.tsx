@@ -1,5 +1,5 @@
+import type { Origin } from '@dbd/slice';
 import type { ConstellationHue } from '@/shared/content/constellation';
-import type { Facet } from '@/shared/types/common';
 import { cn } from '@/shared/utils/cn';
 
 /** Endpoints in the SVG's viewBox space. Bundled so the atom's
@@ -12,16 +12,23 @@ export interface ThreadEndpoints {
   readonly y2: number;
 }
 
-/** The figure this thread is a stroke of: the facet, and its hue. */
-export interface ThreadFigure {
-  readonly facet: Facet;
-  readonly hue: ConstellationHue;
+/** How the thread is drawn. A stroke of an axis's figure carries the
+ *  axis, its hue, and whether that figure is dotted; a relation the
+ *  slice carries has no axis and is drawn in the page's ink. Origin
+ *  decides the weight — declared solid, discovered dotted, emergent
+ *  hairline — and the predicate is spoken by the whisper rather than
+ *  drawn (CATHEDRALS.md §"Adjudications" 3). */
+export interface ThreadStroke {
+  readonly axis: string | null;
+  readonly hue: ConstellationHue | null;
+  readonly origin: Origin;
+  readonly dotted: boolean;
 }
 
 /** The thread's place in the walk. `active`: an endpoint is hovered,
  *  focused, or stood at — the thread blooms. `walked`: the visitor
  *  has traveled along it this session — it keeps a little of the
- *  light. `lit`: its facet's whole figure is under attention (a
+ *  light. `lit`: its axis's whole figure is under attention (a
  *  hovered bearing or sibling thread). `present`: both ends are
  *  present from where the visitor stands; otherwise it recedes. */
 export interface ThreadWalk {
@@ -33,19 +40,13 @@ export interface ThreadWalk {
 
 interface ThreadProps {
   endpoints: ThreadEndpoints;
-  figure: ThreadFigure;
+  stroke: ThreadStroke;
   /** Stable identifier (e.g. "garden/small-weather|study/note|relation")
    *  so the projector and the organism can address this thread. */
   id: string;
   walk?: ThreadWalk;
   className?: string;
 }
-
-// Adjacent facets share a hue (FACET_HUE), so within each pair the
-// second draws its figure in a dotted hairline — the way an atlas
-// distinguishes two systems of lines in one ink — and the eight
-// figures stay tellable apart.
-const DOTTED_FACETS: ReadonlySet<Facet> = new Set(['body', 'language', 'becoming', 'relation']);
 
 const HUE_CSS_VAR: Record<ConstellationHue, string> = {
   warm: 'var(--accent-warm)',
@@ -54,28 +55,45 @@ const HUE_CSS_VAR: Record<ConstellationHue, string> = {
   gold: 'var(--accent-gold)',
 };
 
+/** The page's quiet ink, for a relation that belongs to no axis. */
+const INK = 'var(--text-3)';
+
+/** Weights by origin, at rest and when active. A relation the author
+ *  declared is a line; a figure the sky noticed is a hairline. */
+const REST_WIDTH: Readonly<Record<Origin, number>> = {
+  declared: 0.8,
+  discovered: 0.6,
+  emergent: 0.55,
+};
+const ACTIVE_WIDTH: Readonly<Record<Origin, number>> = {
+  declared: 1.4,
+  discovered: 1.1,
+  emergent: 1.1,
+};
+
 /** The invisible stroke that lets a hairline be hovered and clicked.
  *  Wide enough to take with a pointer; the star's own hit target
  *  (r=12) paints above it, so a star always wins. */
 const HIT_STROKE_WIDTH = 14;
 
-// A stroke of a facet's figure between two stars. At rest it is
-// barely visible — *the suggestion of a connection rather than its
-// declaration*. In the walk a thread is also a path: hovering it
-// lights it end to end, clicking it travels to its far end
-// (CONSTELLATION_WALK.md §"Input"). The visible hairline stays
-// pointer-inert; a wide transparent twin beneath the stars carries
-// the hover and the click, and the projector moves both each frame.
+// A thread between two stars. At rest it is barely visible — *the
+// suggestion of a connection rather than its declaration*. In the walk
+// a thread is also a path: hovering it lights it end to end, clicking
+// it travels to its far end (CONSTELLATION_WALK.md §"Input"). The
+// visible hairline stays pointer-inert; a wide transparent twin beneath
+// the stars carries the hover and the click, and the projector moves
+// both each frame.
 
-export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadProps) {
-  const { facet, hue } = figure;
+export function Thread({ endpoints, stroke, id, walk = {}, className }: ThreadProps) {
+  const { axis, hue, origin, dotted } = stroke;
   const { active = false, walked = false, lit = false, present = true } = walk;
   const geometry = { x1: endpoints.x1, y1: endpoints.y1, x2: endpoints.x2, y2: endpoints.y2 };
   return (
     <g
       data-thread={id}
-      data-facet={facet}
-      data-hue={hue}
+      data-axis={axis ?? undefined}
+      data-origin={origin}
+      data-hue={hue ?? undefined}
       data-active={active ? 'true' : undefined}
       data-walked={walked ? 'true' : undefined}
       data-lit={lit ? 'true' : undefined}
@@ -85,10 +103,10 @@ export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadPr
     >
       <line
         {...geometry}
-        stroke={HUE_CSS_VAR[hue]}
-        strokeWidth={active ? 1.1 : 0.55}
+        stroke={hue ? HUE_CSS_VAR[hue] : INK}
+        strokeWidth={active ? ACTIVE_WIDTH[origin] : REST_WIDTH[origin]}
         strokeLinecap="round"
-        strokeDasharray={DOTTED_FACETS.has(facet) ? '2.4 3.6' : undefined}
+        strokeDasharray={dotted || origin === 'discovered' ? '2.4 3.6' : undefined}
         // The brushstroke filter (feTurbulence + feDisplacementMap)
         // re-runs per frame for every thread; held. Active threads
         // keep the vespers bloom — there are few at once.

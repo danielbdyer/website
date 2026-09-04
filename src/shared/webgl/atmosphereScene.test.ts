@@ -1,51 +1,22 @@
 import { describe, expect, test } from 'vitest';
-import type { ConstellationGraph } from '@/shared/content/constellation';
-import { diskToHemisphere } from '@/shared/geometry/sphere';
+import { sky, star } from '@/test/sky-graph';
 import { activeStarIndex, buildAtmosphericScene } from './atmosphereScene';
 
-const GRAPH: ConstellationGraph = {
-  facetHues: {
-    craft: 'warm',
-    body: 'warm',
-    beauty: 'rose',
-    language: 'rose',
-    consciousness: 'violet',
-    becoming: 'violet',
-    leadership: 'gold',
-    relation: 'gold',
-  },
-  nodes: [
-    {
-      room: 'garden',
-      slug: 'small-weather',
+const GRAPH = sky(
+  [
+    star('garden/small-weather', ['relation'], 135, 0.6, {
       title: 'small weather',
       date: new Date('2026-04-24'),
-      facets: ['relation'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 135,
-      radius: 0.6,
-      unitPosition: diskToHemisphere(0.6, (135 * Math.PI) / 180),
-      hue: 'gold',
       twinklePhase: 1.2,
-    },
-    {
-      room: 'studio',
-      slug: 'second',
+    }),
+    star('studio/second', ['craft'], 225, 0.7, {
       title: 'second',
       date: new Date('2026-05-01'),
-      facets: ['craft'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 225,
-      radius: 0.7,
-      unitPosition: diskToHemisphere(0.7, (225 * Math.PI) / 180),
-      hue: 'warm',
       twinklePhase: 0.4,
-    },
+    }),
   ],
-  edges: [],
-};
+  [],
+);
 
 describe('buildAtmosphericScene', () => {
   test('maps every node to a star with its hue index and phase', () => {

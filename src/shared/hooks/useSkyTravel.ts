@@ -128,7 +128,7 @@ function paint(refs: Refs, motion: Motion): void {
   const size = refs.viewbox.current;
   projectPole(cameraGroup, camera, basis, size);
   projectDaystar(cameraGroup.ownerSVGElement, size, refs.fit.current);
-  projectCompass(cameraGroup, camera, basis, size);
+  projectCompass(cameraGroup, refs.graph.current.axes, camera, basis, size);
   projectStars(cameraGroup, refs.nodes.current, camera, basis, size);
   projectThreads(cameraGroup, refs.edges.current, camera, basis, size);
   const cursor = projectGlyph(refs.glyph.current, motion.pos, camera, basis, size);

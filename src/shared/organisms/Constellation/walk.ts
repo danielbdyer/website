@@ -15,9 +15,9 @@ import { geodesicDistance } from '@/shared/geometry/sphere';
 import type { SkyWalk } from '@/shared/hooks/useSkyWalk';
 import type { WhisperConcordant, WhisperPlace } from '@/shared/molecules/SkyWhisper/SkyWhisper';
 import {
-  ROOM_LABEL,
   activeHueOf,
   compassPoints,
+  groupLabelOf,
   type PositionedNode,
   type RenderableNode,
   type ResolvedEdge,
@@ -37,7 +37,7 @@ export function initialHere(graph: ConstellationGraph, focusKey?: string): Place
 
 export function whisperPlaceOf(graph: ConstellationGraph, here: Place): WhisperPlace | null {
   const node = findNode(graph, here);
-  return node ? { title: node.title, room: ROOM_LABEL[node.room] } : null;
+  return node ? { title: node.title, group: groupLabelOf(node.group) } : null;
 }
 
 export function whisperConcordantOf(
@@ -50,7 +50,7 @@ export function whisperConcordantOf(
 }
 
 /** The labels visible at rest, in the priority the layout honors:
- *  here, then its neighbors along the figures, then the stars its
+ *  here, then its neighbors along the threads, then the stars its
  *  bearings lead to. */
 export function namedOrder(graph: ConstellationGraph, here: Place): readonly string[] {
   const ordered = [
@@ -122,7 +122,7 @@ export function buildWorld(
   { edges, nodes, walk, hoverKey, overlayKey }: WorldInputs,
 ): ConstellationWorld {
   const hereKey = walk.here === POLE_KEY ? null : walk.here;
-  const hereFacets = findNode(graph, walk.here)?.facets ?? [];
+  const hereAxes = findNode(graph, walk.here)?.axes ?? [];
   return {
     edges,
     nodes,
@@ -135,8 +135,8 @@ export function buildWorld(
     present: presentFrom(graph, walk.here),
     visited: walk.visited,
     walked: walk.walked,
-    litFacet: walk.litFacet,
-    attended: new Set([...hereFacets, ...(walk.litFacet ? [walk.litFacet] : [])]),
+    litAxis: walk.litAxis,
+    attended: new Set([...hereAxes, ...(walk.litAxis ? [walk.litAxis] : [])]),
     compass: compassPoints(graph),
   };
 }

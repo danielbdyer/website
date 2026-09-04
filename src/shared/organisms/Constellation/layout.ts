@@ -1,20 +1,15 @@
-import type {
-  ConstellationEdge,
-  ConstellationGraph,
-  ConstellationHue,
-  ConstellationNode,
+import type { Origin } from '@dbd/slice';
+import {
+  edgeId,
+  type ConstellationEdge,
+  type ConstellationGraph,
+  type ConstellationHue,
+  type ConstellationNode,
 } from '@/shared/content/constellation';
-import type { Facet, Room } from '@/shared/types/common';
 import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { cameraBasis, project } from '@/shared/geometry/camera';
-import { COMPASS } from '@/shared/content/constellation';
-import {
-  COMPASS_RIM,
-  DAYSTAR_REST_FRAME,
-  REST_DISTANCE,
-  daystarViewboxPoint,
-} from '@/shared/content/skyWalk';
+import { DAYSTAR_REST_FRAME, REST_DISTANCE, daystarViewboxPoint } from '@/shared/content/skyWalk';
 import type { CompassPoint } from '@/shared/atoms/Compass/Compass';
 
 // Layout primitives for the constellation. Pure functions — no React,
@@ -38,9 +33,8 @@ export const DAYSTAR_REST_TRANSFORM = `translate(${DAYSTAR_REST.x.toFixed(2)} ${
 // (skyWalk.ts) is shared with the travel hook so the prerendered first
 // paint and the hydrated camera agree (no jump on hydration). At this
 // distance the whole populated dome is in view at once, its limb at
-// the frame's edge; travel dollies in from here (useSkyTravel). The
-// FOV stays narrow on purpose: a wider lens lets the void back in
-// around the dome; the narrow lens is what envelops.
+// the frame's edge. The FOV stays narrow on purpose: a wider lens lets
+// the void back in around the dome; the narrow lens is what envelops.
 export const STAGE_CAMERA: Camera = {
   position: { x: 0, y: 0, z: -REST_DISTANCE },
   target: { x: 0, y: 0, z: 0 },
@@ -52,22 +46,25 @@ export const STAGE_CAMERA: Camera = {
 
 const STAGE_BASIS: CameraBasis = cameraBasis(STAGE_CAMERA);
 
-export const ROOM_LABEL: Record<Exclude<Room, 'foyer'>, string> = {
+/** The house's names for the groups its works come home to. A slice
+ *  from another source names its groups as it likes; the sky shows
+ *  them as given. */
+export const GROUP_LABEL: Readonly<Record<string, string>> = {
   studio: 'The Studio',
   garden: 'The Garden',
   study: 'The Study',
   salon: 'The Salon',
 };
 
+export function groupLabelOf(group: string | null): string | null {
+  return group === null ? null : (GROUP_LABEL[group] ?? group);
+}
+
 export interface PositionedNode extends ConstellationNode {
   x: number;
   y: number;
   /** Normalized [0, 1]; 0 = nearest (closest to camera), 1 = farthest. */
   depth: number;
-}
-
-export function nodeKey(n: { room: Exclude<Room, 'foyer'>; slug: string }): string {
-  return `${n.room}/${n.slug}`;
 }
 
 export function polarToCartesian(angleDeg: number, radius: number): { x: number; y: number } {
@@ -100,34 +97,39 @@ export function buildPositionedMap(graph: ConstellationGraph): Map<string, Posit
   return new Map(
     graph.nodes.map((node) => {
       const projected = projectToViewbox(node.unitPosition);
-      return [nodeKey(node), { ...node, x: projected.x, y: projected.y, depth: projected.depth }];
+      return [node.key, { ...node, x: projected.x, y: projected.y, depth: projected.depth }];
     }),
   );
 }
 
 // Stable presentation order so the SVG paints the same way on every
-// render. Group by room (so room-clusters paint together), then
-// newest-first within a room.
+// render. Group by the source's groups (so a room's stars paint
+// together; ungrouped last), then newest-first within a group.
 export function presentationOrder(nodes: readonly ConstellationNode[]): ConstellationNode[] {
   return nodes.toSorted((a, b) => {
-    if (a.room !== b.room) return a.room.localeCompare(b.room);
+    const ga = a.group ?? '￿';
+    const gb = b.group ?? '￿';
+    if (ga !== gb) return ga.localeCompare(gb);
     return b.date.getTime() - a.date.getTime();
   });
 }
 
 export function skyTitle(nodeCount: number): string {
-  return `The constellation: ${nodeCount} ${nodeCount === 1 ? 'work' : 'works'} placed in the sky`;
+  return `The constellation: ${nodeCount} ${nodeCount === 1 ? 'star' : 'stars'} placed in the sky`;
 }
 
 /** Resolved edge — the source/target's positions already looked up,
- *  so the renderer doesn't repeat the lookup per render. The edges
- *  whose endpoints aren't present (a stale edge after a node was
- *  removed, e.g.) are filtered out at this stage so the renderer's
- *  map is purely a render. */
+ *  and the stroke decided (the axis's hue and dotting for a figure;
+ *  the page's ink for a relation), so the renderer doesn't repeat the
+ *  lookups per render. Edges whose endpoints aren't present are
+ *  filtered out at this stage so the renderer's map is purely a
+ *  render. */
 export interface ResolvedEdge {
   id: string;
-  hue: ConstellationHue;
-  facet: Facet;
+  hue: ConstellationHue | null;
+  axis: string | null;
+  origin: Origin;
+  dotted: boolean;
   sourceKey: string;
   targetKey: string;
   x1: number;
@@ -137,20 +139,23 @@ export interface ResolvedEdge {
 }
 
 export function resolveEdges(
-  edges: readonly ConstellationEdge[],
+  graph: ConstellationGraph,
   positioned: ReadonlyMap<string, PositionedNode>,
 ): ResolvedEdge[] {
-  return edges.flatMap((edge) => {
-    const source = positioned.get(`${edge.source.room}/${edge.source.slug}`);
-    const target = positioned.get(`${edge.target.room}/${edge.target.slug}`);
+  const dottedAxes = new Set(graph.axes.flatMap((axis) => (axis.dotted ? [axis.id] : [])));
+  return graph.edges.flatMap((edge: ConstellationEdge) => {
+    const source = positioned.get(edge.source);
+    const target = positioned.get(edge.target);
     if (!source || !target) return [];
     return [
       {
-        id: `${nodeKey(source)}|${nodeKey(target)}|${edge.facet}`,
+        id: edgeId(edge),
         hue: edge.hue,
-        facet: edge.facet,
-        sourceKey: nodeKey(source),
-        targetKey: nodeKey(target),
+        axis: edge.axis,
+        origin: edge.origin,
+        dotted: edge.axis !== null && dottedAxes.has(edge.axis),
+        sourceKey: source.key,
+        targetKey: target.key,
         x1: source.x,
         y1: source.y,
         x2: target.x,
@@ -171,23 +176,23 @@ export interface RenderableNode {
   key: string;
 }
 
-// Order: presentation (room, date) first, then stable depth-sort —
+// Order: presentation (group, date) first, then stable depth-sort —
 // farthest depth painted first so closer stars overlap on top. The
-// presentation sort keeps room-clusters together within each depth
+// presentation sort keeps a group's stars together within each depth
 // bucket; the depth pass turns it into back-to-front order.
 export function buildRenderableNodes(
   nodes: readonly ConstellationNode[],
   positioned: ReadonlyMap<string, PositionedNode>,
 ): RenderableNode[] {
   const placed = presentationOrder(nodes).flatMap((node) => {
-    const pos = positioned.get(nodeKey(node));
+    const pos = positioned.get(node.key);
     if (!pos) return [];
-    return [{ node, pos: { x: pos.x, y: pos.y }, depth: pos.depth, key: nodeKey(node) }];
+    return [{ node, pos: { x: pos.x, y: pos.y }, depth: pos.depth, key: node.key }];
   });
   return placed.toSorted((a, b) => b.depth - a.depth);
 }
 
-/** The active star's facet hue, or null when no well is claimed. The
+/** The active star's hue, or null when no well is claimed. The
  *  companion glyph mixes its amber toward this hue by the per-tick
  *  --companion-claim the navigation hook writes. */
 export function activeHueOf(
@@ -198,19 +203,13 @@ export function activeHueOf(
   return nodes.find(({ key }) => key === activeKey)?.node.hue ?? null;
 }
 
-/** Avoid an unused-import lint warning by re-exporting the type that
- *  consumers building their own resolvedEdge tests may want. The
- *  graph type is re-exported here as a convenience for tests of the
- *  layout module without forcing them to depend on constellation.ts
- *  directly. */
-
-/** The compass's eight names at the resting camera's projection of
- *  their rim points — the prerendered positions the projector then
- *  carries each tick (skyProjector.projectCompass). */
+/** The compass's names at the resting camera's projection of their
+ *  rim points — the prerendered positions the projector then carries
+ *  each tick (skyProjector.projectCompass). */
 export function compassPoints(graph: ConstellationGraph): CompassPoint[] {
-  return COMPASS.map((facet) => {
-    const projected = projectToViewbox(COMPASS_RIM[facet]);
-    return { facet, hue: graph.facetHues[facet], x: projected.x, y: projected.y };
+  return graph.axes.map((axis) => {
+    const projected = projectToViewbox(axis.rim);
+    return { axis: axis.id, name: axis.name, hue: axis.hue, x: projected.x, y: projected.y };
   });
 }
 

@@ -129,7 +129,7 @@ export function WorkOverlay({ work, closeHref }: WorkOverlayProps) {
       <div
         ref={panelRef}
         tabIndex={-1}
-        style={{ viewTransitionName: skyStarTransitionName(work.room, work.slug) }}
+        style={{ viewTransitionName: skyStarTransitionName(`${work.room}/${work.slug}`) }}
         className="work-overlay__panel bg-bg-card border-border relative max-h-[85dvh] w-[min(92vw,640px)] overflow-y-auto rounded-sm border px-8 py-10 shadow-lg focus:outline-none sm:px-12 sm:py-14"
       >
         <Link

@@ -21,8 +21,8 @@ import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 import type { Vec3 } from '@/shared/geometry/sphere';
-import { COMPASS } from '@/shared/content/constellation';
-import { COMPASS_RIM, daystarViewboxPoint } from '@/shared/content/skyWalk';
+import type { Axis } from '@/shared/content/constellation';
+import { daystarViewboxPoint } from '@/shared/content/skyWalk';
 import { chooseLabelSlots, slotOffset, type LabelItem } from './labelLayout';
 import { fitViewboxToCanvas } from '@/shared/webgl/atmosphereProjection';
 
@@ -328,19 +328,20 @@ export function applyCameraYaw(el: SVGGElement, yaw: number): void {
   el.style.setProperty('--cam-yaw', yaw.toFixed(2));
 }
 
-/** Letter the compass — each facet's name at its bearing on the rim
- *  (COMPASS_RIM, skyWalk.ts) — so the words turn with the heavens.
+/** Letter the compass — each axis's name at its bearing on the rim
+ *  (Axis.rim, constellation.ts) — so the words turn with the heavens.
  *  Behind-camera names park offscreen. */
 export function projectCompass(
   cameraGroup: SVGGElement,
+  axes: readonly Axis[],
   camera: Camera,
   basis: CameraBasis,
   viewboxSize: number,
 ): void {
-  for (const facet of COMPASS) {
-    const el = cachedElement(cameraGroup, `[data-compass="${facet}"]`);
+  for (const axis of axes) {
+    const el = cachedElement(cameraGroup, `[data-compass="${axis.id}"]`);
     if (!el) continue;
-    const proj = projectToViewbox(COMPASS_RIM[facet], camera, basis, viewboxSize);
+    const proj = projectToViewbox(axis.rim, camera, basis, viewboxSize);
     el.setAttribute('x', proj.inFront ? proj.x.toFixed(2) : '-9999');
     el.setAttribute('y', proj.inFront ? proj.y.toFixed(2) : '-9999');
   }

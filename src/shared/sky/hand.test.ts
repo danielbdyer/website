@@ -1,60 +1,22 @@
 import { describe, expect, test } from 'vitest';
-import type { Facet } from '@/shared/types/common';
-import type { ConstellationGraph, ConstellationNode } from '@/shared/content/constellation';
-import { diskToHemisphere, geodesicDistance } from '@/shared/geometry/sphere';
+import { figure, sky, star } from '@/test/sky-graph';
+import { geodesicDistance } from '@/shared/geometry/sphere';
 import { toViewbox } from '@/shared/geometry/viewbox';
 import { advance, cameraOf, initialMotion, type Motion } from './motion';
 import { grab, handOf, moveHand, releaseHand, tracksFrom, type Viewport } from './hand';
 
-const HUES = {
-  craft: 'warm',
-  body: 'warm',
-  beauty: 'rose',
-  language: 'rose',
-  consciousness: 'violet',
-  becoming: 'violet',
-  leadership: 'gold',
-  relation: 'gold',
-} as const;
-
-function star(key: string, facets: Facet[], angleDeg: number, radius: number): ConstellationNode {
-  const [room, slug] = key.split('/') as [ConstellationNode['room'], string];
-  return {
-    room,
-    slug,
-    title: slug,
-    date: new Date('2026-01-01'),
-    facets,
-    posture: undefined,
-    isPreview: false,
-    angleDeg,
-    radius,
-    unitPosition: diskToHemisphere(radius, (angleDeg * Math.PI) / 180),
-    hue: HUES[facets[0] ?? 'craft'],
-    twinklePhase: 0,
-  };
-}
-
 // Here at the center; a neighbor east along a craft thread, and a third
 // star beyond it on the same line; a stranger north-west with no thread
 // to here.
-const GRAPH: ConstellationGraph = {
-  facetHues: HUES,
-  nodes: [
+const GRAPH = sky(
+  [
     star('studio/here', ['craft'], 0, 0.2),
     star('studio/east', ['craft'], 0, 0.6),
     star('garden/stranger', ['beauty'], 135, 0.5),
     star('studio/beyond', ['craft'], 0, 0.85),
   ],
-  edges: [
-    {
-      facet: 'craft',
-      hue: 'warm',
-      source: { room: 'studio', slug: 'here' },
-      target: { room: 'studio', slug: 'east' },
-    },
-  ],
-};
+  [figure('studio/here', 'studio/east', 'craft')],
+);
 const HERE = GRAPH.nodes[0]!.unitPosition;
 const VIEWPORT: Viewport = { size: 1000, scale: 1 };
 
@@ -62,7 +24,7 @@ const resting = (): Motion => advance(initialMotion('studio/here', HERE, 3.85), 
 const pointer = (x: number, y: number, id = 1) => ({ id, x, y });
 
 function screenOf(motion: Motion, key: string) {
-  const node = GRAPH.nodes.find((n) => `${n.room}/${n.slug}` === key)!;
+  const node = GRAPH.nodes.find((n) => n.key === key)!;
   const { camera, basis } = cameraOf(motion);
   return toViewbox(node.unitPosition, camera, basis, VIEWPORT.size);
 }

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { groundingIssues } from '@dbd/slice';
 import type { Work } from './schema';
-import { facetAxes, sliceFromWorks, SITE_SPACE } from './slice';
+import type { DisplayWork } from './preview';
+import { SAMPLE_KIND, SITE_SPACE, facetAxes, sliceFromWorks } from './slice';
 
 const NOW = new Date('2026-09-03T12:00:00.000Z');
 
-type Seed = Pick<Work, 'room' | 'slug' | 'title'> & Partial<Work>;
+type Seed = Pick<Work, 'room' | 'slug' | 'title'> & Partial<DisplayWork>;
 
-const work = (seed: Seed): Work => ({
+const work = (seed: Seed): DisplayWork => ({
   date: new Date('2026-05-01T00:00:00.000Z'),
   facets: [],
   feature: false,
@@ -46,6 +47,12 @@ const later = work({
   title: 'Later',
   date: new Date('2027-01-01T00:00:00.000Z'),
 });
+const sample = work({
+  room: 'salon',
+  slug: 'a-sample',
+  title: 'A sample',
+  preview: { kind: 'sample', roomNote: '[sample]', workNote: '[sample]' },
+});
 
 describe('the compass', () => {
   it('is the eight facets in bearing order, with azimuth and hue', () => {
@@ -78,11 +85,16 @@ describe('sliceFromWorks', () => {
       axes: ['body', 'beauty'],
       summary: 'A poem about practice.',
       createdAt: '2026-05-01T00:00:00.000Z',
-      href: '/garden/cello',
+      href: '/sky/garden/cello',
       group: 'garden',
     });
     expect(slice.nodes[1]?.kind).toBe('essay');
     expect(slice.nodes[1]).not.toHaveProperty('summary');
+  });
+
+  it('names a sample stand-in by its kind, so the sky draws it quieter', () => {
+    const slice = sliceFromWorks([sample], NOW);
+    expect(slice.nodes[0]?.kind).toBe(SAMPLE_KIND);
   });
 
   it('carries a wikilink as a declared reference from the linking work', () => {
