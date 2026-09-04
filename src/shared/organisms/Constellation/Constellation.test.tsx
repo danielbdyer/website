@@ -128,6 +128,18 @@ describe('Constellation organism', () => {
     expect(container.querySelectorAll('.constellation-star[data-present="true"]')).toHaveLength(2);
   });
 
+  test('hovering a star lights it and its thread on the page, and leaving clears them', async () => {
+    const user = userEvent.setup();
+    const { container } = renderConstellation(SAMPLE_GRAPH);
+    const star = await screen.findByRole('link', { name: /small weather/i });
+    await user.hover(star);
+    expect(star).toHaveAttribute('data-hover', 'true');
+    expect(container.querySelector('[data-thread][data-hover="true"]')).not.toBeNull();
+    await user.unhover(star);
+    expect(star).not.toHaveAttribute('data-hover');
+    expect(container.querySelector('[data-thread][data-hover="true"]')).toBeNull();
+  });
+
   test('opens at the pole and whispers the bearings that lead away', async () => {
     renderConstellation(SAMPLE_GRAPH);
     expect(await screen.findByText('the polestar')).toBeInTheDocument();

@@ -64,6 +64,19 @@ describe('skyProjector element cache', () => {
     expect(fresh.getAttribute('transform')).toMatch(/^translate\(/);
   });
 
+  test('given the present set, only those stars move', () => {
+    const group = makeGroup();
+    const a = addStarEl(group, 'a');
+    const b = addStarEl(group, 'b');
+    const nodes: NavigableNode[] = [
+      { key: 'a', unitPos: sphericalToUnit({ theta: 0.4, phi: 0.5 }) },
+      { key: 'b', unitPos: sphericalToUnit({ theta: 0.7, phi: 2.5 }) },
+    ];
+    projectStars(group, nodes, CAMERA, BASIS, 1000, new Set(['b']));
+    expect(a.getAttribute('transform')).toBeNull();
+    expect(b.getAttribute('transform')).toMatch(/^translate\(/);
+  });
+
   test('thread endpoints project through the cache', () => {
     const group = makeGroup();
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -77,6 +90,64 @@ describe('skyProjector element cache', () => {
     projectThreads(group, [edge], CAMERA, BASIS, 1000);
     expect(Number.parseFloat(line.getAttribute('x1') ?? '')).toBeGreaterThan(0);
     expect(Number.parseFloat(line.getAttribute('y2') ?? '')).toBeGreaterThan(0);
+  });
+
+  test('the hit twin beside a present thread moves with it, found as its sibling', () => {
+    const group = makeGroup();
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.dataset.threadId = 'a|b|craft';
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hit.dataset.threadHit = 'a|b|craft';
+    group.append(line, hit);
+    const edge: NavigableEdge = {
+      id: 'a|b|craft',
+      sourcePos: sphericalToUnit({ theta: 0.4, phi: 0.5 }),
+      targetPos: sphericalToUnit({ theta: 0.7, phi: 2.5 }),
+    };
+    projectThreads(group, [edge], CAMERA, BASIS, 1000);
+    expect(hit.getAttribute('x1')).toBe(line.getAttribute('x1'));
+    expect(hit.getAttribute('y2')).toBe(line.getAttribute('y2'));
+  });
+
+  test('under the atmosphere a hairline moves only while lit; its hit twin always does', () => {
+    const group = makeGroup();
+    const thread = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    thread.dataset.thread = 'a|b|craft';
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.dataset.threadId = 'a|b|craft';
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hit.dataset.threadHit = 'a|b|craft';
+    thread.append(line, hit);
+    group.append(thread);
+    const edge: NavigableEdge = {
+      id: 'a|b|craft',
+      sourcePos: sphericalToUnit({ theta: 0.4, phi: 0.5 }),
+      targetPos: sphericalToUnit({ theta: 0.7, phi: 2.5 }),
+    };
+    projectThreads(group, [edge], CAMERA, BASIS, 1000, null, true);
+    expect(line.getAttribute('x1')).toBeNull();
+    expect(hit.getAttribute('x1')).not.toBeNull();
+    thread.dataset.hover = 'true';
+    projectThreads(group, [edge], CAMERA, BASIS, 1000, null, true);
+    expect(line.getAttribute('x1')).toBe(hit.getAttribute('x1'));
+  });
+
+  test('given the present set, only those threads move', () => {
+    const group = makeGroup();
+    const lines = ['a|b|craft', 'b|c|craft'].map((id) => {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.dataset.threadId = id;
+      group.append(line);
+      return line;
+    });
+    const edges: NavigableEdge[] = ['a|b|craft', 'b|c|craft'].map((id) => ({
+      id,
+      sourcePos: sphericalToUnit({ theta: 0.4, phi: 0.5 }),
+      targetPos: sphericalToUnit({ theta: 0.7, phi: 2.5 }),
+    }));
+    projectThreads(group, edges, CAMERA, BASIS, 1000, new Set(['b|c|craft']));
+    expect(lines[0]!.getAttribute('x1')).toBeNull();
+    expect(lines[1]!.getAttribute('x1')).not.toBeNull();
   });
 });
 

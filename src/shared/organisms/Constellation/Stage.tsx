@@ -7,7 +7,7 @@ import { Thread, type ThreadWalk } from '@/shared/atoms/Thread/Thread';
 import { Star, type StarWalk, type StarWork } from '@/shared/molecules/Star/Star';
 import { TRAIL_LENGTH } from '@/shared/dom/skyProjector';
 import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
-import { groupLabelOf, type RenderableNode, type ResolvedEdge } from './layout';
+import { groupLabelOf, threadPresent, type RenderableNode, type ResolvedEdge } from './layout';
 
 // The inside of the travel camera. Extracted from Constellation so the
 // JSX depth at each layer fits the project's max-4 ceiling without
@@ -16,8 +16,8 @@ import { groupLabelOf, type RenderableNode, type ResolvedEdge } from './layout';
 
 /** The constellation's observable world — what Stage paints. The
  *  edges + nodes are the structural graph; the rest is the walk:
- *  where the visitor stands (hereKey; null at the pole), what they
- *  hover, what is named within a thread of here, what is present from
+ *  where the visitor stands (hereKey; null at the pole), what is named
+ *  within a thread of here, what is present from
  *  here (the contextual cap), what they have visited and walked, which
  *  axis is lit by attention, and the compass's lettering.
  *  CONSTELLATION_WALK.md. Held in one shape so the organism's prop
@@ -26,7 +26,6 @@ export interface ConstellationWorld {
   readonly edges: readonly ResolvedEdge[];
   readonly nodes: readonly RenderableNode[];
   readonly hereKey: string | null;
-  readonly hoverKey: string | null;
   /** The star a held sky is aiming at (useSkyWalk.intent). */
   readonly intentKey: string | null;
   readonly activeHue: ConstellationHue | null;
@@ -61,26 +60,19 @@ interface StageProps {
   glyphRef: RefObject<SVGCircleElement | null>;
 }
 
-// A figure's stroke is present when both its stars are. A relation the
-// slice carried is present only when one of its ends is also named —
-// here, a neighbor, or a bearing's end — so the overview shows the
-// figures and a hint of the relations around the bearings, and a dense
-// vault's mesh waits until the visitor stands near it.
 function threadWalkOf(world: ConstellationWorld, edge: ResolvedEdge): ThreadWalk {
-  const attended = world.hoverKey ?? world.intentKey ?? world.hereKey;
-  const ends = world.present.has(edge.sourceKey) && world.present.has(edge.targetKey);
-  const near = world.named.has(edge.sourceKey) || world.named.has(edge.targetKey);
+  const attended = world.intentKey ?? world.hereKey;
   return {
     active: attended === edge.sourceKey || attended === edge.targetKey,
     walked: world.walked.has(edge.id),
     lit: edge.axis !== null && world.litAxis === edge.axis,
-    present: edge.origin === 'emergent' ? ends : ends && near,
+    present: threadPresent(world.present, world.named, edge),
   };
 }
 
 function starWalkOf(world: ConstellationWorld, key: string): StarWalk {
   return {
-    active: key === world.hoverKey || key === world.intentKey || key === world.hereKey,
+    active: key === world.intentKey || key === world.hereKey,
     here: key === world.hereKey,
     named: world.named.get(key),
     visited: world.visited.has(key),

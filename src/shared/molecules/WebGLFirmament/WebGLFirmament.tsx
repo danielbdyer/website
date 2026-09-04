@@ -29,6 +29,10 @@ interface WebGLFirmamentProps {
    *  (CONSTELLATION_WALK.md §"Presence"); absent halos recede.
    *  Undefined: everything present. */
   present?: ReadonlySet<string>;
+  /** The threads present from where the visitor stands, by edge id
+   *  (walk.presentEdgeIds); the rest recede to the faint web.
+   *  Undefined: every thread present. */
+  presentThreads?: ReadonlySet<string>;
   /** Mirrors the SVG's preserveAspectRatio so the canvas and the
    *  structural layer share one viewbox mapping. */
   fullViewport?: boolean;
@@ -39,6 +43,7 @@ export function WebGLFirmament({
   graph,
   activeKey,
   present,
+  presentThreads,
   fullViewport = false,
   className,
 }: WebGLFirmamentProps) {
@@ -49,12 +54,16 @@ export function WebGLFirmament({
   const presence = present
     ? scene.stars.map((s) => (present.has(s.key) ? '1' : '0')).join('')
     : null;
+  const threadPresence = presentThreads
+    ? scene.threads.map((t) => (presentThreads.has(t.id) ? '1' : '0')).join('')
+    : null;
   useWebGLFirmament(
     containerRef,
     scene,
     activeStarIndex(scene, activeKey),
     fullViewport ? 'cover' : 'contain',
     presence,
+    threadPresence,
   );
   return (
     <div

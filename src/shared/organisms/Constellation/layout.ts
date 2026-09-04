@@ -213,4 +213,32 @@ export function compassPoints(graph: ConstellationGraph): CompassPoint[] {
   });
 }
 
+/** The threads that meet each star, by node key — what a hover lights
+ *  beside the star itself (dom/skyAttention). */
+export function adjacencyOf(
+  edges: readonly ResolvedEdge[],
+): ReadonlyMap<string, readonly string[]> {
+  return edges.reduce<Map<string, readonly string[]>>((acc, edge) => {
+    acc.set(edge.sourceKey, [...(acc.get(edge.sourceKey) ?? []), edge.id]);
+    acc.set(edge.targetKey, [...(acc.get(edge.targetKey) ?? []), edge.id]);
+    return acc;
+  }, new Map());
+}
+
+/** Whether a thread is present from where the visitor stands. A
+ *  figure's stroke is present when both its stars are; a relation the
+ *  slice carried only when, besides, one of its ends is named — here, a
+ *  neighbor, or a bearing's end — so the overview shows the figures and
+ *  a hint of the relations around the bearings, and a dense vault's
+ *  mesh waits until the visitor stands near it. */
+export function threadPresent(
+  present: ReadonlySet<string>,
+  named: ReadonlyMap<string, unknown>,
+  edge: ResolvedEdge,
+): boolean {
+  const ends = present.has(edge.sourceKey) && present.has(edge.targetKey);
+  if (edge.origin === 'emergent') return ends;
+  return ends && (named.has(edge.sourceKey) || named.has(edge.targetKey));
+}
+
 export { type ConstellationGraph } from '@/shared/content/constellation';

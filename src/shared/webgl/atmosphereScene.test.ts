@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { sky, star } from '@/test/sky-graph';
+import { FACET_AXES, figure, relation, sky, star } from '@/test/sky-graph';
+import { edgeId } from '@/shared/content/constellation';
 import { activeStarIndex, buildAtmosphericScene } from './atmosphereScene';
 
 const GRAPH = sky(
@@ -82,5 +83,32 @@ describe('activeStarIndex', () => {
   test('returns -1 for no claim or an unknown key', () => {
     expect(activeStarIndex(scene, null)).toBe(-1);
     expect(activeStarIndex(scene, 'salon/nope')).toBe(-1);
+  });
+});
+
+describe('buildAtmosphericScene — threads', () => {
+  const graph = sky(
+    [star('a', ['craft'], 10, 0.5), star('b', ['craft'], 40, 0.5), star('c', ['beauty'], 200, 0.6)],
+    [figure('a', 'b', 'craft'), relation('b', 'c')],
+  );
+
+  test('pairs each edge with its stars, its hue, its dotting, and its id', () => {
+    const scene = buildAtmosphericScene(graph);
+    expect(scene.threads).toHaveLength(2);
+    const [fig, rel] = scene.threads;
+    expect([fig!.a, fig!.b]).toEqual([0, 1]);
+    expect(fig!.hueIndex).toBeLessThan(4);
+    expect(fig!.dotted).toBe(FACET_AXES.find((axis) => axis.id === 'craft')!.dotted);
+    expect(fig!.id).toBe(edgeId(graph.edges[0]!));
+    // A relation with no axis draws in the page's ink, a little heavier.
+    expect(rel!.hueIndex).toBe(4);
+    expect(rel!.alpha).toBeGreaterThan(fig!.alpha);
+  });
+
+  test('skips an edge whose end is not a star', () => {
+    const scene = buildAtmosphericScene(
+      sky([star('a', ['craft'], 10, 0.5)], [figure('a', 'zz', 'craft')]),
+    );
+    expect(scene.threads).toHaveLength(0);
   });
 });

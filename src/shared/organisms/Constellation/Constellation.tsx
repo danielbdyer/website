@@ -6,7 +6,6 @@ import { Daystar } from '@/shared/atoms/Daystar/Daystar';
 import { Firmament } from '@/shared/atoms/Firmament/Firmament';
 import { WebGLFirmament } from '@/shared/molecules/WebGLFirmament/WebGLFirmament';
 import { SkyWhisper } from '@/shared/molecules/SkyWhisper/SkyWhisper';
-import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
 import { useSkyTravel } from '@/shared/hooks/useSkyTravel';
 import { useSkyWalk } from '@/shared/hooks/useSkyWalk';
 import { cn } from '@/shared/utils/cn';
@@ -26,6 +25,7 @@ import {
   namedOrder,
   navigableEdges,
   navigableNodes,
+  placeContext,
   whisperConcordantOf,
   whisperPlaceOf,
 } from './walk';
@@ -55,7 +55,6 @@ export function Constellation({
   focusKey,
   className,
 }: ConstellationProps) {
-  const parallaxRef = useConstellationParallax<SVGSVGElement>();
   const cameraRef = useRef<SVGGElement | null>(null);
   const glyphRef = useRef<SVGCircleElement | null>(null);
   const positioned = buildPositionedMap(graph);
@@ -63,6 +62,7 @@ export function Constellation({
   const nodes = buildRenderableNodes(graph.nodes, positioned);
   const titleId = 'constellation-title';
   const walk = useSkyWalk(initialHere(graph, focusKey));
+  const { present, named, presentEdges, adjacency } = placeContext(graph, edges, walk.here);
   const travel = useSkyTravel({
     graph,
     nodes: navigableNodes(nodes),
@@ -71,13 +71,14 @@ export function Constellation({
     fit: fullViewport ? 'cover' : 'contain',
     walk,
     namedKeys: namedOrder(graph, walk.here),
+    presentEdges,
+    presentKeys: present,
     cameraRef,
     glyphRef,
   });
-  const interactions = useSkyInteractions({ graph, walk, travel });
+  const interactions = useSkyInteractions({ graph, walk, travel, cameraRef, adjacency });
   const overlayKey = useOverlayKey();
-  const { hoverKey } = interactions;
-  const world = buildWorld(graph, { edges, nodes, walk, hoverKey, overlayKey });
+  const world = buildWorld(graph, { edges, nodes, walk, overlayKey, present, named });
   const hereKey = walk.here === POLE_KEY ? null : walk.here;
 
   return (
@@ -90,12 +91,12 @@ export function Constellation({
       </h2>
       <WebGLFirmament
         graph={graph}
-        activeKey={hoverKey ?? walk.intent ?? hereKey}
+        activeKey={walk.intent ?? hereKey}
         present={world.present}
+        presentThreads={presentEdges}
         fullViewport={fullViewport}
       />
       <svg
-        ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         preserveAspectRatio={fullViewport ? 'xMidYMid slice' : 'xMidYMid meet'}
         onClick={interactions.onSkyClick}

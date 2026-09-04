@@ -328,6 +328,13 @@ function ease(current: number, target: number, rate: number, dt: number): number
   return current + (target - current) * (1 - Math.exp(-rate * dt));
 }
 
+/** An eased value lands on its target once within the rest epsilon,
+ *  so a settled sky is exactly still — the shell paints nothing for a
+ *  difference of a millionth. */
+function settle(value: number, target: number, epsilon: number): number {
+  return Math.abs(value - target) < epsilon ? target : value;
+}
+
 /** The sky `now`: the phase advanced, the gaze and rest eased, and the
  *  motion of the surface point since the last advance measured for the
  *  atmosphere's streak. */
@@ -343,10 +350,18 @@ export function advance(motion: Motion, now: number): Advanced {
       ...m,
       lastPos: motion.pos,
       look: {
-        x: ease(m.look.x, m.lookTarget.x, LOOK_EASE_RATE, dt),
-        y: ease(m.look.y, m.lookTarget.y, LOOK_EASE_RATE, dt),
+        x: settle(
+          ease(m.look.x, m.lookTarget.x, LOOK_EASE_RATE, dt),
+          m.lookTarget.x,
+          LOOK_REST_EPSILON,
+        ),
+        y: settle(
+          ease(m.look.y, m.lookTarget.y, LOOK_EASE_RATE, dt),
+          m.lookTarget.y,
+          LOOK_REST_EPSILON,
+        ),
       },
-      rest: ease(m.rest, m.restTarget, REST_EASE_RATE, dt),
+      rest: settle(ease(m.rest, m.restTarget, REST_EASE_RATE, dt), m.restTarget, REST_EPSILON),
       omega: { x: axis.x * speed, y: axis.y * speed, z: axis.z * speed },
       speed,
       time: now,

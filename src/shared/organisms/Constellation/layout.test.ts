@@ -3,12 +3,14 @@ import { figure, relation, sky, star } from '@/test/sky-graph';
 import {
   CENTER,
   SKY_RADIUS,
+  adjacencyOf,
   buildPositionedMap,
   groupLabelOf,
   polarToCartesian,
   presentationOrder,
   resolveEdges,
   skyTitle,
+  threadPresent,
 } from './layout';
 
 const NODE_A = star('garden/small-weather', ['relation'], 135, 0.6, {
@@ -127,5 +129,35 @@ describe('layout — skyTitle', () => {
   test('uses plural form for zero or multiple stars', () => {
     expect(skyTitle(0)).toMatch(/0 stars/);
     expect(skyTitle(7)).toMatch(/7 stars/);
+  });
+});
+
+describe('layout — threadPresent', () => {
+  const present = new Set(['a', 'b', 'c']);
+  const named = new Map([['a', 'here']]);
+  const edgeOf = (source: string, target: string, origin: 'emergent' | 'declared') =>
+    ({ id: `${source}|${target}`, sourceKey: source, targetKey: target, origin }) as never;
+
+  test("a figure's stroke is present when both its stars are", () => {
+    expect(threadPresent(present, named, edgeOf('b', 'c', 'emergent'))).toBe(true);
+    expect(threadPresent(present, named, edgeOf('b', 'z', 'emergent'))).toBe(false);
+  });
+
+  test('a declared relation is present only near a name', () => {
+    expect(threadPresent(present, named, edgeOf('a', 'b', 'declared'))).toBe(true);
+    expect(threadPresent(present, named, edgeOf('b', 'c', 'declared'))).toBe(false);
+    expect(threadPresent(present, named, edgeOf('a', 'z', 'declared'))).toBe(false);
+  });
+});
+
+describe('layout — adjacencyOf', () => {
+  test('lists the threads that meet each star', () => {
+    const edgeOf = (source: string, target: string) =>
+      ({ id: `${source}|${target}`, sourceKey: source, targetKey: target }) as never;
+    const adjacency = adjacencyOf([edgeOf('a', 'b'), edgeOf('b', 'c')]);
+    expect(adjacency.get('a')).toEqual(['a|b']);
+    expect(adjacency.get('b')).toEqual(['a|b', 'b|c']);
+    expect(adjacency.get('c')).toEqual(['b|c']);
+    expect(adjacency.get('d')).toBeUndefined();
   });
 });

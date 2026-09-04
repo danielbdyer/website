@@ -169,8 +169,18 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ### One frame, two painters
 
-**Why:** The sky is projected twice each frame — once by the SVG projector, once by the WebGL hook replaying the SVG's transform chain — and they agree only by construction. `CONSTELLATION_ARCHITECTURE.md` §"What Remains" names the target: a pure `projectFrame` returning every screen position and the label layout as data, and two painters that write it.
+**Why:** The painters split the work now (2026-09-04): the atmosphere draws every thread's resting hairline and every halo; the SVG paints the touchable few and whatever the walk lights. But each still projects for itself, and they agree only by construction. `CONSTELLATION_ARCHITECTURE.md` §"What Remains" names the rest of the way: a pure `projectFrame` returning every screen position and the label layout as data, and two painters that write it.
 **Trigger:** The next change that has to be made in two projections at once.
+
+### The arrival's render
+
+**Why:** When presence changes at arrival, React renders every star and thread to flip a few attributes — in the development build half of a crossing's cost at a vault's density (`CONSTELLATION_ARCHITECTURE.md` §"What Shipped (2026-09-04)"). The hover already left React (`useSkyAttention.ts`); presence could follow it, written by the shell on arrival.
+**Trigger:** Danny's word; the crossing sits at about thirty-five frames a second in production today.
+
+### Hidden, not gone
+
+**Why:** A present star's halo, gold, and echo are hidden with `visibility` so the claim's crescendo can still transition from its resting values, and hidden elements stay in layout: at the pole, moving 258 stars lays out 258 eight-box subtrees a frame. `display: none` would drop them from layout and cost the crescendo its start.
+**Trigger:** Danny's word — the trade is the crescendo's start; the pole under a moving pointer sits at about twenty-six frames a second in production today.
 
 ### Gestures as data
 
