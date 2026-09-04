@@ -20,6 +20,9 @@ ignorePaths:
   # and shouldn't trip the spell guard. (`dist/**` only matches
   # the top-level dist; the harness lives under packages/.)
   - packages/**/dist/**
+  # Slices are data cut from other sources (a vault of claims, the
+  # engine); their words are the sources' to spell, not ours to lint.
+  - src/content/slices/*.json
 words:
   # People + places named in works and content
   - Bouteneff
@@ -63,6 +66,9 @@ words:
   - privated
   - recomputable
   - Dyerverse
+  - contexta
+  - somatically
+  - unparseable
   - umber
   - eyebrow
   - workpage

@@ -26,7 +26,11 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}', 'packages/slice/src/**/*.test.ts'],
+    include: [
+      'src/**/*.test.{ts,tsx}',
+      'packages/slice/src/**/*.test.ts',
+      'packages/vault/src/**/*.test.ts',
+    ],
     coverage: {
       // Soft floor — scoped to pure logic (domain + utils + seo
       // builders), where strict coverage matches the cost of writing

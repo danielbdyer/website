@@ -12,6 +12,8 @@
     "noImplicitOverride": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
     "isolatedModules": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -23,5 +25,5 @@
       "@dbd/slice": ["./packages/slice/src/index.ts"]
     }
   },
-  "include": ["src", "packages/slice/src"]
+  "include": ["src", "packages/slice/src", "packages/vault/src"]
 }

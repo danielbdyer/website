@@ -151,7 +151,7 @@ export default tseslint.config(
   // it is pure data and pure functions, and it is what the site and
   // the engine share (CATHEDRALS.md §"Preferences" 5).
   {
-    files: ['src/**/*.{ts,tsx}', 'packages/slice/src/**/*.ts'],
+    files: ['src/**/*.{ts,tsx}', 'packages/slice/src/**/*.ts', 'packages/vault/src/**/*.ts'],
     ignores: ['**/*.test.{ts,tsx}', 'src/test/**'],
     rules: {
       'no-restricted-syntax': [

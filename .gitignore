@@ -9,3 +9,6 @@ playwright-report/
 .env
 .env.*
 !.env.example
+
+# Slices cut from private sources stay out of the repository (CATHEDRALS.md, the workspace's visibility).
+src/content/slices/*.json
