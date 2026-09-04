@@ -20,7 +20,7 @@
     "lint:wikilinks": "node ./scripts/check-spec-wikilinks.mjs",
     "lint:voice": "node ./scripts/check-voice-and-copy.mjs",
     "lint:knip": "knip --no-progress",
-    "lint:eslint": "eslint src/",
+    "lint:eslint": "eslint src/ packages/slice/",
     "lint:css": "stylelint \"src/**/*.css\"",
     "lint:contrast": "node ./scripts/check-color-contrast.mjs",
     "lint:md": "markdownlint-cli2",

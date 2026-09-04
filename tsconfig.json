@@ -19,8 +19,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "@dby/sky": ["./packages/sky/src/index.ts"],
-      "@dby/sky/*": ["./packages/sky/src/*"]
+      "@dby/sky/*": ["./packages/sky/src/*"],
+      "@dby/slice": ["./packages/slice/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "packages/slice/src"]
 }
