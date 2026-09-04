@@ -333,8 +333,13 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 ### The workspace's visibility
 
-**Why:** This repository is public; the engine, the vault, the seed, and the root are private, and some lineage documents are intimate. Phases 2 and 3 publish whatever enters. A private workspace, a public one with selective lineage, or a public one with everything: Danny's call.
+**Why:** This repository is public; the engine, the vault, the seed, and the root are private, and some lineage documents are intimate. Phases 2 and 3 publish whatever enters. A private workspace, a public one with selective lineage, a public one with everything, or the fourth that arrived with the book — code public, private slices out of git, private skies deployed as their own Workers behind Cloudflare Access (`pnpm deploy:book`): Danny's call.
 **Trigger:** Before Phase 2 or Phase 3 lands.
+
+### Slices load with the sky, not the site
+
+**Why:** A named slice file is bundled eagerly into the main chunk through `import.meta.glob`; the book adds some seventy kilobytes gzipped to every page of that build. A slice should load with the sky route only.
+**Trigger:** Fired 2026-09-04 with the book's first private build; open.
 
 ### One frontmatter for works and claims
 

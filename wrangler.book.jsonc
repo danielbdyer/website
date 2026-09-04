@@ -1,0 +1,20 @@
+// A private sky as its own Worker.
+//
+// The same static site, built with the book's slice baked in
+// (VITE_SKY_SLICE=book), deployed under a separate name so it never
+// touches the production `website` Worker or its custom domain. The
+// slice is cut on the author's machine and is not in the repository;
+// this deployment is where a private sky lives, gated by Cloudflare
+// Access at the hostname. CATHEDRALS.md §"Held" — the workspace's
+// visibility: code public, private slices deployed privately.
+//
+//   pnpm deploy:book
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "book-sky",
+  "compatibility_date": "2026-04-25",
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "404-page"
+  }
+}

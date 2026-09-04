@@ -15,6 +15,7 @@
     "preview": "pnpm build && vite preview",
     "preview:deploy": "pnpm build:deploy && wrangler dev",
     "deploy:workers": "pnpm build:deploy && wrangler deploy",
+    "deploy:book": "VITE_SKY_SLICE=book pnpm build:deploy && wrangler deploy --config wrangler.book.jsonc",
     "lint": "pnpm lint:eslint && pnpm lint:css && pnpm lint:contrast && pnpm lint:component-shapes && pnpm lint:md && pnpm lint:spell && pnpm lint:secrets && pnpm lint:wikilinks && pnpm lint:voice",
     "lint:component-shapes": "node ./scripts/check-component-shapes.mjs",
     "lint:wikilinks": "node ./scripts/check-spec-wikilinks.mjs",
