@@ -24,6 +24,7 @@ ignorePaths:
   # engine); their words are the sources' to spell, not ours to lint.
   - src/content/slices/*.json
 words:
+  - palantír
   # People + places named in works and content
   - Bouteneff
   - Hockney

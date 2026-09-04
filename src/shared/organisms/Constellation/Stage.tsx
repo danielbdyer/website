@@ -61,13 +61,20 @@ interface StageProps {
   glyphRef: RefObject<SVGCircleElement | null>;
 }
 
+// A figure's stroke is present when both its stars are. A relation the
+// slice carried is present only when one of its ends is also named —
+// here, a neighbor, or a bearing's end — so the overview shows the
+// figures and a hint of the relations around the bearings, and a dense
+// vault's mesh waits until the visitor stands near it.
 function threadWalkOf(world: ConstellationWorld, edge: ResolvedEdge): ThreadWalk {
   const attended = world.hoverKey ?? world.intentKey ?? world.hereKey;
+  const ends = world.present.has(edge.sourceKey) && world.present.has(edge.targetKey);
+  const near = world.named.has(edge.sourceKey) || world.named.has(edge.targetKey);
   return {
     active: attended === edge.sourceKey || attended === edge.targetKey,
     walked: world.walked.has(edge.id),
     lit: edge.axis !== null && world.litAxis === edge.axis,
-    present: world.present.has(edge.sourceKey) && world.present.has(edge.targetKey),
+    present: edge.origin === 'emergent' ? ends : ends && near,
   };
 }
 

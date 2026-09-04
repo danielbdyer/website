@@ -6,6 +6,8 @@ import {
   REST_DISTANCE,
   bearingsOf,
   namedFrom,
+  namedRanks,
+  namesAt,
   neighborToward,
   neighborsOf,
   restDistanceFor,
@@ -161,5 +163,30 @@ describe('the compass rim', () => {
       const az = ((Math.atan2(p.y, p.x) * 180) / Math.PI + 360) % 360;
       expect(az).toBeCloseTo(axis.azimuthDeg, 6);
     }
+  });
+});
+
+describe('namesAt', () => {
+  const crowd = sky(
+    Array.from({ length: 258 }, (_, i) =>
+      star(`c/${i}`, ['craft'], (i * 137.508) % 360, 0.18 + 0.6 * Math.sqrt(i / 258)),
+    ),
+    [],
+  );
+
+  test('a small sky names the ends of its bearings at the pole', () => {
+    expect(namesAt(GRAPH, POLE_KEY)).toBe(true);
+    expect(namedFrom(GRAPH, POLE_KEY).size).toBeGreaterThan(0);
+  });
+
+  test('a crowded sky names no star at the pole; the compass carries the labels', () => {
+    expect(namesAt(crowd, POLE_KEY)).toBe(false);
+    expect(namedFrom(crowd, POLE_KEY).size).toBe(0);
+    expect(namedRanks(crowd, POLE_KEY).size).toBe(0);
+  });
+
+  test('standing at a star of a crowded sky, here and its neighborhood are named', () => {
+    expect(namesAt(crowd, 'c/3')).toBe(true);
+    expect(namedRanks(crowd, 'c/3').get('c/3')).toBe('here');
   });
 });

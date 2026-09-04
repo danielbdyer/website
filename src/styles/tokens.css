@@ -825,8 +825,14 @@ body::before {
 }
 
 .constellation {
-  cursor: grab;
+  cursor: default;
   user-select: none;
+}
+
+/* A star is a place to stand, page or no page; a present thread is a
+   path. The open sky reads as a surface until a drag has engaged. */
+.constellation .constellation-star {
+  cursor: pointer;
 }
 
 .constellation[data-scrubbing='true'] {

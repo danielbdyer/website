@@ -1,6 +1,6 @@
 # The Sky's Architecture — A Pure Core in a Thin Shell
 
-*The application architecture the sky grows into when the site's functional discipline is taken all the way: every change to the sky is a function from a state and an input to the next state; the only code that touches the world is a rim thin enough to read in one sitting. Named 2026-09-03, with Danny, after the walk's second week. Downstream of [REACT_NORTH_STAR.md](./REACT_NORTH_STAR.md) (the axioms it applies), [CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) (the behavior it carries), and [CONSTELLATION_HORIZON.md](./CONSTELLATION_HORIZON.md) (the layers it keeps).*
+_The application architecture the sky grows into when the site's functional discipline is taken all the way: every change to the sky is a function from a state and an input to the next state; the only code that touches the world is a rim thin enough to read in one sitting. Named 2026-09-03, with Danny, after the walk's second week. Downstream of [REACT_NORTH_STAR.md](./REACT_NORTH_STAR.md) (the axioms it applies), [CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) (the behavior it carries), and [CONSTELLATION_HORIZON.md](./CONSTELLATION_HORIZON.md) (the layers it keeps)._
 
 ---
 
@@ -29,14 +29,14 @@ That is the whole architecture. Everything below is its consequence.
 
 Six layers, in the order data flows. The first four are pure. The fifth and sixth are the rim.
 
-| Layer | What it holds | Clock | Pure | Lives in |
-|---|---|---|---|---|
-| **Graph** | The sky as content: stars placed by the compass, figures as spanning trees, the concordance, presence. Built once from a slice (`@dbd/slice`): the works by default, or any source the build names. | Build | Yes | `content/constellation.ts`, `content/slices.ts`, `content/facet-compass.ts`, `content/skyWalk.ts`, `content/presence.ts`, `content/concordance.ts` |
-| **Walk** | Where the visitor stands, what they have visited and walked, what they attend and aim at. A reducer over events. | Render | Yes | `sky/walkState.ts` (held by `hooks/useSkyWalk.ts`) |
-| **Motion** | The camera's continuous state and every transition of it: travel, the hand, the spring, the gaze, the rest distance. Returns events. | Frame | Yes | `sky/motion.ts`, `sky/hand.ts`, `geometry/spring.ts`, `geometry/elastic.ts`, `geometry/viewbox.ts`, `dom/intent.ts`, `dom/labelLayout.ts` |
-| **Frame** | The projection: where every star, thread, name, and the companion sit on screen for a motion, and the label layout. | Frame | Yes | *target* — today the projector computes and writes in one pass |
-| **Paint** | Writing a frame to the page: SVG attributes, GL uniforms and instance buffers. | Frame | No, exempt | `dom/skyProjector.ts`, `webgl/atmosphereRenderer.ts` |
-| **Shell** | The current motion in a ref, the animation-frame schedule, pointer capture, event dispatch to the walk, the WebGL loop's lifetime. | Both | No, exempt | `hooks/useSkyTravel.ts`, `hooks/useWebGLFirmament.ts`, `state/skyCamera.ts` |
+| Layer      | What it holds                                                                                                                                                                                       | Clock  | Pure       | Lives in                                                                                                                                                 |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Graph**  | The sky as content: stars placed by the compass, figures as spanning trees, the concordance, presence. Built once from a slice (`@dbd/slice`): the works by default, or any source the build names. | Build  | Yes        | `content/constellation.ts`, `content/slices.ts`, `content/facet-compass.ts`, `content/skyWalk.ts`, `content/presence.ts`, `content/concordance.ts`       |
+| **Walk**   | Where the visitor stands, what they have visited and walked, what they attend and aim at. A reducer over events.                                                                                    | Render | Yes        | `sky/walkState.ts` (held by `hooks/useSkyWalk.ts`)                                                                                                       |
+| **Motion** | The camera's continuous state and every transition of it: travel, the hand, the spring, the gaze, the rest distance and its dial. Returns events.                                                   | Frame  | Yes        | `sky/motion.ts`, `sky/hand.ts`, `sky/dial.ts`, `geometry/spring.ts`, `geometry/elastic.ts`, `geometry/viewbox.ts`, `dom/intent.ts`, `dom/labelLayout.ts` |
+| **Frame**  | The projection: where every star, thread, name, and the companion sit on screen for a motion, and the label layout.                                                                                 | Frame  | Yes        | _target_ — today the projector computes and writes in one pass                                                                                           |
+| **Paint**  | Writing a frame to the page: SVG attributes, GL uniforms and instance buffers.                                                                                                                      | Frame  | No, exempt | `dom/skyProjector.ts`, `webgl/atmosphereRenderer.ts`                                                                                                     |
+| **Shell**  | The current motion in a ref, the animation-frame schedule, pointer capture, event dispatch to the walk, the WebGL loop's lifetime.                                                                  | Both   | No, exempt | `hooks/useSkyTravel.ts`, `hooks/useWebGLFirmament.ts`, `state/skyCamera.ts`                                                                              |
 
 Above all of it the **View**: React components that render the structural SVG from the graph and the walk — atoms, molecules, organisms per the North Star — and never touch the frame clock. The travel hook writes the continuous attributes (transforms, positions, the companion's channels) beneath React's notice; React writes the discrete ones (`data-here`, `data-present`, `data-active`, the names).
 
@@ -114,11 +114,11 @@ Tests: the spring's closed form against its own fine-stepped integration; a trav
 
 Named so the next passes are steps on one path, not detours.
 
-- **Frame, then two painters.** `projectFrame(motion, graph, viewport)` returns every screen position and the label layout as data; `paintSvg(frame)` and `paintGl(frame)` write it. The WebGL hook stops re-projecting the stars and replaying the SVG's transform chain; it reads the same frame. The projector's scratch buffers move inside the painters. *Trigger:* the next change that has to be made in two projections at once.
-- **Gestures as data.** `gestureOf(event, geometry)` turns a DOM pointer or key event into a `Gesture` value; the shell becomes a switch over gestures. *Trigger:* the first gesture that is hard to test through the DOM.
-- **The event log.** `arrived`, `aimed`, `attended`, and one day `proposed` and `blessed` are already values. Kept as a log they are the walk's memory in full, the transparency layer's material ([TRANSPARENCY.md](./TRANSPARENCY.md)), and the generative horizon's seam: a proposal is an event the author blesses ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"The Generative Horizon"). *Trigger:* the first proposal.
-- **The walk's queries as derived data.** `namedRanks`, `presentFrom`, `bearingsOf` are recomputed on every render; a memoized `WalkView` derived from (graph, walk) would compute each once per change. *Trigger:* the corpus passing a hundred works, or the compiler's memoization proving insufficient.
-- **The remaining rim.** `useWebGLFirmament` still holds a mutable loop state with its own easing; the atmosphere's per-star activation and presence belong in the frame. *Trigger:* the frame.
+- **Frame, then two painters.** `projectFrame(motion, graph, viewport)` returns every screen position and the label layout as data; `paintSvg(frame)` and `paintGl(frame)` write it. The WebGL hook stops re-projecting the stars and replaying the SVG's transform chain; it reads the same frame. The projector's scratch buffers move inside the painters. _Trigger:_ the next change that has to be made in two projections at once.
+- **Gestures as data.** `gestureOf(event, geometry)` turns a DOM pointer or key event into a `Gesture` value; the shell becomes a switch over gestures. _Trigger:_ the first gesture that is hard to test through the DOM.
+- **The event log.** `arrived`, `aimed`, `attended`, and one day `proposed` and `blessed` are already values. Kept as a log they are the walk's memory in full, the transparency layer's material ([TRANSPARENCY.md](./TRANSPARENCY.md)), and the generative horizon's seam: a proposal is an event the author blesses ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"The Generative Horizon"). _Trigger:_ the first proposal.
+- **The walk's queries as derived data.** `namedRanks`, `presentFrom`, `bearingsOf` are recomputed on every render; a memoized `WalkView` derived from (graph, walk) would compute each once per change. _Trigger:_ the corpus passing a hundred works, or the compiler's memoization proving insufficient.
+- **The remaining rim.** `useWebGLFirmament` still holds a mutable loop state with its own easing; the atmosphere's per-star activation and presence belong in the frame. _Trigger:_ the frame.
 
 ---
 
@@ -128,4 +128,4 @@ Named so the next passes are steps on one path, not detours.
 - The exemption names the rim: `hooks/useSkyTravel.ts`, `hooks/useThresholdReveal.ts`, `hooks/useWebGLFirmament.ts`, `dom/skyProjector.ts`, `state/constellationCursor.ts`, `state/skyCamera.ts`, `geometry/camera.ts`, `webgl/atmosphereProjection.ts`, `webgl/atmosphereRenderer.ts`. Nothing in `sky/` is on it. A file joins the list with a `@bigO` note or not at all.
 - `max-lines-per-function` (80), the component-shape check, and the boundary rules hold as before ([REACT_NORTH_STAR.md](./REACT_NORTH_STAR.md)).
 
-*If this document and the code disagree, the code is the present and this is what it is reaching for. Catch the document up, or catch the code up — but say which.*
+_If this document and the code disagree, the code is the present and this is what it is reaching for. Catch the document up, or catch the code up — but say which._

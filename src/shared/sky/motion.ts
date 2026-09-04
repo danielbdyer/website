@@ -171,6 +171,11 @@ export function initialMotion(here: Place, at: UnitVector3, rest = REST_DISTANCE
 
 // ─── The camera ────────────────────────────────────────────────────
 
+// The camera stands on the far side of the sphere from the visitor's
+// surface point and looks at that point through the center. Aiming at
+// the point rather than the center is the same direction at every
+// distance and stays defined at distance zero — the center of the
+// sphere, where the dome overhead fills the frame (sky/dial.ts).
 function orbitalCamera(surfacePos: UnitVector3, distance: number): Camera {
   return {
     position: {
@@ -178,7 +183,7 @@ function orbitalCamera(surfacePos: UnitVector3, distance: number): Camera {
       y: -surfacePos.y * distance,
       z: -surfacePos.z * distance,
     },
-    target: { x: 0, y: 0, z: 0 },
+    target: { x: surfacePos.x, y: surfacePos.y, z: surfacePos.z },
     up: WORLD_UP,
     fovY: CAMERA_FOV_Y,
     near: CAMERA_NEAR,
@@ -199,6 +204,16 @@ export function cameraOf(motion: Motion): { readonly camera: Camera; readonly ba
     pos.z + (right.z * look.x + up.z * look.y) * LOOK_LEAN,
   );
   const camera = orbitalCamera(gaze, motion.rest);
+  return { camera, basis: cameraBasis(camera) };
+}
+
+/** The camera standing at `pos` with the sky at `rest`, gaze level:
+ *  what the dial measures the sky through (sky/dial.ts). */
+export function cameraAt(
+  pos: UnitVector3,
+  rest: number,
+): { readonly camera: Camera; readonly basis: CameraBasis } {
+  const camera = orbitalCamera(pos, rest);
   return { camera, basis: cameraBasis(camera) };
 }
 

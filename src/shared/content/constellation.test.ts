@@ -2,10 +2,13 @@ import { describe, expect, test } from 'vitest';
 import { diskToHemisphere } from '@/shared/geometry/sphere';
 import {
   axesOf,
+  capFor,
+  DEFAULT_CAP,
   edgeId,
   getConstellationGraphSync,
   graphFromSlice,
   placeNode,
+  RADIUS_MAX,
   spreadPlacements,
 } from './constellation';
 import { COMPASS, FACET_AZIMUTH_DEG, FACET_HUE, facetAxes } from './facet-compass';
@@ -325,5 +328,46 @@ describe('spreadPlacements', () => {
         expect(gap(a, b)).toBeGreaterThanOrEqual(0.094);
       }
     }
+  });
+});
+
+describe('capFor', () => {
+  test("the site's handful of works keeps the default cap: their sky does not move", () => {
+    expect(capFor(16)).toBe(DEFAULT_CAP);
+    expect(capFor(60)).toBe(DEFAULT_CAP);
+  });
+
+  test('a vault of hundreds widens the cap at fixed spacing, its anchors in proportion', () => {
+    const cap = capFor(258);
+    expect(cap.radiusMax).toBeGreaterThan(RADIUS_MAX);
+    expect(cap.radiusMax).toBeLessThanOrEqual(1);
+    expect(cap.anchorRadius / cap.radiusMax).toBeCloseTo(DEFAULT_CAP.anchorRadius / RADIUS_MAX, 10);
+    expect(capFor(400).radiusMax).toBeGreaterThan(cap.radiusMax);
+  });
+
+  test('the cap never passes the equator', () => {
+    expect(capFor(5000).radiusMax).toBeCloseTo(1, 10);
+  });
+
+  test('a crowded slice places stars beyond the default dome', () => {
+    const AT = '2026-09-03T00:00:00.000Z';
+    const graph = graphFromSlice({
+      space: 'crowd',
+      asOf: AT,
+      axes: [
+        { id: 'n', name: 'north', azimuthDeg: 0 },
+        { id: 's', name: 'south', azimuthDeg: 180 },
+      ],
+      nodes: Array.from({ length: 258 }, (_, i) => ({
+        id: `c${i}`,
+        title: `Claim ${i}`,
+        kind: 'claim',
+        axes: [i % 2 ? 'n' : 's'],
+        createdAt: AT,
+      })),
+      edges: [],
+      pending: { unresolved: 0, ghosts: [] },
+    });
+    expect(Math.max(...graph.nodes.map((n) => n.radius))).toBeGreaterThan(RADIUS_MAX);
   });
 });

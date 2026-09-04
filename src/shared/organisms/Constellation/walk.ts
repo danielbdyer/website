@@ -5,6 +5,7 @@ import {
   bearingsOf,
   findNode,
   namedRanks,
+  namesAt,
   neighborsOf,
   placePosition,
   type Place,
@@ -37,7 +38,13 @@ export function initialHere(graph: ConstellationGraph, focusKey?: string): Place
 
 export function whisperPlaceOf(graph: ConstellationGraph, here: Place): WhisperPlace | null {
   const node = findNode(graph, here);
-  return node ? { title: node.title, group: groupLabelOf(node.group) } : null;
+  return node
+    ? {
+        title: node.title,
+        group: groupLabelOf(node.group),
+        summary: node.href === null ? node.summary : null,
+      }
+    : null;
 }
 
 export function whisperConcordantOf(
@@ -53,6 +60,7 @@ export function whisperConcordantOf(
  *  here, then its neighbors along the threads, then the stars its
  *  bearings lead to. */
 export function namedOrder(graph: ConstellationGraph, here: Place): readonly string[] {
+  if (!namesAt(graph, here)) return [];
   const ordered = [
     ...(findNode(graph, here) ? [here] : []),
     ...neighborsOf(graph, here).map((n) => n.key),

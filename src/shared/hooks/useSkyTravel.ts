@@ -43,6 +43,7 @@ import {
   type MotionEvent,
 } from '@/shared/sky/motion';
 import { grab, handOf, moveHand, releaseHand } from '@/shared/sky/hand';
+import { walkDistanceFor } from '@/shared/sky/dial';
 
 // The shell around the sky's pure motion (sky/motion.ts, sky/hand.ts).
 //
@@ -80,6 +81,11 @@ const LABEL_INTERVAL_MS = 1500;
  *  marks, the schedule. Everything else is a value from the core. */
 interface Shell {
   motion: Motion;
+  /** The dial's two rests for the current frame: the overview, where
+   *  the whole ball fits the oculus, and the walk, where about
+   *  VIEW_TARGET stars are in view (sky/dial.ts). */
+  overview: number;
+  walk: number;
   trail: readonly UnitVector3[];
   trackMark: string | null;
   scrubbing: boolean;
@@ -247,11 +253,18 @@ function stopLoop(shell: Shell): void {
 
 // ─── Requests from the organism ────────────────────────────────────
 
+/** Where the sky rests for a place: the pole at the overview, a star
+ *  at the walk. The only dolly is between the two. */
+function restFor(shell: Shell, place: Place): number {
+  return place === POLE_KEY ? shell.overview : shell.walk;
+}
+
 function beginTravel(refs: Refs, place: Place, alongEdgeId?: string): void {
   const shell = refs.shell.current;
   const to = placePosition(refs.graph.current, place);
   const reduced = prefersReducedMotion();
-  commit(refs, travelTo(shell.motion, to, place, now(), alongEdgeId, reduced));
+  const next = travelTo(shell.motion, to, place, now(), alongEdgeId, reduced);
+  commit(refs, { ...next, motion: fitRest(next.motion, restFor(shell, place), reduced) });
   if (reduced) {
     shell.labelsAt = 0;
     maybePlaceLabels(refs, shell.motion, now());
@@ -346,26 +359,33 @@ function handleClickCapture(refs: Refs, e: MouseEvent<SVGSVGElement>): void {
 
 /** Fit the resting camera to the frame now and whenever it changes
  *  shape. */
+/** Fit the dial to a frame: the overview from the frame's aspect, the
+ *  walk from the graph's density at that overview. */
+function fitDial(refs: Refs, width: number, height: number): void {
+  const shell = refs.shell.current;
+  shell.overview = restDistanceFor(width, height, refs.fit.current);
+  shell.walk = walkDistanceFor(refs.graph.current, shell.overview, { width, height });
+}
+
+/** The place the sky is resting at or traveling to. */
+function destinationOf(motion: Motion): Place {
+  return motion.phase.kind === 'travel' ? motion.phase.travel.toPlace : motion.here;
+}
+
 function watchFrame(refs: Refs): void {
   const shell = refs.shell.current;
   const svg = svgOf(refs);
   if (!svg) return;
   const rect = svg.getBoundingClientRect();
-  shell.motion = fitRest(
-    shell.motion,
-    restDistanceFor(rect.width, rect.height, refs.fit.current),
-    true,
-  );
+  fitDial(refs, rect.width, rect.height);
+  shell.motion = fitRest(shell.motion, restFor(shell, destinationOf(shell.motion)), true);
   if (typeof ResizeObserver === 'undefined') return;
   shell.resize = new ResizeObserver((entries) => {
     const box = entries[0]?.contentRect;
     if (!box) return;
     const reduced = prefersReducedMotion();
-    shell.motion = fitRest(
-      shell.motion,
-      restDistanceFor(box.width, box.height, refs.fit.current),
-      reduced,
-    );
+    fitDial(refs, box.width, box.height);
+    shell.motion = fitRest(shell.motion, restFor(shell, destinationOf(shell.motion)), reduced);
     if (reduced) paint(refs, shell.motion);
     else ensureRunning(refs);
   });
@@ -396,8 +416,11 @@ function mount(refs: Refs): () => void {
 
 function initialShell(graph: ConstellationGraph, here: Place): Shell {
   const at = placePosition(graph, here);
+  const motion = initialMotion(here, at);
   return {
-    motion: initialMotion(here, at),
+    motion,
+    overview: motion.rest,
+    walk: motion.rest,
     trail: Array.from({ length: TRAIL_LENGTH }, () => at),
     trackMark: null,
     scrubbing: false,

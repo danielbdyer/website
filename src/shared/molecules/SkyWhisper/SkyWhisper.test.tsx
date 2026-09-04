@@ -108,4 +108,20 @@ describe('SkyWhisper molecule', () => {
     );
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  test('a place with no page of its own reads its summary', () => {
+    render(
+      <SkyWhisper
+        place={{
+          title: 'the body decides',
+          group: 'claims',
+          summary: 'The body decides before the mind names it.',
+        }}
+        bearings={BEARINGS}
+        onBearing={() => {}}
+        onAttend={() => {}}
+      />,
+    );
+    expect(screen.getByText('The body decides before the mind names it.')).toBeInTheDocument();
+  });
 });

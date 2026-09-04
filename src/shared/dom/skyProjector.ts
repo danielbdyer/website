@@ -227,13 +227,21 @@ export function projectThreads(
     const el = cachedElement(cameraGroup, `[data-thread-id="${edge.id}"]`);
     if (!el) continue;
     projectInto(edge.sourcePos, camera, basis, 1, SCRATCH);
+    const sourceInFront = SCRATCH.inFront;
     const x1 = (center + SCRATCH.screenX * radius).toFixed(2);
     const y1 = (center - SCRATCH.screenY * radius).toFixed(2);
     projectInto(edge.targetPos, camera, basis, 1, SCRATCH);
     const x2 = (center + SCRATCH.screenX * radius).toFixed(2);
     const y2 = (center - SCRATCH.screenY * radius).toFixed(2);
-    setEndpoints(el, x1, y1, x2, y2);
     const hit = cachedElement(cameraGroup, `[data-thread-hit="${edge.id}"]`);
+    // Standing inside the sphere, a thread with an end behind the
+    // camera has no honest line to draw; it parks with the star.
+    if (!sourceInFront || !SCRATCH.inFront) {
+      setEndpoints(el, '-9999', '-9999', '-9999', '-9999');
+      if (hit) setEndpoints(hit, '-9999', '-9999', '-9999', '-9999');
+      continue;
+    }
+    setEndpoints(el, x1, y1, x2, y2);
     if (hit) setEndpoints(hit, x1, y1, x2, y2);
   }
 }

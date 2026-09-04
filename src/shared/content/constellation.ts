@@ -192,6 +192,36 @@ export const RADIUS_MAX = 0.78;
 const JITTER_RADIUS = 0.04;
 const JITTER_AZIMUTH_DEG = 9;
 
+/** The populated cap: how far from the pole the axes' anchors sit, and
+ *  how far a star may be pushed. */
+export interface Cap {
+  readonly anchorRadius: number;
+  readonly radiusMax: number;
+}
+
+export const DEFAULT_CAP: Cap = { anchorRadius: AXIS_ANCHOR_RADIUS, radiusMax: RADIUS_MAX };
+
+// The cap grows with the count, so the sky never has to be resized by
+// hand: each star needs a label's room (MIN_SEPARATION, below) at the
+// overview, and when the default cap can no longer give it, the cap
+// widens — at fixed spacing — as far as the equator. Beyond what the
+// hemisphere holds, stars stand closer at the overview and the dial
+// (sky/dial.ts) brings the visitor in. The site's works never reach the
+// default cap's capacity, so their sky does not move.
+const AREA_PER_STAR_SR = (Math.sqrt(3) / 2) * (0.095 * (Math.PI / 2)) ** 2;
+const capSolidAngle = (radiusMax: number): number =>
+  2 * Math.PI * (1 - Math.cos(radiusMax * (Math.PI / 2)));
+
+/** The cap for a sky of `count` stars: the default up to its capacity,
+ *  then widened at fixed spacing up to the equator. */
+export function capFor(count: number): Cap {
+  const needed = count * AREA_PER_STAR_SR;
+  if (needed <= capSolidAngle(RADIUS_MAX)) return DEFAULT_CAP;
+  const solidAngle = Math.min(needed, 2 * Math.PI);
+  const radiusMax = Math.acos(1 - solidAngle / (2 * Math.PI)) / (Math.PI / 2);
+  return { anchorRadius: radiusMax * (AXIS_ANCHOR_RADIUS / RADIUS_MAX), radiusMax };
+}
+
 export interface NodePlacement {
   readonly angleDeg: number;
   readonly radius: number;
@@ -204,13 +234,17 @@ export interface NodePlacement {
  *  rests near the pole with a hashed bearing — a true thing to say
  *  about it. Exported so the placement rule is testable without a
  *  corpus. */
-export function placeNode(key: string, azimuthsDeg: readonly number[]): NodePlacement {
+export function placeNode(
+  key: string,
+  azimuthsDeg: readonly number[],
+  cap: Cap = DEFAULT_CAP,
+): NodePlacement {
   const centroid = azimuthsDeg.reduce(
     (acc, azimuthDeg) => {
       const az = (azimuthDeg * Math.PI) / 180;
       return {
-        x: acc.x + (AXIS_ANCHOR_RADIUS * Math.cos(az)) / azimuthsDeg.length,
-        y: acc.y + (AXIS_ANCHOR_RADIUS * Math.sin(az)) / azimuthsDeg.length,
+        x: acc.x + (cap.anchorRadius * Math.cos(az)) / azimuthsDeg.length,
+        y: acc.y + (cap.anchorRadius * Math.sin(az)) / azimuthsDeg.length,
       };
     },
     { x: 0, y: 0 },
@@ -222,7 +256,7 @@ export function placeNode(key: string, azimuthsDeg: readonly number[]): NodePlac
     pull < 1e-9
       ? unitOffset(`${key}/angle`) * 360
       : (Math.atan2(centroid.y, centroid.x) * 180) / Math.PI;
-  const radius = Math.min(Math.max(pull + jitterR, RADIUS_MIN), RADIUS_MAX);
+  const radius = Math.min(Math.max(pull + jitterR, RADIUS_MIN), cap.radiusMax);
   const angleDeg = (((baseAngleDeg + jitterA) % 360) + 360) % 360;
   const unitPosition = diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
   return { angleDeg, radius, unitPosition };
@@ -251,14 +285,14 @@ const toDisk = (p: NodePlacement): DiskPoint => ({
   y: p.radius * Math.sin((p.angleDeg * Math.PI) / 180),
 });
 
-const clampDisk = (p: DiskPoint): DiskPoint => {
+const clampDisk = (p: DiskPoint, radiusMax: number): DiskPoint => {
   const r = Math.hypot(p.x, p.y);
-  const clamped = Math.min(Math.max(r, RADIUS_MIN), RADIUS_MAX);
+  const clamped = Math.min(Math.max(r, RADIUS_MIN), radiusMax);
   if (r < 1e-9) return { x: clamped, y: 0 };
   return { x: (p.x / r) * clamped, y: (p.y / r) * clamped };
 };
 
-function pushApart(points: readonly DiskPoint[]): DiskPoint[] {
+function pushApart(points: readonly DiskPoint[], radiusMax: number): DiskPoint[] {
   return points.map((p, i) =>
     clampDisk(
       points.reduce((acc, q, j) => {
@@ -272,15 +306,19 @@ function pushApart(points: readonly DiskPoint[]): DiskPoint[] {
         const uy = d > 1e-9 ? dy / d : Math.sin(i * GOLDEN_ANGLE_RAD);
         return { x: acc.x + ux * step, y: acc.y + uy * step };
       }, p),
+      radiusMax,
     ),
   );
 }
 
 /** Separate placements that would sit on top of each other. Pure;
  *  order-preserving; idempotent once settled. */
-export function spreadPlacements(placements: readonly NodePlacement[]): NodePlacement[] {
+export function spreadPlacements(
+  placements: readonly NodePlacement[],
+  radiusMax: number = RADIUS_MAX,
+): NodePlacement[] {
   const settled = Array.from({ length: SPREAD_ITERATIONS }).reduce<DiskPoint[]>(
-    (pts) => pushApart(pts),
+    (pts) => pushApart(pts, radiusMax),
     placements.map(toDisk),
   );
   return settled.map((p) => {
@@ -424,6 +462,7 @@ export function graphFromSlice(
   const azimuthOf = new Map(axes.map((axis) => [axis.id, axis.azimuthDeg]));
   const hueOf = new Map(axes.map((axis) => [axis.id, axis.hue]));
   const ordered = slice.nodes.toSorted((a, b) => a.id.localeCompare(b.id));
+  const cap = capFor(ordered.length);
   const placements = spreadPlacements(
     ordered.map((node) =>
       placeNode(
@@ -432,11 +471,13 @@ export function graphFromSlice(
           const azimuth = azimuthOf.get(id);
           return azimuth === undefined ? [] : [azimuth];
         }),
+        cap,
       ),
     ),
+    cap.radiusMax,
   );
   const nodes = ordered.map((node, i) =>
-    nodeFrom(node, placements[i] ?? placeNode(node.id, []), hueOf),
+    nodeFrom(node, placements[i] ?? placeNode(node.id, [], cap), hueOf),
   );
   const edges = [...deriveFigures(nodes, axes), ...relationEdges(slice)].toSorted((a, b) =>
     edgeId(a).localeCompare(edgeId(b)),

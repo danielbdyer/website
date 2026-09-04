@@ -6,6 +6,8 @@ import { cn } from '@/shared/utils/cn';
 export interface WhisperPlace {
   readonly title: string;
   readonly group: string | null;
+  /** What the node says of itself, for a node with no page to open. */
+  readonly summary?: string | null;
 }
 
 /** A node whose words echo the one you stand at, though no thread
@@ -67,6 +69,9 @@ export function SkyWhisper({
           <span className="text-text-2">the polestar</span>
         )}
       </p>
+      {place?.summary ? (
+        <p className="sky-whisper__summary text-text-2 m-0">{place.summary}</p>
+      ) : null}
       <p className="sky-whisper__bearings m-0 flex flex-wrap gap-x-3 gap-y-1">
         {bearings.map((bearing) => (
           <button

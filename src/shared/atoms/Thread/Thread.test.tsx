@@ -157,4 +157,14 @@ describe('Thread atom', () => {
     expect(group?.dataset.walked).toBe('true');
     expect(group?.dataset.lit).toBe('true');
   });
+
+  test('a thread that is not present has no hit twin: nothing to grab between distant stars', () => {
+    const { container } = render(
+      withSvg(
+        <Thread id="x|y|z" stroke={stroke()} endpoints={endpoints()} walk={{ present: false }} />,
+      ),
+    );
+    expect(container.querySelector('[data-thread-hit]')).toBeNull();
+    expect(container.querySelector('[data-present="false"]')).not.toBeNull();
+  });
 });

@@ -73,7 +73,8 @@ const ACTIVE_WIDTH: Readonly<Record<Origin, number>> = {
 
 /** The invisible stroke that lets a hairline be hovered and clicked.
  *  Wide enough to take with a pointer; the star's own hit target
- *  (r=12) paints above it, so a star always wins. */
+ *  (r=12) paints above it, so a star always wins. Only a present
+ *  thread carries one: a thread that has receded cannot be taken. */
 const HIT_STROKE_WIDTH = 14;
 
 // A thread between two stars. At rest it is barely visible — *the
@@ -114,14 +115,16 @@ export function Thread({ endpoints, stroke, id, walk = {}, className }: ThreadPr
         data-thread-id={id}
         className="constellation-thread pointer-events-none"
       />
-      <line
-        {...geometry}
-        stroke="transparent"
-        strokeWidth={HIT_STROKE_WIDTH}
-        strokeLinecap="round"
-        data-thread-hit={id}
-        className="constellation-thread__hit cursor-pointer"
-      />
+      {present ? (
+        <line
+          {...geometry}
+          stroke="transparent"
+          strokeWidth={HIT_STROKE_WIDTH}
+          strokeLinecap="round"
+          data-thread-hit={id}
+          className="constellation-thread__hit cursor-pointer"
+        />
+      ) : null}
     </g>
   );
 }

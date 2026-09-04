@@ -1,6 +1,8 @@
 import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { NORTH_POLE, geodesicDistance } from '@/shared/geometry/sphere';
 import {
+  capFor,
+  DEFAULT_CAP,
   edgeId,
   type Axis,
   type ConstellationGraph,
@@ -178,9 +180,18 @@ export function bearingsOf(graph: ConstellationGraph, here: Place): readonly Bea
   });
 }
 
+/** Whether any star is named from a place. At the pole of a crowded
+ *  sky — one whose cap has grown past the default dome — none is: the
+ *  compass's names carry the labels until the visitor enters
+ *  (CONSTELLATION_WALK.md §"The Dial"). */
+export function namesAt(graph: ConstellationGraph, here: Place): boolean {
+  return here !== POLE_KEY || capFor(graph.nodes.length) === DEFAULT_CAP;
+}
+
 /** The keys that carry a label at rest: here, its neighbors, and the
  *  stars its bearings lead to. Context reaches exactly one thread. */
 export function namedFrom(graph: ConstellationGraph, here: Place): ReadonlySet<string> {
+  if (!namesAt(graph, here)) return new Set();
   const names = [
     ...(findNode(graph, here) ? [here] : []),
     ...neighborsOf(graph, here).map((n) => n.key),
@@ -195,6 +206,7 @@ export function namedFrom(graph: ConstellationGraph, here: Place): ReadonlySet<s
 export type NamedRank = 'here' | 'near' | 'far';
 
 export function namedRanks(graph: ConstellationGraph, here: Place): ReadonlyMap<string, NamedRank> {
+  if (!namesAt(graph, here)) return new Map();
   const far = bearingsOf(graph, here).flatMap((b): [string, NamedRank][] =>
     b.to ? [[b.to, 'far']] : [],
   );
