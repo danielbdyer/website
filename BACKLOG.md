@@ -294,12 +294,12 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 ### The engine enters the workspace
 
 **Why:** `cathedrals` becomes `packages/hg` by `git subtree add`, history intact; `hg slice --json` emits a slice; the vault's claims render as a second sky with its pending proposals as ghosts.
-**Trigger:** Danny's `cathedrals` repository is reachable from this one.
+**Trigger:** Reachability fired: `main` on GitHub is current. Waits on the workspace's visibility (`CATHEDRALS.md` §"Held").
 
 ### The seed and the root enter as lineage
 
 **Why:** The third repository, the Living Graph (December 2025; `living-graph`, created empty on 2026-09-03 for Danny's push), is the seed both the house and the engine grew from: the engine kept its constitution, the house kept its design brief, the sky kept its constellation and set down its canvas. The fourth, Dyerverse (2025), is the root: the longing, the golden loop, the protocol of essence and vector and link, and the creed of pure functions, before consent. No code enters from either; the documents do, whole, at `lineage/living-graph/` and `lineage/dyerverse/`, cited from the two constitutions they fathered. The seed's reference implementation of a canvas editor is the source for the sky's authoring verbs (Phase 5).
-**Trigger:** Fired 2026-09-03. Waits on `living-graph` receiving Danny's push; `dyerverse` is reachable now.
+**Trigger:** Fired 2026-09-03; both repositories are reachable. Waits on the workspace's visibility, and on Danny naming which documents are intimate.
 
 ### The site moves under `apps/`
 
@@ -315,6 +315,11 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 **Why:** The sky dots the second facet of each hue pair to keep adjacent facets apart; the contract wants dotting for origin. One yields.
 **Trigger:** Phase 1, with the item above.
+
+### The workspace's visibility
+
+**Why:** This repository is public; the engine, the vault, the seed, and the root are private, and some lineage documents are intimate. Phases 2 and 3 publish whatever enters. A private workspace, a public one with selective lineage, or a public one with everything: Danny's call.
+**Trigger:** Before Phase 2 or Phase 3 lands.
 
 ### One frontmatter for works and claims
 

@@ -12,7 +12,7 @@ A cathedral is one building made of rooms that do not know they are separate. Th
 
 Danny built two things without a wall between them. The house is this repository: five rooms, eight facets, a sky that is walked. The engine is `cathedrals`: a knowledge graph whose constitution is one sentence long — *agents propose; the author blesses.* The house grew from a sentence about containers: he builds rooms where others become more themselves. The engine grew from three operations its manifesto calls the knife, the thread, and the vessel — differentiation, relation, persistence. Read side by side, they are the same three. A container is a differentiation that holds. A facet is a thread. The enough is a persistence that knows when to stop.
 
-Both grew from a third repository: the Living Graph of December 2025, `living-graph`. The engine kept its constitution. The house kept its design brief. The sky kept its constellation and set down its canvas. And the Living Graph grew from a fourth, the oldest: Dyerverse, 2025, where the longing, the seven entities of a golden loop, and the creed of pure functions first appear — without yet the consent the three later ones share. Phase 3 brings both in as lineage.
+Both grew from a third repository: the Living Graph of December 2025, `living-graph`. The engine kept its constitution. The house kept its design brief. The sky kept its constellation and set down its canvas. And the Living Graph grew from a fourth, the oldest: Dyerverse, 2025, where the longing, the seven entities of a golden loop, and the creed of pure functions first appear — without yet the consent the three later ones share. Phase 3 brings both in as lineage. The whole is Dyerverse; this document keeps the image it was named for.
 
 This document does not merge them. It names the ground they stand on, draws the wall they share, cuts one door through it, and says which builder keeps which keys.
 
@@ -107,7 +107,7 @@ Where the two disagree, one side wins, and the reason is written.
 A pnpm workspace, which this repository already is. Today the site lives at the root and `packages/` holds the sky's re-export shim. The workspace grows by packages, and the site moves under `apps/` only when something else needs the root (Phase 4).
 
 ```
-cathedrals/                   the workspace: the site's repository, renamed when Danny says so
+dyerverse/                    the workspace: the site's repository, renamed when Danny says so
 ├── CLAUDE.md                 the soul; then this document's movements, when the root is free
 ├── apps/
 │   └── site/                 danielbdyer.com, the rooms and the sky (at the root until Phase 4)
@@ -202,7 +202,7 @@ Danny asked for the successor to be driven by preference, not by attachment to d
 7. **Maximum strictness everywhere.** The root `tsconfig.json` already holds it. Packages extend it and add nothing.
 8. **pnpm workspaces, and nothing more, until the trigger.** A task runner with caching arrives when a full build crosses a minute or a second app exists.
 9. **Deployment does not change.** The site remains static assets served by Workers Builds. The engine, when it runs in the cloud, is its own Worker with its own D1, on its own route or zone.
-10. **Names.** The scope is `@dbd/`, Danny's initials. It was `@dby/` when the sky package was extracted; he corrected it when he blessed this document. `@dbd/slice` for the contract, `@dbd/sky` for the surface, `@dbd/hg` for the engine, whose CLI is already `hg`. The workspace takes a name when Danny renames the repository — the engine's, `cathedrals`, or Dyerverse, the name he gave the whole of himself online in 2025 (held, below); GitHub keeps the old address. All of these are his to bless.
+10. **Names.** The scope is `@dbd/`, Danny's initials. It was `@dby/` when the sky package was extracted; he corrected it when he blessed this document. `@dbd/slice` for the contract, `@dbd/sky` for the surface, `@dbd/hg` for the engine, whose CLI is already `hg`. The workspace is Dyerverse — the name Danny gave the whole of himself online in 2025, agreed 2026-09-03 — from the day he renames the repository; GitHub keeps the old address. `@dbd/hg` is still his to bless.
 
 ---
 
@@ -254,19 +254,19 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 
 ### Phase 2 — The engine enters
 
-- **Pull:** Danny's `cathedrals` repository is reachable from this one.
+- **Pull:** Danny's `cathedrals` repository is reachable from this one — it is, on `main` — and the workspace's visibility is decided (held, below).
 - **Scope:** `git subtree add` into `packages/hg`, history intact. `hg slice --json` emits a slice from the memory adapter, fed by a markdown reader that understands both a work's and a claim's frontmatter. The vault moves in as `vault/`. The vault's claims render as a second sky — the first sky within a sky — with its thirteen pending proposals as ghosts.
 - **Exit:** `pnpm test` green across both packages; the vault's sky opens at a route Danny names.
 - **Held:** One frontmatter for works and claims. Folding the vault's sixteen verbs into one outcome skill.
 
 ### Phase 3 — The seed and the root
 
-- **Pull:** Danny says now. He did, on 2026-09-03, by setting a third repository beside the other two: the Living Graph of December 2025. Beside it on GitHub stood a fourth, older still: Dyerverse, 2025.
-- **The seed, `living-graph`:** What both grew from. Its constitution (v2.0.0, ratified 2025-12-20) is the text the engine's constitution descends from, preamble for preamble: a thinking, seeing, living engine that exists to give haecceity a home. Its design brief is where the house's soul first appears — not a feed but a foyer; a warm ground like good paper; a house someone built for their own mind to live in. Its constellation brief and the reference implementation in `components/` — a canvas editor with an aperture, lenses, clusters, paths, an inspector, a minimap, and edge creation by gesture — are the sky's ancestor and the sky's unbuilt half, authoring. Its domain code is a smaller sibling of the engine's, with `related_to` still in the vocabulary the engine later normalized to `references` (Decision 28). Its `bootstrap.md` is Danny's own first-person account of why: one graph, one ontology, many faces. The repository exists, empty, awaiting his push.
+- **Pull:** Danny says now. He did, on 2026-09-03, by setting a third repository beside the other two: the Living Graph of December 2025. Beside it on GitHub stood a fourth, older still: Dyerverse, 2025. Both are reachable now; what enters waits on the workspace's visibility (held, below).
+- **The seed, `living-graph`:** What both grew from. Its constitution (v2.0.0, ratified 2025-12-20) is the text the engine's constitution descends from, preamble for preamble: a thinking, seeing, living engine that exists to give haecceity a home. Its design brief is where the house's soul first appears — not a feed but a foyer; a warm ground like good paper; a house someone built for their own mind to live in. Its constellation brief and the reference implementation in `components/` — a canvas editor with an aperture, lenses, clusters, paths, an inspector, a minimap, and edge creation by gesture — are the sky's ancestor and the sky's unbuilt half, authoring. Its domain code is a smaller sibling of the engine's, with `related_to` still in the vocabulary the engine later normalized to `references` (Decision 28). Its `bootstrap.md` is Danny's own first-person account of why: one graph, one ontology, many faces. The repository holds his push.
 - **The root, `dyerverse`:** The Living Braid of Being. A Next.js shell, a small Python backend, and some twenty documents that carry the longing before the architecture, in shapes the later projects made rigorous: the Liminal Data Protocol — an entity, its vector flags, its essence, its links — which the engine's claim frame answers with polarity and modality; the golden loop of state, intervention, action, outcome, and reflection, which the engine's Praxis document grew into; a consciousness state machine, which the agent's finite state machine answers; and an agent file whose first section is functional programming as an epistemic framework, single responsibility, and atomic design as ontology — the creed the house enforces with lint. What it did not yet have is the turn the three later ones share: consent. Its agent offered; theirs propose and wait.
 - **Scope:** No code enters from either; the engine's domain supersedes both. The documents enter whole as lineage, at `lineage/living-graph/` and `lineage/dyerverse/`, when each repository is reachable: from the seed, the constitution the two descend from, the two briefs, `bootstrap.md`, and the editor as the source for Phase 5's verbs; from the root, the manifesto, the protocol, the semantic-gap note, the state machine, and the agent file. `CLAUDE.md` and this document each gain one line naming the descent.
 - **Exit:** The lineage is in the workspace and cited from the two constitutions it fathered.
-- **Held:** Whether the workspace takes the root's name, Dyerverse, for the whole.
+- **Decided:** The workspace takes the root's name, Dyerverse (2026-09-03).
 
 ### Phase 4 — The site moves under `apps/`
 
@@ -284,10 +284,10 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 
 - **Dotting.** The sky dots the second facet of each hue pair to keep adjacent facets apart; the contract wants dotting for origin. One yields — a fifth hue, a different pair cue, or predicate as stroke with origin as opacity. Trigger: Phase 1.
 - **The names.** `@dbd/hg` for the engine, and the route of the vault's sky. Trigger: Danny's word.
-- **The whole's name.** Dyerverse was Danny's name for the whole of himself online in 2025, before any of the three later repositories (Phase 3). The workspace could take it, with `cathedrals` for the engine and `living-graph` for the seed: the root names the whole. Trigger: Danny's word.
 - **One frontmatter.** A work has title, date, facets, type; a claim has type, status, origin, confidence, evidence, constellations. They rhyme and do not match. Trigger: Phase 2's markdown reader.
 - **The sky's pure core as a package.** `src/shared/sky/` and `src/shared/geometry/` are pure and React-free; they move into `@dbd/sky` when a second consumer exists. Trigger: the vault's sky, if it wants its own painter, or a native surface.
 - **The vault's verbs as an outcome.** Sixteen process skills beside five outcome skills is two grammars. Trigger: the first session that runs both.
+- **The workspace's visibility.** This repository is public. The engine, the vault, the seed, and the root are private, and some of the lineage documents are intimate — Danny's own account of a transition; a vision written in the language of the soul. Phases 2 and 3 publish whatever enters. Three answers are possible: a private workspace, with the site still publishing its making through the build; a public workspace that takes the engine whole and the lineage selectively, citing the intimate documents by commit rather than copying them; or a public workspace that publishes all of it. Trigger: Danny's word, before Phase 2 or Phase 3 lands.
 
 ---
 
