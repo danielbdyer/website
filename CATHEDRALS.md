@@ -113,6 +113,7 @@ dyerverse/                    the workspace: the site's repository, renamed when
 │   └── site/                 danielbdyer.com, the rooms and the sky (at the root until Phase 4)
 ├── packages/
 │   ├── slice/                @dbd/slice: the contract that crosses the wall (types, schema, invariants)
+│   ├── vault/                @dbd/vault: reads an ars-contexta vault into a slice (the book's claims, first)
 │   ├── sky/                  @dbd/sky: the surface (a shim today; the pure core moves in with a second consumer)
 │   └── hg/                   @dbd/hg: the engine, entered by subtree with its history (Phase 2)
 ├── vault/                    the claim vault: markdown in git, imported by no code, read through an adapter
@@ -247,10 +248,11 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 
 ### Phase 1 — The sky reads a slice
 
-- **Pull:** Danny blesses this document. He did, on 2026-09-03; the phase is open.
+- **Pull:** Danny blesses this document. He did, on 2026-09-03.
 - **Scope:** The sky's graph layer consumes a `Slice` instead of the works directly. Facets generalize to axes with no visible change to the compass. Declared threads are drawn for the first time. The whisper speaks predicates. Ghosts are drawn from `pending` — empty for the site until Phase 2.
-- **Exit:** The sky is identical at rest under the works adapter, plus the declared threads. `CONSTELLATION_WALK.md` records origin as stroke.
-- **Held:** The dotting collision.
+- **Shipped 2026-09-04.** An axis is one bearing of the compass; a node is keyed by the slice's id; an edge carries an origin. Declared relations draw solid in the page's ink, heavier than a figure's hairline; a star with no page is a focusable place to stand. The first slice from outside the house arrived the same day: Danny's book vault, read by `@dbd/vault` — the topic maps as the compass, the claims as stars, the wiki links as declared threads, the inbox as ghosts — rendered on his machine and not committed (the workspace's visibility, below). Ghosts are read; drawing them is the next pass.
+- **Exit:** The sky is identical at rest under the works adapter, plus the declared threads. `CONSTELLATION_WALK.md` records the compass as axes and origin as stroke.
+- **Held:** The dotting collision; the pole's density; the atmosphere's sectors; long titles at the pole.
 
 ### Phase 2 — The engine enters
 
@@ -288,6 +290,9 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 - **The sky's pure core as a package.** `src/shared/sky/` and `src/shared/geometry/` are pure and React-free; they move into `@dbd/sky` when a second consumer exists. Trigger: the vault's sky, if it wants its own painter, or a native surface.
 - **The vault's verbs as an outcome.** Sixteen process skills beside five outcome skills is two grammars. Trigger: the first session that runs both.
 - **The workspace's visibility.** This repository is public. The engine, the vault, the seed, and the root are private, and some of the lineage documents are intimate — Danny's own account of a transition; a vision written in the language of the soul. Phases 2 and 3 publish whatever enters. Three answers are possible: a private workspace, with the site still publishing its making through the build; a public workspace that takes the engine whole and the lineage selectively, citing the intimate documents by commit rather than copying them; or a public workspace that publishes all of it. Trigger: Danny's word, before Phase 2 or Phase 3 lands.
+- **The pole's density.** From the pole everything is present, and a vault of 258 claims with 879 links covers the dome in declared threads; at any star, presence quiets it to two dozen. Whether the pole should draw a declared thread only when one of its ends is named, or fade the mesh by degree, waits on Danny's eye. Trigger: his word, with the book on screen.
+- **The atmosphere's sectors.** The dome's meridians and tinted sectors are eight and four in the shader; a compass of thirteen speaks over them. The atmosphere should take its sectors from the axes. Trigger: Phase 1's second pass.
+- **Long titles.** A claim's title is a sentence, and at the pole the named labels collide. Fewer names at the pole, or the label layout's widths taken seriously there. Trigger: Phase 1's second pass.
 
 ---
 
@@ -307,14 +312,16 @@ Today:
 
 - `@dbd/slice` at [packages/slice/src/index.ts](./packages/slice/src/index.ts): the vocabularies, the zod schema of record, `groundingIssues` as a pure function, `parseSlice`. Its tests hold INV-SLC-001 through INV-SLC-003 and the round trip through JSON.
 - The works adapter at [src/shared/content/slice.ts](./src/shared/content/slice.ts): published works as nodes, backlinks as declared `references`, the eight facets as axes with their azimuths and hues. Its test holds INV-SLC-004 and INV-SLC-005 for the house's graph.
-- The workspace: `pnpm-workspace.yaml`; the `@dbd/slice` alias in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`; the FP rim extended over `packages/slice/src` in `eslint.config.js`.
+- The sky reads a slice: [src/shared/content/constellation.ts](./src/shared/content/constellation.ts) builds any sky from any slice (`graphFromSlice`, `axesOf`, `placeNode`); [src/shared/content/slices.ts](./src/shared/content/slices.ts) is the composition root that picks the source — the works by default, a named slice file under `src/content/slices/` when `VITE_SKY_SLICE` says so; `src/shared/content/facet-compass.ts` keeps the house's facets and hands them to the sky through the adapter. The walk, presence, layout, the Stage, the atoms, the whisper, the reducer, the projector, and the atmosphere speak axes and keys.
+- `@dbd/vault` at [packages/vault/src/index.ts](./packages/vault/src/index.ts): an ars-contexta vault as a slice, pure, with a CLI beside it (`pnpm sky:slice <vault> <out.json>`). Nine tests.
+- The workspace: `pnpm-workspace.yaml`; the `@dbd/slice` alias in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`; the FP rim extended over `packages/slice/src` and `packages/vault/src` in `eslint.config.js`; `src/content/slices/*.json` ignored by git.
 
-Not yet: everything from Phase 1 on. The engine is not in this repository. The sky does not read a slice. No consent verb exists on the web, by design.
+Not yet: Phase 2 on. The engine is not in this repository. Ghosts are read but not yet drawn. No consent verb exists on the web, by design.
 
 ---
 
 ## Dependencies
 
-**This spec depends on:** `CLAUDE.md`, `MEDIUM.md`, `TRANSPARENCY.md`, `DOMAIN_MODEL.md`, `GRAPH_AND_LINKING.md`, `REACT_NORTH_STAR.md`, `RENDERING_STRATEGY.md`, `CONSTELLATION_WALK.md`, `CONSTELLATION_ARCHITECTURE.md`; and, in the engine's repository, `manifesto.md`, `source.md`, `AGENTS.md`, `.agent/TASTE_PROFILE.md`, `docs/foundations/CONSTITUTION.md`, `docs/architecture/DECISIONS.md`, `docs/architecture/GRAPH_PROTOCOL.md`, `docs/architecture/SPACE_MODEL.md`, `docs/contracts/UI_SPEC.md`, `vault/ops/derivation.md`; in the seed, `CONSTITUTION.md`, `DESIGN.md`, `bootstrap.md`, `components/`; and in the root, `TECHNICAL_MANIFESTO.md`, `PROTOCOL.md`, `SEMANTIC_GAP.md`, `CONSCIOUSNESS_STATE_MACHINE.md`, `CLAUDE.md`.
+**This spec depends on:** `CLAUDE.md`, `MEDIUM.md`, `TRANSPARENCY.md`, `DOMAIN_MODEL.md`, `GRAPH_AND_LINKING.md`, `REACT_NORTH_STAR.md`, `RENDERING_STRATEGY.md`, `CONSTELLATION_WALK.md`, `CONSTELLATION_ARCHITECTURE.md`; and, in the engine's repository, `manifesto.md`, `source.md`, `AGENTS.md`, `.agent/TASTE_PROFILE.md`, `docs/foundations/CONSTITUTION.md`, `docs/architecture/DECISIONS.md`, `docs/architecture/GRAPH_PROTOCOL.md`, `docs/architecture/SPACE_MODEL.md`, `docs/contracts/UI_SPEC.md`, `vault/ops/derivation.md`; in the seed, `CONSTITUTION.md`, `DESIGN.md`, `bootstrap.md`, `components/`; and in the root, `TECHNICAL_MANIFESTO.md`, `PROTOCOL.md`, `SEMANTIC_GAP.md`, `CONSCIOUSNESS_STATE_MACHINE.md`, `CLAUDE.md`; and the first slice from outside the house, Danny's `book-research` vault, private, read through `@dbd/vault`.
 
 **This spec is depended on by:** `BACKLOG.md`, which holds the phases with their triggers, and every spec the engine brings with it when it enters.

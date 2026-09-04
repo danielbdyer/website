@@ -286,10 +286,25 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 Held phases of `CATHEDRALS.md`, the founding document of the workspace the house shares with Danny's knowledge-graph engine. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
 
-### The sky reads a slice
+### Ghosts are drawn
 
-**Why:** The sky's graph layer builds from works directly and draws only the emergent figures; the declared wikilinks between works are not drawn, and origin is not named. Consuming a `Slice` (`@dbd/slice`) gives the sky the words: declared threads solid, discovered dotted, emergent hairline, predicate spoken by the whisper, ghosts drawn from `pending`.
-**Trigger:** Danny blesses `CATHEDRALS.md`. Fired 2026-09-03; the work is open.
+**Why:** The slice carries pending proposals and the vault reader fills them from the inbox, but the sky does not yet draw a ghost — a star not yet lit, where it would land if blessed.
+**Trigger:** Phase 1's second pass; the book has two.
+
+### The pole's density
+
+**Why:** From the pole everything is present; a vault of 258 claims with 879 links covers the dome in declared threads, while presence quiets it to two dozen at any star. The pole may draw a declared thread only when one of its ends is named, or fade the mesh by degree.
+**Trigger:** Danny's word, with the book on screen.
+
+### The atmosphere's sectors follow the compass
+
+**Why:** The dome's meridians and tinted sectors are eight and four in the shader (`atmosphereShaders.ts`); a compass of thirteen speaks over them. The atmosphere should take its sectors from the slice's axes.
+**Trigger:** Phase 1's second pass.
+
+### Long titles at the pole
+
+**Why:** A claim's title is a sentence; at the pole the named labels collide. Fewer names at the pole, or the label layout's widths taken seriously there.
+**Trigger:** Phase 1's second pass.
 
 ### The engine enters the workspace
 
@@ -314,7 +329,7 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 ### The dotting collision
 
 **Why:** The sky dots the second facet of each hue pair to keep adjacent facets apart; the contract wants dotting for origin. One yields.
-**Trigger:** Phase 1, with the item above.
+**Trigger:** Phase 1's second pass, with the book on screen — thirteen axes in four hues make the collision visible.
 
 ### The workspace's visibility
 

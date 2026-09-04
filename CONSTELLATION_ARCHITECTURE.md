@@ -31,7 +31,7 @@ Six layers, in the order data flows. The first four are pure. The fifth and sixt
 
 | Layer | What it holds | Clock | Pure | Lives in |
 |---|---|---|---|---|
-| **Graph** | The sky as content: stars placed by the compass, figures as spanning trees, the concordance, presence. Built once from the works. | Build | Yes | `content/constellation.ts`, `content/skyWalk.ts`, `content/presence.ts`, `content/concordance.ts` |
+| **Graph** | The sky as content: stars placed by the compass, figures as spanning trees, the concordance, presence. Built once from a slice (`@dbd/slice`): the works by default, or any source the build names. | Build | Yes | `content/constellation.ts`, `content/slices.ts`, `content/facet-compass.ts`, `content/skyWalk.ts`, `content/presence.ts`, `content/concordance.ts` |
 | **Walk** | Where the visitor stands, what they have visited and walked, what they attend and aim at. A reducer over events. | Render | Yes | `sky/walkState.ts` (held by `hooks/useSkyWalk.ts`) |
 | **Motion** | The camera's continuous state and every transition of it: travel, the hand, the spring, the gaze, the rest distance. Returns events. | Frame | Yes | `sky/motion.ts`, `sky/hand.ts`, `geometry/spring.ts`, `geometry/elastic.ts`, `geometry/viewbox.ts`, `dom/intent.ts`, `dom/labelLayout.ts` |
 | **Frame** | The projection: where every star, thread, name, and the companion sit on screen for a motion, and the label layout. | Frame | Yes | *target* — today the projector computes and writes in one pass |
