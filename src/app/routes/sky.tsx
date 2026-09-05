@@ -48,11 +48,12 @@ export const Route = createFileRoute('/sky')({
 });
 
 // The descent's choreography lives in CSS on html.descending
-// (tokens.css §"The ascent and the descent"): the room slides up
-// beneath a daystar that stays where it is, and only then does the
-// daystar settle into the nav's corner. The class opens with the
-// return and closes after the transition has played.
-const DESCENT_MS = 1600;
+// (tokens.css §"The ascent and the descent") and in the Foyer's
+// settle-in: the room comes back beneath a daystar that stays where
+// it is and turns into the glyph there, and only then does the glyph's
+// seat come down into the nav's corner (dom/daystarSeat.ts). The class
+// opens with the return and closes once all of that has played.
+const DESCENT_MS = 1800;
 let descentTimer: ReturnType<typeof setTimeout> | null = null;
 function markDescent(): void {
   const root = document.documentElement;

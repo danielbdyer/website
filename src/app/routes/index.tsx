@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { GeometricFigure } from '@/shared/atoms/GeometricFigure/GeometricFigure';
@@ -15,6 +15,14 @@ import {
   readReveal,
   tween,
 } from '@/shared/dom/lookUp';
+import {
+  PULL_SHARE,
+  landSeatAfterTransition,
+  releaseSeat,
+  riseSeat,
+  seatAt,
+  takeSeat,
+} from '@/shared/dom/daystarSeat';
 
 export const Route = createFileRoute('/')({
   component: FoyerPage,
@@ -58,6 +66,11 @@ function lift(go: () => void): void {
   if (liftCancel !== null) return;
   const root = document.documentElement;
   root.classList.add('ascending', 'pulling');
+  // The glyph's seat rises with the lift to the daystar's place in
+  // the sky; taken here if no pull took it first (the room is at rest
+  // then, which the measure needs).
+  if (readReveal() < 0.001) takeSeat();
+  riseSeat(LIFT_MS);
   liftCancel = tween(
     readReveal(),
     LIFT,
@@ -85,11 +98,17 @@ function warmSky(): void {
 /** Arriving from the sky (html.descending), the room settles back in
  *  beneath the gaze: it starts where the lift left it and turns back
  *  to rest over the same arc — the live room with its depth, not an
- *  image of it. Before the first paint, so there is no flat frame. */
+ *  image of it. Before the first paint, so there is no flat frame.
+ *  The glyph's seat begins where the daystar stood, so the transition
+ *  turns the face into the glyph in place; once the turn has played
+ *  the seat comes down to the corner and gives the glyph its place. */
 function useSettleIn(): void {
   useLayoutEffect(() => {
     const root = document.documentElement;
     if (!root.classList.contains('descending') || reducedMotion()) return;
+    // Measured at rest, before the room is turned.
+    takeSeat();
+    seatAt(1);
     root.classList.add('pulling');
     turn(root, LIFT);
     const cancel = tween(
@@ -100,12 +119,32 @@ function useSettleIn(): void {
       (reveal) => turn(root, reveal),
       () => root.classList.remove('pulling'),
     );
+    const cancelLanding = landSeatAfterTransition();
     return () => {
       cancel();
+      cancelLanding();
+      releaseSeat();
       root.classList.remove('pulling');
       root.style.setProperty('--reveal', '0');
     };
   }, []);
+}
+
+/** The glyph's seat rides the pull: taken as a pull begins to gather
+ *  (the room is at rest then), lifted a little of the way with the
+ *  reveal, and given back if the pull lets go — unless a lift has
+ *  taken over. Released whole when the Foyer goes. */
+function useSeatWithPull(): { gather: () => void; reveal: (value: number) => void } {
+  useEffect(() => () => releaseSeat(), []);
+  return {
+    gather: takeSeat,
+    reveal: (value: number) => {
+      pitchBackdrop(value);
+      if (liftCancel !== null) return;
+      if (value > 0.001) seatAt(value * PULL_SHARE);
+      else releaseSeat();
+    },
+  };
 }
 
 function FoyerPage() {
@@ -123,12 +162,16 @@ function FoyerPage() {
   // The pull writes --reveal on the root; the backdrop it reveals
   // lives in the root layout, under the room, so no preview element
   // is needed here.
+  const seat = useSeatWithPull();
   useThresholdReveal<HTMLDivElement>({
     direction: 'up',
     atBoundary: atPageTop,
     withTouch: true,
-    onGather: warmSky,
-    onReveal: pitchBackdrop,
+    onGather: () => {
+      warmSky();
+      seat.gather();
+    },
+    onReveal: seat.reveal,
     onCommit: () => {
       lift(() => void navigate({ to: '/sky' }));
     },
