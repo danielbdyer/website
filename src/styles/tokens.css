@@ -1221,56 +1221,429 @@ body::before {
   transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Daystar — sun by day, moon by night. Both bodies render in the DOM
-   so the switch is pure CSS, not React-conditional, avoiding the
-   hydration flash a JS-state-driven render would cause under SSG (the
-   .lt / .dk class is on <html> before first paint). The hour changes
-   over the sky's own arc — 1.8s, longer than the room's 500ms dimming
-   (INTERACTION_DESIGN.md §"Dark Mode as Room Dimming" names the sky as
-   the one surface that takes longer than the sigh): the setting body
-   sinks a hand's width as it fades over the first 1.1s; the rising one
-   waits 0.7s and lifts into place over the same span, so the two never
-   overlap as an eclipse. Reduced motion collapses both to the instant
-   swap via the global block above (and drops the wait). */
-.constellation-daystar__sun,
-.constellation-daystar__moon {
-  transition:
-    opacity 1.1s ease,
-    transform 1.1s cubic-bezier(0.23, 1, 0.32, 1);
+/* ─── The daystar — the hour's face in the margin ──────────────
+   Sun by day, moon by night, seated on the page in the frame's upper
+   right — the plate's corner emblem — and the hour's own toggle
+   (CONSTELLATION.md §"The Sun and the Moon"). Both faces render; the
+   html's .lt / .dk chooses the hour's, so first paint is right before
+   any script. The turn is a coin's: the setting face goes edge-on and
+   fades over 700ms, the rising one waits for it and comes round over
+   the next 700ms — 1.4s in all, inside the sky's own 1.8s dusk — so
+   the two never overlap as an eclipse. The washes are gradients; the
+   one filter sits on the still halo. The face breathes, blinks, and
+   follows the pointer through the frame's --parallax variables; the
+   crown of rays turns on the slowest clock. Reduced motion holds the
+   face still and swaps the hour at once.
+
+   Before the travel loop seats the daystar in page pixels
+   (skyProjector.projectDaystar → --daystar-x/y), CSS seats it by the
+   same rule for a cover-fit frame: 11.5% of the frame's longer side in
+   from the right, 10% down. The two agree, so hydration does not move
+   it. Fixed paper and ink for the eyes, so they read the same in both
+   hours: the face is lit by its own light. */
+.daystar {
+  --daystar-size: clamp(96px, 12vmin, 150px);
+  --daystar-paper: #fdfbf8;
+  --daystar-ink: #2b2219;
+
+  position: absolute;
+  z-index: 10;
+  top: var(--daystar-y, calc(max(100vw, 100dvh) * 0.1));
+  left: var(--daystar-x, calc(100% - max(100vw, 100dvh) * 0.115));
+  width: var(--daystar-size);
+  height: var(--daystar-size);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  translate: 0 calc(var(--reveal, 0) * 16px);
+  touch-action: manipulation;
 }
 
-/* The theme-toggle window's blanket transition rule would replace this
-   pair for its 550ms; restated at higher specificity so the daystar
-   keeps its own arc (with the window's fill/stroke fades alongside). */
-.theme-transitioning .constellation-daystar__sun,
-.theme-transitioning .constellation-daystar__moon {
+div.daystar {
+  cursor: default;
+  pointer-events: none;
+}
+
+.daystar__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* The turn. */
+.daystar__hour {
+  transform-box: fill-box;
+  transform-origin: center;
   transition:
-    opacity 1.1s ease,
-    transform 1.1s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 700ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 700ms ease;
+}
+
+.dk .daystar__sun {
+  transform: scaleX(0.02) rotate(-14deg);
+  opacity: 0;
+}
+
+.lt .daystar__moon {
+  transform: scaleX(0.02) rotate(14deg);
+  opacity: 0;
+}
+
+/* The rising face waits for the setting one to turn edge-on. */
+.lt .daystar__sun,
+.dk .daystar__moon {
+  transition-delay: 640ms;
+}
+
+/* The theme-toggle window's blanket transition rule would replace the
+   turn for its 550ms; restated at higher specificity so the coin keeps
+   its own arc (with the window's fill/stroke fades alongside). */
+.theme-transitioning .daystar__hour {
+  transition:
+    transform 700ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 700ms ease,
     fill 0.5s ease,
     stroke 0.5s ease !important;
 }
 
-/* The rising body waits for the setting one — restated inside the
-   toggle window too, whose shorthand above would reset the delay. */
-.lt .constellation-daystar__sun,
-.dk .constellation-daystar__moon,
-.theme-transitioning.lt .constellation-daystar__sun,
-.theme-transitioning.dk .constellation-daystar__moon {
-  transition-delay: 0.7s !important;
+.theme-transitioning.lt .daystar__sun,
+.theme-transitioning.dk .daystar__moon {
+  transition-delay: 640ms !important;
 }
 
-.lt .constellation-daystar__moon,
-.dk .constellation-daystar__sun {
-  opacity: 0;
-  transform: translateY(14px);
-  pointer-events: none;
+/* The halo — the one wash that keeps a filter; it never moves. */
+.daystar__halo {
+  filter: url('#daystar-wash');
+}
+
+.daystar__sun .daystar__halo {
+  fill: url('#daystar-sun-halo');
+}
+
+.daystar__moon .daystar__halo {
+  fill: url('#daystar-moon-halo');
+}
+
+/* The crown of rays, turning once every two minutes and twenty. */
+.daystar__rays {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: daystar-crown 140s linear infinite;
+}
+
+.daystar__ray {
+  fill: url('#daystar-ray');
+  stroke: var(--accent-warm);
+  stroke-width: 0.6;
+  stroke-opacity: 0.45;
+}
+
+.daystar__disc {
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.daystar__sun .daystar__disc {
+  fill: url('#daystar-sun-disc');
+  stroke: var(--accent-warm);
+  stroke-opacity: 0.6;
+}
+
+.daystar__moon .daystar__disc {
+  fill: url('#daystar-moon-disc');
+  stroke: var(--accent-violet);
+  stroke-opacity: 0.55;
+}
+
+.daystar__limb {
+  fill: var(--daystar-paper);
+  opacity: 0.32;
+}
+
+.daystar__crater {
+  fill: var(--accent-violet);
+  opacity: 0.12;
+}
+
+.daystar__star {
+  fill: var(--accent-gold);
+  animation: daystar-twinkle 4.2s ease-in-out infinite;
+}
+
+/* The face: breathes, and turns a degree or two toward the pointer.
+   The entrance (the sky-arrival's hello) plays on the body, so it
+   never fights the breath. */
+.daystar__body {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.sky-arrival .daystar__body {
+  animation: daystar-hello 1400ms cubic-bezier(0.23, 1, 0.32, 1) 900ms both;
+}
+
+.daystar__face {
+  transform-box: fill-box;
+  transform-origin: center;
+  rotate: calc(var(--parallax-x, 0) * 2.5deg);
+  animation: daystar-breath 7s ease-in-out infinite;
+  transition: rotate 800ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.daystar__moon .daystar__face {
+  animation-duration: 8.5s;
+}
+
+.daystar__cheek {
+  fill: url('#daystar-blush');
+  opacity: 0.72;
+  transition: opacity 400ms ease-out;
+}
+
+.daystar:hover .daystar__cheek,
+.daystar:focus-visible .daystar__cheek {
+  opacity: 1;
+}
+
+.daystar__brow {
+  fill: none;
+  stroke: color-mix(in oklab, var(--accent-warm) 45%, var(--text));
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  transition: translate 300ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.daystar__moon .daystar__brow {
+  stroke: color-mix(in oklab, var(--accent-violet) 40%, var(--text-2));
+}
+
+.daystar:hover .daystar__brow,
+.daystar:focus-visible .daystar__brow {
+  translate: 0 -1.5px;
+}
+
+/* An eye blinks by squinting to a line; the moon blinks slower. */
+.daystar__eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: daystar-blink 6.4s ease-in-out infinite;
+}
+
+.daystar__moon .daystar__eye {
+  animation-duration: 8.6s;
+  animation-delay: 2.1s;
+}
+
+.daystar__eye-white {
+  fill: var(--daystar-paper);
+}
+
+/* The gaze slides toward the pointer. */
+.daystar__gaze {
+  translate: calc(var(--parallax-x, 0) * 2.4px) calc(var(--parallax-y, 0) * 1.8px);
+  transition: translate 600ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.daystar__sun .daystar__iris {
+  fill: var(--accent);
+}
+
+.daystar__moon .daystar__iris {
+  fill: var(--accent-gold);
+}
+
+.daystar__pupil {
+  fill: var(--daystar-ink);
+}
+
+.daystar__glint {
+  fill: var(--daystar-paper);
+  opacity: 0.85;
+}
+
+.daystar__lid {
+  fill: url('#daystar-moon-disc');
+}
+
+.daystar__nose {
+  fill: url('#daystar-nose');
+}
+
+.daystar__mouth {
+  fill: color-mix(in oklab, var(--accent-warm) 60%, var(--daystar-ink));
+  opacity: 0.75;
+}
+
+.daystar__lip {
+  fill: none;
+  stroke: color-mix(in oklab, var(--accent-warm) 45%, var(--text));
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.daystar__moon .daystar__lip {
+  stroke: color-mix(in oklab, var(--accent-violet) 40%, var(--text-2));
+}
+
+/* The magic: a flare and eight sparks out of the turn, mounted fresh
+   each time and gone in a breath. */
+.daystar__flare {
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: url('#daystar-flare');
+  animation: daystar-flare 1.2s ease-out both;
+}
+
+.daystar__spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: var(--accent-gold);
+  animation: daystar-spark 1.3s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes daystar-crown {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes daystar-breath {
+  50% {
+    scale: 1.015;
+  }
+}
+
+@keyframes daystar-blink {
+  0%,
+  93%,
+  100% {
+    scale: 1 1;
+  }
+
+  95.5% {
+    scale: 1 0.08;
+  }
+}
+
+@keyframes daystar-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes daystar-hello {
+  0% {
+    translate: 0 8px;
+    scale: 0.94;
+  }
+
+  55% {
+    translate: 0 -3px;
+    scale: 1.025;
+  }
+
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes daystar-flare {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+  }
+
+  30% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    scale: 1.6;
+  }
+}
+
+@keyframes daystar-spark {
+  0% {
+    opacity: 0;
+    translate: 0 0;
+    scale: 0.2;
+  }
+
+  35% {
+    opacity: 1;
+    scale: 1;
+  }
+
+  100% {
+    opacity: 0;
+    translate: var(--dx) var(--dy);
+    scale: 0.4;
+  }
+}
+
+/* The nav's glyph readies itself with the Foyer's look-up pull: it
+   lifts and grows as the sky leans in, and on commit the view
+   transition carries it up into the daystar's face. */
+.theme-toggle__glyph {
+  translate: 0 calc(var(--reveal, 0) * -14px);
+  scale: calc(1 + var(--reveal, 0) * 0.45);
+  transition:
+    translate 120ms ease-out,
+    scale 120ms ease-out;
+}
+
+/* The ascent and the descent: the daystar's morph between the nav's
+   corner and the sky's margin takes a held second and a half on the
+   signature curve — longer than the root's crossfade, so the face
+   arrives after the room has changed. */
+::view-transition-group(daystar) {
+  animation-duration: 900ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+::view-transition-old(daystar),
+::view-transition-new(daystar) {
+  animation-duration: 900ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .constellation-daystar__sun,
-  .constellation-daystar__moon {
+  .daystar__hour {
     transition-delay: 0s !important;
+  }
+
+  .daystar__rays,
+  .daystar__body,
+  .daystar__face,
+  .daystar__eye,
+  .daystar__star {
+    animation: none !important;
+  }
+
+  .daystar__magic {
+    display: none;
+  }
+
+  .daystar__gaze,
+  .daystar__face {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+
+  .theme-toggle__glyph,
+  .daystar {
+    translate: 0 0;
+    scale: 1;
   }
 }
 

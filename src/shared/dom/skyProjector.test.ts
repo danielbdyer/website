@@ -2,7 +2,13 @@ import { describe, expect, test } from 'vitest';
 import { cameraBasis } from '@/shared/geometry/camera';
 import type { Camera } from '@/shared/geometry/camera';
 import { sphericalToUnit } from '@/shared/geometry/sphere';
-import { clientToNormalized, projectStars, projectThreads, projectToViewbox } from './skyProjector';
+import {
+  clientToNormalized,
+  projectDaystar,
+  projectStars,
+  projectThreads,
+  projectToViewbox,
+} from './skyProjector';
 import type { NavigableEdge, SkyFrame } from './skyProjector';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 
@@ -77,6 +83,25 @@ describe('skyProjector element cache', () => {
     projectThreads(group, [edge], CAMERA, BASIS, 1000);
     expect(Number.parseFloat(line.getAttribute('x1') ?? '')).toBeGreaterThan(0);
     expect(Number.parseFloat(line.getAttribute('y2') ?? '')).toBeGreaterThan(0);
+  });
+
+  test('the daystar is seated beside the sky, in page pixels and viewbox units, once', () => {
+    const frame = document.createElement('div');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const daystar = document.createElement('button');
+    daystar.dataset.daystar = 'true';
+    frame.append(svg, daystar);
+    document.body.append(frame);
+    projectDaystar(svg, 1000, 'cover');
+    // A frame with no size falls back to the plate's resting corner.
+    expect(daystar.dataset.vbX).toBe('885.00');
+    expect(daystar.dataset.vbY).toBe('288.00');
+    expect(daystar.style.getPropertyValue('--daystar-x')).toMatch(/px$/);
+    expect(daystar.style.getPropertyValue('--daystar-y')).toMatch(/px$/);
+    // Seated once: an unchanged frame writes nothing more.
+    daystar.style.setProperty('--daystar-x', '1px');
+    projectDaystar(svg, 1000, 'cover');
+    expect(daystar.style.getPropertyValue('--daystar-x')).toBe('1px');
   });
 
   test('a thread’s name sits at its midpoint, and follows it', () => {

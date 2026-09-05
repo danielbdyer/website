@@ -180,6 +180,30 @@ describe('Constellation organism', () => {
     expect(screen.queryByRole('button', { name: /relation/i })).toBeNull();
   });
 
+  test('given the hour, the daystar is its toggle; without it, a decoration', async () => {
+    const user = userEvent.setup();
+    const turn = vi.fn();
+    const rootRoute = createRootRoute({
+      component: () => <Constellation graph={SAMPLE_GRAPH} hour={{ current: 'night', turn }} />,
+    });
+    const router = createRouter({
+      routeTree: rootRoute,
+      history: createMemoryHistory({ initialEntries: ['/'] }),
+    });
+    render(<RouterProvider router={router} />);
+    const daystar = await screen.findByRole('button', { name: /turn the hour to day/i });
+    expect(daystar.dataset.daystar).toBe('true');
+    await user.click(daystar);
+    expect(turn).toHaveBeenCalledTimes(1);
+  });
+
+  test('without an hour the daystar is decorative and the sky still stands', async () => {
+    const { container } = renderConstellation(SAMPLE_GRAPH);
+    await screen.findByText('the polestar');
+    expect(screen.queryByRole('button', { name: /turn the hour/i })).toBeNull();
+    expect(container.querySelector('[data-daystar]')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
   test('honors the empty Foyer — zero nodes is a real empty set', async () => {
     renderConstellation(EMPTY_GRAPH);
     const nav = await screen.findByRole('navigation', { name: /constellation/i });

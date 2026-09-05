@@ -9,12 +9,7 @@ import type { Camera, CameraBasis } from '@/shared/geometry/camera';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
 import { cameraBasis, project } from '@/shared/geometry/camera';
 import { COMPASS } from '@/shared/content/constellation';
-import {
-  COMPASS_RIM,
-  DAYSTAR_REST_FRAME,
-  REST_DISTANCE,
-  daystarViewboxPoint,
-} from '@/shared/content/skyWalk';
+import { COMPASS_RIM, REST_DISTANCE } from '@/shared/content/skyWalk';
 import type { CompassPoint } from '@/shared/atoms/Compass/Compass';
 
 // Layout primitives for the constellation. Pure functions — no React,
@@ -24,14 +19,6 @@ import type { CompassPoint } from '@/shared/atoms/Compass/Compass';
 export const VIEWBOX = 1000;
 export const CENTER = VIEWBOX / 2;
 export const SKY_RADIUS = 440;
-/** Where the daystar is seated on the page for the prerender's assumed
- *  landscape frame; the travel hook re-seats it for the live frame. */
-export const DAYSTAR_REST = daystarViewboxPoint(
-  DAYSTAR_REST_FRAME.width,
-  DAYSTAR_REST_FRAME.height,
-  VIEWBOX,
-);
-export const DAYSTAR_REST_TRANSFORM = `translate(${DAYSTAR_REST.x.toFixed(2)} ${DAYSTAR_REST.y.toFixed(2)})`;
 
 // The resting camera: beneath the firmament, looking up through the
 // sphere's center at the far hemisphere — the dome. REST_DISTANCE

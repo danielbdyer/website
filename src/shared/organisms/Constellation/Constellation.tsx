@@ -1,13 +1,13 @@
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import { bearingsOf } from '@/shared/content/skyWalk';
 import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
-import { Daystar } from '@/shared/atoms/Daystar/Daystar';
 import { Firmament } from '@/shared/atoms/Firmament/Firmament';
+import { Daystar, type SkyHour } from '@/shared/molecules/Daystar/Daystar';
 import { WebGLFirmament } from '@/shared/molecules/WebGLFirmament/WebGLFirmament';
 import { SkyWhisper } from '@/shared/molecules/SkyWhisper/SkyWhisper';
 import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
-import { DAYSTAR_REST_TRANSFORM, VIEWBOX, skyTitle } from './layout';
+import { VIEWBOX, skyTitle } from './layout';
 import { useSkyScene } from './useSkyScene';
 import { attentionKeyOf, whisperConcordantOf, whisperPlaceOf } from './walk';
 
@@ -22,6 +22,9 @@ interface ConstellationProps {
    *  (or the session's remembered place).
    *  CONSTELLATION_PARALLEL.md §"The Orientation Contract." */
   focusKey?: string | undefined;
+  /** The hour the sky keeps and the way to turn it; with it the
+   *  daystar is the hour's toggle, without it a decoration. */
+  hour?: SkyHour | undefined;
   className?: string;
 }
 
@@ -29,12 +32,15 @@ interface ConstellationProps {
 // somewhere; the camera rests there; a named destination — a star, a
 // bearing, a thread, an arrow, a drag along a thread — is the only
 // thing that moves it. While it moves, the frame says so
-// (data-traveling), and the destination is framed ahead.
+// (data-traveling), and the destination is framed ahead. The frame
+// carries the pointer's parallax, so the chart, the daystar's gaze,
+// and the atmosphere all lean from one pair of variables.
 
 export function Constellation({
   graph,
   fullViewport = false,
   focusKey,
+  hour,
   className,
 }: ConstellationProps) {
   const { parallaxRef, cameraRef, glyphRef, walk, travel, interactions, world } = useSkyScene({
@@ -47,6 +53,7 @@ export function Constellation({
 
   return (
     <nav
+      ref={parallaxRef}
       aria-labelledby={titleId}
       className={cn('constellation-frame relative isolate overflow-hidden', className)}
     >
@@ -60,7 +67,6 @@ export function Constellation({
         fullViewport={fullViewport}
       />
       <svg
-        ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         preserveAspectRatio={fullViewport ? 'xMidYMid slice' : 'xMidYMid meet'}
         data-traveling={traveling ? 'true' : undefined}
@@ -73,9 +79,6 @@ export function Constellation({
         <ConstellationFilters />
         <g className="constellation-parallax--firmament">
           <Firmament size={VIEWBOX} />
-          <g data-daystar="true" transform={DAYSTAR_REST_TRANSFORM}>
-            <Daystar cx={0} cy={0} />
-          </g>
         </g>
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">
@@ -83,6 +86,7 @@ export function Constellation({
           </g>
         </g>
       </svg>
+      <Daystar hour={hour} />
       <SkyWhisper
         place={whisperPlaceOf(graph, walk.here)}
         bearings={bearingsOf(graph, walk.here)}

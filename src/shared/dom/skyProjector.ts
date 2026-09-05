@@ -411,17 +411,32 @@ export function markTrack(cameraGroup: SVGGElement, threadId: string | null): vo
 
 /** Seat the daystar on the page in the frame's upper right — the
  *  plate's corner emblem — wherever the live frame puts that corner.
- *  Writes the wrapper's transform; the WebGL atmosphere reads it back
- *  for the glow and the page light. */
+ *  The daystar is an element beside the sky's svg, not inside it (so
+ *  it can be a button, and so a look-up can morph the nav's glyph into
+ *  it); its place is written as page pixels in `--daystar-x/y` and as
+ *  viewbox units in `data-vb-x/y`, which the WebGL atmosphere reads
+ *  back for the glow and the page light. Written only when it moves —
+ *  the frame changing shape — never per tick. */
 export function projectDaystar(
   svg: SVGSVGElement | null,
   viewboxSize: number,
   fit: 'cover' | 'contain',
 ): void {
-  if (!svg) return;
-  const el = cachedElement(svg, '[data-daystar]');
+  const frame = svg?.parentElement;
+  if (!svg || !frame) return;
+  const el = cachedElement(frame, '[data-daystar]') as HTMLElement | null;
   if (!el) return;
   const rect = svg.getBoundingClientRect();
   const p = daystarViewboxPoint(rect.width, rect.height, viewboxSize, fit);
-  el.setAttribute('transform', `translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})`);
+  const vbX = p.x.toFixed(2);
+  const vbY = p.y.toFixed(2);
+  if (el.dataset.vbX === vbX && el.dataset.vbY === vbY) return;
+  el.dataset.vbX = vbX;
+  el.dataset.vbY = vbY;
+  const box = fitViewboxToCanvas(rect.width, rect.height, viewboxSize, fit);
+  const frameRect = frame.getBoundingClientRect();
+  const x = rect.left - frameRect.left + box.offsetX + p.x * box.scale;
+  const y = rect.top - frameRect.top + box.offsetY + p.y * box.scale;
+  el.style.setProperty('--daystar-x', `${x.toFixed(1)}px`);
+  el.style.setProperty('--daystar-y', `${y.toFixed(1)}px`);
 }

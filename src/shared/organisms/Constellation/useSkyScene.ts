@@ -20,7 +20,9 @@ interface UseSkySceneArgs {
 // the camera, the whisper. CONSTELLATION_ARCHITECTURE.md §"The Layers".
 
 export function useSkyScene({ graph, fullViewport, focusKey }: UseSkySceneArgs) {
-  const parallaxRef = useConstellationParallax<SVGSVGElement>();
+  // The parallax lives on the frame, so the chart, the daystar's gaze,
+  // and the atmosphere read one pair of variables.
+  const parallaxRef = useConstellationParallax<HTMLElement>();
   const cameraRef = useRef<SVGGElement | null>(null);
   const glyphRef = useRef<SVGCircleElement | null>(null);
   const positioned = buildPositionedMap(graph);

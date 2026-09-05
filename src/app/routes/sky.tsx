@@ -1,6 +1,7 @@
 import { Link, Outlet, createFileRoute, useMatch, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { Constellation } from '@dbd/sky';
+import { useTheme } from '@/app/providers';
 import { useReturnGesture } from '@/shared/hooks/useReturnGesture';
 import { useThresholdReveal } from '@/shared/hooks/useThresholdReveal';
 import { getConstellationGraph } from '@/shared/content/constellation';
@@ -53,6 +54,12 @@ function SkyPage() {
   const { graph } = Route.useLoaderData();
   const { focus } = Route.useSearch();
   const navigate = useNavigate();
+  // The hour the sky keeps, and the way to turn it: the daystar in the
+  // sky is the nav's toggle, ascended (CONSTELLATION.md §"The Sun and
+  // the Moon"). The route owns the theme; the constellation only
+  // receives the hour.
+  const { dark, toggle } = useTheme();
+  const hour = { current: dark ? ('night' as const) : ('day' as const), turn: toggle };
   // While the work overlay is open, the sky's leave-gestures stand
   // down entirely: scrolling reads the work, Escape closes the
   // overlay (its own handler), and only the overlay's close paths
@@ -78,7 +85,13 @@ function SkyPage() {
 
   return (
     <div className="sky-arrival relative h-dvh w-full overflow-hidden">
-      <Constellation graph={graph} fullViewport focusKey={focus} className="h-full w-full" />
+      <Constellation
+        graph={graph}
+        fullViewport
+        focusKey={focus}
+        hour={hour}
+        className="h-full w-full"
+      />
       {/* The Outlet renders nested overlay routes (sky.$room.$slug)
           when the URL points at a specific work; otherwise it's
           empty and the constellation alone fills the surface. */}

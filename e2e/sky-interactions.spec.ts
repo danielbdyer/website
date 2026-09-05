@@ -169,3 +169,87 @@ test.describe('the sky’s seams', { tag: '@smoke' }, () => {
     expect(touchAction).toBe('none');
   });
 });
+
+test.describe('the hour’s face', { tag: '@smoke' }, () => {
+  test('the daystar is the hour’s toggle: click it and the room turns, and the other face comes round', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'light');
+    });
+    await openSkyAtRest(page);
+    const daystar = page.getByRole('button', { name: /turn the hour to night/i });
+    await expect(daystar).toBeVisible();
+    // By day the sun shows and the moon is turned away.
+    expect(await opacityOf(page, '.daystar__sun')).toBeGreaterThan(0.9);
+    expect(await opacityOf(page, '.daystar__moon')).toBeLessThan(0.1);
+    await daystar.click();
+    await expect(page.locator('html')).toHaveClass(/dk/);
+    await expect(page.getByRole('button', { name: /turn the hour to day/i })).toBeVisible();
+    // The magic leaves the turn.
+    await expect(page.locator('.daystar__magic')).toHaveCount(1);
+    // After the coin has turned, the moon faces out and the sun is away.
+    await page.waitForTimeout(1700);
+    expect(await opacityOf(page, '.daystar__moon')).toBeGreaterThan(0.9);
+    expect(await opacityOf(page, '.daystar__sun')).toBeLessThan(0.1);
+  });
+
+  test('the turn is a coin’s: the moon waits for the sun to go edge-on', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'light');
+    });
+    await openSkyAtRest(page);
+    // Watch from inside the page at frame cadence: when the sun has
+    // gone halfway, and when the moon first shows.
+    await page.evaluate(() => {
+      const w = window as unknown as { __turn: { sunHalf: number; moonRise: number } };
+      w.__turn = { sunHalf: -1, moonRise: -1 };
+      const t0 = performance.now();
+      const sun = document.querySelector('.daystar__sun');
+      const moon = document.querySelector('.daystar__moon');
+      const sample = () => {
+        const t = performance.now() - t0;
+        if (sun && w.__turn.sunHalf < 0 && Number(getComputedStyle(sun).opacity) < 0.5) {
+          w.__turn.sunHalf = t;
+        }
+        if (moon && w.__turn.moonRise < 0 && Number(getComputedStyle(moon).opacity) > 0.1) {
+          w.__turn.moonRise = t;
+        }
+        if (t < 3000) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.getByRole('button', { name: /turn the hour to night/i }).click();
+    await page.waitForTimeout(3200);
+    const turn = await page.evaluate(
+      () => (window as unknown as { __turn: { sunHalf: number; moonRise: number } }).__turn,
+    );
+    expect(turn.sunHalf).toBeGreaterThan(0);
+    expect(turn.moonRise).toBeGreaterThan(turn.sunHalf);
+    // The rising face waits the better part of the setting face's turn.
+    expect(turn.moonRise - turn.sunHalf).toBeGreaterThan(200);
+  });
+
+  test('looking up from the Foyer lands the daystar in the sky; the nav stays below', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    // The nav's glyph carries the name the daystar will take up.
+    const glyphName = await page
+      .locator('.theme-toggle__glyph')
+      .evaluate((el) => getComputedStyle(el).viewTransitionName);
+    expect(glyphName).toBe('daystar');
+    await page.getByRole('link', { name: /look up/i }).click();
+    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCount(0);
+    const daystar = page.locator('[data-daystar]');
+    await expect(daystar).toHaveCount(1);
+    const daystarName = await daystar.evaluate((el) => getComputedStyle(el).viewTransitionName);
+    expect(daystarName).toBe('daystar');
+    // Seated on the page: in the frame's upper right, clear of the sky's center.
+    const box = await daystar.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(box!.x + box!.width / 2).toBeGreaterThan(viewport.width * 0.6);
+    expect(box!.y + box!.height / 2).toBeLessThan(viewport.height * 0.4);
+  });
+});
