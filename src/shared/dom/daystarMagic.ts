@@ -39,6 +39,10 @@ interface Mood {
   flow: number;
   /** 0 by day, 1 by night; the turn crossfades the body's paint. */
   night: number;
+  /** How much of the scarf is here at all: 1 while it drifts, 0 once
+   *  it has slipped away after a turn — slowly, so no one sees it
+   *  go — until the pointer's next visit brings it back. */
+  presence: number;
 }
 
 /** One side of the scarf: its strands' bodies, and the main strand's sheen. */
@@ -123,6 +127,18 @@ function paintScarf(root: HTMLElement, els: ScarfElements, shape: ScarfShape, mo
   const sweep = (mood.flow * 360 + mood.whirl * 120).toFixed(1);
   els.silk.setAttribute('gradientTransform', `rotate(${sweep} ${FACE_CENTER} ${FACE_CENTER})`);
   root.style.setProperty('--scarf-glow', Math.min(1, mood.energy * 0.7 + mood.whirl).toFixed(3));
+  root.style.setProperty('--scarf-presence', mood.presence.toFixed(3));
+}
+
+/** After the whirl has let go, the scarf slips away over a long
+ *  breath — too slowly to be seen leaving — and rests until the
+ *  pointer's next visit. */
+function letScarfGo(mood: Mood): void {
+  gsap.to(mood, { presence: 0, duration: 5, delay: 1.6, ease: 'sine.inOut', overwrite: 'auto' });
+}
+
+function callScarfBack(mood: Mood): void {
+  gsap.to(mood, { presence: 1, duration: 0.9, ease: 'sine.out', overwrite: 'auto' });
 }
 
 /** The body turns with the coin: edge-on with the setting face, round
@@ -162,14 +178,20 @@ function turnBody(canvas: HTMLCanvasElement | null, mood: Mood, night: number): 
 export function mountDaystarMagic(root: HTMLElement): MagicHandle | null {
   const els = locate(root);
   if (!els) return null;
-  const mood: Mood = { energy: 0, whirl: 0, flow: 0, night: isNight() ? 1 : 0 };
+  const mood: Mood = { energy: 0, whirl: 0, flow: 0, night: isNight() ? 1 : 0, presence: 1 };
   const body = mountPaint(root, els.canvas);
   // The silk's colors flow around the scarf on their own slow clock.
   const flowing = gsap.to(mood, { flow: 1, duration: 28, ease: 'none', repeat: -1 });
   let shape: ScarfShape = SCARF_AT_REST;
   const tick = (time: number, deltaMs: number) => {
-    shape = advance(shape, mood, time, Math.min(deltaMs, 100) / 1000);
-    paintScarf(root, els, shape, mood);
+    // A scarf that has slipped away is not drawn again until called;
+    // the register hears that it is gone.
+    if (mood.presence > 0.002) {
+      shape = advance(shape, mood, time, Math.min(deltaMs, 100) / 1000);
+      paintScarf(root, els, shape, mood);
+    } else {
+      root.style.setProperty('--scarf-presence', '0.000');
+    }
     body?.paint({ time, night: mood.night, energy: mood.energy, whirl: mood.whirl });
   };
   gsap.ticker.add(tick);
@@ -195,6 +217,7 @@ export function mountDaystarMagic(root: HTMLElement): MagicHandle | null {
         ease: on ? 'power2.out' : 'sine.inOut',
         overwrite: 'auto',
       });
+      if (on) callScarfBack(mood);
     },
     turn() {
       gsap
@@ -202,6 +225,8 @@ export function mountDaystarMagic(root: HTMLElement): MagicHandle | null {
         .to(mood, { whirl: 1, duration: 0.42, ease: 'power3.out' })
         .to(mood, { whirl: 0, duration: 1.2, ease: 'power2.inOut' });
       turnBody(els.canvas, mood, isNight() ? 0 : 1);
+      callScarfBack(mood);
+      letScarfGo(mood);
     },
     dispose() {
       gsap.ticker.remove(tick);
