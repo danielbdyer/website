@@ -9,6 +9,9 @@
 // Small on purpose: the Foyer imports this, not the sky.
 
 import type * as Renderer from './atmosphereRenderer';
+import type { AtmosphereHandles } from './atmosphereRenderer';
+import type { AtmosphericScene } from './atmosphereScene';
+import type { SkyPalette } from './palette';
 
 type RendererModule = typeof Renderer;
 
@@ -39,6 +42,53 @@ export function loadAtmosphereRenderer(): Promise<RendererModule> {
 /** True once the renderer has been asked for ahead of a mount. */
 export function atmosphereWarmed(): boolean {
   return warmed.has('renderer');
+}
+
+// ── Prepared atmospheres ──────────────────────────────────────────
+//
+// Beyond the module: the context created and the programs compiled
+// ahead, on a canvas that is not yet on the page, so that when the
+// sky mounts the atmosphere is adopted rather than made — no context
+// creation, no compile, no first-frame wait under the visitor's eye.
+// Keyed by the scene's stars, so a prepared atmosphere is adopted
+// only by the sky it was prepared for. One at a time: a second
+// preparation for a different scene replaces the first.
+
+export function sceneKeyOf(scene: AtmosphericScene): string {
+  return scene.stars.map((star) => star.key).join('|');
+}
+
+interface Prepared {
+  readonly key: string;
+  readonly handles: Promise<AtmosphereHandles | null>;
+}
+
+const prepared = new Map<'atmosphere', Prepared>();
+
+/** Create the atmosphere for a scene ahead of its mount. Idempotent
+ *  for the same scene; a new scene replaces the old preparation. */
+export function prepareAtmosphere(
+  scene: AtmosphericScene,
+  palette: SkyPalette,
+  dpr: number,
+): Promise<AtmosphereHandles | null> {
+  const key = sceneKeyOf(scene);
+  const existing = prepared.get('atmosphere');
+  if (existing?.key === key) return existing.handles;
+  const handles = loadAtmosphereRenderer().then(({ createAtmosphere }) =>
+    createAtmosphere(scene, palette, dpr),
+  );
+  prepared.set('atmosphere', { key, handles });
+  return handles;
+}
+
+/** Take the atmosphere prepared for this scene, if there is one — it
+ *  is the mount's now, and no longer held here. Null otherwise. */
+export function adoptAtmosphere(scene: AtmosphericScene): Promise<AtmosphereHandles | null> | null {
+  const existing = prepared.get('atmosphere');
+  if (existing?.key !== sceneKeyOf(scene)) return null;
+  prepared.delete('atmosphere');
+  return existing.handles;
 }
 
 export function warmAtmosphere(): void {

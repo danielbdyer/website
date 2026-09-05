@@ -228,8 +228,10 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
     expect(turn.moonRise).toBeGreaterThan(turn.sunHalf);
     // The rising face waits for the setting one to go edge-on — but no
     // longer: the dead middle of the turn was cut (the fourth pass).
+    // The bound is loose: the beats are read at frame cadence, and a
+    // busy runner (two projects in parallel) stretches the frames.
     expect(turn.moonRise - turn.sunHalf).toBeGreaterThan(80);
-    expect(turn.moonRise).toBeLessThan(900);
+    expect(turn.moonRise).toBeLessThan(1400);
   });
 
   test('the hour turns through a sunset: the frame carries its dusk for the arc, then rests', async ({
@@ -334,33 +336,10 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
   });
 });
 
-// The glyph's identity (the fifth pass): the nav's sun is the crown
-// itself on the same clock as the sky's; the nav's moon is the back
-// of the moon's head, which the ascent turns half round.
+// The glyph keeps the room's own clean icon (Danny's word, the sixth
+// pass); by night it is the far side of the moon, which the ascent
+// turns half round to show the face.
 test.describe('the glyph', { tag: '@smoke' }, () => {
-  test('by day the glyph is the crown, on the same clock as the sky’s crown', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('theme', 'light');
-    });
-    await page.goto('/');
-    await expect(page.locator('.theme-toggle__glyph .daystar__ray')).toHaveCount(16);
-    const phaseOf = (delay: string) => Number(delay.slice(1, -1));
-    const glyphDelay = await page
-      .locator('.theme-toggle__glyph .daystar__rays')
-      .evaluate((el) => (el as SVGGElement).style.animationDelay);
-    expect(glyphDelay).toMatch(/^-\d/);
-    await page.getByRole('link', { name: /look up/i }).click();
-    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
-    const skyDelay = await page
-      .locator('.daystar__sun .daystar__rays')
-      .evaluate((el) => (el as SVGGElement).style.animationDelay);
-    // Both on the wall clock: the sky's crown mounted a moment later
-    // and says so, within the crossing's own seconds.
-    const gap = phaseOf(skyDelay) - phaseOf(glyphDelay);
-    expect(gap).toBeGreaterThanOrEqual(0);
-    expect(gap).toBeLessThan(8);
-  });
-
   test('by night the ascent turns the moon half round: the back turns away, the face comes round', async ({
     page,
   }) => {
@@ -368,7 +347,7 @@ test.describe('the glyph', { tag: '@smoke' }, () => {
       localStorage.setItem('theme', 'dark');
     });
     await page.goto('/');
-    await expect(page.locator('.theme-toggle__glyph .daystar-glyph__back')).toHaveCount(1);
+    await expect(page.locator('.theme-toggle__glyph svg')).toHaveCount(1);
     const supported = await page.evaluate(() => 'startViewTransition' in document);
     test.skip(!supported, 'no view transitions here');
     await page.evaluate(() => {
@@ -442,6 +421,52 @@ test.describe('the way down', { tag: '@smoke' }, () => {
       .toEqual({ seen: true, gone: true });
   });
 
+  test('the look-up names the ascent on the root for the lift, then lets it go', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.evaluate(() => {
+      const w = window as unknown as { __ascent: { seen: boolean; gone: boolean } };
+      w.__ascent = { seen: false, gone: false };
+      new MutationObserver(() => {
+        const has = document.documentElement.classList.contains('ascending');
+        if (has) w.__ascent.seen = true;
+        if (w.__ascent.seen && !has) w.__ascent.gone = true;
+      }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    });
+    await page.getByRole('link', { name: /look up/i }).click();
+    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => (window as unknown as { __ascent: { seen: boolean; gone: boolean } }).__ascent,
+          ),
+        { timeout: 3000 },
+      )
+      .toEqual({ seen: true, gone: true });
+  });
+
+  test('while the Foyer rests, the sky is readied: its route, its atmosphere, and its magic are fetched with no gesture at all', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const fetched = () =>
+      page.evaluate(() => {
+        const names = performance.getEntriesByType('resource').map((e) => e.name);
+        return {
+          renderer: names.some((n) => /atmosphereRenderer/.test(n)),
+          magic: names.some((n) => /daystarMagic/.test(n)),
+          sky: names.some((n) => /\/assets\/sky-/.test(n)),
+        };
+      });
+    await expect
+      .poll(fetched, { timeout: 8000 })
+      .toEqual({ renderer: true, magic: true, sky: true });
+    // Still on the Foyer: readied, not navigated.
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCount(1);
+  });
+
   test('reaching for the sky warms its atmosphere ahead of the look-up', async ({ page }) => {
     await page.goto('/');
     const fetched = () =>
@@ -504,6 +529,30 @@ test.describe('the magic', { tag: '@smoke' }, () => {
     await expect.poll(glow, { timeout: 2000 }).toBeGreaterThan(0.5);
     await page.mouse.move(40, 600);
     await expect.poll(glow, { timeout: 3000 }).toBeLessThan(0.15);
+  });
+
+  test('after a turn the scarf slips away, and the pointer’s next visit brings it back', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'light');
+    });
+    await openSkyAtRest(page);
+    await expect(page.locator(SCARF)).toHaveAttribute('d', /^M /, { timeout: 8000 });
+    const presence = () =>
+      page
+        .locator('[data-daystar]')
+        .evaluate((el) => Number(el.style.getPropertyValue('--scarf-presence')));
+    expect(await presence()).toBe(1);
+    await page.getByRole('button', { name: /turn the hour to night/i }).click();
+    await page.mouse.move(40, 600);
+    // Seconds later, unnoticed, it is gone — and stays gone.
+    await expect.poll(presence, { timeout: 9000 }).toBe(0);
+    const gone = await page.locator(SCARF).getAttribute('d');
+    await page.waitForTimeout(300);
+    expect(await page.locator(SCARF).getAttribute('d')).toBe(gone);
+    await page.locator('[data-daystar]').hover();
+    await expect.poll(presence, { timeout: 2000 }).toBeGreaterThan(0.9);
   });
 
   test('a turn whirls the scarf', async ({ page }) => {

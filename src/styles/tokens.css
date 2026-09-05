@@ -572,7 +572,7 @@ body::before {
 
 .constellation-star[data-active='true'] .constellation-star__gold {
   transform: scale(1);
-  opacity: 0.42;
+  opacity: 0.55;
 }
 
 /* The whispered label — *"{title}"* in italic serif at meta size,
@@ -1926,37 +1926,6 @@ div.daystar {
   }
 }
 
-/* The daystar as the room sees it (DaystarGlyph): the sun's crown in
-   the page's ink on the same clock as the sky's, its disc a wash of
-   gold; the moon's back a crescent in the same ink. */
-.daystar-glyph {
-  display: block;
-  overflow: visible;
-}
-
-.daystar-glyph .daystar__ray {
-  fill: currentcolor;
-  stroke: none;
-  opacity: 0.85;
-}
-
-.daystar-glyph__disc {
-  fill: var(--accent-gold);
-  fill-opacity: 0.55;
-  stroke: currentcolor;
-  stroke-width: 6;
-}
-
-.daystar-glyph__core {
-  fill: var(--accent-gold);
-  opacity: 0.5;
-}
-
-.daystar-glyph__back {
-  fill: currentcolor;
-  opacity: 0.9;
-}
-
 /* The nav's glyph readies itself with the Foyer's look-up pull: it
    lifts and grows as the sky leans in, and on commit the view
    transition carries it up into the daystar's face. */
@@ -2028,6 +1997,53 @@ html.dk::view-transition-new(daystar) {
 
   100% {
     transform: perspective(600px) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+/* The ascent (the sixth pass, with Danny): looking up is a lean-back
+   into the heavens — the neck going up as the chin comes out, the
+   camera pitching back as if about to be slung skyward. The room drops
+   away beneath and tilts, its top coming toward the eye as it goes,
+   while the sky comes down from above, larger and tilted the other
+   way, and settles to meet the gaze: one camera move across both
+   pages rather than a crossfade. The daystar's morph rides its own
+   group over the same 900 ms. html.ascending is set by the Foyer for
+   the look-up's duration (routes/index.tsx). */
+html.ascending::view-transition-old(root) {
+  animation: ascend-room-away 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  transform-origin: 50% 30%;
+}
+
+html.ascending::view-transition-new(root) {
+  animation: ascend-sky-down 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  transform-origin: 50% 70%;
+}
+
+@keyframes ascend-room-away {
+  from {
+    transform: perspective(1200px) translateY(0) rotateX(0deg) scale(1);
+    opacity: 1;
+  }
+
+  to {
+    transform: perspective(1200px) translateY(38%) rotateX(-26deg) scale(0.94);
+    opacity: 0;
+  }
+}
+
+@keyframes ascend-sky-down {
+  0% {
+    transform: perspective(1200px) translateY(-14%) rotateX(16deg) scale(1.14);
+    opacity: 0;
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: perspective(1200px) translateY(0) rotateX(0deg) scale(1);
     opacity: 1;
   }
 }

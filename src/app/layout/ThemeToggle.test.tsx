@@ -18,19 +18,6 @@ describe('ThemeToggle', () => {
     );
   }
 
-  it('shows the daystar as the room sees it: the sun’s crown by day, the moon’s back by night, on the clock', async () => {
-    const user = userEvent.setup();
-    const { container } = renderToggle();
-    expect(container.querySelector('.daystar-glyph--sun .daystar__ray')).not.toBeNull();
-    expect(container.querySelectorAll('.daystar__ray')).toHaveLength(16);
-    expect(container.querySelector<SVGGElement>('.daystar__rays')?.style.animationDelay).toMatch(
-      /^-/,
-    );
-    await user.click(screen.getByRole('button'));
-    expect(container.querySelector('.daystar-glyph--moon .daystar-glyph__back')).not.toBeNull();
-    expect(container.querySelector('.daystar__ray')).toBeNull();
-  });
-
   it('announces the next state via aria-label (light → dark)', () => {
     renderToggle();
     expect(screen.getByRole('button')).toHaveAccessibleName('Switch to dark mode');

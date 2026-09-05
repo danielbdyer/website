@@ -13,6 +13,7 @@ import {
   atmosphereWarmed,
   loadAtmosphereRenderer,
   shouldRenderWebGL,
+  adoptAtmosphere,
 } from '@/shared/webgl/warmAtmosphere';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
 import { getSkyCamera, subscribeSkyCamera } from '@/shared/state/skyCamera';
@@ -401,6 +402,23 @@ interface MountedAtmosphere {
   claim: () => void;
 }
 
+/** 1.5 is the sweet spot for a layer that is entirely soft paint:
+ *  the structural SVG above carries every crisp mark, so the
+ *  atmosphere's pixels can be 44% fewer than a dpr-2 buffer with no
+ *  visible cost. The budget watcher can still drop to 1. */
+export function atmosphereDpr(): number {
+  return Math.min(globalThis.devicePixelRatio || 1, 1.5);
+}
+
+async function makeAtmosphere(
+  scene: AtmosphericScene,
+  readToken: (token: string) => string,
+  dark: boolean,
+): Promise<AtmosphereHandles | null> {
+  const { createAtmosphere } = await loadAtmosphereRenderer();
+  return createAtmosphere(scene, buildSkyPalette(readToken, dark), atmosphereDpr());
+}
+
 /** Wait out the sky's arrival animation before paying for context
  *  creation and shader compiles — the SVG firmament is the arrival's
  *  first-paint surface anyway, and a GL init mid-carpet-roll is a
@@ -428,24 +446,25 @@ async function mountAtmosphere(
   activeIndexRef: RefObject<number>,
   presenceRef: RefObject<Float32Array | null>,
 ): Promise<MountedAtmosphere | null> {
-  if (!atmosphereWarmed()) await arrivalSettled(container);
+  // An atmosphere prepared ahead (the Foyer's readiness) is adopted
+  // as it is: its context and programs already made, its first frame
+  // a paint away. Otherwise the arrival settles first, unless the
+  // renderer at least was warmed.
+  const adopted = adoptAtmosphere(scene);
+  if (!adopted && !atmosphereWarmed()) await arrivalSettled(container);
   // Probe with our own canvas before ogl gets the chance to
   // console.error on context failure (headless CI without GPU).
   const probe = document.createElement('canvas');
   if (!probe.getContext('webgl2') && !probe.getContext('webgl')) return null;
   const els = locateSkyDom(container);
   if (!els) return null;
-  const { createAtmosphere } = await loadAtmosphereRenderer();
   const root = document.documentElement;
   const readToken = (token: string) => getComputedStyle(root).getPropertyValue(token);
   const isDark = () => root.classList.contains('dk');
-  // 1.5 is the sweet spot for a layer that is entirely soft paint:
-  // the structural SVG above carries every crisp mark, so the
-  // atmosphere's pixels can be 44% fewer than a dpr-2 buffer with no
-  // visible cost. The budget watcher can still drop to 1.
-  const dpr = Math.min(globalThis.devicePixelRatio || 1, 1.5);
-  const handles = await createAtmosphere(scene, buildSkyPalette(readToken, isDark()), dpr);
+  const handles = adopted ? await adopted : await makeAtmosphere(scene, readToken, isDark());
   if (!handles) return null;
+  // A prepared atmosphere was toned for the hour it was made in.
+  if (adopted) handles.setPalette(buildSkyPalette(readToken, isDark()), true);
   const still = prefersStillAtmosphere();
   const buffers = allocateBuffers(scene);
   const state: LoopState = {

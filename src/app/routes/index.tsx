@@ -3,6 +3,7 @@ import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { GeometricFigure } from '@/shared/atoms/GeometricFigure/GeometricFigure';
 import { useThresholdReveal } from '@/shared/hooks/useThresholdReveal';
 import { warmDaystarMagic } from '@/shared/hooks/useDaystarMagic';
+import { useSkyReadiness } from '@/shared/hooks/useSkyReadiness';
 import { warmAtmosphere } from '@/shared/webgl/warmAtmosphere';
 
 export const Route = createFileRoute('/')({
@@ -11,6 +12,22 @@ export const Route = createFileRoute('/')({
 
 // The boundary for looking up: the visitor is at the page's top.
 const atPageTop = () => globalThis.scrollY <= 1;
+
+// The ascent's choreography lives in CSS on html.ascending (tokens.css
+// §"The ascent"): the room drops away and tilts as the sky comes down
+// to meet the gaze. The class opens with the look-up and closes after
+// the transition has played.
+const ASCENT_MS = 1400;
+let ascentTimer: ReturnType<typeof setTimeout> | null = null;
+function markAscent(): void {
+  const root = document.documentElement;
+  root.classList.add('ascending');
+  if (ascentTimer !== null) clearTimeout(ascentTimer);
+  ascentTimer = setTimeout(() => {
+    root.classList.remove('ascending');
+    ascentTimer = null;
+  }, ASCENT_MS);
+}
 
 /** The sky's lazy layers, fetched as the visitor reaches for it. */
 function warmSky(): void {
@@ -35,9 +52,15 @@ function FoyerPage() {
     withTouch: true,
     onGather: warmSky,
     onCommit: () => {
+      markAscent();
       void navigate({ to: '/sky' });
     },
   });
+  // The sky is readied while the Foyer rests — its route, its graph,
+  // its atmosphere's context and programs, its magic — so the look-up
+  // finds everything already there and nothing mounts under the eye
+  // (hooks/useSkyReadiness.ts).
+  useSkyReadiness();
   return (
     <>
       {/* The firmament leaning in — the threshold preview above the
@@ -66,6 +89,7 @@ function FoyerPage() {
             className="hover:text-text-2 no-underline transition-colors duration-200"
             onPointerEnter={warmSky}
             onFocus={warmSky}
+            onClick={markAscent}
           >
             ↑ Look up
           </Link>

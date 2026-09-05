@@ -182,19 +182,32 @@ export const DOME_FRAGMENT = /* glsl */ `
     float hitT = -b + sqrt(max(disc, 0.0));
     vec3 P = normalize(uCamPos + ray * hitT);
 
+    // By night the heavens are not held in the sphere (the seventh
+    // pass, with Danny): they fill the frame, read off the ray's own
+    // direction everywhere — a dome around the eye, not a globe seen
+    // from outside — and the sphere is only where the stars are, its
+    // curve the horizon they slow toward. Dusk unbends the sky off the
+    // plate into the dome; dawn gathers it back. Beyond the limb the
+    // dome is always what is read (the page hides it by day), blended
+    // over a band inside the rim so nothing seams as the hour turns.
+    float insideRaw = smoothstep(0.0, 0.03, disc);
+    float open = smoothstep(0.2, 0.9, uNight);
+    float beyondRaw = smoothstep(0.25, -0.05, disc);
+    vec3 Q = normalize(mix(P, ray, max(open, beyondRaw)));
+
     // The heavens' turn rides the camera as a roll, so the world the
     // ray meets already turns with the stars. The deep field is held
     // back a little (-0.38 of the roll → it turns at 0.62× the stars'
     // rate) so the backdrop reads farther than the stars.
     float sp = -uSpin * 0.38;
     mat2 spin = mat2(cos(sp), -sin(sp), sin(sp), cos(sp));
-    vec3 Pd = vec3(spin * P.xy, P.z);
+    vec3 Pd = vec3(spin * Q.xy, Q.z);
 
     // Base sky — pole-anchored, so traveling moves the heavens.
     // The ramp starts at the silhouette tangent (z = -1/orbit
     // distance = -0.4) so the gradient breathes from the frame's
     // edge to the pole with no flat band reading as a rim.
-    float zen = smoothstep(-0.42, 0.95, P.z);
+    float zen = smoothstep(-0.42, 0.95, Q.z);
     vec3 sky = mix(uHorizon, uZenith, zen);
 
     // The dark hour's deep field — vein, nebula, dust — leaves early in
@@ -205,7 +218,9 @@ export const DOME_FRAGMENT = /* glsl */ `
     // ── Fields: one low-frequency mass + one warped fbm. The mass
     // field shapes cloud banks and warps the wash; the wash carries
     // the watercolor weather, the nebula, and the vein's clumping.
-    // Five simplex calls per pixel, total.
+    // Five simplex calls per pixel here; the heavens' clouds below add
+    // four more and the parchment's mottle one (the sixth and seventh
+    // passes), the price of a sky worth looking into.
     float mass = snoise(Pd * 1.5 + vec3(0.0, 0.0, uTime * 0.004 * uMotion));
     float massN = mass * 0.5 + 0.5;
     float wash = fbm(Pd * 2.4 + mass * 0.55 + vec3(uTime * 0.0045 * uMotion, 0.0, 0.0));
@@ -223,6 +238,32 @@ export const DOME_FRAGMENT = /* glsl */ `
 
     // A whisper of nebula beyond the vein.
     sky += (uZenith * 1.4 + uAccentViolet * 0.12) * max(washN - 0.62, 0.0) * 0.45 * nightDeep;
+
+    // ── The heavens' gas clouds (the sixth pass, with Danny: the
+    // skill-sky you look up into — swirling nebulae, banks of teal and
+    // green with filaments of gold and a breath of rose). The banks
+    // are the wash folded by the mass; the filaments one more warped
+    // read, finer, flowing on its own slow clock. Brightest where the
+    // banks fold and toward the zenith, thinning to the deep. They
+    // belong to the dark hour — additive light — and by day stay on
+    // the paper as the chart's own faint watercolor.
+    float bankN = smoothstep(0.08, 0.78, washN + mass * 0.22);
+    float fil = fbm(Pd * 5.2 + wash * 1.6
+      + vec3(uTime * 0.005 * uMotion, -uTime * 0.007 * uMotion, 0.0));
+    float filN = smoothstep(0.32, 0.92, fil * 0.5 + 0.5);
+    vec3 nebulaTone = mix(vec3(0.16, 0.62, 0.66), vec3(0.30, 0.72, 0.38), smoothstep(0.35, 0.85, bankN));
+    nebulaTone = mix(nebulaTone, uAccentGold * 1.7, filN * 0.55);
+    nebulaTone = mix(nebulaTone, uAccentRose * 1.35, smoothstep(0.72, 1.0, massN) * 0.4);
+    // A point of view: one great sweep of the heavens carries the
+    // banks, the far side stays deep and dark, so the clouds compose
+    // rather than fill. World-anchored, so it turns with the stars.
+    float sweep = dot(Pd, vec3(-0.55, 0.35, 0.76));
+    float sweepBias = 0.3 + 0.7 * smoothstep(-0.75, 0.55, sweep);
+    float cloud = bankN * (0.3 + 0.7 * filN) * (0.45 + 0.55 * zen) * sweepBias;
+    sky += nebulaTone * cloud * 0.40 * nightDeep;
+    // By day a trace stays on the chart's plate only — the sheet is
+    // the sheet.
+    sky = mix(sky, mix(sky, nebulaTone, 0.14 * cloud * insideRaw), 1.0 - uNight);
 
     // ── Deep starfield — three depths of dust on a stereographic
     // chart, denser inside the vein the way real dust gathers.
@@ -276,8 +317,9 @@ export const DOME_FRAGMENT = /* glsl */ `
     float meridianGap = abs(fract(phi / meridianStep + 0.5) - 0.5) * meridianStep * sin(polar);
     float meridian = smoothstep(0.0035, 0.0, meridianGap)
       * smoothstep(0.07, 0.2, polar) * smoothstep(1.35, 1.05, polar);
-    sky += mix(uGlowColor, uHorizon, 0.5) * ring * ringMask * (0.014 + 0.02 * uNight) * breath
-      + mix(uGlowColor, facetHue, 0.55) * meridian * 0.032 * uNight * breath;
+    sky += (mix(uGlowColor, uHorizon, 0.5) * ring * ringMask * (0.014 + 0.02 * uNight) * breath
+      + mix(uGlowColor, facetHue, 0.55) * meridian * 0.032 * uNight * breath)
+      * insideRaw * (1.0 - 0.85 * open);
     // The polestar's own gathered warmth, breathing with the rings.
     sky += mix(uGlowColor, uAccentGold, 0.5) * exp(-polar * polar * 7.0) * breath
       * (0.02 + 0.035 * uNight);
@@ -294,7 +336,9 @@ export const DOME_FRAGMENT = /* glsl */ `
       + uAccentRose * sectorWeight(phi, 1.9635)
       + uAccentViolet * sectorWeight(phi, 3.5343)
       + uAccentGold * sectorWeight(phi, 5.1051);
-    sky = mix(sky, roomTint, roomBand * (0.12 - 0.03 * uNight));
+    // With the heavens open the compass's atmospheres would be the one
+    // thing still drawing the plate; they fade with the opening.
+    sky = mix(sky, roomTint, roomBand * (0.12 - 0.03 * uNight) * (1.0 - 0.75 * open));
 
     // ── The horizon — a luminous gather where the sky meets the
     // ground, hugging the frame's bottom where the Foyer waits
@@ -374,14 +418,18 @@ export const DOME_FRAGMENT = /* glsl */ `
     // luminous by contrast — the sky gathers a little light toward its
     // limb, the way a real sky brightens toward the horizon — not by a
     // drawn ring. By day the plate's edge is a single line of ink.
-    float inside = smoothstep(0.0, 0.03, disc);
-    float limbGather = smoothstep(0.32, 0.0, disc) * inside;
+    // By night the heavens are open and there is no page beyond the
+    // plate; the limb's gather and the rim's line fade with the
+    // opening, and only the sphere's own curve — the stars slowing
+    // toward it — says where the plate was.
+    float inside = max(insideRaw, open);
+    float limbGather = smoothstep(0.32, 0.0, disc) * insideRaw * (1.0 - open);
     vec3 pageNight = mix(uGround, uHorizon, 0.18) * 0.92;
     vec3 page = mix(paper, pageNight, uNight);
     sky += mix(uGlowColor, uHorizon, 0.35) * limbGather * (0.05 + 0.13 * uNight);
     float rimLine = exp(-abs(disc) * 44.0);
     sky = mix(sky, page, 1.0 - inside);
-    sky += uGlowColor * rimLine * 0.07 * uNight;
+    sky += uGlowColor * rimLine * 0.07 * uNight * (1.0 - open);
     sky = mix(sky, uInk, rimLine * 0.3 * day);
 
     // Paper grain — static, like the sheet itself. Scaled by the
@@ -390,11 +438,20 @@ export const DOME_FRAGMENT = /* glsl */ `
     float grain = (hash21(frag) - 0.5) + (hash21(floor(frag * 0.21)) - 0.5) * 0.6;
     sky += grain * uGrain * (0.35 + lum * 1.6);
 
+    // Parchment, a little (the seventh pass): by day the sheet has a
+    // soft unevenness, the way old paper has, warmer where it is
+    // thicker — one slow noise, faint, and nothing more.
+    float mottle = snoise(vec3(frag * 0.0055, 1.7)) * 0.5 + 0.5;
+    sky = mix(sky, sky * vec3(0.982, 0.97, 0.948), mottle * 0.5 * day);
+
     // The frame recedes toward the ground at its edges — gently at
-    // the bottom, where the horizon's gather now lives.
+    // the bottom, where the horizon's gather now lives. By day the
+    // edge is the sheet's, a shade warmer, like a page kept a long
+    // time; by night the open heavens keep more of themselves.
     vec2 ec = frag / uResolution - 0.5;
     float edge = smoothstep(0.42, 0.78, length(ec * vec2(1.0, 1.15)));
-    sky = mix(sky, uGround, edge * 0.40);
+    vec3 edgeTone = mix(uGround, mix(uGround, uAccentWarm, 0.14), day);
+    sky = mix(sky, edgeTone, edge * mix(0.44, 0.16, open));
     float bottom = smoothstep(0.72, 1.0, frag.y / uResolution.y);
     sky = mix(sky, uGround, bottom * 0.35);
 
@@ -492,10 +549,15 @@ export const GLOW_FRAGMENT = /* glsl */ `
       + exp(-abs(vQuad.y) * 11.0 - vQuad.x * vQuad.x * 70.0);
     float lumin = (core + aura + flare * (0.30 + 0.45 * vSeed)) * window
       * (1.0 + 0.22 * vTwinkle);
-    vec3 col = mix(vColor, vec3(1.0, 0.98, 0.94), core * 0.5);
-    col = mix(col, uAccentGold, vActive * 0.22);
+    // Quiet and attended, told apart clearly and without fuss (the
+    // sixth pass): a star at rest is a cool, pale point — its facet's
+    // hue only a tint — and the star that has the visitor's attention
+    // is gold, white at its core, and half again as bright.
+    vec3 quiet = mix(vColor, vec3(0.80, 0.86, 1.0), 0.62);
+    vec3 attended = mix(uAccentGold * 1.5, vec3(1.0, 0.98, 0.94), core * 0.6);
+    vec3 col = mix(quiet, attended, vActive);
     // Absent stars (the contextual cap) recede to a tenth of their light.
-    gl_FragColor = vec4(col * lumin * uNight * (0.8 + 0.5 * vActive) * mix(0.10, 1.0, vPresence), 0.0);
+    gl_FragColor = vec4(col * lumin * uNight * (0.66 + 0.9 * vActive) * mix(0.10, 1.0, vPresence), 0.0);
   }
 `;
 

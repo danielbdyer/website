@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Daystar } from '@/shared/molecules/Daystar/Daystar';
+import { gsap } from 'gsap';
 import { mountDaystarMagic } from './daystarMagic';
 
 // The driver against the molecule's real slots, on GSAP's real ticker
@@ -91,6 +92,31 @@ describe('daystarMagic', () => {
     magic?.hover(false);
     await wait(2100);
     expect(Number(root.style.getPropertyValue('--scarf-glow'))).toBeLessThan(0.1);
+    magic?.dispose();
+  }, 8000);
+
+  test('after a turn the scarf slips away, too slowly to be seen, and the pointer’s next visit brings it back', async () => {
+    const root = mountSky();
+    const magic = mountDaystarMagic(root);
+    await wait(80);
+    expect(Number(root.style.getPropertyValue('--scarf-presence'))).toBe(1);
+    // The leaving takes seconds; run the clock fast to watch it whole.
+    gsap.globalTimeline.timeScale(25);
+    magic?.turn();
+    await wait(60);
+    // Through the whirl the scarf is fully here.
+    expect(Number(root.style.getPropertyValue('--scarf-presence'))).toBeGreaterThan(0.9);
+    await wait(400);
+    expect(Number(root.style.getPropertyValue('--scarf-presence'))).toBe(0);
+    const gone = dOf(root, '.daystar__scarf--front [data-strand="0"]');
+    await wait(100);
+    // Gone, it is not drawn again.
+    expect(dOf(root, '.daystar__scarf--front [data-strand="0"]')).toBe(gone);
+    magic?.hover(true);
+    await wait(120);
+    expect(Number(root.style.getPropertyValue('--scarf-presence'))).toBeGreaterThan(0.9);
+    expect(dOf(root, '.daystar__scarf--front [data-strand="0"]')).not.toBe(gone);
+    gsap.globalTimeline.timeScale(1);
     magic?.dispose();
   }, 8000);
 
