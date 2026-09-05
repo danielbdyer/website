@@ -82,6 +82,11 @@ export function prepareAtmosphere(
   return handles;
 }
 
+/** Whether an atmosphere stands prepared for this scene. */
+export function hasPreparedAtmosphere(scene: AtmosphericScene): boolean {
+  return prepared.get('atmosphere')?.key === sceneKeyOf(scene);
+}
+
 /** Take the atmosphere prepared for this scene, if there is one — it
  *  is the mount's now, and no longer held here. Null otherwise. */
 export function adoptAtmosphere(scene: AtmosphericScene): Promise<AtmosphereHandles | null> | null {

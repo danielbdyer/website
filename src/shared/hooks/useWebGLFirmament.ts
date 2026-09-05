@@ -14,6 +14,7 @@ import {
   loadAtmosphereRenderer,
   shouldRenderWebGL,
   adoptAtmosphere,
+  hasPreparedAtmosphere,
 } from '@/shared/webgl/warmAtmosphere';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
 import { getSkyCamera, subscribeSkyCamera } from '@/shared/state/skyCamera';
@@ -741,6 +742,14 @@ export function useWebGLFirmament(
     const container = containerRef.current;
     if (!container) return;
     if (!shouldRenderWebGL()) return;
+    // An atmosphere prepared ahead is the sky already: the frame is
+    // claimed now, with no crossfade, so the lift never shows the
+    // chart beneath it for a breath.
+    const frame = container.closest<HTMLElement>('.constellation-frame');
+    if (frame && hasPreparedAtmosphere(scene)) {
+      frame.dataset.atmosphereAdopted = 'true';
+      frame.dataset.atmosphere = 'webgl';
+    }
     let cancelled = false;
     void mountAtmosphere(container, scene, fit, activeIndexRef, presenceRef)
       .then((mounted) => {

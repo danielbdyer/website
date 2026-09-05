@@ -104,7 +104,12 @@ function writeReveal(el: HTMLElement | null, value: number): void {
   const progress = value.toFixed(4);
   el?.style.setProperty('--reveal', progress);
   if (typeof document !== 'undefined') {
-    document.documentElement.style.setProperty('--reveal', progress);
+    const root = document.documentElement;
+    root.style.setProperty('--reveal', progress);
+    // While a pull is gathering the root says so, and the room can
+    // tilt with it (tokens.css §"The look-up"): a transform only
+    // while it is needed, so the room at rest is the room at rest.
+    root.classList.toggle('pulling', value > 0.001);
   }
 }
 

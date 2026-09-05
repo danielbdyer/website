@@ -139,7 +139,24 @@ function RootComponent() {
   return (
     <RootDocument>
       <ThemeProvider>
-        <div className="relative z-10 flex min-h-dvh flex-col">
+        {/* The sky's backdrop — fixed under everything, hidden while
+            the room stands; the room tilts away over it as the visitor
+            pulls (tokens.css §"The look-up"). A sibling of the room,
+            never inside it: a fixed element under a transformed
+            ancestor would move with the room instead of staying where
+            the sky is. The Foyer's readiness paints the sky itself
+            into it ahead of the look-up. */}
+        {!isSky && <div className="sky-backdrop" aria-hidden="true" />}
+        {/* The room: the page as one body, so a look-up can tilt it
+            away beneath the gaze over the sky's backdrop (tokens.css
+            §"The look-up"); on /sky it is the sky and does not tilt. */}
+        <div
+          className={
+            isSky
+              ? 'site-room site-room--sky relative z-10 flex min-h-dvh flex-col'
+              : 'site-room relative z-10 flex min-h-dvh flex-col'
+          }
+        >
           <JsonLd data={[websiteSchema(), personSchema()]} />
           <a
             href="#main-content"

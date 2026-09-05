@@ -493,6 +493,12 @@ export async function createAtmosphere(
   return {
     canvas: renderer.gl.canvas,
     setSize(width: number, height: number) {
+      // Setting a canvas's size clears its buffer, even to the same
+      // size; an atmosphere adopted from the backdrop keeps its
+      // painted frame when the sky it joins is the same size.
+      const w = Math.round((width || 1) * renderer.dpr);
+      const h = Math.round((height || 1) * renderer.dpr);
+      if (renderer.gl.canvas.width === w && renderer.gl.canvas.height === h) return;
       renderer.setSize(width || 1, height || 1);
       setResolution();
     },
