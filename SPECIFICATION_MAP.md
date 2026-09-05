@@ -260,6 +260,12 @@ CONTENT_SCHEMA + DESIGN_SYSTEM
 (all of the above)
   └─→ EVOLUTION_PROTOCOL.md
         The master plan. How the house grows over time.
+
+(the ground itself)
+  └─→ CATHEDRALS.md
+        The shared ground. The workspace the house stands on
+        with the engine beneath it; the slice that crosses
+        between them; the sequence.
 ```
 
 **`RENDERING_STRATEGY.md`** | Grounds | Exists | Depends on: `REACT_NORTH_STAR.md` + `PERFORMANCE_BUDGET.md` + `CONTENT_SCHEMA.md`
@@ -279,6 +285,9 @@ The workshop. Images, audio, video — formats, optimization, CDN delivery, alt 
 
 **`EVOLUTION_PROTOCOL.md`** | Grounds | Gap | Depends on: All of the above
 The master plan. How the codebase grows over time. Refactoring triggers (already partially in `REACT_NORTH_STAR.md` as the "Evolution Protocol" section), migration patterns, how new rooms or content types would be added, what "living over finished" means for the codebase itself. The site grows like a garden — this file says how you tend it. This is the capstone of the entire graph: the one file that needs every other file's context to make sense, because it specifies how the whole system evolves.
+
+**`CATHEDRALS.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `DOMAIN_MODEL.md` + `GRAPH_AND_LINKING.md` + `REACT_NORTH_STAR.md` + `RENDERING_STRATEGY.md` + `CONSTELLATION_ARCHITECTURE.md`
+The shared ground. Danny's second repository, `cathedrals` — a consent-gated knowledge graph whose constitution is *agents propose; the author blesses* — turned out to stand on the same three operations as the house. This file names what each project preserves, what is blended (one thing, two registers, never a third), the wall they share and the one door through it (`@dbd/slice`, a bounded view of the graph as plain data with a schema of record), dependency injection without a container, git as the vessel, the agent's preferences for the engine's successor, the practice the agent works by, and the phases with their pulls. The movements from "What Is Preserved" through "How the Agent Works Here" are written to become the workspace's root `CLAUDE.md` when the site moves under `apps/`.
 
 ---
 
@@ -355,6 +364,7 @@ The five outcomes today:
 | `CONSTELLATION_PARALLEL.md` | Exists | The navigation paradigm pairing the page-view and the sky-view: every surface has a sky-parallel, entered by looking up and left by looking down, oriented to whatever the visitor was attending to (a work → its star open, a room → its region lit, a facet → its constellation lit). Defines the orientation contract, the one-graph-two-views invariant, the architecture (the already-general `useThresholdReveal` gesture, a pure `skyFocusForRoute` orientation function, `/sky/{room}/{slug}` as the existing work-open route), the smallest valid first form (work ↔ star), and the accessibility / no-JS floor. Resolves `CONSTELLATION.md`'s held *one sky or one sky per room* toward **one sky, regionally oriented.** Cross-trunk: outside (navigation, interaction) and inside (the graph it re-views). Depends on `CONSTELLATION.md`, `CONSTELLATION_HORIZON.md`, `INFORMATION_ARCHITECTURE.md`, `INTERACTION_DESIGN.md`. |
 | `CONSTELLATION_WALK.md` | Exists | How the sky is traveled (2026-09-01, from first principles agreed with Danny): travel is volitional and forward — from star to star along the threads, toward something named, never ambient; the eight facets are the compass and a work sits where its facets pull it; each facet's stars form a figure (a spanning tree) in place of the co-membership mesh; the visitor is always somewhere (*here* is a star or the pole) and only the neighborhood is named; the whisper in second voice says where you are and what leads away (the bearings); the walk's memory within a session; the generative horizon (ghost stars and threads, author-only until blessed) named so nothing forecloses it. Supersedes `CONSTELLATION.md` §"Interaction Vocabulary" and the physics camera. Cross-trunk: outside (interaction, motion) and inside (the graph it walks). Depends on `CONSTELLATION.md`, `CONSTELLATION_HORIZON.md`, `CONSTELLATION_PARALLEL.md`, `CONSTELLATION_DESIGN.md`. |
 | `CONSTELLATION_ARCHITECTURE.md` | Exists | The sky's application architecture (2026-09-03, with Danny): a pure core in a thin shell. Six layers — Graph, Walk (a reducer), Motion (the camera's state machine: travel, the hand, the spring, the gaze), Frame (the projection, a target), Paint (SVG and GL painters), Shell (the ref, the schedule, the dispatch) — under the View. Two clocks meet at a boundary that carries only data. Names the lint rim and what remains to go the whole way (one frame, two painters; gestures as data; the event log). Depends on `REACT_NORTH_STAR.md`, `CONSTELLATION_WALK.md`, `CONSTELLATION_HORIZON.md`. |
+| `CATHEDRALS.md` | Exists | The founding document of the workspace the house shares with Danny's knowledge-graph engine (2026-09-03, with Danny). What is preserved from each, what is blended, the `@dbd/slice` contract and its invariants (INV-SLC-001..005), dependency direction and injection without a container, git as the vessel, the preferences for the engine's successor, how the agent works, and five phases held with pulls. Phase 0 shipped: the contract package, the works adapter, the workspace aliases. Depends on `CLAUDE.md`, `DOMAIN_MODEL.md`, `GRAPH_AND_LINKING.md`, `REACT_NORTH_STAR.md`, `RENDERING_STRATEGY.md`, `CONSTELLATION_ARCHITECTURE.md`. |
 | `MANIFESTO.md` | Exists | The slingshot — six arrows already in motion, named so the building can lean into them on purpose. Companion: `MANIFESTO_NOTES.md`. |
 | `MANIFESTO_NOTES.md` | Exists | Technical accompaniment to the manifesto: file paths, lint rules, drift inventory. Updated as drift resolves or surfaces. |
 

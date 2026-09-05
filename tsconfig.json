@@ -18,9 +18,10 @@
     "resolveJsonModule": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@dby/sky": ["./packages/sky/src/index.ts"],
-      "@dby/sky/*": ["./packages/sky/src/*"]
+      "@dbd/sky": ["./packages/sky/src/index.ts"],
+      "@dbd/sky/*": ["./packages/sky/src/*"],
+      "@dbd/slice": ["./packages/slice/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "packages/slice/src"]
 }

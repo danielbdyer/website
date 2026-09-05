@@ -282,6 +282,52 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ---
 
+## The Cathedral
+
+Held phases of `CATHEDRALS.md`, the founding document of the workspace the house shares with Danny's knowledge-graph engine. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
+
+### The sky reads a slice
+
+**Why:** The sky's graph layer builds from works directly and draws only the emergent figures; the declared wikilinks between works are not drawn, and origin is not named. Consuming a `Slice` (`@dbd/slice`) gives the sky the words: declared threads solid, discovered dotted, emergent hairline, predicate spoken by the whisper, ghosts drawn from `pending`.
+**Trigger:** Danny blesses `CATHEDRALS.md`. Fired 2026-09-03; the work is open.
+
+### The engine enters the workspace
+
+**Why:** `cathedrals` becomes `packages/hg` by `git subtree add`, history intact; `hg slice --json` emits a slice; the vault's claims render as a second sky with its pending proposals as ghosts.
+**Trigger:** Reachability fired: `main` on GitHub is current. Waits on the workspace's visibility (`CATHEDRALS.md` §"Held").
+
+### The seed and the root enter as lineage
+
+**Why:** The third repository, the Living Graph (December 2025; `living-graph`, created empty on 2026-09-03 for Danny's push), is the seed both the house and the engine grew from: the engine kept its constitution, the house kept its design brief, the sky kept its constellation and set down its canvas. The fourth, Dyerverse (2025), is the root: the longing, the golden loop, the protocol of essence and vector and link, and the creed of pure functions, before consent. No code enters from either; the documents do, whole, at `lineage/living-graph/` and `lineage/dyerverse/`, cited from the two constitutions they fathered. The seed's reference implementation of a canvas editor is the source for the sky's authoring verbs (Phase 5).
+**Trigger:** Fired 2026-09-03; both repositories are reachable. Waits on the workspace's visibility, and on Danny naming which documents are intimate.
+
+### The site moves under `apps/`
+
+**Why:** Today the site lives at the root and the workspace grows by packages. When something else needs the root, the site moves to `apps/site`, the Workers Builds root directory follows, and the movements of `CATHEDRALS.md` become the root `CLAUDE.md`.
+**Trigger:** A second app, or the engine's Worker, needs the root.
+
+### Blessing from the sky
+
+**Why:** A web verb for blessing is request-time behavior in the page — the second of `RENDERING_STRATEGY.md`'s two triggers for a runtime — scoped to one route. Until then blessing happens in the terminal and the sky shows the ghost before and the star after.
+**Trigger:** Danny wants to bless from a phone, or a second author appears.
+
+### The dotting collision
+
+**Why:** The sky dots the second facet of each hue pair to keep adjacent facets apart; the contract wants dotting for origin. One yields.
+**Trigger:** Phase 1, with the item above.
+
+### The workspace's visibility
+
+**Why:** This repository is public; the engine, the vault, the seed, and the root are private, and some lineage documents are intimate. Phases 2 and 3 publish whatever enters. A private workspace, a public one with selective lineage, or a public one with everything: Danny's call.
+**Trigger:** Before Phase 2 or Phase 3 lands.
+
+### One frontmatter for works and claims
+
+**Why:** A work has title, date, facets, type; a vault claim has type, status, origin, confidence, evidence, constellations. They rhyme and do not match; the engine's markdown reader wants one shape.
+**Trigger:** Phase 2's markdown reader.
+
+---
+
 ## Code Quality
 
 ### Frontmatter validation in the pre-commit hook

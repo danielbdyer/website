@@ -6,8 +6,8 @@ import {
   createRootRoute,
   createMemoryHistory,
 } from '@tanstack/react-router';
-import { Constellation } from '@dby/sky';
-import type { ConstellationGraph } from '@dby/sky';
+import { Constellation } from '@dbd/sky';
+import type { ConstellationGraph } from '@dbd/sky';
 
 import { buildHarnessGraph, productionScaleGraph, heavyGraph } from './fixtures';
 import { PerfOverlay } from './PerfOverlay';

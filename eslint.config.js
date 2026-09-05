@@ -146,8 +146,12 @@ export default tseslint.config(
   // Imported from another working repo's domain layer; the
   // selectors are unchanged. REACT_NORTH_STAR.md §"FP discipline"
   // is the canonical reference.
+  //
+  // The contract package (@dbd/slice) is held to the same bar in full:
+  // it is pure data and pure functions, and it is what the site and
+  // the engine share (CATHEDRALS.md §"Preferences" 5).
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'packages/slice/src/**/*.ts'],
     ignores: ['**/*.test.{ts,tsx}', 'src/test/**'],
     rules: {
       'no-restricted-syntax': [

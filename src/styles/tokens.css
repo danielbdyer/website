@@ -711,7 +711,7 @@ body::before {
 
    The frame and the canvas shell carry their structural layout
    here rather than as Tailwind utilities: the constellation also
-   mounts inside the @dby/sky perf harness, which deliberately
+   mounts inside the @dbd/sky perf harness, which deliberately
    skips the Tailwind pipeline. Position is load-bearing for the
    canvas (it must fill the frame the SVG fills); it belongs to
    the surface, not to the host app's utility layer. */

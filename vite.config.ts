@@ -129,10 +129,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      // Workspace alias for the @dby/sky package. Today the package
+      // Workspace alias for the @dbd/sky package. Today the package
       // is a re-export shim over the in-tree shared modules; Phase 2
       // moves the implementations into packages/sky/src.
-      '@dby/sky': path.resolve(__dirname, './packages/sky/src/index.ts'),
+      '@dbd/sky': path.resolve(__dirname, './packages/sky/src/index.ts'),
+      // The contract that crosses the wall between the site and the
+      // engine (CATHEDRALS.md §"The Contract: The Slice").
+      '@dbd/slice': path.resolve(__dirname, './packages/slice/src/index.ts'),
     },
   },
   // Cloudflare Web Analytics token. Inlined as a build-time constant

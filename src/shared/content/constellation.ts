@@ -65,7 +65,7 @@ export const COMPASS: readonly Facet[] = (Object.keys(FACET_AZIMUTH_DEG) as Face
 // The mapping is editorial, named here so a future revision is one
 // edit. The facet chips elsewhere on the site do *not* adopt these
 // hues — the held discipline still holds. Only the constellation.
-const FACET_HUE: Record<Facet, ConstellationHue> = {
+export const FACET_HUE: Record<Facet, ConstellationHue> = {
   craft: 'warm',
   body: 'warm',
   beauty: 'rose',
