@@ -26,7 +26,6 @@
     "lint:md": "markdownlint-cli2",
     "lint:spell": "cspell --no-progress \"**/*.{ts,tsx,md,mdx,css,yaml,json}\"",
     "lint:secrets": "secretlint \"**/*\" --secretlintignore .gitignore",
-    "lint:knip": "knip --no-progress",
     "lint:html": "html-validate dist/client/**/*.html",
     "lint:audit": "audit-ci --config audit-ci.json",
     "test:coverage": "vitest run --coverage",
