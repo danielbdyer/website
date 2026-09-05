@@ -659,18 +659,32 @@ body::before {
    way. Both are decorative (aria-hidden, pointer-events none);
    the gesture's meaning lives in the navigation it commits.
    Reduced motion never writes --reveal, so both rest hidden. */
-/* ─── The look-up: the room tilts, the sky was always there ───
-   The sky is not a panel that comes down over the room (the seventh
-   pass, with Danny: *it looked like a garage door*). Looking up is
-   the camera pitching back: the room drops away beneath the gaze and
-   tilts, its top receding, and behind it the heavens are simply
-   there — a fixed backdrop under everything, hidden while the room
-   stands, holding the sky the readiness painted ahead (the very
-   canvas the sky adopts on arrival) or, until then, the night's own
-   gradient. The pull drives the room's tilt through --reveal on the
-   root; the commit continues it as a view transition on the room's
-   own image (§"The ascent" below). Reduced motion never writes
-   --reveal, so the room never tilts. */
+/* ─── The look-up: the eye turns; the space stays ───────────────
+   The sky is not a panel that comes down over the room, and the room
+   is not a panel that swings away, nor a card that tips back (the
+   seventh and eighth passes, with Danny: *a garage door*, *a garage
+   door opening the other way*, *the corners*). Looking up is the eye
+   turning back in a space that stays where it is: the room is a
+   surface the visitor stands before, continuing past the frame on
+   both sides and below so the turning eye never finds its edge; its
+   top edge is the one edge kept, the wall's top, where the heavens
+   begin — and the heavens are a dome behind everything, the very
+   canvas the readiness painted, turned by the same pitch on the same
+   frame (dom/lookUp.ts, webgl/readySky.ts). The stage holds a
+   perspective; the room turns about a point one focal length in
+   front of it — the eye — so the page's far part recedes and its
+   near part comes on, foreshortened as a surface is, and drops from
+   the frame as the sky fills it. One number drives it all, --reveal
+   on the root: 0 → 1 is the pull, hand-driven; 1 → 3.7 is the lift,
+   carried frame by frame on the signature curve (routes/index.tsx).
+   The room at rest is untouched: every rule here holds only while
+   html.pulling. Reduced motion never writes --reveal. */
+@property --reveal {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 .sky-backdrop {
   position: fixed;
   inset: 0;
@@ -697,10 +711,28 @@ html.descending .sky-backdrop {
   visibility: visible;
 }
 
-/* The room: the page as one body over the backdrop, transformed only
-   while a pull is gathering so it is untouched at rest. The tilt is
-   the camera's: the top recedes as the whole drops, the way a wall
-   goes when the head tilts back to look above it. */
+/* The stage holds the eye: a perspective one focal length out,
+   centered on the viewport (the pull only gathers at the page's top,
+   so 50vh is the viewport's middle). The perspective makes the stage
+   a stacking context, so it takes its own place above the backdrop —
+   the room's own z-index cannot reach past it. */
+html.pulling .site-stage,
+html.ascending .site-stage,
+html.descending .site-stage {
+  position: relative;
+  z-index: 2;
+}
+
+html.pulling .site-stage {
+  perspective: 1200px;
+  perspective-origin: 50% 50vh;
+  overflow: clip;
+}
+
+/* The room turns about the eye — the rotation's origin one focal
+   length in front of it — so the room stays where it is in the world
+   and the gaze is what moves. It keeps its own paper while it turns
+   (the root's is what the transform would otherwise show through). */
 html.pulling .site-room:not(.site-room--sky),
 html.ascending .site-room:not(.site-room--sky),
 html.descending .site-room:not(.site-room--sky) {
@@ -708,21 +740,45 @@ html.descending .site-room:not(.site-room--sky) {
 }
 
 html.pulling .site-room:not(.site-room--sky) {
-  transform-origin: 50% 62%;
-  transform: perspective(1200px) translateY(calc(var(--reveal, 0) * 14%))
-    rotateX(calc(var(--reveal, 0) * 16deg));
+  transform-style: preserve-3d;
+  transform-origin: 50% 50vh 1200px;
+  transform: rotateX(calc(var(--reveal, 0) * 13deg));
   will-change: transform;
-
-  /* The skip link waits above the page's top edge; as the room drops
-     that edge shows, so the room keeps to its own box while tilting
-     (clip, not hidden: the nav stays sticky). */
-  overflow: clip;
 }
 
-/* The room's own image through the ascent and the descent. */
-html.ascending .site-room,
-html.descending .site-room {
-  view-transition-name: room;
+/* The surface continues: past the frame on both sides and below, so
+   the eye turning never finds a corner — a place, not a card. The
+   stage clips it (above): the continuation must never become scroll
+   overflow — a scrollbar would flash, and on a phone the viewport's
+   own answer to overflow aborts the view transition — and the stage's
+   box is the whole viewport wide, so nothing the eye can see is cut. */
+html.pulling .site-room:not(.site-room--sky)::before {
+  content: '';
+  position: absolute;
+  inset: 0 -60vw -100vh;
+  z-index: -1;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+/* The skip link waits above the page's top edge; the sky is there
+   now while the eye turns, so it keeps out of sight. */
+html.pulling .site-skip {
+  visibility: hidden;
+}
+
+/* A little depth of its own, grown with the pull: the chrome nearest
+   the eye, the text a breath forward, the footer a breath back. */
+html.pulling .site-room:not(.site-room--sky) > nav {
+  transform: translateZ(calc(var(--reveal, 0) * 80px));
+}
+
+html.pulling .site-room:not(.site-room--sky) > main {
+  transform: translateZ(calc(var(--reveal, 0) * 28px));
+}
+
+html.pulling .site-room:not(.site-room--sky) > footer {
+  transform: translateZ(calc(var(--reveal, 0) * -40px));
 }
 
 .threshold-preview-ground {
@@ -1420,7 +1476,6 @@ html.descending .site-room {
   background: transparent;
   cursor: pointer;
   transform: translate(-50%, -50%);
-  translate: 0 calc(var(--reveal, 0) * 16px);
   touch-action: manipulation;
 
   /* The silk crosses hours late: from a quarter second in, over 700ms. */
@@ -1450,6 +1505,11 @@ html.descending .site-room {
   --silk-2: oklch(from var(--accent-gold) 86% 0.17 h);
   --silk-3: oklch(from var(--accent) 80% 0.15 h);
   --silk-4: oklch(from var(--accent-violet) 74% 0.17 h);
+}
+
+/* The daystar sinks a little with the return pull. */
+html.pulling .daystar {
+  translate: 0 calc(var(--reveal, 0) * 16px);
 }
 
 /* Decorative (no hour to turn): not a control, but the pointer still
@@ -1986,11 +2046,14 @@ div.daystar {
    lifts and grows as the sky leans in, and on commit the view
    transition carries it up into the daystar's face. */
 .theme-toggle__glyph {
-  translate: 0 calc(var(--reveal, 0) * -14px);
-  scale: calc(1 + var(--reveal, 0) * 0.45);
   transition:
     translate 120ms ease-out,
     scale 120ms ease-out;
+}
+
+html.pulling .theme-toggle__glyph {
+  translate: 0 calc(min(var(--reveal, 0), 1) * -14px);
+  scale: calc(1 + min(var(--reveal, 0), 1) * 0.45);
 }
 
 /* The ascent and the descent: the daystar's morph between the nav's
@@ -2057,56 +2120,34 @@ html.dk::view-transition-new(daystar) {
   }
 }
 
-/* The ascent (the sixth pass, with Danny): looking up is a lean-back
-   into the heavens — the neck going up as the chin comes out, the
-   camera pitching back as if about to be slung skyward. The room drops
-   away beneath and tilts, its top coming toward the eye as it goes,
-   while the sky comes down from above, larger and tilted the other
-   way, and settles to meet the gaze: one camera move across both
-   pages rather than a crossfade. The daystar's morph rides its own
-   group over the same 900 ms. html.ascending is set by the Foyer for
+/* The ascent (the sixth pass, with Danny; the eye's own turn since
+   the eighth): looking up is a lean-back into the heavens — the neck
+   going up as the chin comes out, the camera pitching back as if about
+   to be slung skyward. The lift itself is live (§"The look-up"): by
+   the time the route changes the room is below the frame and the
+   heavens stand where the sky will find them, so the transition has
+   only itself to cross — the root's images, the same sky twice — and
+   the daystar's morph rides its own group over it. The room is not
+   named for the transition: its surface continues far past the frame,
+   and a snapshot of it would be larger than a phone can hold, which
+   skips the whole transition. html.ascending is set by the Foyer for
    the look-up's duration (routes/index.tsx). */
-html.ascending::view-transition-old(room) {
-  animation: ascend-room-away 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
-  transform-origin: 50% 62%;
-}
-
 html.ascending::view-transition-old(root),
 html.ascending::view-transition-new(root) {
   animation-duration: 700ms;
 }
 
-@keyframes ascend-room-away {
-  0% {
-    transform: perspective(1200px) translateY(0) rotateX(0deg);
-    opacity: 1;
-  }
-
-  60% {
-    opacity: 1;
-  }
-
-  100% {
-    transform: perspective(1200px) translateY(46%) rotateX(34deg);
-    opacity: 0;
-  }
-}
-
-/* The descent (the fourth pass, with Danny; the room's own image
-   since the seventh): the way down is the lean-back undone. The sky
-   drifts up and out while the room rises back into place beneath the
-   gaze, tilted as it was left and settling flat; the daystar stays
-   exactly where it is through the reveal, and only when the room has
-   settled does it travel down into the nav's corner and become the
-   glyph. html.descending is set by the sky route for the return's
-   duration (routes/sky.tsx). */
+/* The descent (the fourth pass, with Danny; live since the eighth):
+   the way down is the lean-back undone. The sky drifts up and out
+   while the room — the live room, with its depth — turns back into
+   place beneath the gaze from where the lift left it (the Foyer sets
+   --reveal to the lift and lets the transition carry it home); the
+   daystar stays exactly where it is through the reveal, and only when
+   the room has settled does it travel down into the nav's corner and
+   become the glyph. html.descending is set by the sky route for the
+   return's duration (routes/sky.tsx). */
 html.descending::view-transition-old(root) {
   animation: descend-sky-away 640ms cubic-bezier(0.23, 1, 0.32, 1) both;
-}
-
-html.descending::view-transition-new(room) {
-  animation: descend-room-rise 760ms cubic-bezier(0.23, 1, 0.32, 1) both;
-  transform-origin: 50% 62%;
 }
 
 html.descending::view-transition-group(daystar) {
@@ -2124,22 +2165,6 @@ html.descending::view-transition-new(daystar) {
   to {
     transform: translateY(-10%);
     opacity: 0;
-  }
-}
-
-@keyframes descend-room-rise {
-  0% {
-    transform: perspective(1200px) translateY(46%) rotateX(34deg);
-    opacity: 0;
-  }
-
-  35% {
-    opacity: 1;
-  }
-
-  100% {
-    transform: perspective(1200px) translateY(0) rotateX(0deg);
-    opacity: 1;
   }
 }
 

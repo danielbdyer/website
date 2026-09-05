@@ -239,28 +239,50 @@ export const DOME_FRAGMENT = /* glsl */ `
     // A whisper of nebula beyond the vein.
     sky += (uZenith * 1.4 + uAccentViolet * 0.12) * max(washN - 0.62, 0.0) * 0.45 * nightDeep;
 
-    // ── The heavens' gas clouds (the sixth pass, with Danny: the
-    // skill-sky you look up into — swirling nebulae, banks of teal and
-    // green with filaments of gold and a breath of rose). The banks
-    // are the wash folded by the mass; the filaments one more warped
-    // read, finer, flowing on its own slow clock. Brightest where the
-    // banks fold and toward the zenith, thinning to the deep. They
-    // belong to the dark hour — additive light — and by day stay on
-    // the paper as the chart's own faint watercolor.
-    float bankN = smoothstep(0.08, 0.78, washN + mass * 0.22);
-    float fil = fbm(Pd * 5.2 + wash * 1.6
-      + vec3(uTime * 0.005 * uMotion, -uTime * 0.007 * uMotion, 0.0));
-    float filN = smoothstep(0.32, 0.92, fil * 0.5 + 0.5);
-    vec3 nebulaTone = mix(vec3(0.16, 0.62, 0.66), vec3(0.30, 0.72, 0.38), smoothstep(0.35, 0.85, bankN));
-    nebulaTone = mix(nebulaTone, uAccentGold * 1.7, filN * 0.55);
-    nebulaTone = mix(nebulaTone, uAccentRose * 1.35, smoothstep(0.72, 1.0, massN) * 0.4);
+    // ── The heavens' nebula (the sixth pass; retuned in the eighth,
+    // with Danny and three Hubble plates — the Tarantula, the
+    // Pillars: *the green reads as algae, not space*). Not weather
+    // now but the thing itself. A pale luminous haze — the cool
+    // blue-white deep space is photographed in — folded by the mass
+    // into banks, brightest where they are deepest; through it, thin
+    // ridged filaments, white where the gas is thin and ochre where
+    // the mass gathers, the way gas lights along its edges; rust
+    // where the mass is densest (hydrogen's red, warmed to the umber
+    // palette); and lanes of dark dust silhouetted against the light,
+    // a warm rim where they meet it. The banks are the wash folded by
+    // the mass; the filaments one more warped read, finer, less
+    // swirled than before, on its own slow clock. They belong to the
+    // dark hour — additive light — and by day stay on the paper as
+    // the chart's own faint watercolor.
+    float bankN = smoothstep(0.22, 0.86, washN + mass * 0.22);
+    float fil = fbm(Pd * 4.6 + wash * 0.4
+      + vec3(uTime * 0.004 * uMotion, -uTime * 0.006 * uMotion, 0.0));
+    float filN = smoothstep(0.35, 0.95, fil * 0.5 + 0.5);
+    float thread = pow(1.0 - min(abs(fil) * 2.6, 1.0), 3.0);
+    float lane = smoothstep(-0.12, -0.52, fil) * bankN;
+    float rim = smoothstep(-0.30, -0.12, fil) * smoothstep(0.02, -0.12, fil) * bankN;
+    vec3 haze = vec3(0.40, 0.58, 0.78);
+    vec3 rust = mix(uAccentWarm, vec3(0.74, 0.30, 0.18), 0.6);
+    vec3 ochre = uAccentGold * 1.25;
+    vec3 dust = mix(uGround, uAccentWarm, 0.3) * 0.7;
+    vec3 nebulaTone = mix(haze, rust, smoothstep(0.5, 0.9, massN) * 0.8);
+    nebulaTone = mix(nebulaTone, ochre, filN * 0.2);
+    vec3 threadTone = mix(vec3(0.85, 0.92, 1.0), ochre, smoothstep(0.4, 0.8, massN));
     // A point of view: one great sweep of the heavens carries the
     // banks, the far side stays deep and dark, so the clouds compose
     // rather than fill. World-anchored, so it turns with the stars.
     float sweep = dot(Pd, vec3(-0.55, 0.35, 0.76));
-    float sweepBias = 0.3 + 0.7 * smoothstep(-0.75, 0.55, sweep);
-    float cloud = bankN * (0.3 + 0.7 * filN) * (0.45 + 0.55 * zen) * sweepBias;
-    sky += nebulaTone * cloud * 0.40 * nightDeep;
+    float sweepBias = 0.12 + 0.88 * smoothstep(-0.55, 0.65, sweep);
+    float cloud = bankN * (0.35 + 0.65 * filN) * (0.45 + 0.55 * zen) * sweepBias;
+    vec3 nebula = nebulaTone * cloud * 0.30
+      + vec3(0.86, 0.93, 1.0) * pow(cloud, 2.2) * 0.22
+      + threadTone * thread * bankN * sweepBias * 0.24
+      + ochre * rim * sweepBias * 0.18;
+    // The dust takes the light — its own, and a little of what lies
+    // behind it — and is itself a dark warm thing, not a hole.
+    nebula *= 1.0 - lane * 0.7;
+    sky = mix(sky, dust, lane * sweepBias * 0.45 * nightDeep);
+    sky += nebula * nightDeep;
     // By day a trace stays on the chart's plate only — the sheet is
     // the sheet.
     sky = mix(sky, mix(sky, nebulaTone, 0.14 * cloud * insideRaw), 1.0 - uNight);
@@ -280,12 +302,17 @@ export const DOME_FRAGMENT = /* glsl */ `
     float streakMag = clamp(length(uTravel) / 1.1, 0.0, 1.0) * uMotion;
     vec2 streakDir = length(chartDir) > 1e-6 ? normalize(chartDir) : vec2(1.0, 0.0);
     float stretch = 1.0 / (1.0 + 2.6 * streakMag);
-    float starGain = (0.45 + 0.55 * zen) * (0.55 + 2.1 * vein * (0.35 + 0.65 * washN));
+    // Stars gather inside the nebula, the way they are born there, and
+    // redden a little in its dust.
+    float starGain = (0.45 + 0.55 * zen)
+      * (0.55 + 2.1 * vein * (0.35 + 0.65 * washN) + 1.4 * cloud);
     float t = uTime * uMotion;
     float deep = starLayer(chart * 96.0, 0.78, t, streakDir, stretch) * 0.30
       + starLayer(chart * 40.0, 0.90, t * 0.9 + 11.0, streakDir, stretch) * 0.62
-      + starLayer(chart * 17.0, 0.955, t * 0.8 + 7.0, streakDir, stretch) * 1.05;
-    sky += vec3(0.93, 0.94, 1.0) * deep * starGain * nightDeep;
+      + starLayer(chart * 17.0, 0.955, t * 0.8 + 7.0, streakDir, stretch) * 1.05
+      + starLayer(chart * 150.0, 0.80, t * 1.1 + 3.0, streakDir, stretch) * 0.26 * (0.25 + cloud);
+    vec3 starTint = mix(vec3(0.93, 0.94, 1.0), vec3(1.0, 0.80, 0.66), 0.4 * cloud);
+    sky += starTint * deep * starGain * nightDeep;
 
     // ── The chart's gold rings — hairline circles of constant
     // angular distance from the polestar, breathing on the 30s
@@ -331,11 +358,15 @@ export const DOME_FRAGMENT = /* glsl */ `
     // populated hemisphere, absent at the pole; atmospheres of the
     // sky, not borders within it. A star sits inside the weather of
     // its own facets, so the placement can be read from the air.
-    float roomBand = dot(P.xy, P.xy) * smoothstep(-0.45, 0.1, P.z);
-    vec3 roomTint = uAccentWarm * sectorWeight(phi, 0.3927)
-      + uAccentRose * sectorWeight(phi, 1.9635)
-      + uAccentViolet * sectorWeight(phi, 3.5343)
-      + uAccentGold * sectorWeight(phi, 5.1051);
+    // Read off the sphere by day and off the ray once the heavens are
+    // open, so no edge of the plate shows through the dark hour's sky.
+    vec3 Rb = mix(P, Q, open);
+    float phiB = atan(Rb.y, Rb.x);
+    float roomBand = dot(Rb.xy, Rb.xy) * smoothstep(-0.45, 0.1, Rb.z);
+    vec3 roomTint = uAccentWarm * sectorWeight(phiB, 0.3927)
+      + uAccentRose * sectorWeight(phiB, 1.9635)
+      + uAccentViolet * sectorWeight(phiB, 3.5343)
+      + uAccentGold * sectorWeight(phiB, 5.1051);
     // With the heavens open the compass's atmospheres would be the one
     // thing still drawing the plate; they fade with the opening.
     sky = mix(sky, roomTint, roomBand * (0.12 - 0.03 * uNight) * (1.0 - 0.75 * open));

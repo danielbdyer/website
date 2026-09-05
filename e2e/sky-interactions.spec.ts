@@ -321,8 +321,35 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
       .locator('.theme-toggle__glyph')
       .evaluate((el) => getComputedStyle(el).viewTransitionName);
     expect(glyphName).toBe('daystar');
+    // The link lifts first: the room turns about the eye, live, before
+    // the sky route arrives beneath it. Recorded as it plays (software
+    // GL paints the dome slowly while the eye moves, so a poll after
+    // the fact can miss the whole lift).
+    await page.evaluate(() => {
+      const w = window as unknown as { __lift: { reveal: number; turned: boolean } };
+      w.__lift = { reveal: 0, turned: false };
+      new MutationObserver(() => {
+        const root = document.documentElement;
+        w.__lift.reveal = Math.max(
+          w.__lift.reveal,
+          Number(root.style.getPropertyValue('--reveal')) || 0,
+        );
+        const room = document.querySelector('.site-room:not(.site-room--sky)');
+        if (room && getComputedStyle(room).transform.startsWith('matrix3d')) {
+          w.__lift.turned = true;
+        }
+      }).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+      });
+    });
     await page.getByRole('link', { name: /look up/i }).click();
     await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
+    const lift = await page.evaluate(
+      () => (window as unknown as { __lift: { reveal: number; turned: boolean } }).__lift,
+    );
+    expect(lift.reveal).toBeGreaterThan(1);
+    expect(lift.turned).toBe(true);
     await expect(page.locator('.theme-toggle__glyph')).toHaveCount(0);
     const daystar = page.locator('[data-daystar]');
     await expect(daystar).toHaveCount(1);
@@ -353,20 +380,28 @@ test.describe('the glyph', { tag: '@smoke' }, () => {
     await page.evaluate(() => {
       const w = window as unknown as { __turn: string[] };
       w.__turn = [];
-      const t0 = performance.now();
-      const sample = () => {
-        for (const animation of document.getAnimations()) {
-          const effect = animation.effect as KeyframeEffect | null;
-          const pseudo = effect?.pseudoElement ?? '';
-          if (!pseudo.includes('daystar')) continue;
-          const turns = effect!
-            .getKeyframes()
-            .some((frame) => String(frame.transform ?? '').includes('rotateY'));
-          if (turns && !w.__turn.includes(pseudo)) w.__turn = [...w.__turn, pseudo];
-        }
-        if (performance.now() - t0 < 1400) requestAnimationFrame(sample);
+      // Read the transition's animations once it is ready, rather than
+      // sampling frames: the lift plays for 900 ms first, and software
+      // GL can starve a frame sampler through the whole transition.
+      const doc = document as Document & {
+        startViewTransition: (cb: () => void | Promise<void>) => ViewTransition;
       };
-      requestAnimationFrame(sample);
+      const original = doc.startViewTransition.bind(doc);
+      doc.startViewTransition = (cb) => {
+        const transition = original(cb);
+        void transition.ready.then(() => {
+          for (const animation of document.getAnimations()) {
+            const effect = animation.effect as KeyframeEffect | null;
+            const pseudo = effect?.pseudoElement ?? '';
+            if (!pseudo.includes('daystar')) continue;
+            const turns = effect!
+              .getKeyframes()
+              .some((frame) => String(frame.transform ?? '').includes('rotateY'));
+            if (turns && !w.__turn.includes(pseudo)) w.__turn = [...w.__turn, pseudo];
+          }
+        });
+        return transition;
+      };
     });
     await page.getByRole('link', { name: /look up/i }).click();
     await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
@@ -416,9 +451,52 @@ test.describe('the way down', { tag: '@smoke' }, () => {
           page.evaluate(
             () => (window as unknown as { __descent: { seen: boolean; gone: boolean } }).__descent,
           ),
-        { timeout: 3000 },
+        { timeout: 15_000 },
       )
       .toEqual({ seen: true, gone: true });
+  });
+
+  test('the way down keeps the sky: the same canvas is handed back to the backdrop and the room settles beneath it', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const webgl = await page.evaluate(
+      () => document.createElement('canvas').getContext('webgl') !== null,
+    );
+    test.skip(!webgl, 'no WebGL here');
+    const readied = page.locator('.sky-backdrop canvas[data-prepared]');
+    await expect(readied).toHaveCount(1, { timeout: 10_000 });
+    await readied.evaluate((el) => {
+      el.dataset.roundTrip = 'the-same';
+    });
+    await page.getByRole('link', { name: /look up/i }).click();
+    const frame = page.locator('nav[aria-labelledby="constellation-title"]');
+    await frame.waitFor();
+    await expect(frame.locator('.webgl-firmament canvas[data-round-trip="the-same"]')).toHaveCount(
+      1,
+    );
+    await page.evaluate(() => {
+      const w = window as unknown as { __settle: { seen: boolean } };
+      w.__settle = { seen: false };
+      new MutationObserver(() => {
+        if (document.documentElement.classList.contains('pulling')) w.__settle.seen = true;
+      }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    });
+    await page.getByRole('link', { name: /return to the foyer/i }).click();
+    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 4000 });
+    // The very same canvas, back in the backdrop at once — handed back,
+    // not a fresh one made at idle — and the room settling in beneath it.
+    await expect(page.locator('.sky-backdrop canvas[data-round-trip="the-same"]')).toHaveCount(1, {
+      timeout: 15_000,
+    });
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => (window as unknown as { __settle: { seen: boolean } }).__settle.seen),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+    await expect(page.locator('html')).not.toHaveClass(/pulling/, { timeout: 20_000 });
   });
 
   test('the look-up names the ascent on the root for the lift, then lets it go', async ({
@@ -482,11 +560,12 @@ test.describe('the way down', { tag: '@smoke' }, () => {
     await page.mouse.wheel(0, -40);
     await expect(page.locator('html')).toHaveClass(/pulling/);
     await expect
-      .poll(() => room.evaluate((el) => getComputedStyle(el).transform), { timeout: 1500 })
+      .poll(() => room.evaluate((el) => getComputedStyle(el).transform), { timeout: 12_000 })
       .not.toBe('none');
     await expect(page.locator('.sky-backdrop')).toBeVisible();
-    // Released, the room settles and the backdrop hides again.
-    await expect(page.locator('html')).not.toHaveClass(/pulling/, { timeout: 4000 });
+    // Released, the room settles and the backdrop hides again. (Software
+    // GL paints the dome slowly while the eye moves; the wait is long.)
+    await expect(page.locator('html')).not.toHaveClass(/pulling/, { timeout: 20_000 });
     await expect(page.locator('.sky-backdrop')).toBeHidden();
     expect(await room.evaluate((el) => getComputedStyle(el).transform)).toBe('none');
     // Still the Foyer.

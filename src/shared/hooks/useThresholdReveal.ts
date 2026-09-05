@@ -33,7 +33,12 @@ const FOLLOW_RATE = 16;
 // solving x(t) by a few Newton steps then reading y(t). Standard CSS
 // timing-function math; kept here so the resistance has a real curve
 // rather than the bare linear progress the follower produced.
-function cubicBezierEase(x1: number, y1: number, x2: number, y2: number): (x: number) => number {
+export function cubicBezierEase(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): (x: number) => number {
   // Canonical coefficient form: p(t) = ((a·t + b)·t + c)·t for each axis.
   const cxc = 3 * x1;
   const bxc = 3 * (x2 - x1) - cxc;
@@ -83,6 +88,10 @@ interface ThresholdRevealOptions {
    *  a gesture, before any preview shows. The Foyer warms the sky's
    *  atmosphere on it, so a committed look-up arrives already lit. */
   readonly onGather?: () => void;
+  /** Called with each written reveal while a gesture plays — the
+   *  Foyer turns the sky's backdrop with it, so the heavens pitch
+   *  with the room. Not called on release to rest at unmount. */
+  readonly onReveal?: (value: number) => void;
 }
 
 interface RevealState {
@@ -113,7 +122,12 @@ function writeReveal(el: HTMLElement | null, value: number): void {
   }
 }
 
-function stepReveal(el: HTMLElement | null, state: RevealState, onCommit: () => void): void {
+function stepReveal(
+  el: HTMLElement | null,
+  state: RevealState,
+  onCommit: () => void,
+  reveal: (value: number) => void,
+): void {
   const now = performance.now();
   const dt = Math.min((now - state.lastFrameAt) / 1000, 0.1);
   state.lastFrameAt = now;
@@ -121,10 +135,10 @@ function stepReveal(el: HTMLElement | null, state: RevealState, onCommit: () => 
     state.accum *= Math.exp(-DRAIN_RATE * dt);
   }
   state.shown += (state.accum - state.shown) * (1 - Math.exp(-FOLLOW_RATE * dt));
-  writeReveal(el, RESISTANCE_EASE(Math.min(state.shown, 1)));
+  reveal(RESISTANCE_EASE(Math.min(state.shown, 1)));
   if (!state.committed && state.accum >= 1) {
     state.committed = true;
-    writeReveal(el, 1);
+    reveal(1);
     onCommit();
     state.raf = null;
     return;
@@ -132,11 +146,11 @@ function stepReveal(el: HTMLElement | null, state: RevealState, onCommit: () => 
   if (state.accum < 0.003 && state.shown < 0.003) {
     state.accum = 0;
     state.shown = 0;
-    writeReveal(el, 0);
+    reveal(0);
     state.raf = null;
     return;
   }
-  state.raf = requestAnimationFrame(() => stepReveal(el, state, onCommit));
+  state.raf = requestAnimationFrame(() => stepReveal(el, state, onCommit, reveal));
 }
 
 function gather(
@@ -144,6 +158,7 @@ function gather(
   state: RevealState,
   amount: number,
   commit: () => void,
+  reveal: (value: number) => void,
   began?: () => void,
 ) {
   if (state.committed) return;
@@ -152,8 +167,37 @@ function gather(
   state.lastInputAt = performance.now();
   if (state.raf === null) {
     state.lastFrameAt = performance.now();
-    state.raf = requestAnimationFrame(() => stepReveal(el, state, commit));
+    state.raf = requestAnimationFrame(() => stepReveal(el, state, commit, reveal));
   }
+}
+
+function freshState(): RevealState {
+  return {
+    accum: 0,
+    shown: 0,
+    committed: false,
+    lastInputAt: 0,
+    lastFrameAt: 0,
+    raf: null,
+    touchY: null,
+    touchBase: 0,
+  };
+}
+
+/** The gesture's callbacks, read through the latest-ref at call time. */
+function bind(callbacksRef: { readonly current: ThresholdRevealOptions }, el: HTMLElement | null) {
+  return {
+    commit: () => callbacksRef.current.onCommit(),
+    began: () => callbacksRef.current.onGather?.(),
+    reveal: (value: number) => {
+      writeReveal(el, value);
+      callbacksRef.current.onReveal?.(value);
+    },
+    outsideBoundary: () => {
+      const atBoundary = callbacksRef.current.atBoundary;
+      return atBoundary ? !atBoundary() : false;
+    },
+  };
 }
 
 export function useThresholdReveal<T extends HTMLElement>(
@@ -174,22 +218,8 @@ export function useThresholdReveal<T extends HTMLElement>(
     if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const el = previewRef.current;
     const sign = direction === 'down' ? 1 : -1;
-    const state: RevealState = {
-      accum: 0,
-      shown: 0,
-      committed: false,
-      lastInputAt: 0,
-      lastFrameAt: 0,
-      raf: null,
-      touchY: null,
-      touchBase: 0,
-    };
-    const commit = () => callbacksRef.current.onCommit();
-    const began = () => callbacksRef.current.onGather?.();
-    const outsideBoundary = () => {
-      const atBoundary = callbacksRef.current.atBoundary;
-      return atBoundary ? !atBoundary() : false;
-    };
+    const state = freshState();
+    const { commit, began, reveal, outsideBoundary } = bind(callbacksRef, el);
     const onWheel = (e: WheelEvent) => {
       const along = e.deltaY * sign;
       if (along <= 0 || outsideBoundary()) {
@@ -197,7 +227,7 @@ export function useThresholdReveal<T extends HTMLElement>(
         state.lastInputAt = 0;
         return;
       }
-      gather(el, state, along / WHEEL_THRESHOLD_PX, commit, began);
+      gather(el, state, along / WHEEL_THRESHOLD_PX, commit, reveal, began);
     };
     // Touch: a pull is a drag against the boundary — finger moving
     // down reveals what is above ('up'), finger moving up reveals
@@ -212,7 +242,14 @@ export function useThresholdReveal<T extends HTMLElement>(
       const y = e.touches[0]?.clientY ?? state.touchY;
       const pulled = (y - state.touchY) * -sign;
       if (pulled <= 0) return;
-      gather(el, state, state.touchBase + pulled / TOUCH_THRESHOLD_PX - state.accum, commit, began);
+      gather(
+        el,
+        state,
+        state.touchBase + pulled / TOUCH_THRESHOLD_PX - state.accum,
+        commit,
+        reveal,
+        began,
+      );
     };
     const onTouchEnd = () => {
       state.touchY = null;
@@ -225,7 +262,14 @@ export function useThresholdReveal<T extends HTMLElement>(
     }
     return () => {
       if (state.raf !== null) cancelAnimationFrame(state.raf);
-      writeReveal(el, 0);
+      // A descent in progress owns the root: the Foyer's settle-in has
+      // already taken --reveal and `pulling` from where the sky's
+      // gesture left them, and this unmount must not snap them back.
+      if (document.documentElement.classList.contains('descending')) {
+        el?.style.setProperty('--reveal', '0');
+      } else {
+        writeReveal(el, 0);
+      }
       globalThis.removeEventListener('wheel', onWheel);
       if (withTouch) {
         globalThis.removeEventListener('touchstart', onTouchStart);
