@@ -47,6 +47,23 @@ export const Route = createFileRoute('/sky')({
   component: SkyPage,
 });
 
+// The descent's choreography lives in CSS on html.descending
+// (tokens.css §"The ascent and the descent"): the room slides up
+// beneath a daystar that stays where it is, and only then does the
+// daystar settle into the nav's corner. The class opens with the
+// return and closes after the transition has played.
+const DESCENT_MS = 1600;
+let descentTimer: ReturnType<typeof setTimeout> | null = null;
+function markDescent(): void {
+  const root = document.documentElement;
+  root.classList.add('descending');
+  if (descentTimer !== null) clearTimeout(descentTimer);
+  descentTimer = setTimeout(() => {
+    root.classList.remove('descending');
+    descentTimer = null;
+  }, DESCENT_MS);
+}
+
 const RETURN_LINK_CLASS =
   'sky-return-link font-body text-list text-text-3 hover:text-text-2 absolute bottom-8 left-1/2 z-10 -translate-x-1/2 italic no-underline transition-colors duration-200';
 
@@ -70,6 +87,7 @@ function SkyPage() {
   // crossing is reversible. Otherwise the sky returns to the Foyer.
   const [focusRoom, focusSlug] = focus?.split('/') ?? [];
   const returnHome = () => {
+    markDescent();
     if (focusRoom && focusSlug) {
       void navigate({ to: '/$room/$slug', params: { room: focusRoom, slug: focusSlug } });
     } else {
@@ -112,11 +130,17 @@ function SkyPage() {
           params={{ room: focusRoom, slug: focusSlug }}
           aria-label="Return to the work"
           className={RETURN_LINK_CLASS}
+          onClick={markDescent}
         >
           ↓ Return to the piece
         </Link>
       ) : (
-        <Link to="/" aria-label="Return to the Foyer" className={RETURN_LINK_CLASS}>
+        <Link
+          to="/"
+          aria-label="Return to the Foyer"
+          className={RETURN_LINK_CLASS}
+          onClick={markDescent}
+        >
           ↓ Return to the Foyer
         </Link>
       )}

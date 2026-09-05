@@ -53,15 +53,29 @@ describe('Daystar molecule', () => {
 
   test('the scarf has two slots — behind the faces and in front — empty until the magic writes them', () => {
     const { container } = render(<Daystar hour={{ current: 'day', turn: () => {} }} />);
-    const svg = container.querySelector('svg.daystar__svg')!;
-    const layers = [...svg.children].map((el) => el.getAttribute('class') ?? el.tagName);
+    const root = container.querySelector('[data-daystar]')!;
+    // Three layers: the scarf behind, the body's canvas, the drawn faces
+    // with the scarf in front.
+    expect([...root.children].map((el) => el.getAttribute('class'))).toEqual([
+      'daystar__svg daystar__svg--behind',
+      'daystar__paint',
+      'daystar__svg daystar__svg--front',
+    ]);
+    const front = container.querySelector('svg.daystar__svg--front')!;
+    const layers = [...front.children].map((el) => el.getAttribute('class') ?? el.tagName);
     expect(layers).toEqual([
       'defs',
-      'daystar__scarf daystar__scarf--behind',
+      'daystar__dusk',
       'daystar__hour daystar__sun',
       'daystar__hour daystar__moon',
       'daystar__scarf daystar__scarf--front',
     ]);
+    expect(
+      container.querySelector('svg.daystar__svg--behind .daystar__scarf--behind'),
+    ).not.toBeNull();
+    // The body is a canvas the magic will paint; unpainted until then.
+    expect(root.querySelector<HTMLElement>('canvas.daystar__paint')).not.toBeNull();
+    expect((root as HTMLElement).dataset.paint).toBeUndefined();
     for (const slot of container.querySelectorAll('.daystar__scarf')) {
       const bodies = slot.querySelectorAll('.daystar__scarf-body');
       expect(bodies).toHaveLength(3);
@@ -69,7 +83,18 @@ describe('Daystar molecule', () => {
       expect(slot.querySelector('.daystar__scarf-sheen')?.getAttribute('d')).toBe('');
     }
     // The silk the magic sweeps is declared once, in the defs.
-    expect(svg.querySelectorAll('#daystar-silk')).toHaveLength(1);
+    expect(root.querySelectorAll('#daystar-silk')).toHaveLength(1);
+  });
+
+  test('the dusk’s flare sits behind both faces, and the clips for the silk’s echoes are defined', () => {
+    const { container } = render(<Daystar hour={{ current: 'day', turn: () => {} }} />);
+    const svg = container.querySelector('svg.daystar__svg--front')!;
+    const layers = [...svg.children].map((el) => el.getAttribute('class') ?? el.tagName);
+    expect(layers.indexOf('daystar__dusk')).toBeLessThan(
+      layers.indexOf('daystar__hour daystar__sun'),
+    );
+    expect(svg.querySelector('clipPath#daystar-disc-clip circle')).not.toBeNull();
+    expect(svg.querySelector('clipPath#daystar-crescent-clip path')).not.toBeNull();
   });
 
   test('carries the daystar view-transition name, so the nav’s glyph can become it', () => {

@@ -365,6 +365,8 @@ export default tseslint.config(
       'src/shared/geometry/camera.ts',
       'src/shared/webgl/atmosphereProjection.ts',
       'src/shared/webgl/atmosphereRenderer.ts',
+      // The daystar's painter sizes the canvas it is handed.
+      'src/shared/webgl/daystarPaint.ts',
     ],
     rules: {
       'no-restricted-syntax': 'off',

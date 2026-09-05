@@ -117,3 +117,18 @@ export const MOON_PROFILE = [
   `A ${DISC_RADIUS} ${DISC_RADIUS} 0 1 0 ${MOON_HORN_TOP.x} ${MOON_HORN_TOP.y}`,
   'Z',
 ].join(' ');
+
+// ─── The moon's back ───────────────────────────────────────────────
+//
+// Seen from behind — as the room sees it in the nav's corner — the
+// moon is a plain crescent lit on the left: the disc's left rim for
+// its outer edge, a wider arc bulging left for its inner one, the
+// horns at the disc's top and foot. The ascent turns it half round
+// to show the face (CONSTELLATION.md §"The Sun and the Moon").
+
+export const MOON_BACK = [
+  `M ${CENTER} ${CENTER - DISC_RADIUS}`,
+  `A ${DISC_RADIUS} ${DISC_RADIUS} 0 0 0 ${CENTER} ${CENTER + DISC_RADIUS}`,
+  `A 80 80 0 0 1 ${CENTER} ${CENTER - DISC_RADIUS}`,
+  'Z',
+].join(' ');

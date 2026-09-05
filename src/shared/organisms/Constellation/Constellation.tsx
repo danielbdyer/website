@@ -6,6 +6,7 @@ import { Daystar, type SkyHour } from '@/shared/molecules/Daystar/Daystar';
 import { WebGLFirmament } from '@/shared/molecules/WebGLFirmament/WebGLFirmament';
 import { SkyWhisper } from '@/shared/molecules/SkyWhisper/SkyWhisper';
 import { cn } from '@/shared/utils/cn';
+import { useDusk } from './useDusk';
 import { Stage } from './Stage';
 import { VIEWBOX, skyTitle } from './layout';
 import { useSkyScene } from './useSkyScene';
@@ -34,7 +35,9 @@ interface ConstellationProps {
 // thing that moves it. While it moves, the frame says so
 // (data-traveling), and the destination is framed ahead. The frame
 // carries the pointer's parallax, so the chart, the daystar's gaze,
-// and the atmosphere all lean from one pair of variables.
+// and the atmosphere all lean from one pair of variables; and it
+// carries the dusk (data-dusk) for the 1.8s after the hour turns, so
+// the sunset gathers at the sun in whichever substrate is painting.
 
 export function Constellation({
   graph,
@@ -50,11 +53,13 @@ export function Constellation({
   });
   const titleId = 'constellation-title';
   const traveling = walk.heading !== null;
+  const dusk = useDusk(hour?.current);
 
   return (
     <nav
       ref={parallaxRef}
       aria-labelledby={titleId}
+      data-dusk={dusk ? 'true' : undefined}
       className={cn('constellation-frame relative isolate overflow-hidden', className)}
     >
       <h2 id={titleId} className="sr-only">
@@ -86,6 +91,9 @@ export function Constellation({
           </g>
         </g>
       </svg>
+      {/* The sunset, gathered at the daystar's seat, for the dusk's 1.8s
+          (tokens.css §"The dusk"). */}
+      <div aria-hidden="true" className="constellation-dusk" />
       <Daystar hour={hour} />
       <SkyWhisper
         place={whisperPlaceOf(graph, walk.here)}
