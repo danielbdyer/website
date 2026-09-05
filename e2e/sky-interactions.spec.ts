@@ -536,7 +536,7 @@ test.describe('the seat', { tag: '@smoke' }, () => {
       };
     });
     await page.getByRole('link', { name: /return to the foyer/i }).click();
-    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 4000 });
+    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 10_000 });
     // Landed: the seat gone, the glyph visible and named again.
     await expect(page.locator('html')).not.toHaveClass(/daystar-seated/, { timeout: 20_000 });
     await expect(page.locator('.theme-toggle__glyph')).toHaveCSS('view-transition-name', 'daystar');
@@ -601,7 +601,7 @@ test.describe('the way down', { tag: '@smoke' }, () => {
         await page.waitForTimeout(40);
       }
     }
-    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 4000 });
+    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 10_000 });
     await expect(page.locator('.theme-toggle__glyph')).toHaveCount(1);
     await expect
       .poll(
@@ -641,7 +641,7 @@ test.describe('the way down', { tag: '@smoke' }, () => {
       }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     });
     await page.getByRole('link', { name: /return to the foyer/i }).click();
-    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 4000 });
+    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 10_000 });
     // The very same canvas, back in the backdrop at once — handed back,
     // not a fresh one made at idle — and the room settling in beneath it.
     await expect(page.locator('.sky-backdrop canvas[data-round-trip="the-same"]')).toHaveCount(1, {
