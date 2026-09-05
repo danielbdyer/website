@@ -467,6 +467,53 @@ test.describe('the way down', { tag: '@smoke' }, () => {
     await expect(page.locator('.theme-toggle__glyph')).toHaveCount(1);
   });
 
+  test('a pull tilts the room away over the backdrop, and a release settles it back', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'the wheel is a pointer’s instrument');
+    await page.goto('/');
+    const room = page.locator('.site-room');
+    expect(await room.evaluate((el) => getComputedStyle(el).transform)).toBe('none');
+    await page.mouse.move(640, 400);
+    // Two small notches: a gathering, well short of the threshold.
+    await page.mouse.wheel(0, -40);
+    await page.waitForTimeout(30);
+    await page.mouse.wheel(0, -40);
+    await expect(page.locator('html')).toHaveClass(/pulling/);
+    await expect
+      .poll(() => room.evaluate((el) => getComputedStyle(el).transform), { timeout: 1500 })
+      .not.toBe('none');
+    await expect(page.locator('.sky-backdrop')).toBeVisible();
+    // Released, the room settles and the backdrop hides again.
+    await expect(page.locator('html')).not.toHaveClass(/pulling/, { timeout: 4000 });
+    await expect(page.locator('.sky-backdrop')).toBeHidden();
+    expect(await room.evaluate((el) => getComputedStyle(el).transform)).toBe('none');
+    // Still the Foyer.
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCount(1);
+  });
+
+  test('the sky painted behind the room is the very sky the look-up arrives in', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const webgl = await page.evaluate(
+      () => document.createElement('canvas').getContext('webgl') !== null,
+    );
+    test.skip(!webgl, 'no WebGL here');
+    // Readied at idle: the prepared atmosphere's canvas sits in the backdrop.
+    await expect(page.locator('.sky-backdrop canvas[data-prepared]')).toHaveCount(1, {
+      timeout: 10_000,
+    });
+    await page.getByRole('link', { name: /look up/i }).click();
+    const frame = page.locator('nav[aria-labelledby="constellation-title"]');
+    await frame.waitFor();
+    // Adopted whole: the same canvas, claimed at once, no chart beneath.
+    await expect(frame.locator('.webgl-firmament canvas[data-prepared]')).toHaveCount(1);
+    await expect(frame).toHaveAttribute('data-atmosphere', 'webgl');
+    await expect(frame).toHaveAttribute('data-atmosphere-adopted', 'true');
+  });
+
   test('reaching for the sky warms its atmosphere ahead of the look-up', async ({ page }) => {
     await page.goto('/');
     const fetched = () =>

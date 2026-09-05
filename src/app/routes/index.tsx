@@ -37,16 +37,20 @@ function warmSky(): void {
 
 function FoyerPage() {
   const navigate = useNavigate();
-  // The held reveal gesture, first form: scrolling up against the
-  // Foyer's top leans the firmament in from above, spring-held;
-  // past the threshold the look-up commits and the sky unfurls the
-  // rest of the way. Release early and the ceiling breathes back.
-  // CONSTELLATION.md §"The Reveal Mechanism".
+  // The held reveal gesture: scrolling up against the Foyer's top
+  // tilts the room away beneath the gaze, spring-held, the heavens
+  // already behind it; past the threshold the look-up commits and the
+  // lift carries the rest of the way. Release early and the room
+  // settles back. CONSTELLATION.md §"The Reveal Mechanism", §"The Sun
+  // and the Moon" (*The lift*).
   // The sky's atmosphere is warmed as the visitor reaches for it — the
   // first input of a pull, or the pointer resting on the link — so a
   // committed look-up arrives already lit, in one substrate, rather
   // than the chart first and the weather a breath later.
-  const curtainRef = useThresholdReveal<HTMLDivElement>({
+  // The pull writes --reveal on the root; the backdrop it reveals
+  // lives in the root layout, under the room, so no preview element
+  // is needed here.
+  useThresholdReveal<HTMLDivElement>({
     direction: 'up',
     atBoundary: atPageTop,
     withTouch: true,
@@ -63,12 +67,6 @@ function FoyerPage() {
   useSkyReadiness();
   return (
     <>
-      {/* The firmament leaning in — the threshold preview above the
-          page's ceiling. Fixed-positioned, so it lives outside the
-          Reveal molecule (whose entry transform would otherwise
-          become its containing block and trap it in the column).
-          Decorative; the commit navigates. */}
-      <div ref={curtainRef} aria-hidden="true" className="threshold-preview-sky" />
       <Reveal>
         <div className="flex flex-col gap-8 py-10 sm:flex-row sm:items-center sm:gap-10 sm:py-14">
           <div className="h-24 w-24 shrink-0 sm:h-[110px] sm:w-[110px]">

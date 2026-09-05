@@ -659,22 +659,70 @@ body::before {
    way. Both are decorative (aria-hidden, pointer-events none);
    the gesture's meaning lives in the navigation it commits.
    Reduced motion never writes --reveal, so both rest hidden. */
-.threshold-preview-sky {
+/* ─── The look-up: the room tilts, the sky was always there ───
+   The sky is not a panel that comes down over the room (the seventh
+   pass, with Danny: *it looked like a garage door*). Looking up is
+   the camera pitching back: the room drops away beneath the gaze and
+   tilts, its top receding, and behind it the heavens are simply
+   there — a fixed backdrop under everything, hidden while the room
+   stands, holding the sky the readiness painted ahead (the very
+   canvas the sky adopts on arrival) or, until then, the night's own
+   gradient. The pull drives the room's tilt through --reveal on the
+   root; the commit continues it as a view transition on the room's
+   own image (§"The ascent" below). Reduced motion never writes
+   --reveal, so the room never tilts. */
+.sky-backdrop {
   position: fixed;
-  inset: 0 0 auto;
-  height: 24dvh;
-  z-index: 60;
+  inset: 0;
+  z-index: 1;
+  visibility: hidden;
   pointer-events: none;
-  transform: translateY(calc((var(--reveal, 0) - 1) * 100%));
-  opacity: min(calc(var(--reveal, 0) * 8), 1);
   background:
     radial-gradient(circle at 24% 58%, var(--accent-gold) 0 1px, transparent 2px),
     radial-gradient(circle at 71% 34%, var(--accent-gold) 0 1px, transparent 2px),
     radial-gradient(circle at 52% 74%, var(--accent-rose) 0 1px, transparent 1.8px),
     radial-gradient(circle at 87% 66%, var(--accent-violet) 0 1px, transparent 1.8px),
     linear-gradient(to bottom, var(--sky-zenith) 58%, var(--sky-horizon));
-  box-shadow: var(--shadow-lg);
+}
+
+.sky-backdrop canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+html.pulling .sky-backdrop,
+html.ascending .sky-backdrop,
+html.descending .sky-backdrop {
+  visibility: visible;
+}
+
+/* The room: the page as one body over the backdrop, transformed only
+   while a pull is gathering so it is untouched at rest. The tilt is
+   the camera's: the top recedes as the whole drops, the way a wall
+   goes when the head tilts back to look above it. */
+html.pulling .site-room:not(.site-room--sky),
+html.ascending .site-room:not(.site-room--sky),
+html.descending .site-room:not(.site-room--sky) {
+  background: var(--bg);
+}
+
+html.pulling .site-room:not(.site-room--sky) {
+  transform-origin: 50% 62%;
+  transform: perspective(1200px) translateY(calc(var(--reveal, 0) * 14%))
+    rotateX(calc(var(--reveal, 0) * 16deg));
   will-change: transform;
+
+  /* The skip link waits above the page's top edge; as the room drops
+     that edge shows, so the room keeps to its own box while tilting
+     (clip, not hidden: the nav stays sticky). */
+  overflow: clip;
+}
+
+/* The room's own image through the ascent and the descent. */
+html.ascending .site-room,
+html.descending .site-room {
+  view-transition-name: room;
 }
 
 .threshold-preview-ground {
@@ -794,6 +842,14 @@ body::before {
 
 .constellation-frame[data-atmosphere='webgl'] .constellation-svg-firmament {
   opacity: 0;
+}
+
+/* An atmosphere adopted whole from the Foyer's backdrop is already
+   the sky on screen: no crossfade, or the lift would show the chart
+   for a breath beneath it. */
+.constellation-frame[data-atmosphere-adopted] .webgl-firmament,
+.constellation-frame[data-atmosphere-adopted] .constellation-svg-firmament {
+  transition: none;
 }
 
 /* Behind-the-veil constellation — when the WorkOverlay is mounted
@@ -2010,58 +2066,47 @@ html.dk::view-transition-new(daystar) {
    pages rather than a crossfade. The daystar's morph rides its own
    group over the same 900 ms. html.ascending is set by the Foyer for
    the look-up's duration (routes/index.tsx). */
-html.ascending::view-transition-old(root) {
+html.ascending::view-transition-old(room) {
   animation: ascend-room-away 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
-  transform-origin: 50% 30%;
+  transform-origin: 50% 62%;
 }
 
+html.ascending::view-transition-old(root),
 html.ascending::view-transition-new(root) {
-  animation: ascend-sky-down 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
-  transform-origin: 50% 70%;
+  animation-duration: 700ms;
 }
 
 @keyframes ascend-room-away {
-  from {
-    transform: perspective(1200px) translateY(0) rotateX(0deg) scale(1);
+  0% {
+    transform: perspective(1200px) translateY(0) rotateX(0deg);
     opacity: 1;
   }
 
-  to {
-    transform: perspective(1200px) translateY(38%) rotateX(-26deg) scale(0.94);
-    opacity: 0;
-  }
-}
-
-@keyframes ascend-sky-down {
-  0% {
-    transform: perspective(1200px) translateY(-14%) rotateX(16deg) scale(1.14);
-    opacity: 0;
-  }
-
-  35% {
+  60% {
     opacity: 1;
   }
 
   100% {
-    transform: perspective(1200px) translateY(0) rotateX(0deg) scale(1);
-    opacity: 1;
+    transform: perspective(1200px) translateY(46%) rotateX(34deg);
+    opacity: 0;
   }
 }
 
-/* The descent (the fourth pass, with Danny): the way down continues
-   the pull. The room slides up beneath from where the ground had
-   leaned in — the preview strip is 18dvh, so the room's top edge
-   starts where the strip's top was — while the sky drifts up and
-   out; the daystar stays exactly where it is through the reveal, and
-   only when the room has settled does it travel down into the nav's
-   corner and become the glyph. html.descending is set by the sky
-   route for the return's duration (routes/sky.tsx). */
+/* The descent (the fourth pass, with Danny; the room's own image
+   since the seventh): the way down is the lean-back undone. The sky
+   drifts up and out while the room rises back into place beneath the
+   gaze, tilted as it was left and settling flat; the daystar stays
+   exactly where it is through the reveal, and only when the room has
+   settled does it travel down into the nav's corner and become the
+   glyph. html.descending is set by the sky route for the return's
+   duration (routes/sky.tsx). */
 html.descending::view-transition-old(root) {
   animation: descend-sky-away 640ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
-html.descending::view-transition-new(root) {
-  animation: descend-room-up 640ms cubic-bezier(0.23, 1, 0.32, 1) both;
+html.descending::view-transition-new(room) {
+  animation: descend-room-rise 760ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  transform-origin: 50% 62%;
 }
 
 html.descending::view-transition-group(daystar) {
@@ -2082,9 +2127,19 @@ html.descending::view-transition-new(daystar) {
   }
 }
 
-@keyframes descend-room-up {
-  from {
-    transform: translateY(82dvh);
+@keyframes descend-room-rise {
+  0% {
+    transform: perspective(1200px) translateY(46%) rotateX(34deg);
+    opacity: 0;
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: perspective(1200px) translateY(0) rotateX(0deg);
+    opacity: 1;
   }
 }
 
