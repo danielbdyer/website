@@ -100,9 +100,9 @@ function advance(shape: ScarfShape, mood: Mood, time: number, dt: number): Scarf
     spin: shape.spin + dt * (0.1 + mood.whirl * 1.1),
     wavePhase: shape.wavePhase + dt * (1.4 + mood.energy * 1.4 + mood.whirl * 2),
     tilt: 0.85 + 0.22 * Math.sin(time * 0.19),
-    radius: SCARF_AT_REST.radius + mood.energy * 6 - mood.whirl * 18,
+    radius: SCARF_AT_REST.radius + mood.energy * 6 - mood.whirl * 24,
     length: SCARF_AT_REST.length + mood.energy * 0.6 + mood.whirl * 2.2,
-    width: SCARF_AT_REST.width + mood.energy * 3 + mood.whirl,
+    width: SCARF_AT_REST.width + mood.energy * 3 + mood.whirl * 2,
     wave: SCARF_AT_REST.wave + mood.energy * 3 + mood.whirl * 5,
   };
 }
@@ -127,17 +127,34 @@ function paintScarf(root: HTMLElement, els: ScarfElements, shape: ScarfShape, mo
 
 /** The body turns with the coin: edge-on with the setting face, round
  *  again with the rising one, its paint crossing into the other hour
- *  while it is edge-on. Overwrites itself if the hour turns again
- *  mid-turn. */
+ *  while it is edge-on — and thinning into the silk at the edge, the
+ *  way the drawn faces dissolve into it. Overwrites itself if the
+ *  hour turns again mid-turn. */
 function turnBody(canvas: HTMLCanvasElement | null, mood: Mood, night: number): void {
   const line = gsap.timeline({ defaults: { overwrite: 'auto' } });
   line.to(mood, { night, duration: 0.3, ease: 'sine.inOut' }, 0.15);
   if (!canvas) return;
   const away = night > 0.5 ? -14 : 14;
   line
-    .to(canvas, { scaleX: 0.02, y: 6, rotation: away, duration: 0.3, ease: 'power3.out' }, 0)
+    .to(
+      canvas,
+      {
+        scaleX: 0.02,
+        scaleY: 1.1,
+        y: 6,
+        rotation: away,
+        opacity: 0.5,
+        duration: 0.3,
+        ease: 'power3.out',
+      },
+      0,
+    )
     .set(canvas, { rotation: -away }, 0.3)
-    .to(canvas, { scaleX: 1, y: 0, rotation: 0, duration: 0.5, ease: 'power3.out' }, 0.3);
+    .to(
+      canvas,
+      { scaleX: 1, scaleY: 1, y: 0, rotation: 0, opacity: 1, duration: 0.5, ease: 'power3.out' },
+      0.3,
+    );
 }
 
 /** Mount the magic into a daystar. Null when it carries no scarf to

@@ -1,6 +1,7 @@
 import { useTheme } from '@/app/providers';
-import { SunIcon } from '@/shared/atoms/SunIcon/SunIcon';
-import { MoonIcon } from '@/shared/atoms/MoonIcon/MoonIcon';
+import { useRef } from 'react';
+import { DaystarGlyph } from '@/shared/atoms/DaystarGlyph/DaystarGlyph';
+import { useCrownPhase } from '@/shared/hooks/useCrownPhase';
 import { DAYSTAR_TRANSITION_NAME } from '@/shared/utils/view-transition-names';
 
 // Per RESPONSIVE_STRATEGY.md, interactive elements are ≥44×44 CSS
@@ -11,7 +12,11 @@ import { DAYSTAR_TRANSITION_NAME } from '@/shared/utils/view-transition-names';
 // hover tint at icon scale.
 //
 // The glyph shows the hour the room keeps — the sun by day, the moon
-// by night — and the label says what a click does. The icon-bearing
+// by night — and the label says what a click does. It is the daystar
+// as the room sees it (DaystarGlyph): the sun's own crown of rays on
+// the same clock as the sky's, so the look-up carries the rays
+// themselves into the sky's crown; the back of the moon's head, which
+// the ascent turns half round to show the face. The icon-bearing
 // span carries the `daystar` view-transition name, the same name the
 // constellation's daystar carries on /sky. When the visitor looks up
 // from a room, the View Transitions API morphs this small glyph into
@@ -24,6 +29,8 @@ import { DAYSTAR_TRANSITION_NAME } from '@/shared/utils/view-transition-names';
 // the root, tokens.css). CONSTELLATION.md §"The Sun and the Moon".
 export function ThemeToggle() {
   const { dark, toggle } = useTheme();
+  const glyphRef = useRef<HTMLSpanElement | null>(null);
+  useCrownPhase(glyphRef);
 
   return (
     <button
@@ -33,10 +40,11 @@ export function ThemeToggle() {
       aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       <span
+        ref={glyphRef}
         style={{ viewTransitionName: DAYSTAR_TRANSITION_NAME }}
         className="theme-toggle__glyph text-text-3 group-hover:bg-tag-bg group-hover:text-text flex items-center rounded p-[5px] transition-colors duration-200"
       >
-        {dark ? <MoonIcon /> : <SunIcon />}
+        <DaystarGlyph variant={dark ? 'moon' : 'sun'} />
       </span>
     </button>
   );

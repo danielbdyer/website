@@ -6,6 +6,7 @@ import {
   MOON_PROFILE,
   fourPointStar,
 } from '@/shared/atoms/DaystarFace/faceGeometry';
+import { useCrownPhase } from '@/shared/hooks/useCrownPhase';
 import { useDaystarMagic } from '@/shared/hooks/useDaystarMagic';
 import { STRAND_COUNT } from '@/shared/sky/scarfGeometry';
 import { DAYSTAR_TRANSITION_NAME } from '@/shared/utils/view-transition-names';
@@ -251,6 +252,7 @@ export function Daystar({ hour, className }: DaystarProps) {
   const [turns, setTurns] = useState(0);
   const rootRef = useRef<HTMLElement | null>(null);
   const magic = useDaystarMagic(rootRef);
+  useCrownPhase(rootRef);
   const style = { viewTransitionName: DAYSTAR_TRANSITION_NAME };
   const attend = (on: boolean) => () => magic.current?.hover(on);
   if (!hour) {

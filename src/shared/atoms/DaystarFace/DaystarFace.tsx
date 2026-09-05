@@ -35,7 +35,10 @@ interface DaystarFaceProps {
 // Sun and the Moon". Geometry lives in faceGeometry.ts; colors in
 // tokens.css §"The daystar", keyed by class.
 
-function Crown() {
+/** The crown of rays. Its turn is a CSS animation; the molecule that
+ *  mounts it sets the phase from the wall clock (useCrownPhase), so
+ *  every crown on the page keeps one time. */
+export function Crown() {
   return (
     <g className="daystar__rays">
       {RAYS.map((ray) => (

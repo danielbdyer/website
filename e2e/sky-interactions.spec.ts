@@ -254,6 +254,62 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
     expect(await dusk.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
   });
 
+  test('the scarf carries the setting hour’s colors through the first half of the turn, and crosses in the second', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'light');
+    });
+    await openSkyAtRest(page);
+    // Colors are compared as painted pixels: a pending transition
+    // re-serializes the held value into its interpolation space, so
+    // the strings differ while the color has not moved.
+    await page.evaluate(() => {
+      const w = window as unknown as {
+        __silk: { day: number[]; early: number[][]; late: number[][] };
+        __rgb: (color: string) => number[];
+      };
+      const ctx = document.createElement('canvas').getContext('2d')!;
+      w.__rgb = (color: string) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, 1, 1);
+        return [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)];
+      };
+      const stop = document.querySelector('#daystar-silk stop')!;
+      w.__silk = { day: w.__rgb(getComputedStyle(stop).stopColor), early: [], late: [] };
+    });
+    await page.evaluate(() => {
+      const w = window as unknown as {
+        __silk: { day: number[]; early: number[][]; late: number[][] };
+        __rgb: (color: string) => number[];
+      };
+      const stop = document.querySelector('#daystar-silk stop')!;
+      const t0 = performance.now();
+      const sample = () => {
+        const t = performance.now() - t0;
+        const rgb = w.__rgb(getComputedStyle(stop).stopColor);
+        if (t < 180) w.__silk.early = [...w.__silk.early, rgb];
+        if (t > 1300 && t < 1500) w.__silk.late = [...w.__silk.late, rgb];
+        if (t < 1600) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.getByRole('button', { name: /turn the hour to night/i }).click();
+    await page.waitForTimeout(1800);
+    const seen = await page.evaluate(
+      () =>
+        (window as unknown as { __silk: { day: number[]; early: number[][]; late: number[][] } })
+          .__silk,
+    );
+    const distance = (a: number[], b: number[]) =>
+      Math.hypot(a[0]! - b[0]!, a[1]! - b[1]!, a[2]! - b[2]!);
+    // Early, every sample is still the day's color; late, none is near it.
+    expect(seen.early.length).toBeGreaterThan(0);
+    expect(seen.early.every((rgb) => distance(rgb, seen.day) < 10)).toBe(true);
+    expect(seen.late.length).toBeGreaterThan(0);
+    expect(seen.late.every((rgb) => distance(rgb, seen.day) > 30)).toBe(true);
+  });
+
   test('looking up from the Foyer lands the daystar in the sky; the nav stays below', async ({
     page,
   }) => {
@@ -275,6 +331,70 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
     const viewport = page.viewportSize()!;
     expect(box!.x + box!.width / 2).toBeGreaterThan(viewport.width * 0.6);
     expect(box!.y + box!.height / 2).toBeLessThan(viewport.height * 0.4);
+  });
+});
+
+// The glyph's identity (the fifth pass): the nav's sun is the crown
+// itself on the same clock as the sky's; the nav's moon is the back
+// of the moon's head, which the ascent turns half round.
+test.describe('the glyph', { tag: '@smoke' }, () => {
+  test('by day the glyph is the crown, on the same clock as the sky’s crown', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'light');
+    });
+    await page.goto('/');
+    await expect(page.locator('.theme-toggle__glyph .daystar__ray')).toHaveCount(16);
+    const phaseOf = (delay: string) => Number(delay.slice(1, -1));
+    const glyphDelay = await page
+      .locator('.theme-toggle__glyph .daystar__rays')
+      .evaluate((el) => (el as SVGGElement).style.animationDelay);
+    expect(glyphDelay).toMatch(/^-\d/);
+    await page.getByRole('link', { name: /look up/i }).click();
+    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
+    const skyDelay = await page
+      .locator('.daystar__sun .daystar__rays')
+      .evaluate((el) => (el as SVGGElement).style.animationDelay);
+    // Both on the wall clock: the sky's crown mounted a moment later
+    // and says so, within the crossing's own seconds.
+    const gap = phaseOf(skyDelay) - phaseOf(glyphDelay);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThan(8);
+  });
+
+  test('by night the ascent turns the moon half round: the back turns away, the face comes round', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'dark');
+    });
+    await page.goto('/');
+    await expect(page.locator('.theme-toggle__glyph .daystar-glyph__back')).toHaveCount(1);
+    const supported = await page.evaluate(() => 'startViewTransition' in document);
+    test.skip(!supported, 'no view transitions here');
+    await page.evaluate(() => {
+      const w = window as unknown as { __turn: string[] };
+      w.__turn = [];
+      const t0 = performance.now();
+      const sample = () => {
+        for (const animation of document.getAnimations()) {
+          const effect = animation.effect as KeyframeEffect | null;
+          const pseudo = effect?.pseudoElement ?? '';
+          if (!pseudo.includes('daystar')) continue;
+          const turns = effect!
+            .getKeyframes()
+            .some((frame) => String(frame.transform ?? '').includes('rotateY'));
+          if (turns && !w.__turn.includes(pseudo)) w.__turn = [...w.__turn, pseudo];
+        }
+        if (performance.now() - t0 < 1400) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.getByRole('link', { name: /look up/i }).click();
+    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
+    await page.waitForTimeout(1500);
+    const turned = await page.evaluate(() => (window as unknown as { __turn: string[] }).__turn);
+    expect(turned).toContain('::view-transition-old(daystar)');
+    expect(turned).toContain('::view-transition-new(daystar)');
   });
 });
 
