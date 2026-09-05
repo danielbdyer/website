@@ -10,6 +10,7 @@ import {
 import { ThemeProvider } from '@/app/providers';
 import { ErrorBoundary } from '@/app/layout/ErrorBoundary';
 import { Nav } from '@/app/layout/Nav';
+import { DaystarSeat } from '@/app/layout/DaystarSeat';
 import { Footer } from '@/app/layout/Footer';
 import { NotFound } from '@/app/layout/NotFound';
 import { JsonLd, personSchema, websiteSchema } from '@/shared/seo';
@@ -51,6 +52,21 @@ export const Route = createRootRoute({
   component: RootComponent,
   notFoundComponent: NotFound,
 });
+
+/** The room's classes: on /sky it is the sky and does not tilt. */
+function roomClassName(isSky: boolean): string {
+  return isSky
+    ? 'site-room site-room--sky relative z-10 flex min-h-dvh flex-col'
+    : 'site-room relative z-10 flex min-h-dvh flex-col';
+}
+
+/** The main landmark's classes: the sky fills its frame; every other
+ *  room keeps the column and its page-edge breathing room. */
+function mainClassName(isSky: boolean): string {
+  return isSky
+    ? 'min-h-dvh w-full flex-1 focus:outline-none'
+    : 'max-w-column pt-page-top pb-page-bottom pl-edge pr-edge sm:pt-page-top-md sm:pb-page-bottom-md sm:pl-edge-md sm:pr-edge-md mx-auto w-full flex-1 focus:outline-none';
+}
 
 function RootComponent() {
   const mainRef = useRef<HTMLElement>(null);
@@ -147,6 +163,11 @@ function RootComponent() {
             the sky is. The Foyer's readiness paints the sky itself
             into it ahead of the look-up. */}
         {!isSky && <div className="sky-backdrop" aria-hidden="true" />}
+        {/* The daystar's seat: the nav glyph's stand-in while the eye
+            moves, fixed and outside the stage, so the moon is left
+            where it is as the page falls away and rises from there to
+            its place in the sky (dom/daystarSeat.ts). */}
+        {!isSky && <DaystarSeat />}
         {/* The stage holds the eye: a perspective, only while a pull
             gathers, about which the room turns. The room is the page
             as one space — its chrome near, its text mid, its paper far
@@ -154,13 +175,7 @@ function RootComponent() {
             parallax rather than swinging a flat page (tokens.css §"The
             look-up"); on /sky it is the sky and does not tilt. */}
         <div className="site-stage">
-          <div
-            className={
-              isSky
-                ? 'site-room site-room--sky relative z-10 flex min-h-dvh flex-col'
-                : 'site-room relative z-10 flex min-h-dvh flex-col'
-            }
-          >
+          <div className={roomClassName(isSky)}>
             <JsonLd data={[websiteSchema(), personSchema()]} />
             <a
               href="#main-content"
@@ -169,16 +184,7 @@ function RootComponent() {
               Skip to main content
             </a>
             {!isSky && <Nav />}
-            <main
-              ref={mainRef}
-              id="main-content"
-              tabIndex={-1}
-              className={
-                isSky
-                  ? 'min-h-dvh w-full flex-1 focus:outline-none'
-                  : 'max-w-column pt-page-top pb-page-bottom pl-edge pr-edge sm:pt-page-top-md sm:pb-page-bottom-md sm:pl-edge-md sm:pr-edge-md mx-auto w-full flex-1 focus:outline-none'
-              }
-            >
+            <main ref={mainRef} id="main-content" tabIndex={-1} className={mainClassName(isSky)}>
               {/* Keying the boundary on the pathname means React mounts a
                 fresh one whenever the route changes. Without this, a
                 route that throws once stays in the error state forever

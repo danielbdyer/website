@@ -412,6 +412,118 @@ test.describe('the glyph', { tag: '@smoke' }, () => {
   });
 });
 
+// The daystar's seat (CONSTELLATION.md §"The Sun and the Moon", the
+// ninth pass): the glyph gives its name to a fixed seat the moment the
+// eye moves, the seat rises to exactly where the sky seats the daystar,
+// and the transition turns the moon in place; on the way down the seat
+// begins where the daystar stood and comes to the corner once the room
+// has settled.
+test.describe('the seat', { tag: '@smoke' }, () => {
+  test('the glyph gives its name to a seat that rises to where the sky seats the daystar, so the turn plays in place', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'dark');
+    });
+    await page.goto('/');
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCSS('view-transition-name', 'daystar');
+    await expect(page.locator('.daystar-seat')).toBeHidden();
+    // Recorded at the moment the transition begins.
+    await page.evaluate(() => {
+      const w = window as unknown as { __seat: Record<string, unknown> };
+      w.__seat = {};
+      const doc = document as Document & {
+        startViewTransition: (cb: () => void | Promise<void>) => ViewTransition;
+      };
+      const original = doc.startViewTransition.bind(doc);
+      doc.startViewTransition = (cb) => {
+        const seat = document.querySelector('.daystar-seat');
+        const glyph = document.querySelector('.theme-toggle__glyph');
+        w.__seat = {
+          seated: document.documentElement.classList.contains('daystar-seated'),
+          seatName: seat ? getComputedStyle(seat).viewTransitionName : null,
+          glyphName: glyph ? getComputedStyle(glyph).viewTransitionName : null,
+          glyphVisibility: glyph ? getComputedStyle(glyph).visibility : null,
+          rect: seat ? seat.getBoundingClientRect().toJSON() : null,
+        };
+        return original(cb);
+      };
+    });
+    await page.getByRole('link', { name: /look up/i }).click();
+    const daystar = page.locator('[data-daystar]');
+    await daystar.waitFor();
+    const seat = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __seat: {
+              seated: boolean;
+              seatName: string;
+              glyphName: string;
+              glyphVisibility: string;
+              rect: { x: number; y: number; width: number; height: number };
+            };
+          }
+        ).__seat,
+    );
+    expect(seat.seated).toBe(true);
+    expect(seat.seatName).toBe('daystar');
+    expect(seat.glyphName).toBe('none');
+    expect(seat.glyphVisibility).toBe('hidden');
+    // The seat's center is the daystar's center, its size the face's.
+    const box = (await daystar.boundingBox())!;
+    expect(Math.abs(seat.rect.x + seat.rect.width / 2 - (box.x + box.width / 2))).toBeLessThan(4);
+    expect(Math.abs(seat.rect.y + seat.rect.height / 2 - (box.y + box.height / 2))).toBeLessThan(4);
+    expect(seat.rect.width / box.width).toBeGreaterThan(0.6);
+    expect(seat.rect.width / box.width).toBeLessThan(0.75);
+  });
+
+  test('on the way down the seat begins where the daystar stood, and the glyph has its place back once the seat has landed', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'dark');
+    });
+    await page.goto('/');
+    await page.getByRole('link', { name: /look up/i }).click();
+    const daystar = page.locator('[data-daystar]');
+    await daystar.waitFor();
+    await page.waitForTimeout(1500);
+    const box = (await daystar.boundingBox())!;
+    await page.evaluate(() => {
+      const w = window as unknown as { __land: { first: DOMRect | null } };
+      w.__land = { first: null };
+      new MutationObserver(() => {
+        if (w.__land.first) return;
+        if (!document.documentElement.classList.contains('daystar-seated')) return;
+        const seat = document.querySelector('.daystar-seat');
+        if (seat) w.__land.first = seat.getBoundingClientRect().toJSON();
+      }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    });
+    await page.getByRole('link', { name: /return to the foyer/i }).click();
+    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 4000 });
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => (window as unknown as { __land: { first: DOMRect | null } }).__land.first,
+          ),
+        { timeout: 10_000 },
+      )
+      .not.toBeNull();
+    const first = (await page.evaluate(
+      () => (window as unknown as { __land: { first: DOMRect } }).__land.first,
+    ))!;
+    expect(Math.abs(first.x + first.width / 2 - (box.x + box.width / 2))).toBeLessThan(4);
+    expect(Math.abs(first.y + first.height / 2 - (box.y + box.height / 2))).toBeLessThan(4);
+    // Landed: the seat gone, the glyph visible and named again, in its corner.
+    await expect(page.locator('html')).not.toHaveClass(/daystar-seated/, { timeout: 20_000 });
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCSS('visibility', 'visible');
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCSS('view-transition-name', 'daystar');
+    await expect(page.locator('.daystar-seat')).toBeHidden();
+  });
+});
+
 // The way down (CONSTELLATION.md §"The Sun and the Moon", the fourth
 // pass): the return continues the pull — the room slides up beneath a
 // daystar that stays, then the daystar settles into the nav's corner.

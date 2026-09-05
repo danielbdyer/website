@@ -2042,18 +2042,44 @@ div.daystar {
   }
 }
 
-/* The nav's glyph readies itself with the Foyer's look-up pull: it
-   lifts and grows as the sky leans in, and on commit the view
-   transition carries it up into the daystar's face. */
+/* ─── The daystar's seat ─────────────────────────────────────────
+   The nav's glyph carries the daystar's name at rest — the same name
+   the sky's daystar carries — and gives it to its seat the moment the
+   eye begins to move (dom/daystarSeat.ts, the ninth pass with Danny:
+   *the moon jumps around; it doesn't feel contiguous*). The seat is a
+   fixed box outside the stage showing the same icon at the icon's own
+   rest, the glyph hidden beneath it, so the falling page leaves the
+   moon where it is; it rises and grows through the lift to exactly
+   where the sky will seat its daystar, so the transition turns the
+   moon in place with nothing to fly. On the way down it begins where
+   the daystar stood, the turn plays, and it comes down to the corner
+   once the room has settled. Its icon fills its box at every size. */
 .theme-toggle__glyph {
-  transition:
-    translate 120ms ease-out,
-    scale 120ms ease-out;
+  view-transition-name: daystar;
 }
 
-html.pulling .theme-toggle__glyph {
-  translate: 0 calc(min(var(--reveal, 0), 1) * -14px);
-  scale: calc(1 + min(var(--reveal, 0), 1) * 0.45);
+.daystar-seat {
+  position: fixed;
+  z-index: 60;
+  display: block;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.daystar-seat svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+html.daystar-seated .daystar-seat {
+  visibility: visible;
+  view-transition-name: daystar;
+}
+
+html.daystar-seated .theme-toggle__glyph {
+  visibility: hidden;
+  view-transition-name: none;
 }
 
 /* The ascent and the descent: the daystar's morph between the nav's
@@ -2074,15 +2100,20 @@ html.pulling .theme-toggle__glyph {
    daystar its face: the ascent turns it half round — the back turning
    away as the face comes round the other side — and the descent turns
    it back. By day the sun's rays are the same rays in both places and
-   the morph simply carries them. The flip's shorthand sets no delay;
-   the descent's rules below restate the delay after it. */
+   the morph simply carries them. One turn, not two halves (the ninth
+   pass): the back gathers speed into the edge and the face comes off
+   it slowing, mirrored curves that meet at the same rate edge-on, and
+   the two images cross over a breath either side of the edge rather
+   than both vanishing there — so the coin is never gone. The flip's
+   shorthand sets no delay; the descent's rules below restate the delay
+   after it. */
 html.dk::view-transition-old(daystar) {
-  animation: daystar-turn-away 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: daystar-turn-away 900ms linear both;
   transform-origin: center;
 }
 
 html.dk::view-transition-new(daystar) {
-  animation: daystar-turn-toward 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: daystar-turn-toward 900ms linear both;
   transform-origin: center;
 }
 
@@ -2090,10 +2121,18 @@ html.dk::view-transition-new(daystar) {
   0% {
     transform: perspective(600px) rotateY(0deg);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.85, 0.55);
+  }
+
+  44% {
+    opacity: 1;
   }
 
   50% {
     transform: perspective(600px) rotateY(90deg);
+  }
+
+  56% {
     opacity: 0;
   }
 
@@ -2109,9 +2148,17 @@ html.dk::view-transition-new(daystar) {
     opacity: 0;
   }
 
+  44% {
+    opacity: 0;
+  }
+
   50% {
     transform: perspective(600px) rotateY(-90deg);
-    opacity: 0;
+    animation-timing-function: cubic-bezier(0.15, 0.45, 0.5, 1);
+  }
+
+  56% {
+    opacity: 1;
   }
 
   100% {
@@ -2151,13 +2198,13 @@ html.descending::view-transition-old(root) {
 }
 
 html.descending::view-transition-group(daystar) {
-  animation-delay: 560ms;
+  animation-delay: 250ms;
   animation-duration: 760ms;
 }
 
 html.descending::view-transition-old(daystar),
 html.descending::view-transition-new(daystar) {
-  animation-delay: 560ms;
+  animation-delay: 250ms;
   animation-duration: 760ms;
 }
 
@@ -2194,7 +2241,6 @@ html.descending::view-transition-new(daystar) {
     rotate: 0deg;
   }
 
-  .theme-toggle__glyph,
   .daystar {
     translate: 0 0;
     scale: 1;
