@@ -124,6 +124,8 @@ The daystar in the margin is a face, drawn the engraver's way. By day, the sun i
 
 *Changes (the third pass).* The register moves from the card's Santa to the engraver's — the sun in splendour, the moon asleep in profile — on Danny's *less clowny, more illustrated*; the scarf arrives, procedural and lazy (§"The Third Pass").
 
+*Changes (the fifth pass).* The turn is a dissolve into the scarf: the silk keeps the setting hour's colors for the first quarter second and crosses to the rising hour's over the next 700 ms; the setting face stretches and blurs into the silk as it goes edge-on, the rising one condenses out of a blur, the painted body thins at the edge, and the whirl wraps the coin at the rim (§"The Fifth Pass").
+
 *Changes (the fourth pass).* The turn is cut tight — 0.8 s, the dead middle gone, the setting face sinking and the rising one coming up from below — and it is a sunset: the frame carries its dusk for the atmosphere's 1.8 s arc, a sunset gathers at the daystar's seat and along the foot of the frame, and the daystar's own light flares rose-gold behind the faces. The faces are lit bodies: drawn, with a core and a limb on the sun and a terminator and earthshine on the moon, the silk backlit over the sun and casting its shadow on the moon; painted, where WebGL is to be had, as living pigment on a lit sphere beneath the ink — swirls that repaint as the body turns, a shimmer of rainbow in them — turning with the coin (§"The Fourth Pass").
 
 ### Scene 13 — The ascent
@@ -135,6 +137,8 @@ At the Foyer's top, pull up. The sky leans in from the ceiling, and the nav's sm
 *Changes.* The daystar is a box beside the svg; the glyph lifts with the pull through `--reveal` mirrored on the root; the morph runs over 900 ms on the signature curve; the nav's glyph shows the hour the room keeps so the morph reads as one being.
 
 *Changes (the fourth pass).* The sky's atmosphere is warmed as the visitor reaches for it — the first input of the pull, the pointer resting on the link — so the look-up arrives already lit, in one substrate. Looking down, the daystar stays where it is while the room reveals itself beneath, and only then descends into the corner.
+
+*Changes (the fifth pass).* The glyph is the daystar as the room sees it: by day the crown's own rays, on the same clock as the sky's crown, so the morph carries the rays themselves; by night the back of the moon's head, which the ascent turns half round — the back turning away, the face coming round the other side — and the descent turns back.
 
 ---
 
@@ -224,6 +228,15 @@ Built on Danny's next breath — *show a sunset because of the sun; real light s
 
 What this pass holds: one substrate — `CONSTELLATION.md` §"The Sun and the Moon", *Held — one substrate* — with its smallest next step named (the glyph in the nav carrying the daystar's paint) and its trigger (Danny's word after living with the painted body and the descent).
 
+## The Fifth Pass — The Glyph's Identity and the Dissolve
+
+On Danny's next three pulls the same evening — *the moon flips around and does a 180 to show the other side, visibly transitioning at the same time into the character; the svg rays of the sun glyph should maintain their identity as they transform into the primary rays for the sky version; the characters morph into the scarf — partially dissolving into it, preserving the first half's identity through the transition and ending with the second half's: the moon-sun-scarf is the character, holarchically.* Enforced in code:
+
+- **The glyph** (`atoms/DaystarGlyph`, `app/layout/ThemeToggle.tsx`): the sun as the crown itself with a wash of a disc; the moon as the back of the head (`faceGeometry.ts: MOON_BACK` — the disc's left rim and an arc bulging left, horn to horn); drawn in the daystar's square. Tested as anatomy, and in the toggle: the crown by day, the back by night.
+- **One clock** (`hooks/useCrownPhase.ts`): every crown under a root takes the wall clock's phase on mount — the toggle's and the daystar's — so the rays keep their bearings across the morph. Tested: the phase as a value; every crown under a root set alike; and, in a browser, the sky's crown within seconds of the glyph's after a look-up.
+- **The half-turn** (`tokens.css` §"The ascent and the descent"): `html.dk::view-transition-old(daystar)` turns away to 90° and `::view-transition-new(daystar)` comes round from −90°, with perspective, over the morph's 900 ms; the descent's delays restate themselves after. Tested in a browser: the two pseudo-elements carrying `rotateY` keyframes through a night-time look-up.
+- **The dissolve** (`tokens.css` §"The daystar", `dom/daystarMagic.ts`): `--silk-1…4` registered with `@property` and transitioned 700 ms after a 250 ms wait, restated inside the theme window; the setting face's `scale(1.1, 0.02)` and `blur(3px)`; the body's half-opacity at the edge; the whirl's radius to the rim. Tested in a browser: the silk's first stop still the day's color through the first 180 ms and no longer by 1.3 s.
+
 ## Held — Named So It Is Not Lost
 
 - **The name beside the struck star.** The frames letter the name to the right of the star with a leader; the walk letters it below by habit and moves it only to clear a collision. Held for Danny's eye.
@@ -233,7 +246,7 @@ What this pass holds: one substrate — `CONSTELLATION.md` §"The Sun and the Mo
 - **A departure's sound.** The rings collapsing is the struck bowl in reverse; whether arrival wants a fourth ring, or a breath of scale on the whole figure, is a tuning for a real eye.
 - **Hover during the spring home.** After a release with nothing in reach the sky springs home for half a second; hover is not refused during the spring. It has not read as noise; named in case it does.
 - **Names and the rim.** The label layout keeps a name clear of other names and of stars, not of the compass lettered at the rim or of a thread; a star that arrives near the rim can set its name on a facet's. Seen once in the night chart during this pass. The fix belongs in `labelLayout.ts` — the rim's names and the lit threads as boxes to avoid — when it reads as more than once.
-- **The face's held marks.** Whether the nav's glyph wants a hint of the face before it rises; a second, inner crown of short rays, as the clocks' suns wear; whether the scarf wants to trail sparks through the turn, or the moon's crescent to face the sun across it; the sparks' count and reach; whether the turn wants a sound; the paint's flow and shimmer, its tones by hour, and how far the drawn discs should thin over it. The card's beard and nightcap were set down with the card's register. Each is a stroke in `DaystarFace` or `scarfGeometry`, a mood in the driver, a line in the painter's shader, or a line in the register, for Danny's eye.
+- **The face's held marks.** A second, inner crown of short rays, as the clocks' suns wear; whether the scarf wants to trail sparks through the turn, or the moon's crescent to face the sun across it; the sparks' count and reach; whether the turn wants a sound; the paint's flow and shimmer, its tones by hour, and how far the drawn discs should thin over it; the dissolve's true key frames — the rays streaming into the strands, the crescent gathering out of them — beyond the blur, the stretch, and the silk's late crossing; the half-turn's perspective and its timing against the morph. The card's beard and nightcap were set down with the card's register. Each is a stroke in `DaystarFace` or `scarfGeometry`, a mood in the driver, a line in the painter's shader, or a line in the register, for Danny's eye.
 - **One substrate.** The sky's ground as brushwork in motion; the glyph carrying the daystar's paint into the room; the whole site as a painting repainted every frame. Held with its seed built (`CONSTELLATION.md` §"The Sun and the Moon", *Held — one substrate*).
 
 ---
