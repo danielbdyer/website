@@ -51,6 +51,27 @@ describe('Daystar molecule', () => {
     expect(container.querySelectorAll('.daystar__magic')).toHaveLength(1);
   });
 
+  test('the scarf has two slots — behind the faces and in front — empty until the magic writes them', () => {
+    const { container } = render(<Daystar hour={{ current: 'day', turn: () => {} }} />);
+    const svg = container.querySelector('svg.daystar__svg')!;
+    const layers = [...svg.children].map((el) => el.getAttribute('class') ?? el.tagName);
+    expect(layers).toEqual([
+      'defs',
+      'daystar__scarf daystar__scarf--behind',
+      'daystar__hour daystar__sun',
+      'daystar__hour daystar__moon',
+      'daystar__scarf daystar__scarf--front',
+    ]);
+    for (const slot of container.querySelectorAll('.daystar__scarf')) {
+      const bodies = slot.querySelectorAll('.daystar__scarf-body');
+      expect(bodies).toHaveLength(3);
+      for (const body of bodies) expect(body.getAttribute('d')).toBe('');
+      expect(slot.querySelector('.daystar__scarf-sheen')?.getAttribute('d')).toBe('');
+    }
+    // The silk the magic sweeps is declared once, in the defs.
+    expect(svg.querySelectorAll('#daystar-silk')).toHaveLength(1);
+  });
+
   test('carries the daystar view-transition name, so the nav’s glyph can become it', () => {
     const { container } = render(<Daystar hour={{ current: 'day', turn: () => {} }} />);
     const button = container.querySelector<HTMLElement>('[data-daystar]');

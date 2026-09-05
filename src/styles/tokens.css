@@ -1229,22 +1229,38 @@ body::before {
    any script. The turn is a coin's: the setting face goes edge-on and
    fades over 700ms, the rising one waits for it and comes round over
    the next 700ms — 1.4s in all, inside the sky's own 1.8s dusk — so
-   the two never overlap as an eclipse. The washes are gradients; the
-   one filter sits on the still halo. The face breathes, blinks, and
-   follows the pointer through the frame's --parallax variables; the
-   crown of rays turns on the slowest clock. Reduced motion holds the
-   face still and swaps the hour at once.
+   the two never overlap as an eclipse.
+
+   The register is the engraver's (the third pass, 2026-09-05): the
+   sun in splendour on an astronomical clock's dial, the moon asleep
+   in profile at its shoulder. Washes are gradients; the line-work is
+   thin ink in the hour's own color; the disc carries watercolor
+   granulation. Two still filters — the halo's wet edge, the grain —
+   and one soft one on the scarf where it passes behind. The face
+   breathes, blinks, and follows the pointer through the frame's
+   --parallax variables; the crown of rays turns on the slowest clock.
+   Around the face the magic's scarf swoops (dom/daystarMagic.ts, a
+   lazy layer): it is drawn here, its shape written there, its glow
+   handed over as --scarf-glow on the svg. Reduced motion holds the
+   face still, swaps the hour at once, and never loads the magic.
 
    Before the travel loop seats the daystar in page pixels
    (skyProjector.projectDaystar → --daystar-x/y), CSS seats it by the
    same rule for a cover-fit frame: 11.5% of the frame's longer side in
    from the right, 10% down. The two agree, so hydration does not move
-   it. Fixed paper and ink for the eyes, so they read the same in both
-   hours: the face is lit by its own light. */
+   it. Fixed paper and ink for the eyes and the line-work, so they
+   read the same in both hours: the face is lit by its own light. */
 .daystar {
   --daystar-size: clamp(96px, 12vmin, 150px);
   --daystar-paper: #fdfbf8;
   --daystar-ink: #2b2219;
+
+  /* The silk's four colors: by day the pigments themselves, laid on
+     the paper; by night lit from within. */
+  --silk-1: var(--accent-rose);
+  --silk-2: var(--accent-gold);
+  --silk-3: var(--accent);
+  --silk-4: var(--accent-violet);
 
   position: absolute;
   z-index: 10;
@@ -1262,9 +1278,20 @@ body::before {
   touch-action: manipulation;
 }
 
+/* By night the silk is lit from within: the accents' own hues, lifted
+   in lightness and chroma rather than whitened, so the screen blend
+   over the dark keeps them brilliant instead of greying them. */
+.dk .daystar {
+  --silk-1: oklch(from var(--accent-rose) 78% 0.19 h);
+  --silk-2: oklch(from var(--accent-gold) 86% 0.17 h);
+  --silk-3: oklch(from var(--accent) 80% 0.15 h);
+  --silk-4: oklch(from var(--accent-violet) 74% 0.17 h);
+}
+
+/* Decorative (no hour to turn): not a control, but the pointer still
+   lends the scarf its energy. */
 div.daystar {
   cursor: default;
-  pointer-events: none;
 }
 
 .daystar__svg {
@@ -1281,6 +1308,14 @@ div.daystar {
   transition:
     transform 700ms cubic-bezier(0.23, 1, 0.32, 1),
     opacity 700ms ease;
+}
+
+.daystar__sun {
+  --daystar-line: color-mix(in oklab, var(--accent-warm) 42%, var(--daystar-ink));
+}
+
+.daystar__moon {
+  --daystar-line: color-mix(in oklab, var(--accent-violet) 45%, var(--daystar-ink));
 }
 
 .dk .daystar__sun {
@@ -1328,7 +1363,9 @@ div.daystar {
   fill: url('#daystar-moon-halo');
 }
 
-/* The crown of rays, turning once every two minutes and twenty. */
+/* The crown in splendour — sixteen rays, straight and wavy by turns,
+   each edged in a hair of ink — turning once every two minutes and
+   twenty. */
 .daystar__rays {
   transform-box: fill-box;
   transform-origin: center;
@@ -1336,37 +1373,77 @@ div.daystar {
 }
 
 .daystar__ray {
-  fill: url('#daystar-ray');
-  stroke: var(--accent-warm);
-  stroke-width: 0.6;
-  stroke-opacity: 0.45;
+  stroke: var(--daystar-line);
+  stroke-width: 0.55;
+  stroke-opacity: 0.55;
+  stroke-linejoin: round;
 }
 
+.daystar__ray--straight {
+  fill: url('#daystar-ray');
+}
+
+.daystar__ray--wavy {
+  fill: url('#daystar-ray-wavy');
+}
+
+/* The disc: the sun's gold; the moon's earthshine, faint, with the
+   crescent laid over it. The dial's rings sit inside the rim. */
 .daystar__disc {
-  stroke-width: 1.4;
+  stroke-width: 1.2;
   stroke-linejoin: round;
 }
 
 .daystar__sun .daystar__disc {
   fill: url('#daystar-sun-disc');
-  stroke: var(--accent-warm);
-  stroke-opacity: 0.6;
-}
-
-.daystar__moon .daystar__disc {
-  fill: url('#daystar-moon-disc');
-  stroke: var(--accent-violet);
+  stroke: var(--daystar-line);
   stroke-opacity: 0.55;
 }
 
-.daystar__limb {
+.daystar__moon .daystar__disc {
   fill: var(--daystar-paper);
-  opacity: 0.32;
+  fill-opacity: 0.14;
+  stroke: var(--accent-violet);
+  stroke-opacity: 0.35;
+  stroke-width: 0.9;
+}
+
+.daystar__crescent {
+  fill: url('#daystar-moon-disc');
+  stroke: var(--daystar-line);
+  stroke-width: 1.1;
+  stroke-opacity: 0.7;
+  stroke-linejoin: round;
+}
+
+.daystar__ring {
+  fill: none;
+  stroke: var(--daystar-line);
+  stroke-width: 0.7;
+  opacity: 0.42;
+}
+
+.daystar__moon .daystar__ring {
+  opacity: 0.28;
+}
+
+/* Granulation: the pigment settling into the paper's tooth. The filter
+   paints noise as ink and keeps it inside the circle; the element's
+   fill is only the mask. */
+.daystar__grain {
+  fill: var(--daystar-ink);
+  opacity: 0.13;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.daystar__moon .daystar__grain {
+  opacity: 0.08;
 }
 
 .daystar__crater {
   fill: var(--accent-violet);
-  opacity: 0.12;
+  opacity: 0.14;
 }
 
 .daystar__star {
@@ -1400,42 +1477,64 @@ div.daystar {
 
 .daystar__cheek {
   fill: url('#daystar-blush');
-  opacity: 0.72;
+  opacity: 0.5;
   transition: opacity 400ms ease-out;
 }
 
 .daystar:hover .daystar__cheek,
 .daystar:focus-visible .daystar__cheek {
-  opacity: 1;
+  opacity: 0.85;
+}
+
+/* The line-work: brow, lid, lash, nose, lips — one ink, drawn thin. */
+.daystar__brow,
+.daystar__lid,
+.daystar__lash,
+.daystar__nose,
+.daystar__lip {
+  fill: none;
+  stroke: var(--daystar-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .daystar__brow {
-  fill: none;
-  stroke: color-mix(in oklab, var(--accent-warm) 45%, var(--text));
-  stroke-width: 2.6;
-  stroke-linecap: round;
+  stroke-width: 1.6;
   transition: translate 300ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.daystar__moon .daystar__brow {
-  stroke: color-mix(in oklab, var(--accent-violet) 40%, var(--text-2));
 }
 
 .daystar:hover .daystar__brow,
 .daystar:focus-visible .daystar__brow {
-  translate: 0 -1.5px;
+  translate: 0 -1.2px;
 }
 
-/* An eye blinks by squinting to a line; the moon blinks slower. */
+.daystar__lid {
+  stroke-width: 1.3;
+}
+
+.daystar__lash {
+  stroke-width: 0.8;
+  opacity: 0.75;
+}
+
+.daystar__nose {
+  stroke-width: 1.3;
+}
+
+.daystar__lip {
+  stroke-width: 1.5;
+}
+
+.daystar__lip--under {
+  stroke-width: 0.8;
+  opacity: 0.5;
+}
+
+/* An eye blinks by squinting to a line. */
 .daystar__eye {
   transform-box: fill-box;
   transform-origin: center;
   animation: daystar-blink 6.4s ease-in-out infinite;
-}
-
-.daystar__moon .daystar__eye {
-  animation-duration: 8.6s;
-  animation-delay: 2.1s;
 }
 
 .daystar__eye-white {
@@ -1448,12 +1547,8 @@ div.daystar {
   transition: translate 600ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.daystar__sun .daystar__iris {
+.daystar__iris {
   fill: var(--accent);
-}
-
-.daystar__moon .daystar__iris {
-  fill: var(--accent-gold);
 }
 
 .daystar__pupil {
@@ -1465,32 +1560,48 @@ div.daystar {
   opacity: 0.85;
 }
 
-.daystar__lid {
-  fill: url('#daystar-moon-disc');
+/* The scarf: silk in the hour's four colors, sweeping around the face
+   in three strands — the main one and two wisps that part from it
+   like smoke — with a sheen along the main strand's crest; softer and
+   dimmer where it passes behind. It brightens with the energy the
+   pointer lends it and the whirl of the turn (--scarf-glow, written
+   by the magic). By day it lies on the paper as a wash; by night it
+   glows through what it crosses. */
+.daystar__scarf-body {
+  fill: url('#daystar-silk');
+  opacity: calc(0.44 + var(--scarf-glow, 0) * 0.34);
 }
 
-.daystar__nose {
-  fill: url('#daystar-nose');
+.dk .daystar__scarf-body {
+  opacity: calc(0.64 + var(--scarf-glow, 0) * 0.3);
 }
 
-.daystar__mouth {
-  fill: color-mix(in oklab, var(--accent-warm) 60%, var(--daystar-ink));
-  opacity: 0.75;
+.daystar__scarf-body[data-strand='1'],
+.daystar__scarf-body[data-strand='2'] {
+  filter: url('#daystar-wisp');
+  opacity: calc(0.22 + var(--scarf-glow, 0) * 0.42);
 }
 
-.daystar__lip {
-  fill: none;
-  stroke: color-mix(in oklab, var(--accent-warm) 45%, var(--text));
-  stroke-width: 2.4;
-  stroke-linecap: round;
+.daystar__scarf-sheen {
+  fill: var(--daystar-paper);
+  opacity: calc(0.1 + var(--scarf-glow, 0) * 0.26);
 }
 
-.daystar__moon .daystar__lip {
-  stroke: color-mix(in oklab, var(--accent-violet) 40%, var(--text-2));
+.daystar__scarf--behind {
+  filter: url('#daystar-wisp');
+  opacity: 0.72;
 }
 
-/* The magic: a flare and eight sparks out of the turn, mounted fresh
-   each time and gone in a breath. */
+.dk .daystar__scarf--behind {
+  opacity: 0.82;
+}
+
+.dk .daystar__scarf {
+  mix-blend-mode: screen;
+}
+
+/* The magic of the turn: a flare and eight sparks, mounted fresh each
+   time and gone in a breath. */
 .daystar__flare {
   transform-box: fill-box;
   transform-origin: center;
@@ -1630,7 +1741,8 @@ div.daystar {
     animation: none !important;
   }
 
-  .daystar__magic {
+  .daystar__magic,
+  .daystar__scarf {
     display: none;
   }
 

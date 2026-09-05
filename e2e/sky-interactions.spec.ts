@@ -253,3 +253,79 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
     expect(box!.y + box!.height / 2).toBeLessThan(viewport.height * 0.4);
   });
 });
+
+// The magic is a lazy layer (PERFORMANCE_BUDGET.md §"The sky's lazy
+// layers"): the scarf's driver and its animation library arrive after
+// the page has loaded and gone idle, never ahead of the sky's first
+// paint, and never at all when the visitor has asked for less.
+test.describe('the magic', { tag: '@smoke' }, () => {
+  const SCARF = '.daystar__scarf--front [data-strand="0"]';
+
+  test('the scarf arrives after load and idle, swoops, and brightens under the pointer', async ({
+    page,
+  }) => {
+    await openSkyAtRest(page);
+    // The slots are written once the magic has mounted.
+    await expect(page.locator(SCARF)).toHaveAttribute('d', /^M /, { timeout: 8000 });
+    // Its chunk was fetched after the page had loaded — never ahead of paint.
+    const timing = await page.evaluate(() => {
+      const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      const magic = performance
+        .getEntriesByType('resource')
+        .find((entry) => /daystarMagic-.*\.js/.test(entry.name));
+      return { loadEventStart: nav.loadEventStart, magicStart: magic?.startTime ?? -1 };
+    });
+    expect(timing.magicStart).toBeGreaterThanOrEqual(timing.loadEventStart);
+    // It moves on its own.
+    const before = await page.locator(SCARF).getAttribute('d');
+    await page.waitForTimeout(300);
+    expect(await page.locator(SCARF).getAttribute('d')).not.toBe(before);
+    // The pointer lends it energy: the glow rises, and falls when it leaves.
+    const glow = () =>
+      page
+        .locator('svg.daystar__svg')
+        .evaluate((el) => Number(el.style.getPropertyValue('--scarf-glow')));
+    expect(await glow()).toBeLessThan(0.2);
+    await page.locator('[data-daystar]').hover();
+    await expect.poll(glow, { timeout: 2000 }).toBeGreaterThan(0.5);
+    await page.mouse.move(40, 600);
+    await expect.poll(glow, { timeout: 3000 }).toBeLessThan(0.15);
+  });
+
+  test('a turn whirls the scarf', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'light');
+    });
+    await openSkyAtRest(page);
+    await expect(page.locator(SCARF)).toHaveAttribute('d', /^M /, { timeout: 8000 });
+    const glow = () =>
+      page
+        .locator('svg.daystar__svg')
+        .evaluate((el) => Number(el.style.getPropertyValue('--scarf-glow')));
+    // The click leaves the pointer on the face, whose energy alone
+    // lifts the glow to 0.7; the whirl on top of it saturates it.
+    await page.getByRole('button', { name: /turn the hour to night/i }).click();
+    await expect.poll(glow, { timeout: 1000 }).toBeGreaterThan(0.95);
+    await page.mouse.move(40, 600);
+    await expect.poll(glow, { timeout: 4000 }).toBeLessThan(0.15);
+  });
+
+  test('asked for less — reduced motion, or ?magic=off — the magic never loads', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await openSkyAtRest(page);
+    await page.waitForTimeout(2500);
+    expect(await page.locator(SCARF).getAttribute('d')).toBe('');
+    const fetched = await page.evaluate(() =>
+      performance.getEntriesByType('resource').some((entry) => /daystarMagic/.test(entry.name)),
+    );
+    expect(fetched).toBe(false);
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(`${SKY}&magic=off`);
+    await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
+    await page.waitForTimeout(2500);
+    expect(await page.locator(SCARF).getAttribute('d')).toBe('');
+  });
+});

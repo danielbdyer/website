@@ -1,5 +1,5 @@
 import { cn } from '@/shared/utils/cn';
-import { CENTER, DISC_PATH, RAYS, fourPointStar } from './faceGeometry';
+import { CENTER, DISC_PATH, DISC_RADIUS, MOON_PROFILE, RAYS, fourPointStar } from './faceGeometry';
 
 export type DaystarVariant = 'sun' | 'moon';
 
@@ -7,19 +7,22 @@ interface DaystarFaceProps {
   variant: DaystarVariant;
 }
 
-// The hour's face — the sun by day, the moon by night — drawn the way
-// a 1930s picture book draws a face: plump and rosy, a bulb of a nose
-// with its highlight, bright eyes under arched brows, a jovial mouth.
-// The sun wears a crown of hand-cut flame rays that turns on the
-// slowest clock; the moon keeps its lit limb, a few freckles of crater,
-// three small stars, and heavier lids. Every wash is a gradient, not a
-// filter, so the face can breathe, blink, and follow the pointer
-// cheaply; the one filter sits on the still halo behind it. The
-// molecule (Daystar) frames the two faces, sizes them, turns them, and
-// gives them their button. CONSTELLATION.md §"The Sun and the Moon".
-//
-// Geometry lives in faceGeometry.ts; colors live in CSS (tokens.css
-// §"The daystar"), keyed by class.
+// The hour's face, in the engraver's register — the sun in splendour
+// on an astronomical clock's dial, the sleeping moon in profile at its
+// shoulder — rather than a card's laughing Santa. Serene, a little
+// knowing. The sun: a crown of sixteen rays, straight and wavy by
+// turns, on the slowest clock; thin arched brows; almond eyes with a
+// lid line and a lash line; a single line of a nose with a small hook;
+// a closed smile; faint cheeks; the dial's fine rings inside the rim;
+// watercolor granulation over the gold. The moon: the whole disc's
+// earthshine, faint; the crescent in profile, asleep, with a closed
+// eye and a cheek; freckles of crater; three small stars in the dark.
+// Every wash is a gradient, so the face can breathe, blink, and follow
+// the pointer cheaply; the filters are still ones — the halo's wet
+// edge and the grain. The molecule (Daystar) frames the two faces,
+// turns them, and gives them their button. CONSTELLATION.md §"The
+// Sun and the Moon". Geometry lives in faceGeometry.ts; colors in
+// tokens.css §"The daystar", keyed by class.
 
 function Crown() {
   return (
@@ -29,32 +32,102 @@ function Crown() {
           key={ray.angle}
           d={ray.d}
           transform={`rotate(${ray.angle} ${CENTER} ${CENTER})`}
-          className="daystar__ray"
+          className={cn('daystar__ray', `daystar__ray--${ray.kind}`)}
         />
       ))}
     </g>
   );
 }
 
+/** The dial's fine circles inside the rim. */
+function Rings({ radii }: { radii: readonly number[] }) {
+  return (
+    <>
+      {radii.map((r) => (
+        <circle key={r} cx={CENTER} cy={CENTER} r={r} className="daystar__ring" />
+      ))}
+    </>
+  );
+}
+
+/** Watercolor granulation over the disc: noise, clipped to the disc,
+ *  laid on as pigment (the filter is still, so it costs nothing). */
+function Grain() {
+  return (
+    <circle
+      cx={CENTER}
+      cy={CENTER}
+      r={DISC_RADIUS}
+      filter="url(#daystar-grain)"
+      className="daystar__grain"
+    />
+  );
+}
+
+interface EyeProps {
+  x: number;
+  y: number;
+}
+
+// An almond eye drawn the engraver's way: the white; the gaze — iris,
+// pupil, glint — which slides toward the pointer; a lid line above and
+// a lash line below. The whole eye blinks by squinting to a line (CSS).
+function Eye({ x, y }: EyeProps) {
+  return (
+    <g transform={`translate(${x} ${y})`} className="daystar__eye">
+      <path d="M -8.5 0 Q 0 -6.4 8.5 0 Q 0 5.6 -8.5 0 Z" className="daystar__eye-white" />
+      <g className="daystar__gaze">
+        <circle r={3.9} className="daystar__iris" />
+        <circle r={1.9} className="daystar__pupil" />
+        <circle cx={-1.3} cy={-1.3} r={1.2} className="daystar__glint" />
+      </g>
+      <path d="M -8.5 0 Q 0 -6.4 8.5 0" className="daystar__lid" />
+      <path d="M -7 1.5 Q 0 5.6 7 1.5" className="daystar__lash" />
+    </g>
+  );
+}
+
+// The sun's face: serene, a little amused.
+function SunFeatures() {
+  return (
+    <g className="daystar__face">
+      <ellipse cx={90} cy={131} rx={11} ry={8} className="daystar__cheek" />
+      <ellipse cx={150} cy={131} rx={11} ry={8} className="daystar__cheek" />
+      <path d="M 86 96 Q 100 87.5 114 95" className="daystar__brow" />
+      <path d="M 154 96 Q 140 87.5 126 95" className="daystar__brow" />
+      <Eye x={101} y={107} />
+      <Eye x={139} y={107} />
+      <path d="M 120 101 L 117.5 122 Q 119.5 126.5 124 123.5" className="daystar__nose" />
+      <path d="M 106 143 Q 120 152 134 143" className="daystar__lip" />
+      <path d="M 111 148 Q 120 151.5 129 148" className="daystar__lip daystar__lip--under" />
+    </g>
+  );
+}
+
 const CRATERS = [
-  { x: 96, y: 88, r: 5 },
-  { x: 146, y: 78, r: 3.4 },
-  { x: 156, y: 150, r: 4.2 },
-  { x: 84, y: 160, r: 2.8 },
+  { x: 156, y: 90, r: 4.2 },
+  { x: 163, y: 126, r: 3 },
+  { x: 150, y: 158, r: 3.6 },
+  { x: 146, y: 74, r: 2.2 },
 ] as const;
 
 const MOON_STARS = [
-  { x: 176, y: 58, r: 5, delay: 0 },
-  { x: 62, y: 66, r: 3.6, delay: 1.3 },
-  { x: 188, y: 104, r: 3, delay: 2.4 },
+  { x: 84, y: 96, r: 4.4, delay: 0 },
+  { x: 77, y: 130, r: 3.2, delay: 1.3 },
+  { x: 94, y: 158, r: 2.6, delay: 2.4 },
 ] as const;
 
-// The lit limb, the freckles, and three small stars that keep the
-// moon company.
-function MoonMarks() {
+// The moon's face: the crescent asleep in profile, its eye closed, a
+// cheek, the corner of a smile; the freckles on the lit body; the
+// stars in the hollow's dark.
+function MoonFeatures() {
   return (
-    <>
-      <path d="M 150 72 A 60 60 0 0 1 150 168 A 44 60 0 0 0 150 72 Z" className="daystar__limb" />
+    <g className="daystar__face">
+      <path d={MOON_PROFILE} className="daystar__crescent" />
+      <ellipse cx={147} cy={118} rx={5.5} ry={4.2} className="daystar__cheek" />
+      <path d="M 138 100 Q 143 103 148 100" className="daystar__lid" />
+      <path d="M 138.6 100.8 Q 140.4 102.6 139.4 104.4" className="daystar__lash" />
+      <path d="M 135 129 Q 137.5 130.8 139.5 129" className="daystar__lip" />
       {CRATERS.map((c) => (
         <circle key={`${c.x}-${c.y}`} cx={c.x} cy={c.y} r={c.r} className="daystar__crater" />
       ))}
@@ -66,53 +139,6 @@ function MoonMarks() {
           className="daystar__star"
         />
       ))}
-    </>
-  );
-}
-
-interface EyeProps {
-  x: number;
-  y: number;
-  sleepy: boolean;
-}
-
-// An eye: the white, then the gaze — iris, pupil, glint — which slides
-// toward the pointer; and for the moon a heavy lid. The whole eye
-// blinks by squinting to a line (CSS).
-function Eye({ x, y, sleepy }: EyeProps) {
-  return (
-    <g transform={`translate(${x} ${y})`} className="daystar__eye">
-      <ellipse rx={8.5} ry={sleepy ? 5.6 : 6.4} className="daystar__eye-white" />
-      <g className="daystar__gaze">
-        <circle r={4.6} className="daystar__iris" />
-        <circle r={2.4} className="daystar__pupil" />
-        <circle cx={-1.7} cy={-1.7} r={1.6} className="daystar__glint" />
-      </g>
-      {sleepy && <ellipse cy={-3.4} rx={9.2} ry={6} className="daystar__lid" />}
-    </g>
-  );
-}
-
-function Features({ variant }: DaystarFaceProps) {
-  const sleepy = variant === 'moon';
-  return (
-    <g className="daystar__face">
-      <ellipse cx={88} cy={134} rx={16} ry={10.5} className="daystar__cheek" />
-      <ellipse cx={152} cy={134} rx={16} ry={10.5} className="daystar__cheek" />
-      <path d="M 90 96 Q 100 86 111 94" className="daystar__brow" />
-      <path d="M 150 96 Q 140 86 129 94" className="daystar__brow" />
-      <Eye x={101} y={108} sleepy={sleepy} />
-      <Eye x={139} y={108} sleepy={sleepy} />
-      <circle cx={120} cy={125} r={8.5} className="daystar__nose" />
-      <circle cx={117} cy={122} r={2.6} className="daystar__glint" />
-      {sleepy ? (
-        <path d="M 103 147 Q 120 158 137 147" className="daystar__lip" />
-      ) : (
-        <>
-          <path d="M 100 145 Q 120 166 140 145 Q 120 152 100 145 Z" className="daystar__mouth" />
-          <path d="M 100 145 Q 120 166 140 145" className="daystar__lip" />
-        </>
-      )}
     </g>
   );
 }
@@ -124,8 +150,9 @@ export function DaystarFace({ variant }: DaystarFaceProps) {
       {variant === 'sun' && <Crown />}
       <g className="daystar__body">
         <path d={DISC_PATH} className="daystar__disc" />
-        {variant === 'moon' && <MoonMarks />}
-        <Features variant={variant} />
+        {variant === 'sun' ? <SunFeatures /> : <MoonFeatures />}
+        <Grain />
+        <Rings radii={variant === 'sun' ? [55, 51] : [56]} />
       </g>
     </g>
   );
