@@ -364,10 +364,12 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
 });
 
 // The glyph keeps the room's own clean icon (Danny's word, the sixth
-// pass); by night it is the far side of the moon, which the ascent
-// turns half round to show the face.
+// pass); by night it is the far side of the moon. The descent turns the
+// face half round into it; the ascent no longer turns in the transition
+// (the eleventh pass): the character turns in at its seat before the
+// route changes, and the transition crosses face to face.
 test.describe('the glyph', { tag: '@smoke' }, () => {
-  test('by night the ascent turns the moon half round: the back turns away, the face comes round', async ({
+  test('by night the descent turns the moon half round, and the ascent crosses face to face without a turn', async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -378,9 +380,9 @@ test.describe('the glyph', { tag: '@smoke' }, () => {
     const supported = await page.evaluate(() => 'startViewTransition' in document);
     test.skip(!supported, 'no view transitions here');
     await page.evaluate(() => {
-      const w = window as unknown as { __turn: string[] };
-      w.__turn = [];
-      // Read the transition's animations once it is ready, rather than
+      const w = window as unknown as { __turn: Record<string, string[]> };
+      w.__turn = {};
+      // Read each transition's animations once it is ready, rather than
       // sampling frames: the lift plays for 900 ms first, and software
       // GL can starve a frame sampler through the whole transition.
       const doc = document as Document & {
@@ -388,17 +390,20 @@ test.describe('the glyph', { tag: '@smoke' }, () => {
       };
       const original = doc.startViewTransition.bind(doc);
       doc.startViewTransition = (cb) => {
+        const from = location.pathname;
         const transition = original(cb);
         void transition.ready.then(() => {
-          for (const animation of document.getAnimations()) {
-            const effect = animation.effect as KeyframeEffect | null;
-            const pseudo = effect?.pseudoElement ?? '';
-            if (!pseudo.includes('daystar')) continue;
-            const turns = effect!
-              .getKeyframes()
-              .some((frame) => String(frame.transform ?? '').includes('rotateY'));
-            if (turns && !w.__turn.includes(pseudo)) w.__turn = [...w.__turn, pseudo];
-          }
+          const turning = document
+            .getAnimations()
+            .map((animation) => animation.effect as KeyframeEffect | null)
+            .filter((effect) => (effect?.pseudoElement ?? '').includes('daystar'))
+            .filter((effect) =>
+              effect!
+                .getKeyframes()
+                .some((frame) => String(frame.transform ?? '').includes('rotateY')),
+            )
+            .map((effect) => effect!.pseudoElement!);
+          w.__turn = { ...w.__turn, [from]: turning };
         });
         return transition;
       };
@@ -406,20 +411,31 @@ test.describe('the glyph', { tag: '@smoke' }, () => {
     await page.getByRole('link', { name: /look up/i }).click();
     await page.locator('nav[aria-labelledby="constellation-title"]').waitFor();
     await page.waitForTimeout(1500);
-    const turned = await page.evaluate(() => (window as unknown as { __turn: string[] }).__turn);
-    expect(turned).toContain('::view-transition-old(daystar)');
-    expect(turned).toContain('::view-transition-new(daystar)');
+    await page.getByRole('link', { name: /return to the foyer/i }).click();
+    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 10_000 });
+    await page.waitForTimeout(1500);
+    const turned = await page.evaluate(
+      () => (window as unknown as { __turn: Record<string, string[]> }).__turn,
+    );
+    // Keyed by the path the router has already set when a transition
+    // begins — the destination. Up: no turn in the transition. Down:
+    // the half-turn, both images.
+    expect(turned['/sky'] ?? turned['/sky/'] ?? []).toEqual([]);
+    const down = turned['/'] ?? [];
+    expect(down).toContain('::view-transition-old(daystar)');
+    expect(down).toContain('::view-transition-new(daystar)');
   });
 });
 
 // The daystar's seat (CONSTELLATION.md §"The Sun and the Moon", the
-// ninth pass and the tenth): the glyph is left alone at the start and
-// falls with the page; the moon appears in the sky a little before the
-// route changes, at exactly where the sky seats the daystar, and the
-// transition turns it into the face there; on the way down the face
-// flies to exactly where the glyph rests and resolves into it.
+// ninth pass to the eleventh): the glyph is left alone at the start and
+// falls with the page, fading at its own size; the character itself
+// appears in the sky as soon as the page has uncovered its place, at
+// exactly where and how large the sky seats the daystar, and the
+// transition crosses face to face; on the way down the face flies to
+// exactly where the glyph rests and resolves into it.
 test.describe('the seat', { tag: '@smoke' }, () => {
-  test('the glyph is left alone at the start; the moon is already in the sky, where the daystar will be, when the route changes', async ({
+  test('the glyph is left alone at the start and never grows; the character is already in the sky, where the daystar will be, when the route changes', async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -433,12 +449,15 @@ test.describe('the seat', { tag: '@smoke' }, () => {
         __seat: { appearedAt: number | null; atStart: Record<string, unknown> };
       };
       w.__seat = { appearedAt: null, atStart: {} };
-      // The reveal at which the seat first appears: not at the start.
+      // The reveal at which the character first shows (its presence
+      // above nothing): not at the start, though it is mounted unseen
+      // from the first breath.
       new MutationObserver(() => {
         if (w.__seat.appearedAt !== null) return;
-        if (!document.documentElement.classList.contains('daystar-seated')) return;
+        const presence = Number(document.documentElement.style.getPropertyValue('--seat-presence'));
+        if (!(presence > 0)) return;
         w.__seat.appearedAt = Number(document.documentElement.style.getPropertyValue('--reveal'));
-      }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      }).observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
       // Recorded at the moment the transition begins.
       const doc = document as Document & {
         startViewTransition: (cb: () => void | Promise<void>) => ViewTransition;
@@ -446,19 +465,39 @@ test.describe('the seat', { tag: '@smoke' }, () => {
       const original = doc.startViewTransition.bind(doc);
       doc.startViewTransition = (cb) => {
         const seat = document.querySelector('.daystar-seat');
+        const character = document.querySelector('.daystar-seat [data-daystar]');
         const glyph = document.querySelector('.theme-toggle__glyph');
         w.__seat.atStart = {
           seated: document.documentElement.classList.contains('daystar-seated'),
-          seatName: seat ? getComputedStyle(seat).viewTransitionName : null,
+          characterName: character ? getComputedStyle(character).viewTransitionName : null,
           seatOpacity: seat ? Number(getComputedStyle(seat).opacity) : null,
           glyphName: glyph ? getComputedStyle(glyph).viewTransitionName : null,
-          rect: seat ? seat.getBoundingClientRect().toJSON() : null,
+          glyphOpacity: glyph ? Number(getComputedStyle(glyph).opacity) : null,
+          rect: character ? character.getBoundingClientRect().toJSON() : null,
         };
         return original(cb);
       };
+      // The lift on a manual clock: page time advances only as the test
+      // says, so the character's mount (a lazy chunk resolved on the
+      // first breath) is never raced by the route change on a machine
+      // whose frames are slow — what is asserted is the order, not the
+      // speed.
+      const clock = { now: performance.now() };
+      performance.now = () => clock.now;
+      const realRaf = window.requestAnimationFrame.bind(window);
+      window.requestAnimationFrame = (frame) => realRaf(() => frame(clock.now));
+      (window as unknown as { __advance: (ms: number) => void }).__advance = (ms) => {
+        clock.now += ms;
+      };
     });
-    await page.getByRole('link', { name: /look up/i }).click();
-    const daystar = page.locator('[data-daystar]');
+    await page.getByRole('link', { name: /look up/i }).click({ noWaitAfter: true });
+    for (let step = 0; step < 14; step += 1) {
+      await page.evaluate(() =>
+        (window as unknown as { __advance: (ms: number) => void }).__advance(90),
+      );
+      await page.waitForTimeout(120);
+    }
+    const daystar = page.locator('nav[aria-labelledby="constellation-title"] [data-daystar]');
     await daystar.waitFor();
     const seat = await page.evaluate(
       () =>
@@ -468,9 +507,10 @@ test.describe('the seat', { tag: '@smoke' }, () => {
               appearedAt: number | null;
               atStart: {
                 seated: boolean;
-                seatName: string;
+                characterName: string;
                 seatOpacity: number;
                 glyphName: string;
+                glyphOpacity: number;
                 rect: { x: number; y: number; width: number; height: number };
               };
             };
@@ -480,16 +520,19 @@ test.describe('the seat', { tag: '@smoke' }, () => {
     expect(seat.appearedAt).not.toBeNull();
     expect(seat.appearedAt!).toBeGreaterThan(0.6);
     expect(seat.atStart.seated).toBe(true);
-    expect(seat.atStart.seatName).toBe('daystar');
+    // The character carries the name, whole; the glyph has given it up
+    // and has all but faded in the falling page.
+    expect(seat.atStart.characterName).toBe('daystar');
     expect(seat.atStart.seatOpacity).toBeGreaterThan(0.98);
     expect(seat.atStart.glyphName).toBe('none');
-    // The seat's center is the daystar's center, its size the face's.
+    expect(seat.atStart.glyphOpacity).toBeLessThan(0.05);
+    // The character's box is the daystar's: same center, same size.
     const box = (await daystar.boundingBox())!;
     const r = seat.atStart.rect;
     expect(Math.abs(r.x + r.width / 2 - (box.x + box.width / 2))).toBeLessThan(4);
     expect(Math.abs(r.y + r.height / 2 - (box.y + box.height / 2))).toBeLessThan(4);
-    expect(r.width / box.width).toBeGreaterThan(0.6);
-    expect(r.width / box.width).toBeLessThan(0.75);
+    expect(r.width / box.width).toBeGreaterThan(0.95);
+    expect(r.width / box.width).toBeLessThan(1.05);
   });
 
   test('on the way down the face flies to exactly where the glyph rests, and the glyph has its place back once it has landed', async ({
@@ -500,7 +543,7 @@ test.describe('the seat', { tag: '@smoke' }, () => {
     });
     await page.goto('/');
     await page.getByRole('link', { name: /look up/i }).click();
-    await page.locator('[data-daystar]').waitFor();
+    await page.locator('nav[aria-labelledby="constellation-title"] [data-daystar]').waitFor();
     await page.waitForTimeout(1500);
     await page.evaluate(() => {
       const w = window as unknown as {

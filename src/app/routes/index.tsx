@@ -16,9 +16,11 @@ import {
   tween,
 } from '@/shared/dom/lookUp';
 import {
+  presenceFor,
   releaseSeat,
   releaseSeatAfterTransition,
   seatAtRest,
+  seatInSky,
   seatWithReveal,
 } from '@/shared/dom/daystarSeat';
 
@@ -64,8 +66,11 @@ function lift(go: () => void): void {
   if (liftCancel !== null) return;
   const root = document.documentElement;
   root.classList.add('ascending', 'pulling');
-  // The moon appears in the sky as the room falls (dom/daystarSeat.ts),
-  // already there a little before the route changes.
+  // The character is seated in the sky at once — unseen until the room
+  // has uncovered its place, but mounted, its paint live — and appears
+  // as the room falls, already there before the route changes
+  // (dom/daystarSeat.ts).
+  seatInSky(presenceFor(readReveal()));
   liftCancel = tween(
     readReveal(),
     LIFT,
@@ -160,7 +165,11 @@ function FoyerPage() {
     direction: 'up',
     atBoundary: atPageTop,
     withTouch: true,
-    onGather: warmSky,
+    onGather: () => {
+      warmSky();
+      // The character mounts, unseen, at the pull's first breath.
+      seatInSky(0);
+    },
     onReveal,
     onCommit: () => {
       lift(() => void navigate({ to: '/sky' }));

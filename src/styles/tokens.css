@@ -1507,8 +1507,10 @@ html.pulling .site-room:not(.site-room--sky) > footer {
   --silk-4: oklch(from var(--accent-violet) 74% 0.17 h);
 }
 
-/* The daystar sinks a little with the return pull. */
-html.pulling .daystar {
+/* The sky's daystar sinks a little with the return pull. The sky's
+   room only: the character the Foyer's seat holds through a look-up
+   keeps the daystar's exact place. */
+html.pulling .site-room--sky .daystar {
   translate: 0 calc(var(--reveal, 0) * 16px);
 }
 
@@ -2045,18 +2047,19 @@ div.daystar {
 /* ─── The daystar's seat ─────────────────────────────────────────
    The nav's glyph carries the daystar's name at rest — the same name
    the sky's daystar carries — and is otherwise left alone: it falls
-   away with the page, unnoticed (the tenth pass, with Danny: *I liked
-   that I didn't think about the glyphs as soon as the transition
-   happened; the ends needed to change, not the body*). The seat is a
-   fixed box outside the stage showing the same icon. On the way up it
-   appears in the sky, at exactly the place and the size the sky will
-   seat its daystar, fading in as the room falls — the moon already
-   there a little before the route changes — and takes the name, so the
-   transition turns it into the face where it stands with nothing to
-   fly; the glyph fades beneath by the same measure. On the way down it
-   stands at the glyph's own rest from the first paint, so the face has
-   somewhere exact to land (dom/daystarSeat.ts). Its icon fills its box
-   at every size. */
+   away with the page, fading at its own size with a breath of growth
+   (the tenth and eleventh passes, with Danny: *I liked that I didn't
+   think about the glyphs as soon as the transition happened; we
+   should never see the glyph itself grow larger at all*). The seat is
+   a fixed box outside the stage. On the way up it holds the character
+   itself — the daystar, the sky's own molecule — at exactly the place
+   and the size the sky will seat it, appearing as soon as the falling
+   page has uncovered that place (by night turning in from the edge as
+   it comes), and the character carries the name, so the route's
+   transition crosses face to face with nothing to fly or grow. On the
+   way down it holds the hour's icon at the glyph's own rest from the
+   first paint, so the face has somewhere exact to land, and the box
+   carries the name (dom/daystarSeat.ts). */
 .theme-toggle__glyph {
   view-transition-name: daystar;
 }
@@ -2068,21 +2071,37 @@ div.daystar {
   visibility: hidden;
   pointer-events: none;
   opacity: var(--seat-presence, 0);
+  transform-origin: center;
 }
 
-.daystar-seat svg {
+.daystar-seat--rest svg {
   display: block;
   width: 100%;
   height: 100%;
 }
 
+/* The character seats itself by the same properties the sky writes
+   for it; here they name the box's own center. */
+.daystar-seat--sky {
+  --daystar-x: 50%;
+  --daystar-y: 50%;
+}
+
 html.daystar-seated .daystar-seat {
   visibility: visible;
+}
+
+html.daystar-seated .daystar-seat--rest {
   view-transition-name: daystar;
+}
+
+html.dk.daystar-seated .daystar-seat--sky {
+  transform: perspective(600px) rotateY(calc((1 - var(--seat-presence, 0)) * -75deg));
 }
 
 html.daystar-seated .theme-toggle__glyph {
   opacity: calc(1 - var(--seat-presence, 0));
+  scale: calc(1 + var(--seat-presence, 0) * 0.35);
   view-transition-name: none;
 }
 
@@ -2100,23 +2119,25 @@ html.daystar-seated .theme-toggle__glyph {
   animation-duration: 900ms;
 }
 
-/* By night the glyph is the back of the moon's head, and the sky's
-   daystar its face: the ascent turns it half round — the back turning
-   away as the face comes round the other side — and the descent turns
-   it back. By day the sun's rays are the same rays in both places and
+/* By night the sky's daystar is the moon's face and the glyph the back
+   of its head: the descent turns it half round on the way down — the
+   face turning away as the back comes round the other side. (The
+   ascent no longer turns in the transition: the character has already
+   turned in at its seat by then, and the transition crosses face to
+   face.) By day the sun's rays are the same rays in both places and
    the morph simply carries them. One turn, not two halves (the ninth
-   pass): the back gathers speed into the edge and the face comes off
+   pass): the face gathers speed into the edge and the back comes off
    it slowing, mirrored curves that meet at the same rate edge-on, and
    the two images cross over a breath either side of the edge rather
    than both vanishing there — so the coin is never gone. The flip's
    shorthand sets no delay; the descent's rules below restate the delay
    after it. */
-html.dk::view-transition-old(daystar) {
+html.dk.descending::view-transition-old(daystar) {
   animation: daystar-turn-away 900ms linear both;
   transform-origin: center;
 }
 
-html.dk::view-transition-new(daystar) {
+html.dk.descending::view-transition-new(daystar) {
   animation: daystar-turn-toward 900ms linear both;
   transform-origin: center;
 }

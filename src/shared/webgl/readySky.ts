@@ -139,6 +139,10 @@ function setIntoBackdrop(handles: AtmosphereHandles, scene: AtmosphericScene): v
 
 export async function readySky(): Promise<void> {
   warmDaystarMagic();
+  // The seat's character (layout/DaystarSeat.tsx) is the sky's own
+  // molecule behind a default-export facade; its chunk is fetched here
+  // with the rest, so the seat holds it at once when a look-up begins.
+  void import('@/shared/molecules/Daystar/character');
   if (!shouldRenderWebGL()) return;
   const graph = await getConstellationGraph();
   const scene = buildAtmosphericScene(graph);
