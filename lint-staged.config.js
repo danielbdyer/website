@@ -25,4 +25,11 @@ export default {
   // file from disk (not from the staged version), so it runs after
   // prettier rewrites and sees the final committed bytes.
   'src/styles/tokens.css': () => 'pnpm exec node ./scripts/check-color-contrast.mjs',
+  // Any change to a work triggers the corpus guard: every file under
+  // src/content/ is re-parsed under production strictness, so bad
+  // frontmatter, a non-kebab filename, or a wikilink to a work that
+  // does not exist fails the commit rather than the next build. The
+  // whole corpus is read (not just the staged file) because a wikilink
+  // resolves against its neighbors.
+  'src/content/**/*.md': () => 'pnpm exec vitest run src/shared/content/corpus.test.ts',
 };

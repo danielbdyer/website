@@ -5,8 +5,10 @@
 #                    --fix + prettier for TS/TSX, prettier for JS/JSON,
 #                    prettier + stylelint for CSS, markdownlint for
 #                    Markdown, cspell for every prose-bearing kind,
-#                    secretlint for everything, and the color-contrast
-#                    guard whenever tokens.css is staged.
+#                    secretlint for everything, the color-contrast
+#                    guard whenever tokens.css is staged, and the
+#                    corpus guard (frontmatter, slugs, wikilinks)
+#                    whenever a work under src/content/ is staged.
 #   2. typecheck     full project (tsc -b). Types cross files, so this
 #                    one stays whole-repo; it's fast on a warm build.
 #   3. repo-scoped   the three node scripts whose findings aren't

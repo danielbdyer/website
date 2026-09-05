@@ -14,22 +14,32 @@ For task-specific orientation, the [`.claude/skills/`](./.claude/skills/) direct
 
 | Command | What it does |
 |---|---|
-| `pnpm dev` | Vite dev server with HMR |
-| `pnpm test` | Build, then vitest, then Playwright `@smoke`. The full local pre-commit gate. |
-| `pnpm test:fast` | Vitest only — tight TDD loop, no build. |
-| `pnpm test:e2e` | Full Playwright suite. Assumes `dist/client/` is current — run `pnpm build` first if not. |
+| `pnpm dev` | Vite dev server with HMR. Shows drafts and future-dated works. |
+| `pnpm run doctor` | Typecheck, the full lint chain, and vitest. The pre-push gate; `run` is load-bearing (bare `pnpm doctor` hits pnpm's own no-op command). |
+| `pnpm test` | Lint, build, vitest, then Playwright `@smoke`. The full local gate. |
+| `pnpm test:fast` | Vitest only. Tight TDD loop, no build. |
+| `pnpm test:coverage` | Vitest with the v8 coverage floor over the pure logic (content, seo, utils). |
+| `pnpm test:e2e` | Full Playwright suite. Assumes `dist/client/` is current; run `pnpm build` first if not. |
 | `pnpm test:smoke` | Just the Playwright `@smoke` tier. Assumes a current build. |
-| `pnpm typecheck` | `tsc -b` — full project typecheck |
-| `pnpm lint` | ESLint over `src/` |
-| `pnpm build` | Vite build + filter the prerender manifest |
-| `pnpm build:analyze` | Build with the bundle visualizer enabled |
-| `pnpm build:deploy` | Build with typecheck + the deploy artifact verification |
-| `pnpm preview` | Build and serve locally |
-| `pnpm preview:deploy` | Build and serve via `wrangler dev` (closer to prod runtime) |
-| `pnpm deploy:workers` | Build and deploy to Cloudflare Workers |
-| `pnpm lighthouse` | Build and run Lighthouse CI against the result |
-| `pnpm size` | Build and check the bundle-size budget |
-| `pnpm setup` | Install matching Playwright browsers (run once after clone or after a Playwright version bump) |
+| `pnpm test:perf` | The `@perf` Playwright tier under `xvfb-run`; the sky's frame budget. |
+| `pnpm typecheck` | `tsc -b`, the full project. |
+| `pnpm lint` | The whole chain: eslint, stylelint, color contrast, component shapes, markdownlint, cspell, secretlint, spec hyperlinks, the voice guard. Each is also runnable alone as `pnpm lint:<name>`. |
+| `pnpm lint:knip` | Unused files, exports, and dependencies. Advisory; not in the chain or CI. |
+| `pnpm build` | Vite build + filter the prerender manifest. |
+| `pnpm build:analyze` | Build with the bundle visualizer enabled. |
+| `pnpm build:deploy` | Typecheck, build, and verify the deploy artifacts. |
+| `pnpm preview` | Build and serve locally. |
+| `pnpm preview:deploy` | Build and serve via `wrangler dev` (closer to the production runtime). |
+| `pnpm deploy:workers` | Build and deploy to Cloudflare Workers. |
+| `pnpm lighthouse` | Build and run Lighthouse CI against the result, then print the scores. |
+| `pnpm size` | Build and check the bundle-size budget. |
+| `pnpm perf:sky` | Probe the sky's frame timing headlessly (`scripts/check-sky-perf.mjs`). |
+| `pnpm harness:sky` | The `@dbd/sky` package's standalone harness: the sky alone, with a perf overlay. |
+| `pnpm setup` | Install matching Playwright browsers (once after clone or after a Playwright bump). |
+
+### The commit gates
+
+Every commit runs [`lint-staged`](./lint-staged.config.js) on the staged files, a full typecheck, the three repo-scoped scripts (component shapes, spec hyperlinks, voice), and the vitest tests related to any staged TypeScript. Staging a work under `src/content/` also runs the corpus guard (`src/shared/content/corpus.test.ts`), which re-parses every work under production strictness: bad frontmatter, a filename that is not kebab-case, or a `[[wikilink]]` to a work that does not exist fails the commit. Every push runs `pnpm run doctor`. Commit messages follow [Conventional Commits](./commitlint.config.js).
 
 ## First-run setup
 
@@ -72,13 +82,16 @@ Local dev never needs this. Production deploys read it from Cloudflare's environ
 
 ## Where things live
 
-- [`src/app/routes/`](./src/app/routes/) — file-based routing, one file per route
+- [`src/app/routes/`](./src/app/routes/) — file-based routing, one file per route: the foyer, the four rooms, `$room/$slug` for a work, `facet/$facet`, and `sky` for the constellation
 - [`src/app/layout/`](./src/app/layout/) — Nav, Footer, ErrorBoundary, NotFound, ThemeToggle
 - [`src/app/providers/`](./src/app/providers/) — ThemeProvider + theme-store
-- [`src/shared/`](./src/shared/) — atoms, molecules, organisms, content loader, types, SEO
+- [`src/shared/`](./src/shared/) — atoms, molecules, organisms; content loader, schema, wikilinks, and the graph (`content/`); types; SEO and JSON-LD
+- [`src/shared/geometry/`](./src/shared/geometry/), [`sky/`](./src/shared/sky/), [`dom/`](./src/shared/dom/), [`webgl/`](./src/shared/webgl/) — the sky's pure core: sphere, camera, springs, motion, projection, and the WebGL firmament. See [`CONSTELLATION_ARCHITECTURE.md`](./CONSTELLATION_ARCHITECTURE.md).
 - [`src/content/`](./src/content/) — markdown works, organized by room
-- [`e2e/`](./e2e/) — Playwright specs
-- [`.github/workflows/`](./.github/workflows/) — CI
+- [`packages/sky/`](./packages/sky/) — `@dbd/sky`, the constellation as a package with its own harness; [`packages/slice/`](./packages/slice/) — `@dbd/slice`, the contract that crosses the wall to the engine (see [`CATHEDRALS.md`](./CATHEDRALS.md))
+- [`scripts/`](./scripts/) — the repo-scoped checks (contrast, component shapes, spec hyperlinks, voice), build post-steps, and the Lighthouse ratchet
+- [`e2e/`](./e2e/) — Playwright specs: core flows, error boundary, sky performance, visual regression
+- [`.github/workflows/`](./.github/workflows/) — CI, the Lighthouse floor ratchet, and the snapshot updater
 
 ## License
 

@@ -10,18 +10,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Accessibility
 
-### Skip-to-main-content link
-
-**State:** Implemented as of the accessibility pass. Present in `__root.tsx`.
-
-### Custom `:focus-visible` ring
-
-**State:** Implemented as of the accessibility pass. Defined in `tokens.css`.
-
-### Focus management on route transitions
-
-**State:** Implemented in `__root.tsx`. `RootComponent` subscribes to `useRouterState({ select: (s) => s.location.pathname })` and focuses `<main id="main-content">` on each pathname change after the initial mount.
-
 ### Investigate the room-landing accessibility 0.95
 
 **Why:** Lighthouse scores the four room landings (`/studio`, `/garden`, `/study`, `/salon`) at a11y 0.95 — one violation each — while the foyer hits 1.0. The blocker for graduating the room floor back to 1.0 is identifying and fixing whatever the violation is. Most likely candidates: contrast on `text-text-3` preview-note copy, the `noindex, nofollow` meta surfacing as an a11y signal in some audits, or a heading-order finding from the preview content.
@@ -31,15 +19,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 **Why:** `ACCESSIBILITY.md` commits to honoring this preference. Border and text tones should strengthen toward `--text` and solid borders when requested.
 **Trigger:** When the design system's secondary tones stabilize enough that high-contrast variants are meaningful to define.
-
-### Automated color contrast checks
-
-**Why:** Ensure that token combinations never regress below AA for body text.
-**Trigger:** When design tokens change often enough that manual verification stops being reliable.
-
-### `axe-core` integration in tests
-
-**State:** Implemented as of the canary-baseline pass. `jest-axe` is wired into vitest via `src/test/axe.ts`; NotFound and WorkView tests assert zero violations. `color-contrast` and `region` checks are disabled in the vitest suite because they need a real browser — those are covered by Lighthouse CI against the built site.
 
 ### Expand axe coverage to more components
 
@@ -74,31 +53,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ## Content
 
-### Wikilink resolution in the loader
-
-**Why:** `GRAPH_AND_LINKING.md` specifies `[[slug]]` and `[[room/slug]]` syntax with build-time resolution, but the loader currently passes markdown bodies through `marked` without parsing wikilinks. The code is structured to accept a wikilink plugin; one has not been written.
-**Trigger:** When the first work links to another work (i.e., the second published work, if it references the first). Until then, there is nothing to resolve and nothing to break.
-
-### Backlinks computation
-
-**Why:** `GRAPH_AND_LINKING.md` specifies that backlinks are computed at build time by inverting the outbound-link set and surfaced in each work's outward invitation. The loader does not yet build this index.
-**Trigger:** Same as wikilink resolution. The two ship together — backlinks require resolved wikilinks.
-
-### Outward-invitation composition
-
-**Why:** `GRAPH_AND_LINKING.md` specifies the bottom-of-work invitation as facet threads + backlinks + return-to-room. `WorkView` today renders only the return-to-room link. Facet threads and backlinks are gaps.
-**Trigger:** When facets exist on works (add facet-thread composition) and when wikilinks resolve (add backlink composition).
-
-### Room-landing works list
-
-**Why:** `INFORMATION_ARCHITECTURE.md` specifies that each room landing lists its works. Currently each room renders only its title and bracketed description.
-**Trigger:** The first work in any room. The list component is small and can be built that day.
-
-### Facet chip atom + facet pages
-
-**Why:** Specified in IA and GRAPH_AND_LINKING; rendering is not yet built. No `/facet/{facet}` route, no chip atom.
-**Trigger:** When a work carries facets and the chip becomes visible absence on the work page.
-
 ### Per-content-type prose rendering
 
 **Why:** The current `.prose` styles in `tokens.css` are generic — paragraphs, headings, lists, code. `CONTENT_SCHEMA.md` names four types (poem, essay, case-study, note), each of which may render differently (poems preserving line breaks, case studies handling figures, etc.).
@@ -109,19 +63,9 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** `CONTENT_SCHEMA.md` names MDX as a held option for works that need embedded components (audio in the Salon, interactive figures in the Studio). The loader currently handles `.md` only.
 **Trigger:** The first work that wants a component embed. Likely in the Salon or a Studio case-study.
 
-### Draft graduation of bracketed copy
-
-**Why:** 404 lines, the 404 link label, and the four room descriptions are bracketed per `VOICE_AND_COPY.md`'s draft convention. They await voice settlement.
-**Trigger:** Whenever Danny has a settled phrasing for any of these surfaces. Graduation is per-surface — the Garden's description can graduate without waiting on the 404.
-
 ---
 
 ## Design
-
-### Empty-room outward invitation
-
-**Why:** `INFORMATION_ARCHITECTURE.md` commits that room landings carry an outward invitation even when empty. Today the four room landings have title + bracketed description and no outward gesture.
-**Trigger:** Coupled to draft graduation — when the room's voice settles, the invitation is added in the same pass.
 
 ### Accent color semantic assignment
 
@@ -260,11 +204,6 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 **State:** Specification exists (`SEO_AND_META.md`). Schema.org JSON-LD is implemented for `WebSite`, `Person`, the `CreativeWork` subtypes for works, and `BreadcrumbList` for work pages. Remaining items below are sub-tasks of the spec.
 
-### Per-page title and meta description
-
-**Why:** The root route now sets a site-wide title and description in each prerendered page (via the TanStack Start `head` config), so every route has valid meta. Each route should also emit its own specific `<title>` and `<meta name="description">` — the Studio's title is currently "Danny Dyer" like every other page, and descriptions don't yet distinguish rooms or works.
-**Trigger:** Before the first deploy for the rooms. Per-work titles land with the first work (the `$room/$slug` route's loader already surfaces the work's title).
-
 ### Open Graph image generation
 
 **Why:** Each work wants a 1200×630 OG image rendered from its title, date, and facets over the umber ground. Specified in `SEO_AND_META.md`.
@@ -325,17 +264,3 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 **Why:** A work has title, date, facets, type; a vault claim has type, status, origin, confidence, evidence, constellations. They rhyme and do not match; the engine's markdown reader wants one shape.
 **Trigger:** Phase 2's markdown reader.
-
----
-
-## Code Quality
-
-### Frontmatter validation in the pre-commit hook
-
-**Why:** `CONTENT_SCHEMA.md` specifies Zod-validated frontmatter, and `src/shared/content/schema.ts` already holds the schema. When a `.md` under `src/content/{room}/` is staged, the pre-commit hook should parse its frontmatter and run the schema against it — catching a malformed `type`, a missing `title`, or an unknown facet at the moment of commit rather than at build time.
-**Trigger:** The first work. Until then, there is no content directory to validate.
-
-### Wikilink resolvability in the pre-commit hook
-
-**Why:** `GRAPH_AND_LINKING.md` commits that unresolved wikilinks fail the build. The pre-commit hook can surface that failure earlier — parse `[[slug]]` and `[[room/slug]]` in any staged `.md` under `src/content/`, fail if any target isn't in the resolved set.
-**Trigger:** Pairs with the wikilink-resolution loader item under Content. Both ship together.
