@@ -59,6 +59,23 @@ describe('motion — travel', () => {
     expect(events).toEqual([{ kind: 'arrived', place: 'garden/x', alongEdgeId: undefined }]);
   });
 
+  test('naming a destination announces the departure; a change of mind announces again', () => {
+    const first = travelTo(start, STAR, 'garden/x', 1000, 'e1', false);
+    expect(first.events).toEqual([{ kind: 'departed', place: 'garden/x', alongEdgeId: 'e1' }]);
+    expect(first.motion.here).toBe('pole');
+    const midway = advance({ ...first.motion, time: 1000 }, 1300).motion;
+    const OTHER = unitVector(-0.6, 0.1, 0.79);
+    const second = travelTo(midway, OTHER, 'study/y', 1300, undefined, false);
+    expect(second.events).toEqual([{ kind: 'departed', place: 'study/y', alongEdgeId: undefined }]);
+    // The new travel begins where the sky is, not where it stood.
+    expect(second.motion.phase.kind === 'travel' && second.motion.phase.travel.from).toEqual(
+      midway.pos,
+    );
+    const done = runUntil(second.motion, 1300, 1300 + 3000, 16);
+    expect(done.motion.here).toBe('study/y');
+    expect(done.events.filter((e) => e.kind === 'arrived')).toHaveLength(1);
+  });
+
   test('the streak measures the motion between advances and rests at rest', () => {
     const { motion } = travelTo(start, STAR, 'garden/x', 0, undefined, false);
     const moving = advance(advance({ ...motion, time: 0 }, 300).motion, 316).motion;

@@ -183,16 +183,13 @@ function maybePlaceLabels(refs: Refs, motion: Motion, at: number): void {
 
 // ─── Events and the loop ───────────────────────────────────────────
 
-/** Hand the core's events to the walk. */
+/** Hand the core's events to the walk, every one as it is. An arrival
+ *  also asks for the labels to be laid out again. */
 function dispatch(refs: Refs, events: readonly MotionEvent[]): void {
   const walk = refs.walk.current;
   for (const event of events) {
-    if (event.kind === 'arrived') {
-      refs.shell.current.labelsAt = 0;
-      walk.arrive(event.place, event.alongEdgeId);
-    } else {
-      walk.aim(event.place);
-    }
+    if (event.kind === 'arrived') refs.shell.current.labelsAt = 0;
+    walk.send(event);
   }
 }
 
@@ -293,6 +290,20 @@ function handlePointerDown(refs: Refs, e: PointerEvent<SVGSVGElement>): void {
   shell.motion = grab(shell.motion, { id: e.pointerId, x: e.clientX, y: e.clientY }, now());
 }
 
+/** Take the pointer for the drag's duration. Capture only once the hand
+ *  has moved: a capture at the press would retarget the click, and a
+ *  tap on a star must stay the star's. A pointer the platform no longer
+ *  counts as active (a synthetic one, a pen already lifted) throws
+ *  here; the hand still works without the capture. */
+function capturePointer(el: SVGSVGElement, pointerId: number): void {
+  try {
+    el.setPointerCapture(pointerId);
+  } catch {
+    // The hand follows the pointer without capture; the drag ends at
+    // the surface's edge instead of beyond it.
+  }
+}
+
 function handlePointerMove(refs: Refs, e: PointerEvent<SVGSVGElement>): void {
   const shell = refs.shell.current;
   const before = handOf(shell.motion);
@@ -300,9 +311,7 @@ function handlePointerMove(refs: Refs, e: PointerEvent<SVGSVGElement>): void {
     const pointer = { id: e.pointerId, x: e.clientX, y: e.clientY };
     const next = moveHand(shell.motion, pointer, refs.graph.current, viewportOf(refs), now());
     const after = handOf(next.motion);
-    // Capture only once the hand has moved: a capture at the press would
-    // retarget the click, and a tap on a star must stay the star's.
-    if (after?.engaged && !before.engaged) e.currentTarget.setPointerCapture(e.pointerId);
+    if (after?.engaged && !before.engaged) capturePointer(e.currentTarget, e.pointerId);
     commit(refs, next);
     ensureRunning(refs);
     return;

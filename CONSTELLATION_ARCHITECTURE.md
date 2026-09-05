@@ -71,8 +71,8 @@ flowchart TB
 The camera's state is one immutable value, `Motion`: where the visitor stands (`anchor`), where the camera's surface point is (`pos`), the gaze, the rest distance, and a `Phase` — `rest`, `travel`, `held` (a `Hand`), or `settle` (a spring). The transitions:
 
 - `advance(motion, now)` — the sky `now`: the phase stepped (a travel glides; a spring is advanced in closed form), the gaze and rest eased, the motion since the last advance measured for the atmosphere's streak. Returns the next motion and its events.
-- `travelTo(motion, to, place, now, along, reduced)` — a destination named. Under reduced motion, an immediate arrival.
-- `grab`, `moveHand`, `releaseHand` — a hand on the sky (`sky/hand.ts`). The hand's displacement is split into a free component along the track it takes and a remainder at the play; the reticle picks the intent from the projected stars; release settles onto the intent, or the track's star, or home.
+- `travelTo(motion, to, place, now, along, reduced)` — a destination named; returns a `departed` event so the walk can frame it ahead. Under reduced motion, an immediate arrival and no departure.
+- `grab`, `moveHand`, `releaseHand` — a hand on the sky (`sky/hand.ts`). The hand's displacement is split into a free component along the track it takes and a remainder at the play; the reticle picks the intent from the projected stars; release settles onto the intent, or the track's star, or home. The hand announces itself: `held` when it engages, `released` when it lets go, and the aim is kept through the settle so the claim never blinks.
 - `fitRest`, `lookToward` — the frame and the cursor.
 - `arrive` — the one door: the place becomes here and the anchor, the sky rests, an `arrived` event is returned.
 
@@ -84,7 +84,7 @@ A press `grab`s: the hand is held but not engaged, so a tap stays a tap. Past th
 
 ## Walk
 
-`walkReducer(state, event)` folds `arrived`, `attended`, and `aimed` into where the visitor stands, what they have visited and walked, what they attend, and what they aim at. `useSkyWalk` is a `useReducer` around it and one effect that remembers `here` for the session. Every consumer reads the state; the three events are the only way it changes.
+`walkReducer(state, event)` folds eight events into where the visitor stands, where they are bound and along which thread, whether a hand holds the sky, what they have visited and walked, what they attend, what the pointer rests on (a star, a thread), and what they aim at: `departed`, `arrived`, `held`, `released` from the core; `attended`, `hovered`, `traced` from the view; `aimed` from the core's reticle. The reducer owns attention — one at a time: a `hovered` or `traced` event is refused while the sky is under way (a heading set, or a hand holding), and `departed` and `held` let go of whatever was hovered, so a star streaming past the pointer never claims and a star pressed at the start of a drag is released when the hand engages. `useSkyWalk` is a `useReducer` around it and one effect that remembers `here` for the session. Every consumer reads the state; the events are the only way it changes.
 
 ## The shell
 
@@ -98,7 +98,7 @@ React renders the structural sky from the graph and the walk. It decides which s
 
 The frame loop moves the camera and writes positions. It knows nothing of React; it reads the graph and `here` as values and returns events.
 
-The boundary is data. Down: the graph and `here` (a change of `here` from outside — a restored place, a look-up jump — is a destination like any other). Up: `arrived` and `aimed`. When the hand aims at a star, the walk hears it, React renders the claim, and the frame loop keeps moving the sky underneath. Neither clock waits for the other.
+The boundary is data. Down: the graph and `here` (a change of `here` from outside — a restored place, a look-up jump — is a destination like any other). Up: `departed`, `arrived`, `held`, `released`, and `aimed`, handed on by one `send`. When the hand aims at a star, the walk hears it, React renders the claim, and the frame loop keeps moving the sky underneath. When a travel departs, the walk hears that too, and React frames the destination ahead while the loop carries the sky toward it. Neither clock waits for the other.
 
 ---
 
@@ -107,6 +107,10 @@ The boundary is data. Down: the graph and `here` (a change of `here` from outsid
 The Motion and Walk layers as described, with no change to what the sky does except the two the walk needed: the track no longer caps the hand at its own star, and the reticle decides at release. The shell shrank from a thousand lines that held physics, gestures, and paint in one mutable bag to a rim that holds a ref and a schedule. The lint exemption lost `useSkyTravel`'s predecessor's reasons and kept `useSkyTravel` only as the shell; `wellPhysics` left the list by becoming pure.
 
 Tests: the spring's closed form against its own fine-stepped integration; a travel arriving exactly once; a settle onto a star arriving and a settle home not; the gaze and rest easing to stillness; the hand taking a track, following at the play off it, aiming at the nearest star, carrying past a neighbor to the third star on the line; the release decision; the reducer's events.
+
+## What Shipped (2026-09-05, the storyboard pass)
+
+The boundary grew from two events to five, and the reducer took ownership of attention (`CONSTELLATION_STORYBOARD.md`). The view's rules for what claims — `attentionKeyOf` for the atmosphere's crescendo, `bodyPlaceOf` for the companion's hue, `litEndsOf` for a traced thread — are pure functions in the organism's `walk.ts`, tested with values. The organism split into a hook that wires the scene (`useSkyScene`) and markup that renders it. The tests added: the reducer's quiet while the sky is under way; `departed` from a travel and its absence under reduced motion; `held` and `released` from the hand and the aim persisting through the settle; the world's derivations; the organism's seams — a hover and a traced thread composing, hover quiet during a crossing with the destination framed ahead, focus moving between stars without a blink, a press that becomes a drag letting go of the pressed star — driven through the DOM with real animation frames.
 
 ---
 

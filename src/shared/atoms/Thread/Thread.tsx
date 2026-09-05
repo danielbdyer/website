@@ -19,13 +19,20 @@ export interface ThreadFigure {
 }
 
 /** The thread's place in the walk. `active`: an endpoint is hovered,
- *  focused, or stood at — the thread blooms. `walked`: the visitor
- *  has traveled along it this session — it keeps a little of the
- *  light. `lit`: its facet's whole figure is under attention (a
- *  hovered bearing or sibling thread). `present`: both ends are
- *  present from where the visitor stands; otherwise it recedes. */
+ *  focused, or stood at, or the pointer traces the thread itself — it
+ *  blooms. `traced`: the pointer rests on this thread — its facet's
+ *  name shows at the midpoint (a bloom by endpoint does not name
+ *  itself; the star you stand at has several threads, and naming them
+ *  all is clutter). `traveling`: a travel follows it — lit end to end
+ *  as the track, and named. `walked`: the visitor has traveled along
+ *  it this session — it keeps a little of the light. `lit`: its
+ *  facet's whole figure is under attention (a hovered bearing or
+ *  sibling thread). `present`: both ends are present from where the
+ *  visitor stands; otherwise it recedes. */
 export interface ThreadWalk {
   readonly active?: boolean;
+  readonly traced?: boolean;
+  readonly traveling?: boolean;
   readonly walked?: boolean;
   readonly lit?: boolean;
   readonly present?: boolean;
@@ -62,14 +69,22 @@ const HIT_STROKE_WIDTH = 14;
 // A stroke of a facet's figure between two stars. At rest it is
 // barely visible — *the suggestion of a connection rather than its
 // declaration*. In the walk a thread is also a path: hovering it
-// lights it end to end, clicking it travels to its far end
-// (CONSTELLATION_WALK.md §"Input"). The visible hairline stays
-// pointer-inert; a wide transparent twin beneath the stars carries
-// the hover and the click, and the projector moves both each frame.
+// lights it end to end and names its facet at the midpoint, clicking
+// it travels to its far end (CONSTELLATION_WALK.md §"Input"). The
+// visible hairline stays pointer-inert; a wide transparent twin
+// beneath the stars carries the hover and the click, and the projector
+// moves the line, the twin, and the name each frame.
 
 export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadProps) {
   const { facet, hue } = figure;
-  const { active = false, walked = false, lit = false, present = true } = walk;
+  const {
+    active = false,
+    traced = false,
+    traveling = false,
+    walked = false,
+    lit = false,
+    present = true,
+  } = walk;
   const geometry = { x1: endpoints.x1, y1: endpoints.y1, x2: endpoints.x2, y2: endpoints.y2 };
   return (
     <g
@@ -77,6 +92,8 @@ export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadPr
       data-facet={facet}
       data-hue={hue}
       data-active={active ? 'true' : undefined}
+      data-traced={traced ? 'true' : undefined}
+      data-traveling={traveling ? 'true' : undefined}
       data-walked={walked ? 'true' : undefined}
       data-lit={lit ? 'true' : undefined}
       data-present={present ? 'true' : 'false'}
@@ -104,6 +121,18 @@ export function Thread({ endpoints, figure, id, walk = {}, className }: ThreadPr
         data-thread-hit={id}
         className="constellation-thread__hit cursor-pointer"
       />
+      {/* The facet's name at the midpoint — what this line *is* —
+          shown only while the thread is traced, scrubbed, or traveled. */}
+      <text
+        x={(endpoints.x1 + endpoints.x2) / 2}
+        y={(endpoints.y1 + endpoints.y2) / 2}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        data-thread-name={id}
+        className="constellation-thread__name pointer-events-none"
+      >
+        {facet}
+      </text>
     </g>
   );
 }

@@ -75,6 +75,26 @@ describe('SkyWhisper molecule', () => {
     expect(onBearing).toHaveBeenCalledWith('salon/part');
   });
 
+  test('says when the sky is under way, so it can fade through the crossing', () => {
+    const { container, rerender } = render(
+      <SkyWhisper place={HERE} bearings={BEARINGS} onBearing={() => {}} onAttend={() => {}} />,
+    );
+    expect(container.querySelector<HTMLElement>('.sky-whisper')?.dataset.traveling).toBeUndefined();
+    rerender(
+      <SkyWhisper
+        place={HERE}
+        bearings={BEARINGS}
+        onBearing={() => {}}
+        onAttend={() => {}}
+        traveling
+      />,
+    );
+    expect(container.querySelector<HTMLElement>('.sky-whisper')?.dataset.traveling).toBe('true');
+    // The bearings stay real controls while the words are low: a change
+    // of mind mid-flight is still a name.
+    expect(screen.getByRole('button', { name: /travel along body/i })).toBeEnabled();
+  });
+
   test('is silent about concordance when there is none', () => {
     render(
       <SkyWhisper place={HERE} bearings={BEARINGS} onBearing={() => {}} onAttend={() => {}} />,

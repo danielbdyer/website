@@ -127,7 +127,8 @@ describe('hand — following', () => {
       VIEWPORT,
       50,
     );
-    expect(toward.events).toEqual([{ kind: 'aimed', place: 'garden/stranger' }]);
+    // The first move past the threshold takes hold and aims in one breath.
+    expect(toward.events).toEqual([{ kind: 'held' }, { kind: 'aimed', place: 'garden/stranger' }]);
     const again = moveHand(
       toward.motion,
       pointer(500 + (500 - stranger.x) * 1.37, 500 + (500 - stranger.y) * 1.37),
@@ -185,12 +186,14 @@ describe('hand — letting go', () => {
       VIEWPORT,
       50,
     );
-    const home = releaseHand(moved.motion, 1, GRAPH, false, 60).motion;
-    expect(home.phase.kind).toBe('settle');
-    if (home.phase.kind === 'settle') {
-      expect(home.phase.settle.place).toBeNull();
-      expect(geodesicDistance(home.phase.settle.to, HERE)).toBe(0);
+    const home = releaseHand(moved.motion, 1, GRAPH, false, 60);
+    expect(home.motion.phase.kind).toBe('settle');
+    if (home.motion.phase.kind === 'settle') {
+      expect(home.motion.phase.settle.place).toBeNull();
+      expect(geodesicDistance(home.motion.phase.settle.to, HERE)).toBe(0);
     }
+    // Nothing was aimed at, so letting go says only that.
+    expect(home.events).toEqual([{ kind: 'released' }]);
     const aimed = moveHand(
       grab(motion, pointer(500, 500), 0),
       pointer(500 - (screenOf(motion, 'studio/east').x - 500) * 0.8, 500),
@@ -198,7 +201,46 @@ describe('hand — letting go', () => {
       VIEWPORT,
       50,
     ).motion;
-    const cancelled = releaseHand(aimed, 1, GRAPH, true, 60).motion;
-    expect(cancelled.phase.kind === 'settle' && cancelled.phase.settle.place).toBeNull();
+    const cancelled = releaseHand(aimed, 1, GRAPH, true, 60);
+    expect(
+      cancelled.motion.phase.kind === 'settle' && cancelled.motion.phase.settle.place,
+    ).toBeNull();
+    // A cancelled hand had an aim; springing home lets it go.
+    expect(cancelled.events).toEqual([{ kind: 'released' }, { kind: 'aimed', place: null }]);
+  });
+
+  test('the aim persists through the settle: release keeps it, or sets it to the track’s star', () => {
+    const motion = resting();
+    const distance = screenOf(motion, 'studio/east').x - 500;
+    const aimed = moveHand(
+      grab(motion, pointer(500, 500), 0),
+      pointer(500 - distance, 500),
+      GRAPH,
+      VIEWPORT,
+      50,
+    ).motion;
+    expect(handOf(aimed)?.intent).toBe('studio/east');
+    // The reticle already claims the east star; letting go changes nothing about the aim.
+    expect(releaseHand(aimed, 1, GRAPH, false, 60).events).toEqual([{ kind: 'released' }]);
+    // A hand past the midpoint of a track but with the reticle on nothing
+    // settles onto the track's star, and says so, so the star can claim
+    // while the spring carries the sky onto it.
+    const alongTrack = moveHand(
+      grab(motion, pointer(500, 500), 0),
+      pointer(500 - distance * 0.6, 500),
+      GRAPH,
+      VIEWPORT,
+      50,
+    ).motion;
+    const hand = handOf(alongTrack)!;
+    expect(hand.track?.toPlace).toBe('studio/east');
+    expect(hand.t).toBeGreaterThan(0.5);
+    const nothingInReach: Motion = {
+      ...alongTrack,
+      phase: { kind: 'held', hand: { ...hand, intent: null } },
+    };
+    const { motion: settling, events } = releaseHand(nothingInReach, 1, GRAPH, false, 60);
+    expect(settling.phase.kind === 'settle' && settling.phase.settle.place).toBe('studio/east');
+    expect(events).toEqual([{ kind: 'released' }, { kind: 'aimed', place: 'studio/east' }]);
   });
 });

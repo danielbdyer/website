@@ -18,19 +18,29 @@ import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 /** The constellation's observable world — what Stage paints. The
  *  edges + nodes are the structural graph; the rest is the walk:
  *  where the visitor stands (hereKey; null at the pole), what they
- *  hover, what is named within a stroke of here, what is present from
- *  here (the contextual cap), what they have visited and walked, which
- *  figure is lit by attention, and the compass's lettering.
- *  CONSTELLATION_WALK.md. Held in one shape so the organism's prop
- *  count fits the ≤7 ceiling (REACT_NORTH_STAR.md §"Organisms"). */
+ *  hover, what a held sky aims at, where a travel is bound and along
+ *  which thread, which thread the pointer traces (and so which two
+ *  stars are lit at its ends), what is named within a stroke of here,
+ *  what is present from here (the contextual cap), what they have
+ *  visited and walked, which figure is lit by attention, and the
+ *  compass's lettering. CONSTELLATION_WALK.md. Held in one shape so
+ *  the organism's prop count fits the ≤7 ceiling (REACT_NORTH_STAR.md
+ *  §"Organisms"). */
 export interface ConstellationWorld {
   readonly edges: readonly ResolvedEdge[];
   readonly nodes: readonly RenderableNode[];
   readonly hereKey: string | null;
   readonly hoverKey: string | null;
-  /** The star a held sky is aiming at (useSkyWalk.intent). */
+  /** The star a held sky is aiming at (walk.intent). */
   readonly intentKey: string | null;
-  readonly activeHue: ConstellationHue | null;
+  /** The star a travel is bound for, and the thread it follows. */
+  readonly headingKey: string | null;
+  readonly headingEdgeId: string | null;
+  readonly tracedThreadId: string | null;
+  readonly litEnds: ReadonlySet<string>;
+  /** The hue the companion wears — of the place the body is at or
+   *  bound for; null at the pole. */
+  readonly bodyHue: ConstellationHue | null;
   readonly overlayKey: string | null;
   readonly named: ReadonlyMap<string, NamedRank>;
   readonly present: ReadonlySet<string>;
@@ -62,10 +72,17 @@ interface StageProps {
   glyphRef: RefObject<SVGCircleElement | null>;
 }
 
+/** A thread blooms when one of its stars is attended — hovered, aimed
+ *  at, or stood at — or when the pointer traces the thread itself
+ *  (which also names it); it lights end to end as the track while a
+ *  travel follows it. */
 function threadWalkOf(world: ConstellationWorld, edge: ResolvedEdge): ThreadWalk {
   const attended = world.hoverKey ?? world.intentKey ?? world.hereKey;
+  const traced = edge.id === world.tracedThreadId;
   return {
-    active: attended === edge.sourceKey || attended === edge.targetKey,
+    active: traced || attended === edge.sourceKey || attended === edge.targetKey,
+    traced,
+    traveling: edge.id === world.headingEdgeId,
     walked: world.walked.has(edge.id),
     lit: world.litFacet === edge.facet,
     present: world.present.has(edge.sourceKey) && world.present.has(edge.targetKey),
@@ -76,6 +93,8 @@ function starWalkOf(world: ConstellationWorld, key: string): StarWalk {
   return {
     active: key === world.hoverKey || key === world.intentKey || key === world.hereKey,
     here: key === world.hereKey,
+    heading: key === world.headingKey,
+    lit: world.litEnds.has(key),
     named: world.named.get(key),
     visited: world.visited.has(key),
     present: world.present.has(key),
@@ -117,22 +136,22 @@ function PoleGroup() {
 
 interface CompanionGroupProps {
   glyphRef: RefObject<SVGCircleElement | null>;
-  activeHue: ConstellationHue | null;
+  bodyHue: ConstellationHue | null;
 }
 
 // The visitor's surface position plus its ghost-decay trail. Trail
 // circles render before the glyph so the live mark paints on top.
 // The travel hook positions each per tick via data-companion /
 // data-companion-trail queries; CSS handles the visual register
-// (paper-amber by default, mixed toward the active facet hue by
+// (paper-amber by default, mixed toward the body's hue by
 // --companion-claim, ghosts modulated by --trail-strength).
 // aria-hidden because keyboard / screen-reader focus moves through the
 // addressable star anchors, not this visual marker.
-function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
+function CompanionGroup({ glyphRef, bodyHue }: CompanionGroupProps) {
   return (
     <g
       data-companion-group
-      data-active-hue={activeHue ?? 'warm'}
+      data-active-hue={bodyHue ?? 'warm'}
       aria-hidden="true"
       className="constellation-companion-group"
     >
@@ -159,14 +178,14 @@ function CompanionGroup({ glyphRef, activeHue }: CompanionGroupProps) {
 }
 
 export function Stage({ world, interactions, glyphRef }: StageProps) {
-  const { edges, nodes, activeHue, overlayKey } = world;
+  const { edges, nodes, bodyHue, overlayKey } = world;
   return (
     <>
       <PoleGroup />
       <g onMouseOver={interactions.onFacetHover} onMouseLeave={interactions.onFacetLeave}>
         <Compass points={world.compass} attended={world.attended} />
       </g>
-      <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
+      <CompanionGroup glyphRef={glyphRef} bodyHue={bodyHue} />
       <g className="constellation-rotates">
         {/* Threads first so stars paint above them and win the hit test. */}
         <g

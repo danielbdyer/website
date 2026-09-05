@@ -68,6 +68,24 @@ describe('Star molecule', () => {
     expect(container.querySelector('a')?.getAttribute('aria-current')).toBeNull();
   });
 
+  test('the destination of a travel is framed ahead, and the end of a traced thread is lit', () => {
+    const { container } = render(
+      withSvg(<Star work={baseWork()} walk={{ heading: true, lit: true }} />),
+    );
+    const anchor = container.querySelector('a');
+    expect(anchor?.dataset.heading).toBe('true');
+    expect(anchor?.dataset.lit).toBe('true');
+    // Neither is a claim by hover nor a place stood at — those stay their own marks.
+    expect(anchor?.dataset.active).toBeUndefined();
+    expect(anchor?.dataset.here).toBeUndefined();
+    expect(anchor?.getAttribute('aria-current')).toBeNull();
+  });
+
+  test('the echo rings are in the mark at rest, so arrival animates rather than mounts', () => {
+    const { container } = render(withSvg(<Star work={baseWork()} />));
+    expect(container.querySelectorAll('.constellation-star__echo')).toHaveLength(3);
+  });
+
   test('the visible label defaults to the accessible label when none is provided', () => {
     const { container } = render(
       withSvg(<Star work={baseWork({ label: 'small weather', hue: 'warm' })} />),

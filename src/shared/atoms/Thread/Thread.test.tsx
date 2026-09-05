@@ -95,6 +95,51 @@ describe('Thread atom', () => {
     expect(line?.getAttribute('stroke-width')).toBe('1.1');
   });
 
+  test('names its facet at the midpoint, addressable for the projector', () => {
+    const { container } = render(
+      withSvg(
+        <Thread
+          id="a|b|relation"
+          figure={{ facet: 'relation', hue: 'gold' }}
+          endpoints={{ x1: 10, y1: 20, x2: 30, y2: 60 }}
+        />,
+      ),
+    );
+    const name = container.querySelector<SVGTextElement>('text[data-thread-name]');
+    expect(name?.textContent).toBe('relation');
+    expect(name?.dataset.threadName).toBe('a|b|relation');
+    expect(name?.getAttribute('x')).toBe('20');
+    expect(name?.getAttribute('y')).toBe('40');
+    expect(name?.getAttribute('class')).toMatch(/pointer-events-none/);
+  });
+
+  test('a travel that follows it marks it as the track for the crossing', () => {
+    const { container } = render(
+      withSvg(
+        <Thread id="x|y|z" figure={BODY_ROSE} endpoints={endpoints()} walk={{ traveling: true }} />,
+      ),
+    );
+    const group = container.querySelector<SVGGElement>('g[data-thread]');
+    expect(group?.dataset.traveling).toBe('true');
+    expect(group?.dataset.active).toBeUndefined();
+  });
+
+  test('a trace is its own mark, apart from the bloom: only a traced thread names itself', () => {
+    const { container } = render(
+      withSvg(
+        <Thread
+          id="x|y|z"
+          figure={BODY_ROSE}
+          endpoints={endpoints()}
+          walk={{ active: true, traced: true }}
+        />,
+      ),
+    );
+    const group = container.querySelector<SVGGElement>('g[data-thread]');
+    expect(group?.dataset.traced).toBe('true');
+    expect(group?.dataset.active).toBe('true');
+  });
+
   test('remembers being walked and lights with its figure', () => {
     const { container } = render(
       withSvg(

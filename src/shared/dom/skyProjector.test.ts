@@ -78,6 +78,36 @@ describe('skyProjector element cache', () => {
     expect(Number.parseFloat(line.getAttribute('x1') ?? '')).toBeGreaterThan(0);
     expect(Number.parseFloat(line.getAttribute('y2') ?? '')).toBeGreaterThan(0);
   });
+
+  test('a thread’s name sits at its midpoint, and follows it', () => {
+    const group = makeGroup();
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.dataset.threadId = 'a|b|craft';
+    const name = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    name.dataset.threadName = 'a|b|craft';
+    group.append(line, name);
+    const edge: NavigableEdge = {
+      id: 'a|b|craft',
+      sourcePos: sphericalToUnit({ theta: 0.4, phi: 0.5 }),
+      targetPos: sphericalToUnit({ theta: 0.7, phi: 2.5 }),
+    };
+    projectThreads(group, [edge], CAMERA, BASIS, 1000);
+    const at = (attr: string) => Number.parseFloat(line.getAttribute(attr) ?? '');
+    expect(Number.parseFloat(name.getAttribute('x') ?? '')).toBeCloseTo(
+      (at('x1') + at('x2')) / 2,
+      1,
+    );
+    expect(Number.parseFloat(name.getAttribute('y') ?? '')).toBeCloseTo(
+      (at('y1') + at('y2')) / 2,
+      1,
+    );
+    const moved: Camera = { ...CAMERA, position: { x: 0.4, y: 0.1, z: -2.5 } };
+    projectThreads(group, [edge], moved, cameraBasis(moved), 1000);
+    expect(Number.parseFloat(name.getAttribute('x') ?? '')).toBeCloseTo(
+      (at('x1') + at('x2')) / 2,
+      1,
+    );
+  });
 });
 
 describe('clientToNormalized', () => {

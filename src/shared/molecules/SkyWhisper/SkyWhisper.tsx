@@ -25,6 +25,9 @@ interface SkyWhisperProps {
   onBearing: (to: string, alongEdgeId?: string) => void;
   /** Attend a bearing (hover / focus) or release it (null). */
   onAttend: (facet: Facet | null) => void;
+  /** The sky is under way: the whisper fades through the crossing
+   *  and returns with the new here. */
+  traveling?: boolean;
   className?: string;
 }
 
@@ -48,10 +51,14 @@ export function SkyWhisper({
   concordant = null,
   onBearing,
   onAttend,
+  traveling = false,
   className,
 }: SkyWhisperProps) {
   return (
-    <div className={cn('sky-whisper font-body text-list text-text-3 italic', className)}>
+    <div
+      data-traveling={traveling ? 'true' : undefined}
+      className={cn('sky-whisper font-body text-list text-text-3 italic', className)}
+    >
       <p className="sky-whisper__here m-0" aria-live="polite">
         {place ? (
           <>
