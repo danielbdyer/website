@@ -36,10 +36,15 @@ module.exports = [
     // face (2026-09-05) grew the sky's structural chunk by ~8KB: the
     // reducer's attention, the traced threads' names, the drawn faces.
     // The floor moved from 215 to 225 with them, named here; most
-    // pages never load the sky chunk at all.
+    // pages never load the sky chunk at all. The look-up as a space
+    // and the daystar's seat (the eighth to eleventh passes, the same
+    // week) added ~1KB to the main entry — the lift carried frame by
+    // frame, the heavens' pitch bridge, the glyph's stand-in with its
+    // store and its lazily fetched character — and the floor moved
+    // from 225 to 227.
     name: 'eager client JS (every chunk a navigation can request)',
     path: ['dist/client/assets/*.js', ...LAZY_LAYERS.map((glob) => `!${glob}`)],
-    limit: '225 KB',
+    limit: '227 KB',
     gzip: true,
   },
   {
