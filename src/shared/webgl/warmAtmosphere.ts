@@ -82,6 +82,13 @@ export function prepareAtmosphere(
   return handles;
 }
 
+/** Keep a living atmosphere for its scene — the sky's own, handed
+ *  back on the way down — so the next readiness finds it prepared
+ *  and the look-up after that adopts the same one again. */
+export function holdAtmosphere(scene: AtmosphericScene, handles: AtmosphereHandles): void {
+  prepared.set('atmosphere', { key: sceneKeyOf(scene), handles: Promise.resolve(handles) });
+}
+
 /** Whether an atmosphere stands prepared for this scene. */
 export function hasPreparedAtmosphere(scene: AtmosphericScene): boolean {
   return prepared.get('atmosphere')?.key === sceneKeyOf(scene);

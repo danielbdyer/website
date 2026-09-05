@@ -369,6 +369,7 @@ words:
   # The daystar's magic (dom/daystarMagic.ts) and its register
   - gsap
   - splendour
+  - retuned
   - tweens
   - Tweening
   - jank

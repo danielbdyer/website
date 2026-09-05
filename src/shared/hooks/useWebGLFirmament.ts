@@ -390,6 +390,12 @@ function prefersStillAtmosphere(): boolean {
 
 interface MountedAtmosphere {
   dispose: () => void;
+  /** Let go of the atmosphere without disposing it: the loop stops,
+   *  the observers detach, and the living handles are returned — on
+   *  the way down, the Foyer's backdrop takes them (webgl/readySky.ts
+   *  `keepSkyForDescent`), so the descent plays on the very canvas
+   *  the ascent arrived in. */
+  handOff: () => AtmosphereHandles;
   repaint: () => void;
   /** Mark the frame as painted by this mount (data-atmosphere="webgl").
    *  Called only for a mount the effect keeps. A client-side crossing
@@ -623,6 +629,18 @@ function dressCanvas(canvas: HTMLCanvasElement): void {
   canvas.setAttribute('aria-hidden', 'true');
 }
 
+/** Drive a step on animation frames until halted; returns the cancel. */
+function startTicking(step: (now: number) => void, isHalted: () => boolean): () => void {
+  let raf = 0;
+  const tick = () => {
+    if (isHalted()) return;
+    step(performance.now());
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(raf);
+}
+
 function wireAtmosphere(
   container: HTMLDivElement,
   state: LoopState,
@@ -645,7 +663,6 @@ function wireAtmosphere(
     measureFit(state);
   };
   resize();
-  let raf = 0;
   const startTime = performance.now();
   const watchBudget = createBudgetWatcher(() => {
     handles.setDpr(1);
@@ -660,18 +677,16 @@ function wireAtmosphere(
     if (halted) return;
     loop.repaint();
   };
-  if (env.still) {
-    repaint();
-  } else {
-    const tick = () => {
-      if (halted) return;
-      const now = performance.now();
-      watchBudget(now);
-      loop.step(now);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-  }
+  let stopTicking: (() => void) | null = null;
+  if (env.still) repaint();
+  else
+    stopTicking = startTicking(
+      (now) => {
+        watchBudget(now);
+        loop.step(now);
+      },
+      () => halted,
+    );
   const unsubscribeCamera = env.still ? subscribeSkyCamera(repaint) : undefined;
   const themeObserver = new MutationObserver(() => {
     handles.setPalette(buildSkyPalette(env.readToken, env.isDark()), env.still);
@@ -689,20 +704,45 @@ function wireAtmosphere(
   });
   resizeObserver.observe(container);
   canvas.addEventListener('webglcontextlost', halt);
+  const letGo = () => {
+    halted = true;
+    stopTicking?.();
+    unsubscribeCamera?.();
+    themeObserver.disconnect();
+    resizeObserver.disconnect();
+    canvas.removeEventListener('webglcontextlost', halt);
+    release();
+  };
   return {
     repaint,
     claim,
+    handOff() {
+      letGo();
+      return handles;
+    },
     dispose() {
-      halted = true;
-      cancelAnimationFrame(raf);
-      unsubscribeCamera?.();
-      themeObserver.disconnect();
-      resizeObserver.disconnect();
-      canvas.removeEventListener('webglcontextlost', halt);
-      release();
+      letGo();
       handles.dispose();
     },
   };
+}
+
+/** On the way down (html.descending) the sky's atmosphere is not
+ *  disposed but handed to the Foyer's backdrop, which turns it with
+ *  the settling room. The readiness module owns that; it is lazy, and
+ *  already here whenever the visitor came up from the Foyer. */
+function unmountAtmosphere(mounted: MountedAtmosphere, scene: AtmosphericScene): void {
+  if (!document.documentElement.classList.contains('descending')) {
+    mounted.dispose();
+    return;
+  }
+  const handles = mounted.handOff();
+  void import('@/shared/webgl/readySky')
+    .then(({ keepSkyForDescent }) => keepSkyForDescent(handles, scene))
+    .catch(() => {
+      // The readiness will make a fresh one when the Foyer rests.
+      handles.dispose();
+    });
 }
 
 /** A presence signature — one '1' or '0' per star in scene order — as
@@ -769,8 +809,9 @@ export function useWebGLFirmament(
       });
     return () => {
       cancelled = true;
-      mountedRef.current?.dispose();
+      const mounted = mountedRef.current;
       mountedRef.current = null;
+      if (mounted) unmountAtmosphere(mounted, scene);
     };
   }, [containerRef, scene, fit]);
 }

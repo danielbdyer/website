@@ -147,44 +147,49 @@ function RootComponent() {
             the sky is. The Foyer's readiness paints the sky itself
             into it ahead of the look-up. */}
         {!isSky && <div className="sky-backdrop" aria-hidden="true" />}
-        {/* The room: the page as one body, so a look-up can tilt it
-            away beneath the gaze over the sky's backdrop (tokens.css
-            §"The look-up"); on /sky it is the sky and does not tilt. */}
-        <div
-          className={
-            isSky
-              ? 'site-room site-room--sky relative z-10 flex min-h-dvh flex-col'
-              : 'site-room relative z-10 flex min-h-dvh flex-col'
-          }
-        >
-          <JsonLd data={[websiteSchema(), personSchema()]} />
-          <a
-            href="#main-content"
-            className="font-body border-border bg-bg-card text-list text-text absolute top-0 left-0 z-[100] -translate-y-[200%] rounded-[3px] border px-3 py-2 no-underline transition-transform duration-200 focus:translate-x-2 focus:translate-y-2"
-          >
-            Skip to main content
-          </a>
-          {!isSky && <Nav />}
-          <main
-            ref={mainRef}
-            id="main-content"
-            tabIndex={-1}
+        {/* The stage holds the eye: a perspective, only while a pull
+            gathers, about which the room turns. The room is the page
+            as one space — its chrome near, its text mid, its paper far
+            — so a look-up rotates it about the visitor's head with real
+            parallax rather than swinging a flat page (tokens.css §"The
+            look-up"); on /sky it is the sky and does not tilt. */}
+        <div className="site-stage">
+          <div
             className={
               isSky
-                ? 'min-h-dvh w-full flex-1 focus:outline-none'
-                : 'max-w-column pt-page-top pb-page-bottom pl-edge pr-edge sm:pt-page-top-md sm:pb-page-bottom-md sm:pl-edge-md sm:pr-edge-md mx-auto w-full flex-1 focus:outline-none'
+                ? 'site-room site-room--sky relative z-10 flex min-h-dvh flex-col'
+                : 'site-room relative z-10 flex min-h-dvh flex-col'
             }
           >
-            {/* Keying the boundary on the pathname means React mounts a
+            <JsonLd data={[websiteSchema(), personSchema()]} />
+            <a
+              href="#main-content"
+              className="site-skip font-body border-border bg-bg-card text-list text-text absolute top-0 left-0 z-[100] -translate-y-[200%] rounded-[3px] border px-3 py-2 no-underline transition-transform duration-200 focus:translate-x-2 focus:translate-y-2"
+            >
+              Skip to main content
+            </a>
+            {!isSky && <Nav />}
+            <main
+              ref={mainRef}
+              id="main-content"
+              tabIndex={-1}
+              className={
+                isSky
+                  ? 'min-h-dvh w-full flex-1 focus:outline-none'
+                  : 'max-w-column pt-page-top pb-page-bottom pl-edge pr-edge sm:pt-page-top-md sm:pb-page-bottom-md sm:pl-edge-md sm:pr-edge-md mx-auto w-full flex-1 focus:outline-none'
+              }
+            >
+              {/* Keying the boundary on the pathname means React mounts a
                 fresh one whenever the route changes. Without this, a
                 route that throws once stays in the error state forever
                 — every subsequent navigation lands on the fallback
                 instead of the new page. */}
-            <ErrorBoundary key={pathname}>
-              <Outlet />
-            </ErrorBoundary>
-          </main>
-          {!isSky && <Footer />}
+              <ErrorBoundary key={pathname}>
+                <Outlet />
+              </ErrorBoundary>
+            </main>
+            {!isSky && <Footer />}
+          </div>
         </div>
         <Suspense fallback={null}>
           <RouterDevtools />
