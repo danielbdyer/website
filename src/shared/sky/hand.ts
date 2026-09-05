@@ -213,7 +213,7 @@ export function aimOf(
   const { camera, basis } = cameraOf(motion);
   const center = size / 2;
   const candidates = graph.nodes.flatMap((node): IntentCandidate[] => {
-    const key = `${node.room}/${node.slug}`;
+    const key = node.key;
     if (key === motion.here) return [];
     const p = toViewbox(node.unitPosition, camera, basis, size);
     if (!p.inFront) return [];

@@ -9,19 +9,20 @@
 // same scene, and the motes' drift parameters hash from stable seeds
 // so the dust returns to the same sky on every visit.
 
-import type { ConstellationGraph } from '@/shared/content/constellation';
+import type { ConstellationEdge, ConstellationGraph } from '@/shared/content/constellation';
+import { edgeId } from '@/shared/content/constellation';
 import type { UnitVector3, Vec3 } from '@/shared/geometry/sphere';
 import { sphericalToUnit, spherical } from '@/shared/geometry/sphere';
 
 const HUE_INDEX = { warm: 0, rose: 1, violet: 2, gold: 3 } as const;
 
 export interface AtmosphericStar {
-  /** `room/slug` — pairs the sprite with its structural anchor. */
+  /** The node's key — pairs the sprite with its structural anchor. */
   readonly key: string;
   readonly unitPosition: UnitVector3;
   /** Index into the accent palette: 0 warm · 1 rose · 2 violet · 3 gold. */
   readonly hueIndex: number;
-  /** Twinkle phase in seconds, deterministic per slug (shared with
+  /** Twinkle phase in seconds, deterministic per key (shared with
    *  the structural layer's data so both breathe on the same beat). */
   readonly twinklePhase: number;
   /** Size variance ∈ [0.75, 1.25] — each star's halo tuned to a
@@ -44,10 +45,39 @@ export interface AtmosphericMote {
   readonly sizeVariance: number;
 }
 
+/** A thread's resting hairline, drawn by the atmosphere's thread pass
+ *  beneath the sprites so the SVG paints only the lit ones. */
+export interface AtmosphericThread {
+  /** The edge's id (constellation.edgeId) — pairs the line with its
+   *  structural thread, whose presence the walk decides. */
+  readonly id: string;
+  /** Indices into `stars` of the two ends. */
+  readonly a: number;
+  readonly b: number;
+  /** 0 warm · 1 rose · 2 violet · 3 gold · 4 the page's ink — a
+   *  relation with no axis. */
+  readonly hueIndex: number;
+  /** The second figure of a hue pair is dotted (Thread.tsx). */
+  readonly dotted: boolean;
+  /** The resting alpha, by origin: a figure's stroke, a declared
+   *  relation a little heavier, a discovered one lighter. A GL line is
+   *  a pixel wide where the SVG hairline was half of one, so each is
+   *  the hairline's opacity weighted by its stroke width. */
+  readonly alpha: number;
+}
+
 export interface AtmosphericScene {
   readonly stars: readonly AtmosphericStar[];
   readonly motes: readonly AtmosphericMote[];
+  readonly threads: readonly AtmosphericThread[];
 }
+
+const INK_HUE_INDEX = 4;
+const THREAD_ALPHA: Readonly<Record<ConstellationEdge['origin'], number>> = {
+  emergent: 0.24,
+  declared: 0.32,
+  discovered: 0.2,
+};
 
 // FNV-1a, the same deterministic hash the graph layout uses —
 // re-derived locally so this module doesn't reach into
@@ -130,13 +160,30 @@ export function buildAtmosphericScene(graph: ConstellationGraph): AtmosphericSce
   const cached = sceneCache.get(graph);
   if (cached) return cached;
   const stars = graph.nodes.map((node) => ({
-    key: `${node.room}/${node.slug}`,
+    key: node.key,
     unitPosition: node.unitPosition,
     hueIndex: HUE_INDEX[node.hue],
     twinklePhase: node.twinklePhase,
-    sizeVariance: 0.75 + unitOf(`${node.room}/${node.slug}/halo`) * 0.5,
+    sizeVariance: 0.75 + unitOf(`${node.key}/halo`) * 0.5,
   }));
-  const scene: AtmosphericScene = { stars, motes: MOTES };
+  const indexOf = new Map(graph.nodes.map((node, i) => [node.key, i]));
+  const threads = graph.edges.flatMap((edge): AtmosphericThread[] => {
+    const a = indexOf.get(edge.source);
+    const b = indexOf.get(edge.target);
+    if (a === undefined || b === undefined) return [];
+    const axis = graph.axes.find((candidate) => candidate.id === edge.axis);
+    return [
+      {
+        id: edgeId(edge),
+        a,
+        b,
+        hueIndex: edge.hue ? HUE_INDEX[edge.hue] : INK_HUE_INDEX,
+        dotted: axis?.dotted ?? edge.origin === 'discovered',
+        alpha: THREAD_ALPHA[edge.origin],
+      },
+    ];
+  });
+  const scene: AtmosphericScene = { stars, motes: MOTES, threads };
   sceneCache.set(graph, scene);
   return scene;
 }

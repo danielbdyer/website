@@ -8,12 +8,9 @@ import {
   createMemoryHistory,
 } from '@tanstack/react-router';
 import { axe } from '@/test/axe';
+import { figure, sky, star } from '@/test/sky-graph';
 import type { ConstellationGraph } from '@/shared/content/constellation';
-import { diskToHemisphere } from '@/shared/geometry/sphere';
 import { Constellation } from './Constellation';
-
-const projectToSphere = (angleDeg: number, radius: number) =>
-  diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
 
 // Mount the Constellation under a minimal in-memory router so the
 // link-delegation hook has the router context it needs.
@@ -28,60 +25,51 @@ function renderConstellation(graph: ConstellationGraph) {
   return { router, ...render(<RouterProvider router={router} />) };
 }
 
-const SAMPLE_GRAPH: ConstellationGraph = {
-  facetHues: {
-    craft: 'warm',
-    body: 'warm',
-    beauty: 'rose',
-    language: 'rose',
-    consciousness: 'violet',
-    becoming: 'violet',
-    leadership: 'gold',
-    relation: 'gold',
-  },
-  nodes: [
-    {
-      room: 'garden',
-      slug: 'small-weather',
+const SAMPLE_GRAPH = sky(
+  [
+    star('garden/small-weather', ['relation', 'body', 'becoming', 'language'], 135, 0.6, {
       title: 'small weather',
       date: new Date('2026-04-24'),
-      facets: ['relation', 'body', 'becoming', 'language'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 135,
-      radius: 0.6,
-      unitPosition: projectToSphere(135, 0.6),
-      hue: 'gold',
       twinklePhase: 1.2,
-    },
-    {
-      room: 'studio',
-      slug: 'a-second-work',
+    }),
+    star('studio/a-second-work', ['language', 'craft'], 225, 0.7, {
       title: 'a second work',
       date: new Date('2026-05-01'),
-      facets: ['language', 'craft'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 225,
-      radius: 0.7,
-      unitPosition: projectToSphere(225, 0.7),
-      hue: 'rose',
       twinklePhase: 3.4,
-    },
+    }),
   ],
-  edges: [
-    {
-      facet: 'language',
-      hue: 'rose',
-      source: { room: 'garden', slug: 'small-weather' },
-      target: { room: 'studio', slug: 'a-second-work' },
-    },
-  ],
-};
+  [figure('garden/small-weather', 'studio/a-second-work', 'language')],
+);
 
-const EMPTY_GRAPH: ConstellationGraph = {
-  facetHues: SAMPLE_GRAPH.facetHues,
-  nodes: [],
+const EMPTY_GRAPH = sky([], []);
+
+/** A sky cut from another source: claims with no pages and their own
+ *  compass — the slice the book's vault becomes. */
+const CLAIM_GRAPH: ConstellationGraph = {
+  axes: [
+    {
+      id: 'recognition',
+      name: 'recognition',
+      azimuthDeg: 0,
+      hue: 'warm',
+      dotted: false,
+      rim: { x: 1, y: 0, z: 0 },
+    },
+    {
+      id: 'felt-shift',
+      name: 'felt-shift',
+      azimuthDeg: 180,
+      hue: 'violet',
+      dotted: false,
+      rim: { x: -1, y: 0, z: 0 },
+    },
+  ],
+  nodes: [
+    star('reading is remembering', ['recognition'], 0, 0.5, { kind: 'claim' }),
+    star('a claim counts when it checks out somatically', ['felt-shift'], 180, 0.5, {
+      kind: 'claim',
+    }),
+  ],
   edges: [],
 };
 
@@ -140,10 +128,22 @@ describe('Constellation organism', () => {
     expect(container.querySelectorAll('.constellation-star[data-present="true"]')).toHaveLength(2);
   });
 
+  test('hovering a star lights it and its thread on the page, and leaving clears them', async () => {
+    const user = userEvent.setup();
+    const { container } = renderConstellation(SAMPLE_GRAPH);
+    const star = await screen.findByRole('link', { name: /small weather/i });
+    await user.hover(star);
+    expect(star).toHaveAttribute('data-hover', 'true');
+    expect(container.querySelector('[data-thread][data-hover="true"]')).not.toBeNull();
+    await user.unhover(star);
+    expect(star).not.toHaveAttribute('data-hover');
+    expect(container.querySelector('[data-thread][data-hover="true"]')).toBeNull();
+  });
+
   test('opens at the pole and whispers the bearings that lead away', async () => {
     renderConstellation(SAMPLE_GRAPH);
     expect(await screen.findByText('the polestar')).toBeInTheDocument();
-    // Every facet is a bearing at the pole; the ones no star carries
+    // Every axis is a bearing at the pole; the ones no star carries
     // yet are present but disabled.
     expect(screen.getByRole('button', { name: /travel along language/i })).toBeEnabled();
     expect(screen.getByRole('button', { name: /beauty: nothing yet/i })).toBeDisabled();
@@ -175,9 +175,19 @@ describe('Constellation organism', () => {
     expect(
       await screen.findByText('a second work', { selector: '.sky-whisper span' }),
     ).toBeVisible();
-    // Standing at a star, the bearings are its own facets.
+    // Standing at a star, the bearings are its own axes.
     expect(screen.getByRole('button', { name: /travel along language/i })).toBeEnabled();
     expect(screen.queryByRole('button', { name: /relation/i })).toBeNull();
+  });
+
+  test('draws a sky cut from another source: its own compass, stars without pages', async () => {
+    const { container } = renderConstellation(CLAIM_GRAPH);
+    const claim = await screen.findByRole('button', { name: /reading is remembering/i });
+    expect(claim).not.toHaveAttribute('href');
+    expect(claim).toHaveAttribute('tabindex', '0');
+    expect(container.querySelectorAll('[data-compass]')).toHaveLength(2);
+    expect(container.querySelector('[data-compass="felt-shift"]')?.textContent).toBe('felt-shift');
+    expect(screen.getByRole('button', { name: /travel along recognition/i })).toBeEnabled();
   });
 
   test('honors the empty Foyer — zero nodes is a real empty set', async () => {
@@ -186,7 +196,7 @@ describe('Constellation organism', () => {
     expect(nav).toBeInTheDocument();
     expect(screen.queryAllByRole('link')).toHaveLength(0);
     // Heading announces the count honestly — empty is empty.
-    expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/0 works/);
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/0 stars/);
   });
 
   test('has no axe-detectable violations on a populated sky', async () => {

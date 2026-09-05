@@ -1,8 +1,8 @@
 # Cathedrals
 
-*The founding document of the workspace the house shares with the engine beneath it. Named 2026-09-03, with Danny, after he set a second repository beside this one and said: there are cathedrals everywhere for those with eyes to see. Downstream of [CLAUDE.md](./CLAUDE.md) (the soul), [DOMAIN_MODEL.md](./DOMAIN_MODEL.md) and [GRAPH_AND_LINKING.md](./GRAPH_AND_LINKING.md) (what the rooms hold and how works connect), [REACT_NORTH_STAR.md](./REACT_NORTH_STAR.md) (the axioms), [RENDERING_STRATEGY.md](./RENDERING_STRATEGY.md) (the static stance and its triggers), and [CONSTELLATION_ARCHITECTURE.md](./CONSTELLATION_ARCHITECTURE.md) (the sky's pure core). It sits on the grounds. The ground under the house turned out to be shared.*
+_The founding document of the workspace the house shares with the engine beneath it. Named 2026-09-03, with Danny, after he set a second repository beside this one and said: there are cathedrals everywhere for those with eyes to see. Downstream of [CLAUDE.md](./CLAUDE.md) (the soul), [DOMAIN_MODEL.md](./DOMAIN_MODEL.md) and [GRAPH_AND_LINKING.md](./GRAPH_AND_LINKING.md) (what the rooms hold and how works connect), [REACT_NORTH_STAR.md](./REACT_NORTH_STAR.md) (the axioms), [RENDERING_STRATEGY.md](./RENDERING_STRATEGY.md) (the static stance and its triggers), and [CONSTELLATION_ARCHITECTURE.md](./CONSTELLATION_ARCHITECTURE.md) (the sky's pure core). It sits on the grounds. The ground under the house turned out to be shared._
 
-*The movements from "What Is Preserved" through "How the Agent Works Here" are written to become the root `CLAUDE.md` of the workspace when the site moves under `apps/`. Until then the site's `CLAUDE.md` remains the entry, and this file is read after it.*
+_The movements from "What Is Preserved" through "How the Agent Works Here" are written to become the root `CLAUDE.md` of the workspace when the site moves under `apps/`. Until then the site's `CLAUDE.md` remains the entry, and this file is read after it._
 
 ---
 
@@ -10,7 +10,7 @@
 
 A cathedral is one building made of rooms that do not know they are separate. The nave is where people walk. Overhead is the vault — the arched ceiling — and the word is not a coincidence: a vault is also where what must endure is kept. The sky at `/sky` is drawn on the ceiling. The vault of claims beneath the engine is where the drawing's truth is kept. They are the same vault, seen from inside and from below.
 
-Danny built two things without a wall between them. The house is this repository: five rooms, eight facets, a sky that is walked. The engine is `cathedrals`: a knowledge graph whose constitution is one sentence long — *agents propose; the author blesses.* The house grew from a sentence about containers: he builds rooms where others become more themselves. The engine grew from three operations its manifesto calls the knife, the thread, and the vessel — differentiation, relation, persistence. Read side by side, they are the same three. A container is a differentiation that holds. A facet is a thread. The enough is a persistence that knows when to stop.
+Danny built two things without a wall between them. The house is this repository: five rooms, eight facets, a sky that is walked. The engine is `cathedrals`: a knowledge graph whose constitution is one sentence long — _agents propose; the author blesses._ The house grew from a sentence about containers: he builds rooms where others become more themselves. The engine grew from three operations its manifesto calls the knife, the thread, and the vessel — differentiation, relation, persistence. Read side by side, they are the same three. A container is a differentiation that holds. A facet is a thread. The enough is a persistence that knows when to stop.
 
 Both grew from a third repository: the Living Graph of December 2025, `living-graph`. The engine kept its constitution. The house kept its design brief. The sky kept its constellation and set down its canvas. And the Living Graph grew from a fourth, the oldest: Dyerverse, 2025, where the longing, the seven entities of a golden loop, and the creed of pure functions first appear — without yet the consent the three later ones share. Phase 3 brings both in as lineage. The whole is Dyerverse; this document keeps the image it was named for.
 
@@ -24,35 +24,35 @@ Nothing that either project earned is given up. The tables name what each keeps,
 
 ### From the house
 
-| Kept | Where it lives |
-|---|---|
-| The soul: containers, spanda, the enough, the rooms as lenses | `CLAUDE.md` |
-| Pure static output with no production runtime, and the async barrel as the seam that keeps the door open | `RENDERING_STRATEGY.md` |
-| The fourteen axioms, the thresholds, the atomic hierarchy, the dependency direction law | `REACT_NORTH_STAR.md` |
-| A pure core in a thin shell: time as an argument, events as data, the rim named file by file | `CONSTELLATION_ARCHITECTURE.md` |
-| The walk: volitional travel, the compass, figures as spanning trees, presence, the whisper | `CONSTELLATION_WALK.md` |
-| The material: umber, paper grain, two serifs, slow motion, dark mode as a room dimming | `DESIGN_SYSTEM.md`, `INTERACTION_DESIGN.md` |
-| The site's voice, kept distinct from Danny's | `VOICE_AND_COPY.md` |
-| Specs as the reference layer, skills as the orientation layer, the site publishing its own making | `SPECIFICATION_MAP.md`, `TRANSPARENCY.md` |
-| The lint rims: the FP selectors, the boundaries, the shape check, the 80-line ceiling | `eslint.config.js`, `scripts/` |
+| Kept                                                                                                     | Where it lives                              |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| The soul: containers, spanda, the enough, the rooms as lenses                                            | `CLAUDE.md`                                 |
+| Pure static output with no production runtime, and the async barrel as the seam that keeps the door open | `RENDERING_STRATEGY.md`                     |
+| The fourteen axioms, the thresholds, the atomic hierarchy, the dependency direction law                  | `REACT_NORTH_STAR.md`                       |
+| A pure core in a thin shell: time as an argument, events as data, the rim named file by file             | `CONSTELLATION_ARCHITECTURE.md`             |
+| The walk: volitional travel, the compass, figures as spanning trees, presence, the whisper               | `CONSTELLATION_WALK.md`                     |
+| The material: umber, paper grain, two serifs, slow motion, dark mode as a room dimming                   | `DESIGN_SYSTEM.md`, `INTERACTION_DESIGN.md` |
+| The site's voice, kept distinct from Danny's                                                             | `VOICE_AND_COPY.md`                         |
+| Specs as the reference layer, skills as the orientation layer, the site publishing its own making        | `SPECIFICATION_MAP.md`, `TRANSPARENCY.md`   |
+| The lint rims: the FP selectors, the boundaries, the shape check, the 80-line ceiling                    | `eslint.config.js`, `scripts/`              |
 
 ### From the engine
 
 Named, not linked: these files live in the `cathedrals` repository until it enters the workspace (Phase 2).
 
-| Kept | Where it lives |
-|---|---|
-| The covenant: author sovereignty is absolute; agent-originated canonical change passes through `pending` with `decision = NULL` until blessed or rejected | `AGENTS.md` |
-| The constitution: the body is primary, relations are first-class, triple addressing, the system sees itself, emergence is earned, the embedding is not the body | `docs/foundations/CONSTITUTION.md` |
-| The five primitives — identity, content, reference, time, suspension — the six constraints, the nine operations | `docs/foundations/AXIOMS.md` |
-| The three origins — declared, discovered, emergent — immutable once written | `src/domain/types/relation.ts` |
-| The event log and the decision log; replay by step; typed errors; deterministic tests behind invariant ids | `src/`, `.agent/INVARIANT_CASES.md` |
-| The hexagonal seams: domain, ports, adapters, with Effect inside the application layer | `src/domain`, `src/ports`, `src/adapters`, `src/app` |
-| Thirty-two decisions, among them the attention field that is never persisted (23), blessing as inline review (24), typing as an `is_a` relation (30), and structural isomorphism as a protected attribute (32) | `docs/architecture/DECISIONS.md` |
-| The protocol: load a bounded slice, propose, await, resolve, step through events | `docs/architecture/GRAPH_PROTOCOL.md` |
-| The vault: atomic claims with prose titles, eight constellations, metabolic states, sixteen verbs, the git log as the event log | `vault/`, `.claude/skills/` |
-| The taste: readability first, red-green-refactor, milestone commits, a stopwatch on every seam, a high appetite for refactoring | `.agent/TASTE_PROFILE.md` |
-| The anti-cathedral rules: nothing becomes a canonical node unless it changes behavior; compost weekly | `docs/architecture/PRAXIS_GRAPH_OS.md` §9 |
+| Kept                                                                                                                                                                                                           | Where it lives                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| The covenant: author sovereignty is absolute; agent-originated canonical change passes through `pending` with `decision = NULL` until blessed or rejected                                                      | `AGENTS.md`                                          |
+| The constitution: the body is primary, relations are first-class, triple addressing, the system sees itself, emergence is earned, the embedding is not the body                                                | `docs/foundations/CONSTITUTION.md`                   |
+| The five primitives — identity, content, reference, time, suspension — the six constraints, the nine operations                                                                                                | `docs/foundations/AXIOMS.md`                         |
+| The three origins — declared, discovered, emergent — immutable once written                                                                                                                                    | `src/domain/types/relation.ts`                       |
+| The event log and the decision log; replay by step; typed errors; deterministic tests behind invariant ids                                                                                                     | `src/`, `.agent/INVARIANT_CASES.md`                  |
+| The hexagonal seams: domain, ports, adapters, with Effect inside the application layer                                                                                                                         | `src/domain`, `src/ports`, `src/adapters`, `src/app` |
+| Thirty-two decisions, among them the attention field that is never persisted (23), blessing as inline review (24), typing as an `is_a` relation (30), and structural isomorphism as a protected attribute (32) | `docs/architecture/DECISIONS.md`                     |
+| The protocol: load a bounded slice, propose, await, resolve, step through events                                                                                                                               | `docs/architecture/GRAPH_PROTOCOL.md`                |
+| The vault: atomic claims with prose titles, eight constellations, metabolic states, sixteen verbs, the git log as the event log                                                                                | `vault/`, `.claude/skills/`                          |
+| The taste: readability first, red-green-refactor, milestone commits, a stopwatch on every seam, a high appetite for refactoring                                                                                | `.agent/TASTE_PROFILE.md`                            |
+| The anti-cathedral rules: nothing becomes a canonical node unless it changes behavior; compost weekly                                                                                                          | `docs/architecture/PRAXIS_GRAPH_OS.md` §9            |
 
 ### From both
 
@@ -70,22 +70,22 @@ Blending is the only place this document spends decisions. Each is made here onc
 
 ### One thing, two registers, never a third
 
-The engine names what a thing *is*. The sky names what it *looks like*. Nothing in the workspace introduces a third name for a thing that already has two.
+The engine names what a thing _is_. The sky names what it _looks like_. Nothing in the workspace introduces a third name for a thing that already has two.
 
-| The engine says | The house says | The sky draws | The same thing |
-|---|---|---|---|
-| entity, with a body | work, with a body | star | A particular that is its own text. The body is primary in both constitutions; the slice never carries what a body does not. |
-| archetype — a lens for viewing, not a category for sorting (Article VI) | type — influences rendering, never routing | the star's mark (held) | The kind of thing, worn lightly. |
-| — | room — the home a work lives in; rooms are lenses, not silos | — | The engine has no room. The slice carries it as `group`, optional, so the house loses nothing and the engine invents nothing. |
-| constellation — a map of content in the vault; `is_a` targets in the engine | facet — a dimension of Danny that cuts across rooms | the compass: a bearing, a hue, a figure | An **axis**. The slice carries axes with azimuths. The site's eight facets are one compass; the vault's eight constellations are another. |
-| relation — subject, predicate, object, origin | wikilink, backlink | thread | The thread. Declared, discovered, or emergent. |
-| `pending`, with `decision = NULL` | — | a ghost: a star not yet lit, where it would land if blessed | The suspension. Visible before it is actionable. |
-| aperture; focus levels foreground, midground, background, hidden | — | presence: here, near, far, the cap, the two strangers | One pure function of hops, resonance, and a threshold. |
-| the focused entity; the attention field, never persisted (Decision 23) | — | `here`; the walk's memory in session storage | Present tense, not history. The house already keeps it exactly as the engine decided. |
-| the inspector panel; the blessing card with evidence and confidence | — | the whisper | One voice, second person, a paragraph each. |
-| `resonates` — the soft edge, never canonical | concordance neighbors | the concordant whisper line | Noticed, never blessed as itself. |
-| space — an ownership and policy boundary | the site, one author | one sky | The site is one `author_canonical` space. The vault is a second space, about the first. |
-| the event log, stepped | git history | the trail | The vessel. See "Git Is the Vessel." |
+| The engine says                                                             | The house says                                               | The sky draws                                               | The same thing                                                                                                                            |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| entity, with a body                                                         | work, with a body                                            | star                                                        | A particular that is its own text. The body is primary in both constitutions; the slice never carries what a body does not.               |
+| archetype — a lens for viewing, not a category for sorting (Article VI)     | type — influences rendering, never routing                   | the star's mark (held)                                      | The kind of thing, worn lightly.                                                                                                          |
+| —                                                                           | room — the home a work lives in; rooms are lenses, not silos | —                                                           | The engine has no room. The slice carries it as `group`, optional, so the house loses nothing and the engine invents nothing.             |
+| constellation — a map of content in the vault; `is_a` targets in the engine | facet — a dimension of Danny that cuts across rooms          | the compass: a bearing, a hue, a figure                     | An **axis**. The slice carries axes with azimuths. The site's eight facets are one compass; the vault's eight constellations are another. |
+| relation — subject, predicate, object, origin                               | wikilink, backlink                                           | thread                                                      | The thread. Declared, discovered, or emergent.                                                                                            |
+| `pending`, with `decision = NULL`                                           | —                                                            | a ghost: a star not yet lit, where it would land if blessed | The suspension. Visible before it is actionable.                                                                                          |
+| aperture; focus levels foreground, midground, background, hidden            | —                                                            | presence: here, near, far, the cap, the two strangers       | One pure function of hops, resonance, and a threshold.                                                                                    |
+| the focused entity; the attention field, never persisted (Decision 23)      | —                                                            | `here`; the walk's memory in session storage                | Present tense, not history. The house already keeps it exactly as the engine decided.                                                     |
+| the inspector panel; the blessing card with evidence and confidence         | —                                                            | the whisper                                                 | One voice, second person, a paragraph each.                                                                                               |
+| `resonates` — the soft edge, never canonical                                | concordance neighbors                                        | the concordant whisper line                                 | Noticed, never blessed as itself.                                                                                                         |
+| space — an ownership and policy boundary                                    | the site, one author                                         | one sky                                                     | The site is one `author_canonical` space. The vault is a second space, about the first.                                                   |
+| the event log, stepped                                                      | git history                                                  | the trail                                                   | The vessel. See "Git Is the Vessel."                                                                                                      |
 
 The sky already draws all three origins and names none of them. Figures — the spanning trees over each facet's stars — are emergent structure the system noticed. Wikilinks between works are declared structure the author wrote, and the sky does not draw them today. Concordance is discovered structure awaiting a blessing that has no verb yet. Phase 1 gives the sky the words: declared threads drawn, emergent figures kept, discovered candidates whispered.
 
@@ -96,7 +96,7 @@ Where the two disagree, one side wins, and the reason is written.
 1. **The sky is the interface; the interface contract is superseded.** The engine's `docs/contracts/UI_SPEC.md` specifies a dark dashboard: monospace labels, fast transitions, an inspector panel, a force-directed graph. Its own first section says the constellation is a place to think, not a dashboard to monitor. That sentence is the whole premise of the house, and the sky already keeps it. The aperture mathematics in its §6 and the node-count thresholds in its §15 survive — as the shared presence function and as the trigger for the high-node-count strategy already held in `CONSTELLATION_IMPLEMENTATION_PLAN.md`. The rest of that file is compost.
 2. **The predicate vocabulary is closed.** The engine holds three vocabularies at once: eight predicates in code, an open set in one vault claim, some two dozen controlled verbs in its Praxis document. The slice takes the eight in code, plus `resonates` as the one soft predicate that can never be declared. A predicate is added by a decision record, never by an adapter.
 3. **Origin is drawn; predicate is spoken.** A thread has room for two structural dimensions before it becomes noise: its axis, as hue, and its origin, as stroke. The predicate belongs to the whisper. This collides with the sky's present use of dotting to separate the two facets that share a hue. The collision is held, below.
-4. **Test-first and spanda are not in tension.** The engine's taste is red-green-refactor, invariant ids first, a stopwatch on every seam. The house's practice is to wait for the tremor. One answers *how* a change is made; the other answers *whether, and when*. The workspace keeps both: invariants and tests before code, once the pull is real.
+4. **Test-first and spanda are not in tension.** The engine's taste is red-green-refactor, invariant ids first, a stopwatch on every seam. The house's practice is to wait for the tremor. One answers _how_ a change is made; the other answers _whether, and when_. The workspace keeps both: invariants and tests before code, once the pull is real.
 5. **Canon stays canon; narrative stays narrative.** The engine's documentation is long, and much of it describes a future it has not built — durable streams, workflows, a real-time attention field, a rich-text editor. Its own `DOCS_ARCHITECTURE.md` already sorts contracts from narratives. The workspace honors that sort and adds no layer of its own. This document is grounds for the engine, not canon; when it changes an engine obligation, the change is recorded in the engine's `DECISIONS.md` first.
 6. **The anti-cathedral rule applies to this document.** Nothing here becomes a package, a type, or a spec unless it changes what the site or the engine does. Every phase below names the behavior it changes.
 
@@ -113,6 +113,7 @@ dyerverse/                    the workspace: the site's repository, renamed when
 │   └── site/                 danielbdyer.com, the rooms and the sky (at the root until Phase 4)
 ├── packages/
 │   ├── slice/                @dbd/slice: the contract that crosses the wall (types, schema, invariants)
+│   ├── vault/                @dbd/vault: reads an ars-contexta vault into a slice (the book's claims, first)
 │   ├── sky/                  @dbd/sky: the surface (a shim today; the pure core moves in with a second consumer)
 │   └── hg/                   @dbd/hg: the engine, entered by subtree with its history (Phase 2)
 ├── vault/                    the claim vault: markdown in git, imported by no code, read through an adapter
@@ -139,10 +140,10 @@ flowchart LR
 
 Both codebases already practice inversion: the engine through Effect's `Context.Tag` and layers; the house through the async barrel, whose implementation is synchronous today and whose signature is the seam. The workspace adds no container. A port is a TypeScript interface in `@dbd/slice`; an adapter implements it at an edge; the top of each program wires them.
 
-| Port | Adapters | Composition root |
-|---|---|---|
-| `GraphSource` — produce a `Slice` for a space, later for an aperture | the works adapter in the site; the vault adapter and `hg slice` in the engine | the site's build: the barrel picks the source. Today `import.meta.glob`; tomorrow a slice the engine emits before `vite build`. |
-| `Consent` — `propose`, `pending`, `resolve` | none in the static site, where the verbs are absent and the ghosts are visible; the engine's protocol over a Worker (Phase 5) | the `/sky` route, which hands the port to the shell as an argument |
+| Port                                                                 | Adapters                                                                                                                      | Composition root                                                                                                                |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `GraphSource` — produce a `Slice` for a space, later for an aperture | the works adapter in the site; the vault adapter and `hg slice` in the engine                                                 | the site's build: the barrel picks the source. Today `import.meta.glob`; tomorrow a slice the engine emits before `vite build`. |
+| `Consent` — `propose`, `pending`, `resolve`                          | none in the static site, where the verbs are absent and the ghosts are visible; the engine's protocol over a Worker (Phase 5) | the `/sky` route, which hands the port to the shell as an argument                                                              |
 
 Inside the engine, Effect layers keep doing what they do. The contract is the only place the two inversions meet, and it is plain data.
 
@@ -152,14 +153,14 @@ Inside the engine, Effect layers keep doing what they do. The contract is the on
 
 What crosses the wall is a **slice** — the engine's own word for a bounded view of the graph loaded for one turn (`graph.slice.load` in its protocol). A slice is plain JSON with a zod schema of record in `@dbd/slice`. It carries:
 
-| Field | What it holds |
-|---|---|
-| `space` | The space the slice was cut from. The site is one space. |
-| `asOf` | When it was cut. Time is an argument. |
-| `axes` | The compass: an id, a name, an azimuth in degrees, an optional hue. The site's eight facets; the vault's eight constellations. |
-| `nodes` | Entities: id, title, kind, axes, an optional summary, `createdAt`, an optional metabolic status, an optional `href`, an optional `group`. No body. The body is primary and stays at home. |
-| `edges` | Relations: subject, predicate, object, origin, an optional weight. |
-| `pending` | The count of unresolved proposals, and the ghosts the sky may draw: a proposed entity or relation with its confidence and evidence. |
+| Field     | What it holds                                                                                                                                                                             |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `space`   | The space the slice was cut from. The site is one space.                                                                                                                                  |
+| `asOf`    | When it was cut. Time is an argument.                                                                                                                                                     |
+| `axes`    | The compass: an id, a name, an azimuth in degrees, an optional hue. The site's eight facets; the vault's eight constellations.                                                            |
+| `nodes`   | Entities: id, title, kind, axes, an optional summary, `createdAt`, an optional metabolic status, an optional `href`, an optional `group`. No body. The body is primary and stays at home. |
+| `edges`   | Relations: subject, predicate, object, origin, an optional weight.                                                                                                                        |
+| `pending` | The count of unresolved proposals, and the ghosts the sky may draw: a proposed entity or relation with its confidence and evidence.                                                       |
 
 ### Invariants
 
@@ -247,10 +248,11 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 
 ### Phase 1 — The sky reads a slice
 
-- **Pull:** Danny blesses this document. He did, on 2026-09-03; the phase is open.
+- **Pull:** Danny blesses this document. He did, on 2026-09-03.
 - **Scope:** The sky's graph layer consumes a `Slice` instead of the works directly. Facets generalize to axes with no visible change to the compass. Declared threads are drawn for the first time. The whisper speaks predicates. Ghosts are drawn from `pending` — empty for the site until Phase 2.
-- **Exit:** The sky is identical at rest under the works adapter, plus the declared threads. `CONSTELLATION_WALK.md` records origin as stroke.
-- **Held:** The dotting collision.
+- **Shipped 2026-09-04.** An axis is one bearing of the compass; a node is keyed by the slice's id; an edge carries an origin. Declared relations draw solid in the page's ink, heavier than a figure's hairline; a star with no page is a focusable place to stand. The first slice from outside the house arrived the same day: Danny's book vault, read by `@dbd/vault` — the topic maps as the compass, the claims as stars, the wiki links as declared threads, the inbox as ghosts — rendered on his machine and not committed (the workspace's visibility, below). Ghosts are read; drawing them is the next pass.
+- **Exit:** The sky is identical at rest under the works adapter, plus the declared threads. `CONSTELLATION_WALK.md` records the compass as axes and origin as stroke.
+- **Held:** The dotting collision; the atmosphere's sectors; labels inside the vault; the field past the center. The pole's density and the long titles were answered on 2026-09-04 by the dial (`CONSTELLATION_WALK.md` §"The Dial"): the camera's distance runs from the palantír to the center of the vault, the walk distance is found on the graph, and the cap grows with the count.
 
 ### Phase 2 — The engine enters
 
@@ -287,7 +289,10 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 - **One frontmatter.** A work has title, date, facets, type; a claim has type, status, origin, confidence, evidence, constellations. They rhyme and do not match. Trigger: Phase 2's markdown reader.
 - **The sky's pure core as a package.** `src/shared/sky/` and `src/shared/geometry/` are pure and React-free; they move into `@dbd/sky` when a second consumer exists. Trigger: the vault's sky, if it wants its own painter, or a native surface.
 - **The vault's verbs as an outcome.** Sixteen process skills beside five outcome skills is two grammars. Trigger: the first session that runs both.
-- **The workspace's visibility.** This repository is public. The engine, the vault, the seed, and the root are private, and some of the lineage documents are intimate — Danny's own account of a transition; a vision written in the language of the soul. Phases 2 and 3 publish whatever enters. Three answers are possible: a private workspace, with the site still publishing its making through the build; a public workspace that takes the engine whole and the lineage selectively, citing the intimate documents by commit rather than copying them; or a public workspace that publishes all of it. Trigger: Danny's word, before Phase 2 or Phase 3 lands.
+- **The workspace's visibility.** This repository is public. The engine, the vault, the seed, and the root are private, and some of the lineage documents are intimate — Danny's own account of a transition; a vision written in the language of the soul. Phases 2 and 3 publish whatever enters. Three answers are possible: a private workspace, with the site still publishing its making through the build; a public workspace that takes the engine whole and the lineage selectively, citing the intimate documents by commit rather than copying them; or a public workspace that publishes all of it. A fourth arrived with the book: the code stays public, private slices stay out of git, and a private sky is deployed as its own Worker behind Cloudflare Access (`wrangler.book.jsonc`, `pnpm deploy:book`). Trigger: Danny's word, before Phase 2 or Phase 3 lands.
+- **Labels inside the vault.** Standing at the center, the halos grow with nearness and the names' offsets do not; _here_'s name sits in its glow. Trigger: Danny's eye inside the book sky.
+- **The field past the center.** The dial ends at the center, and a sky denser than about fifty stars a steradian still holds more than `VIEW_TARGET` there (the book: about 48 against 32). The next stop is a narrower field of view. Trigger: a slice whose center view is half again over the target.
+- **The atmosphere's sectors.** The dome's meridians and tinted sectors are eight and four in the shader; a compass of thirteen speaks over them. The atmosphere should take its sectors from the axes. Trigger: Phase 1's second pass.
 
 ---
 
@@ -307,14 +312,18 @@ Today:
 
 - `@dbd/slice` at [packages/slice/src/index.ts](./packages/slice/src/index.ts): the vocabularies, the zod schema of record, `groundingIssues` as a pure function, `parseSlice`. Its tests hold INV-SLC-001 through INV-SLC-003 and the round trip through JSON.
 - The works adapter at [src/shared/content/slice.ts](./src/shared/content/slice.ts): published works as nodes, backlinks as declared `references`, the eight facets as axes with their azimuths and hues. Its test holds INV-SLC-004 and INV-SLC-005 for the house's graph.
-- The workspace: `pnpm-workspace.yaml`; the `@dbd/slice` alias in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`; the FP rim extended over `packages/slice/src` in `eslint.config.js`.
+- The sky reads a slice: [src/shared/content/constellation.ts](./src/shared/content/constellation.ts) builds any sky from any slice (`graphFromSlice`, `axesOf`, `placeNode`); [src/shared/content/slices.ts](./src/shared/content/slices.ts) is the composition root that picks the source — the works by default, a named slice file under `src/content/slices/` when `VITE_SKY_SLICE` says so; `src/shared/content/facet-compass.ts` keeps the house's facets and hands them to the sky through the adapter. The walk, presence, layout, the Stage, the atoms, the whisper, the reducer, the projector, and the atmosphere speak axes and keys.
+- `@dbd/vault` at [packages/vault/src/index.ts](./packages/vault/src/index.ts): an ars-contexta vault as a slice, pure, with a CLI beside it (`pnpm sky:slice <vault> <out.json>`). Nine tests.
+- The frame budget at a vault's density (`CONSTELLATION_ARCHITECTURE.md` §"What Shipped (2026-09-04)"): the shell paints only what changed and moves only what is present; a hover is written, not rendered; the atmosphere's thread pass draws the resting hairlines. The book's sky went from 3–18 frames a second to 38–60.
+- The dial at [src/shared/sky/dial.ts](./src/shared/sky/dial.ts): the walk distance found on the graph (`walkDistanceFor`), the two rests kept by the shell in `src/shared/hooks/useSkyTravel.ts`, the cap that grows with the count (`capFor` in `src/shared/content/constellation.ts`), and the drawing that follows — present-only hit twins, parked threads, the truthful cursor, the whisper's summary, no names at a crowded pole. Seven tests for the dial, four for the cap.
+- The workspace: `pnpm-workspace.yaml`; the `@dbd/slice` alias in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`; the FP rim extended over `packages/slice/src` and `packages/vault/src` in `eslint.config.js`; `src/content/slices/*.json` ignored by git.
 
-Not yet: everything from Phase 1 on. The engine is not in this repository. The sky does not read a slice. No consent verb exists on the web, by design.
+Not yet: Phase 2 on. The engine is not in this repository. Ghosts are read but not yet drawn. No consent verb exists on the web, by design.
 
 ---
 
 ## Dependencies
 
-**This spec depends on:** `CLAUDE.md`, `MEDIUM.md`, `TRANSPARENCY.md`, `DOMAIN_MODEL.md`, `GRAPH_AND_LINKING.md`, `REACT_NORTH_STAR.md`, `RENDERING_STRATEGY.md`, `CONSTELLATION_WALK.md`, `CONSTELLATION_ARCHITECTURE.md`; and, in the engine's repository, `manifesto.md`, `source.md`, `AGENTS.md`, `.agent/TASTE_PROFILE.md`, `docs/foundations/CONSTITUTION.md`, `docs/architecture/DECISIONS.md`, `docs/architecture/GRAPH_PROTOCOL.md`, `docs/architecture/SPACE_MODEL.md`, `docs/contracts/UI_SPEC.md`, `vault/ops/derivation.md`; in the seed, `CONSTITUTION.md`, `DESIGN.md`, `bootstrap.md`, `components/`; and in the root, `TECHNICAL_MANIFESTO.md`, `PROTOCOL.md`, `SEMANTIC_GAP.md`, `CONSCIOUSNESS_STATE_MACHINE.md`, `CLAUDE.md`.
+**This spec depends on:** `CLAUDE.md`, `MEDIUM.md`, `TRANSPARENCY.md`, `DOMAIN_MODEL.md`, `GRAPH_AND_LINKING.md`, `REACT_NORTH_STAR.md`, `RENDERING_STRATEGY.md`, `CONSTELLATION_WALK.md`, `CONSTELLATION_ARCHITECTURE.md`; and, in the engine's repository, `manifesto.md`, `source.md`, `AGENTS.md`, `.agent/TASTE_PROFILE.md`, `docs/foundations/CONSTITUTION.md`, `docs/architecture/DECISIONS.md`, `docs/architecture/GRAPH_PROTOCOL.md`, `docs/architecture/SPACE_MODEL.md`, `docs/contracts/UI_SPEC.md`, `vault/ops/derivation.md`; in the seed, `CONSTITUTION.md`, `DESIGN.md`, `bootstrap.md`, `components/`; and in the root, `TECHNICAL_MANIFESTO.md`, `PROTOCOL.md`, `SEMANTIC_GAP.md`, `CONSCIOUSNESS_STATE_MACHINE.md`, `CLAUDE.md`; and the first slice from outside the house, Danny's `book-research` vault, private, read through `@dbd/vault`.
 
 **This spec is depended on by:** `BACKLOG.md`, which holds the phases with their triggers, and every spec the engine brings with it when it enters.

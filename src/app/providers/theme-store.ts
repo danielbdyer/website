@@ -122,4 +122,4 @@ export const themeStore = {
   },
 };
 
-let transitionTimer: number | null = null;
+let transitionTimer: ReturnType<typeof setTimeout> | null = null;

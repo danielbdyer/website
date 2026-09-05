@@ -21,8 +21,8 @@ import { setConstellationCursor } from '@/shared/state/constellationCursor';
 import { setSkyCamera } from '@/shared/state/skyCamera';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 import type { Vec3 } from '@/shared/geometry/sphere';
-import { COMPASS } from '@/shared/content/constellation';
-import { COMPASS_RIM, daystarViewboxPoint } from '@/shared/content/skyWalk';
+import type { Axis } from '@/shared/content/constellation';
+import { daystarViewboxPoint } from '@/shared/content/skyWalk';
 import { chooseLabelSlots, slotOffset, type LabelItem } from './labelLayout';
 import { fitViewboxToCanvas } from '@/shared/webgl/atmosphereProjection';
 
@@ -144,8 +144,13 @@ export function clientToNormalized(
  * target) are hidden by a translate-far-offscreen trick rather
  * than added complexity in the DOM.
  *
+ * When `only` is given, just those stars move — the present ones,
+ * while the sky is in motion under the atmosphere, whose sprites carry
+ * the receded stars' light; the receded anchors are placed when the
+ * sky settles (useSkyTravel's full paint).
+ *
  * @bigO Time: O(N) per call (one cached element lookup + one
- *       matrix-multiply + one setAttribute per node). Hot path:
+ *       matrix-multiply + one setAttribute per node moved). Hot path:
  *       called once per RAF tick. Element references are cached
  *       per camera-group (revalidated by isConnected); the
  *       projection itself reruns every tick because the camera
@@ -158,10 +163,12 @@ export function projectStars(
   camera: Camera,
   basis: CameraBasis,
   viewboxSize: number,
+  only: ReadonlySet<string> | null = null,
 ): void {
   const center = viewboxSize / 2;
   const radius = viewboxSize * 0.44;
   for (const node of nodes) {
+    if (only !== null && !only.has(node.key)) continue;
     const el = cachedElement(cameraGroup, `[data-node-key="${node.key}"]`);
     if (!el) continue;
     projectInto(node.unitPos, camera, basis, 1, SCRATCH);
@@ -209,31 +216,65 @@ function setEndpoints(el: Element, x1: string, y1: string, x2: string, y2: strin
  * behind-camera endpoints render off-canvas through the same
  * far-offscreen trick.
  *
- * @bigO Time: O(E) per call (two cached element lookups + two
- *       matrix-multiplies per edge). Hot path: called once per RAF
- *       tick alongside projectStars.
+ * When `only` is given, just those threads move — the present ones,
+ * while the sky is in motion; the receded mesh is painted when the sky
+ * settles (useSkyTravel's full paint). A vault of hundreds of claims
+ * carries a thousand threads, and moving all of them every frame was
+ * the sky's whole budget.
+ *
+ * @bigO Time: O(E) per call (one cached element lookup + two
+ *       matrix-multiplies per edge moved). Hot path: called once per
+ *       RAF tick alongside projectStars.
  *       Space: O(E) for the element cache, O(1) per tick.
  */
+/** The states in which the SVG paints a thread's hairline under the
+ *  atmosphere (tokens.css); otherwise the shader's line stands in. */
+const LIT_THREAD = ['data-active', 'data-hover', 'data-lit', 'data-walked', 'data-track'];
+
+function hairlineDrawn(el: Element): boolean {
+  const group = el.parentElement;
+  if (!group) return true;
+  return LIT_THREAD.some((name) => group.hasAttribute(name));
+}
+
 export function projectThreads(
   cameraGroup: SVGGElement,
   edges: readonly NavigableEdge[],
   camera: Camera,
   basis: CameraBasis,
   viewboxSize: number,
+  only: ReadonlySet<string> | null = null,
+  litOnly = false,
 ): void {
   const center = viewboxSize / 2;
   const radius = viewboxSize * 0.44;
   for (const edge of edges) {
+    if (only !== null && !only.has(edge.id)) continue;
     const el = cachedElement(cameraGroup, `[data-thread-id="${edge.id}"]`);
     if (!el) continue;
     projectInto(edge.sourcePos, camera, basis, 1, SCRATCH);
+    const sourceInFront = SCRATCH.inFront;
     const x1 = (center + SCRATCH.screenX * radius).toFixed(2);
     const y1 = (center - SCRATCH.screenY * radius).toFixed(2);
     projectInto(edge.targetPos, camera, basis, 1, SCRATCH);
     const x2 = (center + SCRATCH.screenX * radius).toFixed(2);
     const y2 = (center - SCRATCH.screenY * radius).toFixed(2);
-    setEndpoints(el, x1, y1, x2, y2);
-    const hit = cachedElement(cameraGroup, `[data-thread-hit="${edge.id}"]`);
+    // The hit twin, when the thread is present, is the hairline's next
+    // sibling (Thread.tsx) — found without a selector walk. A selector
+    // for a twin that is not there missed the cache every frame.
+    const sibling = el.nextElementSibling;
+    const hit = sibling?.hasAttribute('data-thread-hit') ? sibling : null;
+    // Standing inside the sphere, a thread with an end behind the
+    // camera has no honest line to draw; it parks with the star.
+    if (!sourceInFront || !SCRATCH.inFront) {
+      setEndpoints(el, '-9999', '-9999', '-9999', '-9999');
+      if (hit) setEndpoints(hit, '-9999', '-9999', '-9999', '-9999');
+      continue;
+    }
+    // Under the atmosphere a hairline the SVG is not painting need not
+    // move with every frame; the settled sky's full paint places it,
+    // and the frame that lights it writes it.
+    if (!litOnly || hairlineDrawn(el)) setEndpoints(el, x1, y1, x2, y2);
     if (hit) setEndpoints(hit, x1, y1, x2, y2);
   }
 }
@@ -328,19 +369,20 @@ export function applyCameraYaw(el: SVGGElement, yaw: number): void {
   el.style.setProperty('--cam-yaw', yaw.toFixed(2));
 }
 
-/** Letter the compass — each facet's name at its bearing on the rim
- *  (COMPASS_RIM, skyWalk.ts) — so the words turn with the heavens.
+/** Letter the compass — each axis's name at its bearing on the rim
+ *  (Axis.rim, constellation.ts) — so the words turn with the heavens.
  *  Behind-camera names park offscreen. */
 export function projectCompass(
   cameraGroup: SVGGElement,
+  axes: readonly Axis[],
   camera: Camera,
   basis: CameraBasis,
   viewboxSize: number,
 ): void {
-  for (const facet of COMPASS) {
-    const el = cachedElement(cameraGroup, `[data-compass="${facet}"]`);
+  for (const axis of axes) {
+    const el = cachedElement(cameraGroup, `[data-compass="${axis.id}"]`);
     if (!el) continue;
-    const proj = projectToViewbox(COMPASS_RIM[facet], camera, basis, viewboxSize);
+    const proj = projectToViewbox(axis.rim, camera, basis, viewboxSize);
     el.setAttribute('x', proj.inFront ? proj.x.toFixed(2) : '-9999');
     el.setAttribute('y', proj.inFront ? proj.y.toFixed(2) : '-9999');
   }

@@ -22,8 +22,8 @@ import {
   createMemoryHistory,
 } from '@tanstack/react-router';
 import type { ConstellationGraph } from '@/shared/content/constellation';
-import { diskToHemisphere } from '@/shared/geometry/sphere';
 import { Constellation } from '@/shared/organisms/Constellation/Constellation';
+import { figure, sky, star } from './sky-graph';
 
 /** A single canonical surface state, named per
  *  CONSTELLATION_DESIGN.md §"Surface Inventory". The set is closed —
@@ -88,92 +88,39 @@ export const SURFACE_INVENTORY: Readonly<Record<SurfaceId, SurfaceMeta>> = {
   S19: { name: 'OfflineSky', status: 'absent' },
 };
 
-const projectToSphere = (angleDeg: number, radius: number) =>
-  diskToHemisphere(radius, (angleDeg * Math.PI) / 180);
-
 /** A small canonical graph — three stars across three rooms with
- *  shared facets so threads render. Subsequent phases extend with
+ *  shared axes so threads render. Subsequent phases extend with
  *  phase-specific shapes (filtered set, time-scrubbed history,
  *  etc.) as their tests need them. */
-export const canonicalSkyGraph: ConstellationGraph = {
-  facetHues: {
-    craft: 'warm',
-    body: 'warm',
-    beauty: 'rose',
-    language: 'rose',
-    consciousness: 'violet',
-    becoming: 'violet',
-    leadership: 'gold',
-    relation: 'gold',
-  },
-  nodes: [
-    {
-      room: 'garden',
-      slug: 'small-weather',
+export const canonicalSkyGraph: ConstellationGraph = sky(
+  [
+    star('garden/small-weather', ['body', 'becoming', 'language', 'relation'], 135, 0.6, {
       title: 'small weather',
       date: new Date('2026-04-24'),
-      facets: ['body', 'becoming', 'language', 'relation'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 135,
-      radius: 0.6,
-      unitPosition: projectToSphere(135, 0.6),
       hue: 'gold',
       twinklePhase: 1.2,
-    },
-    {
-      room: 'studio',
-      slug: 'a-second-work',
+    }),
+    star('studio/a-second-work', ['language', 'craft'], 225, 0.7, {
       title: 'a second work',
       date: new Date('2026-05-01'),
-      facets: ['language', 'craft'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 225,
-      radius: 0.7,
-      unitPosition: projectToSphere(225, 0.7),
-      hue: 'rose',
       twinklePhase: 3.4,
-    },
-    {
-      room: 'study',
-      slug: 'a-third-work',
+    }),
+    star('study/a-third-work', ['consciousness', 'becoming'], 45, 0.5, {
       title: 'a third work',
       date: new Date('2026-05-15'),
-      facets: ['consciousness', 'becoming'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 45,
-      radius: 0.5,
-      unitPosition: projectToSphere(45, 0.5),
-      hue: 'violet',
       twinklePhase: 0.7,
-    },
+    }),
   ],
-  edges: [
-    {
-      facet: 'language',
-      hue: 'rose',
-      source: { room: 'garden', slug: 'small-weather' },
-      target: { room: 'studio', slug: 'a-second-work' },
-    },
-    {
-      facet: 'becoming',
-      hue: 'violet',
-      source: { room: 'garden', slug: 'small-weather' },
-      target: { room: 'study', slug: 'a-third-work' },
-    },
+  [
+    figure('garden/small-weather', 'studio/a-second-work', 'language'),
+    figure('garden/small-weather', 'study/a-third-work', 'becoming'),
   ],
-};
+);
 
-/** Empty-corpus graph fixture for `S17 EmptySky`. The
- *  facet/hue map is preserved so the renderer's color path runs
- *  identically to the populated case — only the data is empty. */
-export const emptySkyGraph: ConstellationGraph = {
-  facetHues: canonicalSkyGraph.facetHues,
-  nodes: [],
-  edges: [],
-};
+/** Empty-corpus graph fixture for `S17 EmptySky`. The compass is
+ *  preserved so the renderer's color path runs identically to the
+ *  populated case — only the data is empty. */
+export const emptySkyGraph: ConstellationGraph = sky([], []);
 
 /** Mount the Constellation organism inside a minimal in-memory
  *  TanStack Router context. Returns the @testing-library/react

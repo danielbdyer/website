@@ -1,25 +1,27 @@
-import type { Facet } from '@/shared/types/common';
 import type { UnitVector3 } from '@/shared/geometry/sphere';
-import { NORTH_POLE, geodesicDistance, spherical, sphericalToUnit } from '@/shared/geometry/sphere';
+import { NORTH_POLE, geodesicDistance } from '@/shared/geometry/sphere';
 import {
-  COMPASS,
-  FACET_AZIMUTH_DEG,
-  nodeKey,
-  type ConstellationEdge,
+  capFor,
+  DEFAULT_CAP,
+  edgeId,
+  type Axis,
   type ConstellationGraph,
   type ConstellationHue,
   type ConstellationNode,
 } from './constellation';
 
+export { COMPASS_RIM_THETA, edgeId } from './constellation';
+
 // ─── The walk ──────────────────────────────────────────────────────
 //
 // Pure answers to the two questions the sky asks on the visitor's
 // behalf: where am I, and what leads away? *Here* is a star or the
-// pole. Its neighborhood is the set of stars one stroke away along the
-// figures; its bearings are its facets, each leading along that facet's
-// figure to the nearest star that carries it. Nothing here touches the
-// DOM or the camera — the organism reads these to draw names and the
-// whisper, and the travel hook reads them to know where a bearing goes.
+// pole. Its neighborhood is the set of stars one thread away — along
+// the figures, or along a relation the slice carries; its bearings are
+// its axes, each leading along that axis's figure to the nearest star
+// that carries it. Nothing here touches the DOM or the camera — the
+// organism reads these to draw names and the whisper, and the travel
+// hook reads them to know where a bearing goes.
 // CONSTELLATION_WALK.md §"The Compass", §"The Whisper".
 
 /** Where the visitor stands before any star: the still center. */
@@ -90,23 +92,14 @@ export function daystarViewboxPoint(
  *  seats the emblem where hydration will find it. */
 export const DAYSTAR_REST_FRAME = { width: 1440, height: 900 } as const;
 
-/** Where each facet's name is lettered: on its bearing, just outside
- *  the populated cap, so the compass reads around the sky's edge. */
-export const COMPASS_RIM_THETA = 1.152;
-export const COMPASS_RIM: Readonly<Record<Facet, UnitVector3>> = Object.fromEntries(
-  COMPASS.map((facet) => [
-    facet,
-    sphericalToUnit(spherical(COMPASS_RIM_THETA, (FACET_AZIMUTH_DEG[facet] * Math.PI) / 180)),
-  ]),
-) as Record<Facet, UnitVector3>;
-
-/** A place the visitor can stand: a node key (`room/slug`) or the pole. */
+/** A place the visitor can stand: a node key or the pole. */
 export type Place = string;
 
 export interface Bearing {
-  readonly facet: Facet;
+  readonly axis: string;
+  readonly name: string;
   readonly hue: ConstellationHue;
-  /** The star this bearing leads to from here, or null when the facet
+  /** The star this bearing leads to from here, or null when the axis
    *  has no other member yet — a bearing that reads dim and goes
    *  nowhere: *nothing yet points that way*. */
   readonly to: string | null;
@@ -117,17 +110,14 @@ export interface Bearing {
 
 export interface Neighbor {
   readonly key: string;
-  readonly facet: Facet;
-  /** Matches layout.ts's resolved edge id: `source|target|facet`. */
+  /** The axis whose figure joins them, or null along a relation. */
+  readonly axis: string | null;
+  /** Matches layout.ts's resolved edge id (constellation.ts, edgeId). */
   readonly edgeId: string;
 }
 
-export function edgeId(edge: ConstellationEdge): string {
-  return `${nodeKey(edge.source)}|${nodeKey(edge.target)}|${edge.facet}`;
-}
-
 export function findNode(graph: ConstellationGraph, key: Place): ConstellationNode | null {
-  return graph.nodes.find((n) => nodeKey(n) === key) ?? null;
+  return graph.nodes.find((n) => n.key === key) ?? null;
 }
 
 /** The position of a place on the sphere — a star's, or the pole. */
@@ -135,17 +125,22 @@ export function placePosition(graph: ConstellationGraph, place: Place): UnitVect
   return findNode(graph, place)?.unitPosition ?? NORTH_POLE;
 }
 
-/** The stars one stroke away from `here` along the figures, with the
- *  facet and edge that join them. Empty at the pole (the pole joins
- *  nothing; it offers bearings instead). */
+/** The stars one thread away from `here`, with the axis (if any) and
+ *  edge that join them. Empty at the pole (the pole joins nothing; it
+ *  offers bearings instead). */
 export function neighborsOf(graph: ConstellationGraph, here: Place): readonly Neighbor[] {
   return graph.edges.flatMap((edge) => {
-    const source = nodeKey(edge.source);
-    const target = nodeKey(edge.target);
-    if (source === here) return [{ key: target, facet: edge.facet, edgeId: edgeId(edge) }];
-    if (target === here) return [{ key: source, facet: edge.facet, edgeId: edgeId(edge) }];
+    if (edge.source === here) return [{ key: edge.target, axis: edge.axis, edgeId: edgeId(edge) }];
+    if (edge.target === here) return [{ key: edge.source, axis: edge.axis, edgeId: edgeId(edge) }];
     return [];
   });
+}
+
+/** The axes a place offers as bearings: a star's own, in compass
+ *  order; at the pole, every axis. */
+export function axesAt(graph: ConstellationGraph, here: Place): readonly Axis[] {
+  const node = findNode(graph, here);
+  return node ? graph.axes.filter((axis) => node.axes.includes(axis.id)) : graph.axes;
 }
 
 function nearestTo(
@@ -161,34 +156,42 @@ function nearestTo(
   ).node;
 }
 
-/** What leads away from `here`. At a star: its own facets, in compass
- *  order, each leading to its nearest figure-neighbor along that facet.
- *  At the pole: all eight bearings, each leading to the nearest star
- *  that carries the facet. */
+/** What leads away from `here`. At a star: its own axes, in compass
+ *  order, each leading to its nearest figure-neighbor along that axis.
+ *  At the pole: every bearing, each leading to the nearest star that
+ *  carries the axis. */
 export function bearingsOf(graph: ConstellationGraph, here: Place): readonly Bearing[] {
   const node = findNode(graph, here);
   const from = node?.unitPosition ?? NORTH_POLE;
-  const facets = node ? COMPASS.filter((f) => node.facets.includes(f)) : COMPASS;
   const neighbors = node ? neighborsOf(graph, here) : [];
-  return facets.map((facet) => {
+  return axesAt(graph, here).map((axis) => {
     const candidates = node
       ? neighbors
-          .filter((n) => n.facet === facet)
+          .filter((n) => n.axis === axis.id)
           .flatMap((n) => {
             const found = findNode(graph, n.key);
             return found ? [found] : [];
           })
-      : graph.nodes.filter((n) => n.facets.includes(facet));
+      : graph.nodes.filter((n) => n.axes.includes(axis.id));
     const to = nearestTo(from, candidates);
-    const toKey = to ? nodeKey(to) : null;
-    const along = neighbors.find((n) => n.facet === facet && n.key === toKey)?.edgeId ?? null;
-    return { facet, hue: graph.facetHues[facet], to: toKey, edgeId: along };
+    const toKey = to ? to.key : null;
+    const along = neighbors.find((n) => n.axis === axis.id && n.key === toKey)?.edgeId ?? null;
+    return { axis: axis.id, name: axis.name, hue: axis.hue, to: toKey, edgeId: along };
   });
 }
 
+/** Whether any star is named from a place. At the pole of a crowded
+ *  sky — one whose cap has grown past the default dome — none is: the
+ *  compass's names carry the labels until the visitor enters
+ *  (CONSTELLATION_WALK.md §"The Dial"). */
+export function namesAt(graph: ConstellationGraph, here: Place): boolean {
+  return here !== POLE_KEY || capFor(graph.nodes.length) === DEFAULT_CAP;
+}
+
 /** The keys that carry a label at rest: here, its neighbors, and the
- *  stars its bearings lead to. Context reaches exactly one stroke. */
+ *  stars its bearings lead to. Context reaches exactly one thread. */
 export function namedFrom(graph: ConstellationGraph, here: Place): ReadonlySet<string> {
+  if (!namesAt(graph, here)) return new Set();
   const names = [
     ...(findNode(graph, here) ? [here] : []),
     ...neighborsOf(graph, here).map((n) => n.key),
@@ -198,11 +201,12 @@ export function namedFrom(graph: ConstellationGraph, here: Place): ReadonlySet<s
 }
 
 /** How a label visible at rest ranks: the star you stand at, a
- *  neighbor one stroke along a figure, or the end of a bearing. The
- *  names speak at three volumes. */
+ *  neighbor one thread along, or the end of a bearing. The names speak
+ *  at three volumes. */
 export type NamedRank = 'here' | 'near' | 'far';
 
 export function namedRanks(graph: ConstellationGraph, here: Place): ReadonlyMap<string, NamedRank> {
+  if (!namesAt(graph, here)) return new Map();
   const far = bearingsOf(graph, here).flatMap((b): [string, NamedRank][] =>
     b.to ? [[b.to, 'far']] : [],
   );
@@ -211,7 +215,7 @@ export function namedRanks(graph: ConstellationGraph, here: Place): ReadonlyMap<
   return new Map([...far, ...near, ...self]);
 }
 
-/** Every place one step from here: the neighbors along the figures,
+/** Every place one step from here: the neighbors along the threads,
  *  each with its thread, and the ends of the bearings — the tracks a
  *  drag can follow. Deduplicated; neighbors first. */
 export interface Step {
@@ -255,7 +259,7 @@ export function neighborToward(
     const tz = p.z - dot * from.z;
     const m = Math.hypot(tx, ty, tz) || 1;
     const along = (tx * direction.x + ty * direction.y + tz * direction.z) / m;
-    return { key: nodeKey(node), along };
+    return { key: node.key, along };
   });
   const best = scored.filter((s) => s.along > 0.05).toSorted((a, b) => b.along - a.along)[0];
   return best?.key ?? null;

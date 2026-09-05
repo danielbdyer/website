@@ -1,13 +1,12 @@
 import { useRef } from 'react';
-import type { FocusEvent, MouseEvent, PointerEvent, SyntheticEvent } from 'react';
+import type { FocusEvent, MouseEvent, PointerEvent, RefObject, SyntheticEvent } from 'react';
 import { useMatch } from '@tanstack/react-router';
 import type { ConstellationGraph } from '@/shared/content/constellation';
 import { bearingsOf, type Place } from '@/shared/content/skyWalk';
-import type { Facet } from '@/shared/types/common';
 import { useInternalLinkDelegation } from '@/shared/hooks/useInternalLinkDelegation';
-import { useStarHoverState } from '@/shared/hooks/useStarHoverState';
 import type { SkyWalk } from '@/shared/hooks/useSkyWalk';
 import type { StageInteractions } from './Stage';
+import { useSkyAttention } from './useSkyAttention';
 import { clickTargetOf, farEndOf, starKeyOf } from './walk';
 
 // The sky's input, in one place (CONSTELLATION_WALK.md §"Input"):
@@ -20,6 +19,10 @@ import { clickTargetOf, farEndOf, starKeyOf } from './walk';
 //   click a name at the rim       → take that bearing
 //
 // Modified clicks (new tab, etc.) are left to the browser.
+//
+// Hover never renders. It is written to the page by dom/skyAttention
+// and to the atmosphere by state/skyHover: one star and its few threads
+// change, not a tree of hundreds.
 
 interface UseSkyInteractionsArgs {
   readonly graph: ConstellationGraph;
@@ -28,6 +31,10 @@ interface UseSkyInteractionsArgs {
     readonly travelTo: (place: Place, alongEdgeId?: string) => void;
     readonly beginScrub: (e: PointerEvent<SVGSVGElement>) => void;
   };
+  /** The camera group the marks are written into. */
+  readonly cameraRef: RefObject<SVGGElement | null>;
+  /** The threads that meet each star, by key (layout.adjacencyOf). */
+  readonly adjacency: ReadonlyMap<string, readonly string[]>;
 }
 
 const isPlainClick = (e: MouseEvent): boolean =>
@@ -37,11 +44,18 @@ const isPlainClick = (e: MouseEvent): boolean =>
 // keyboard focus travels (a Tab is a step, a press is a choice).
 const POINTER_FOCUS_WINDOW_MS = 500;
 
-export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsArgs) {
+export function useSkyInteractions({
+  graph,
+  walk,
+  travel,
+  cameraRef,
+  adjacency,
+}: UseSkyInteractionsArgs) {
   const { travelTo, beginScrub } = travel;
   const delegate = useInternalLinkDelegation<SVGSVGElement>();
-  const hover = useStarHoverState(null);
+  const { attend, attendAxis, attendThread } = useSkyAttention({ graph, cameraRef, adjacency });
   const lastPointerDown = useRef(0);
+
   // A press stamps the time (so the focus it causes is not a step) and
   // may begin a scrub along a thread.
   const onPointerDown = (e: PointerEvent<SVGSVGElement>) => {
@@ -54,7 +68,7 @@ export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsAr
       ? (e.target as Element).closest<SVGElement>('[data-compass]')?.dataset.compass
       : undefined;
     if (named) {
-      const bearing = bearingsOf(graph, walk.here).find((b) => b.facet === named);
+      const bearing = bearingsOf(graph, walk.here).find((b) => b.axis === named);
       if (bearing?.to) travelTo(bearing.to, bearing.edgeId ?? undefined);
       return;
     }
@@ -73,27 +87,40 @@ export function useSkyInteractions({ graph, walk, travel }: UseSkyInteractionsAr
   };
 
   const onStarFocus = (e: FocusEvent<Element>) => {
-    hover.handleActivate(e);
-    if (Date.now() - lastPointerDown.current < POINTER_FOCUS_WINDOW_MS) return;
     const key = starKeyOf(e.target);
+    attend(key);
+    if (Date.now() - lastPointerDown.current < POINTER_FOCUS_WINDOW_MS) return;
     if (key && key !== walk.here) travelTo(key);
   };
 
-  const onFacetHover = (e: SyntheticEvent<Element>) => {
-    const facet = (e.target as Element).closest<SVGElement>('[data-facet]')?.dataset.facet;
-    walk.attendFacet((facet as Facet | undefined) ?? null);
+  const onStarBlur = (e: FocusEvent<Element>) => {
+    if (e.relatedTarget?.closest('[data-node-key]')) return;
+    attend(null);
+  };
+
+  // Over the threads and the names at the rim: the thread under the
+  // pointer lights, and so does its whole figure.
+  const onAxisHover = (e: SyntheticEvent<Element>) => {
+    const target = e.target as Element;
+    const axis = target.closest<SVGElement>('[data-axis]')?.dataset.axis;
+    attendAxis(axis ?? null);
+    attendThread(target.closest('[data-thread]'));
+  };
+  const onAxisLeave = () => {
+    attendAxis(null);
+    attendThread(null);
   };
 
   const stage: StageInteractions = {
-    onStarHover: hover.handleActivate,
-    onStarLeave: hover.handleMouseLeave,
+    onStarHover: (e) => attend(starKeyOf(e.target as Element)),
+    onStarLeave: () => attend(null),
     onStarFocus,
-    onStarBlur: hover.handleBlur,
-    onFacetHover,
-    onFacetLeave: () => walk.attendFacet(null),
+    onStarBlur,
+    onAxisHover,
+    onAxisLeave,
   };
 
-  return { hoverKey: hover.activeKey, onSkyClick, onPointerDown, stage };
+  return { onSkyClick, onPointerDown, stage };
 }
 
 /** The open overlay's star, as `room/slug`, or null when /sky stands

@@ -1,51 +1,23 @@
 import { describe, expect, test } from 'vitest';
-import type { ConstellationGraph } from '@/shared/content/constellation';
-import { diskToHemisphere } from '@/shared/geometry/sphere';
+import { FACET_AXES, figure, relation, sky, star } from '@/test/sky-graph';
+import { edgeId } from '@/shared/content/constellation';
 import { activeStarIndex, buildAtmosphericScene } from './atmosphereScene';
 
-const GRAPH: ConstellationGraph = {
-  facetHues: {
-    craft: 'warm',
-    body: 'warm',
-    beauty: 'rose',
-    language: 'rose',
-    consciousness: 'violet',
-    becoming: 'violet',
-    leadership: 'gold',
-    relation: 'gold',
-  },
-  nodes: [
-    {
-      room: 'garden',
-      slug: 'small-weather',
+const GRAPH = sky(
+  [
+    star('garden/small-weather', ['relation'], 135, 0.6, {
       title: 'small weather',
       date: new Date('2026-04-24'),
-      facets: ['relation'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 135,
-      radius: 0.6,
-      unitPosition: diskToHemisphere(0.6, (135 * Math.PI) / 180),
-      hue: 'gold',
       twinklePhase: 1.2,
-    },
-    {
-      room: 'studio',
-      slug: 'second',
+    }),
+    star('studio/second', ['craft'], 225, 0.7, {
       title: 'second',
       date: new Date('2026-05-01'),
-      facets: ['craft'],
-      posture: undefined,
-      isPreview: false,
-      angleDeg: 225,
-      radius: 0.7,
-      unitPosition: diskToHemisphere(0.7, (225 * Math.PI) / 180),
-      hue: 'warm',
       twinklePhase: 0.4,
-    },
+    }),
   ],
-  edges: [],
-};
+  [],
+);
 
 describe('buildAtmosphericScene', () => {
   test('maps every node to a star with its hue index and phase', () => {
@@ -111,5 +83,32 @@ describe('activeStarIndex', () => {
   test('returns -1 for no claim or an unknown key', () => {
     expect(activeStarIndex(scene, null)).toBe(-1);
     expect(activeStarIndex(scene, 'salon/nope')).toBe(-1);
+  });
+});
+
+describe('buildAtmosphericScene — threads', () => {
+  const graph = sky(
+    [star('a', ['craft'], 10, 0.5), star('b', ['craft'], 40, 0.5), star('c', ['beauty'], 200, 0.6)],
+    [figure('a', 'b', 'craft'), relation('b', 'c')],
+  );
+
+  test('pairs each edge with its stars, its hue, its dotting, and its id', () => {
+    const scene = buildAtmosphericScene(graph);
+    expect(scene.threads).toHaveLength(2);
+    const [fig, rel] = scene.threads;
+    expect([fig!.a, fig!.b]).toEqual([0, 1]);
+    expect(fig!.hueIndex).toBeLessThan(4);
+    expect(fig!.dotted).toBe(FACET_AXES.find((axis) => axis.id === 'craft')!.dotted);
+    expect(fig!.id).toBe(edgeId(graph.edges[0]!));
+    // A relation with no axis draws in the page's ink, a little heavier.
+    expect(rel!.hueIndex).toBe(4);
+    expect(rel!.alpha).toBeGreaterThan(fig!.alpha);
+  });
+
+  test('skips an edge whose end is not a star', () => {
+    const scene = buildAtmosphericScene(
+      sky([star('a', ['craft'], 10, 0.5)], [figure('a', 'zz', 'craft')]),
+    );
+    expect(scene.threads).toHaveLength(0);
   });
 });

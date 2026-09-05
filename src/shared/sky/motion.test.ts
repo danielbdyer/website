@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { POLE_KEY } from '@/shared/content/skyWalk';
 import { NORTH_POLE, geodesicDistance, unitVector } from '@/shared/geometry/sphere';
 import {
   HOME_SPRING,
@@ -127,5 +128,18 @@ describe('motion — settle, gaze, rest', () => {
     expect(motion.anchor).toEqual(STAR);
     expect(motion.phase.kind).toBe('rest');
     expect(events).toHaveLength(1);
+  });
+});
+
+describe('motion — a settled sky is exactly still', () => {
+  test('the gaze and the rest land on their targets, not a millionth away', () => {
+    const leaned = lookToward(fitRest(initialMotion(POLE_KEY, NORTH_POLE), 2.5), 0.6, -0.4);
+    const settled = Array.from({ length: 600 }).reduce<typeof leaned>(
+      (m, _, i) => advance(m, 16 * (i + 1)).motion,
+      { ...leaned, time: 0 },
+    );
+    expect(settled.look).toEqual(settled.lookTarget);
+    expect(settled.rest).toBe(settled.restTarget);
+    expect(isStill(settled)).toBe(true);
   });
 });

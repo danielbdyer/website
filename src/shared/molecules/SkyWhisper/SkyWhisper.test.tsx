@@ -6,25 +6,39 @@ import type { Bearing } from '@/shared/content/skyWalk';
 import { SkyWhisper } from './SkyWhisper';
 
 const BEARINGS: readonly Bearing[] = [
-  { facet: 'body', hue: 'warm', to: 'study/spanda', edgeId: 'a|study/spanda|body' },
-  { facet: 'language', hue: 'rose', to: null, edgeId: null },
+  { axis: 'body', name: 'body', hue: 'warm', to: 'study/spanda', edgeId: 'a|study/spanda|body' },
+  { axis: 'language', name: 'language', hue: 'rose', to: null, edgeId: null },
   {
-    facet: 'relation',
+    axis: 'relation',
+    name: 'relation',
     hue: 'gold',
     to: 'studio/containers',
     edgeId: 'a|studio/containers|relation',
   },
 ];
 
-const HERE = { title: 'small weather', room: 'the Garden' };
+const HERE = { title: 'small weather', group: 'the Garden' };
 
 describe('SkyWhisper molecule', () => {
-  test('says where you are: title and room, in second voice', () => {
+  test('says where you are: title and group, in second voice', () => {
     render(
       <SkyWhisper place={HERE} bearings={BEARINGS} onBearing={() => {}} onAttend={() => {}} />,
     );
     expect(screen.getByText('small weather')).toBeInTheDocument();
     expect(screen.getByText('the Garden')).toBeInTheDocument();
+  });
+
+  test('a place with no group says only its title', () => {
+    render(
+      <SkyWhisper
+        place={{ title: 'a claim stated crisply', group: null }}
+        bearings={BEARINGS}
+        onBearing={() => {}}
+        onAttend={() => {}}
+      />,
+    );
+    expect(screen.getByText('a claim stated crisply')).toBeInTheDocument();
+    expect(screen.queryByText('·')).toBeNull();
   });
 
   test('at the pole it says so', () => {
@@ -42,7 +56,7 @@ describe('SkyWhisper molecule', () => {
     expect(screen.getByRole('button', { name: /language: nothing yet/i })).toBeDisabled();
   });
 
-  test('taking a bearing reports the star and the thread; hovering attends its facet', async () => {
+  test('taking a bearing reports the star and the thread; hovering attends its axis', async () => {
     const user = userEvent.setup();
     const onBearing = vi.fn();
     const onAttend = vi.fn();
@@ -58,7 +72,7 @@ describe('SkyWhisper molecule', () => {
     expect(onAttend).toHaveBeenLastCalledWith(null);
   });
 
-  test('names the work in concordance and travels to it on click', async () => {
+  test('names the node in concordance and travels to it on click', async () => {
     const user = userEvent.setup();
     const onBearing = vi.fn();
     render(
@@ -93,5 +107,21 @@ describe('SkyWhisper molecule', () => {
       />,
     );
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  test('a place with no page of its own reads its summary', () => {
+    render(
+      <SkyWhisper
+        place={{
+          title: 'the body decides',
+          group: 'claims',
+          summary: 'The body decides before the mind names it.',
+        }}
+        bearings={BEARINGS}
+        onBearing={() => {}}
+        onAttend={() => {}}
+      />,
+    );
+    expect(screen.getByText('The body decides before the mind names it.')).toBeInTheDocument();
   });
 });

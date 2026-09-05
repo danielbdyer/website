@@ -551,7 +551,8 @@ body::before {
    *halo claim* visual cue — *the room becoming attentive to you.*
    The twinkle animation keeps running; the claim composes with it
    rather than replacing. */
-.constellation-star[data-active='true'] .constellation-star__halo {
+.constellation-star[data-active='true'] .constellation-star__halo,
+.constellation-star[data-hover='true'] .constellation-star__halo {
   transform: scale(1.065);
   opacity: 0.45;
 }
@@ -570,7 +571,8 @@ body::before {
     opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.constellation-star[data-active='true'] .constellation-star__gold {
+.constellation-star[data-active='true'] .constellation-star__gold,
+.constellation-star[data-hover='true'] .constellation-star__gold {
   transform: scale(1);
   opacity: 0.42;
 }
@@ -585,6 +587,11 @@ body::before {
   font-style: italic;
   font-size: 11px;
   opacity: 0;
+  /* Hidden as well as transparent: a transparent stroked text is still
+     laid out and painted, and a vault has hundreds of them. The
+     visibility waits for the fade so a name leaves as softly as it
+     came. */
+  visibility: hidden;
   /* A soft halo of the page's ground behind the letters, so a name
      stays legible across a thread; and a glide when the layout moves
      a name to another side of its star. */
@@ -595,7 +602,16 @@ body::before {
   stroke-opacity: 0.6;
   transition:
     opacity 400ms ease-out,
-    transform 600ms cubic-bezier(0.23, 1, 0.32, 1);
+    transform 600ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 400ms;
+}
+
+.constellation-star[data-named] .constellation-star__label,
+.constellation-star[data-active='true'] .constellation-star__label,
+.constellation-star[data-hover='true'] .constellation-star__label,
+.constellation-star[data-here='true'] .constellation-star__label {
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 /* Named at rest — here, its neighbors, and the stars its bearings lead
@@ -611,6 +627,7 @@ body::before {
 }
 
 .constellation-star[data-active='true'] .constellation-star__label,
+.constellation-star[data-hover='true'] .constellation-star__label,
 .constellation-star[data-here='true'] .constellation-star__label {
   opacity: 0.92;
 }
@@ -627,13 +644,24 @@ body::before {
    in context; the rest recede to faint lights until the walk brings
    them close (CONSTELLATION_WALK.md §"Presence"). They keep their
    place: still there, not yet revealed. */
-.constellation-star[data-present] {
-  transition: opacity 900ms ease-out;
+/* The fade is the body's own paint, not the anchor's opacity: an
+   opacity on the group is a compositing layer per star, hundreds a
+   frame at a vault's density. */
+.constellation-star__body {
+  transition: fill-opacity 900ms ease-out;
 }
 
 .constellation-star[data-present='false'] {
-  opacity: 0.16;
   pointer-events: none;
+}
+
+.constellation-star[data-present='false'] .constellation-star__body {
+  fill-opacity: 0.16;
+}
+
+.constellation-star[data-present='false'] .constellation-star__halo,
+.constellation-star[data-present='false'] .constellation-star__gold {
+  opacity: 0;
 }
 
 .constellation-star[data-present='false'] .constellation-star__label {
@@ -646,6 +674,84 @@ body::before {
 
 .constellation-thread-group[data-present='false'] .constellation-thread__hit {
   pointer-events: none;
+}
+
+/* While the sky travels, the projector moves only the present threads
+   (useSkyTravel, projectThreads' `only`); the receded mesh is hidden
+   for the crossing — not faded: a thousand opacity transitions is a
+   thousand repaints a frame — and painted once more when the sky
+   settles. */
+.constellation[data-moving='true']
+  .constellation-thread-group[data-present='false']
+  .constellation-thread {
+  visibility: hidden;
+}
+
+/* Under the WebGL atmosphere the resting hairlines are the shader's
+   (the thread pass, atmosphereShaders.THREAD_VERTEX): the SVG paints a
+   hairline only while the walk lights it — active, under the pointer,
+   its figure attended, walked, or the track under the hand. Hundreds
+   of resting lines re-rasterized every frame were the GPU's whole
+   budget at the pole. The hit twins stay: the pointer still needs
+   something to land on. */
+.constellation-frame[data-atmosphere='webgl']
+  .constellation-thread-group:not(
+    [data-active='true'],
+    [data-hover='true'],
+    [data-lit='true'],
+    [data-walked='true'],
+    [data-track='true']
+  )
+  .constellation-thread {
+  visibility: hidden;
+}
+
+/* Under the WebGL atmosphere the shader paints every star's halo and
+   its twinkle. The SVG's filtered halo and gold stay only where the
+   walk needs them — the star stood at, the one under the pointer, the
+   visited's warmth — because a watercolor filter re-rasterized every
+   frame for each of hundreds of stars was the sky's dearest pixel,
+   whatever its opacity. Hidden, not removed: the claim's crescendo
+   still transitions from its resting values. */
+.constellation-frame[data-atmosphere='webgl']
+  .constellation-star:not([data-active='true'], [data-hover='true'], [data-here='true'])
+  .constellation-star__halo {
+  visibility: hidden;
+}
+
+.constellation-frame[data-atmosphere='webgl']
+  .constellation-star:not(
+    [data-active='true'],
+    [data-hover='true'],
+    [data-here='true'],
+    [data-visited='true']
+  )
+  .constellation-star__gold {
+  visibility: hidden;
+}
+
+/* A receded star's body, too: the atmosphere's sprite is its faint
+   light, and a hidden element is neither painted nor hit-tested. The
+   anchor stays in the tree for the walk to bring it close again. */
+.constellation-frame[data-atmosphere='webgl']
+  .constellation-star[data-present='false']
+  .constellation-star__body {
+  visibility: hidden;
+}
+
+/* And what a receded star can never show — its label, its echo, its hit
+   circle (it takes no pointer) — leaves layout altogether, so the frame
+   that moves it moves an anchor and a hidden dot, not eight boxes. */
+.constellation-frame[data-atmosphere='webgl']
+  .constellation-star[data-present='false']
+  .constellation-star__label,
+.constellation-frame[data-atmosphere='webgl']
+  .constellation-star[data-present='false']
+  .constellation-star__echo,
+.constellation-frame[data-atmosphere='webgl']
+  .constellation-star[data-present='false']
+  .constellation-star__hit {
+  display: none;
 }
 
 /* ─── Threshold previews ────────────────────────────────────────
@@ -733,11 +839,23 @@ body::before {
 }
 
 .constellation-svg-firmament {
-  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  visibility: visible;
+  transition:
+    opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s;
 }
 
+/* Hidden once the crossfade is done, not merely transparent: the SVG
+   firmament is a full-canvas feTurbulence grain, and a transparent
+   filter is still rasterized on every frame the chart repaints — at a
+   vault's density it was the GPU's whole frame. On context loss the
+   attribute lifts and the firmament is visible again at once. */
 .constellation-frame[data-atmosphere='webgl'] .constellation-svg-firmament {
   opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 600ms;
 }
 
 /* Behind-the-veil constellation — when the WorkOverlay is mounted
@@ -783,7 +901,16 @@ body::before {
    the connection forward as their attention moves on. Going active
    is quicker (~200ms) so the bloom arrives with the cursor's
    settle. CONSTELLATION_DESIGN.md §"C3. Thread" V3.A and
-   CONSTELLATION.md §"The Threads" both name this rhythm. */
+   CONSTELLATION.md §"The Threads" both name this rhythm.
+
+   The alpha stays the element's opacity, measured both ways on the
+   book's sky: when every line moves (the pole, four hundred present
+   hairlines) the layer an opacity costs made stroke-opacity twice as
+   fast; when most lines are still (a star, twelve hundred receded
+   ones) stroke-opacity was ten times slower. Under the WebGL atmosphere
+   neither matters: the shader draws the resting hairlines (the thread
+   pass) and the SVG paints only the lit ones. This is the fallback's
+   choice, and the fallback stands mostly at a star. */
 .constellation-thread {
   opacity: 0.4;
   transition:
@@ -793,6 +920,17 @@ body::before {
 
 .constellation-thread-group[data-active='true'] .constellation-thread {
   opacity: 0.95;
+  transition:
+    opacity 200ms ease-out,
+    stroke-width 200ms ease-out;
+}
+
+/* The hovered star's threads (dom/skyAttention): lit like the active
+   ones, with the vespers bloom React gives an active thread. */
+.constellation-thread-group[data-hover='true'] .constellation-thread {
+  opacity: 0.95;
+  stroke-width: 1.1;
+  filter: url('#cn-vespers-bloom');
   transition:
     opacity 200ms ease-out,
     stroke-width 200ms ease-out;
@@ -825,8 +963,14 @@ body::before {
 }
 
 .constellation {
-  cursor: grab;
+  cursor: default;
   user-select: none;
+}
+
+/* A star is a place to stand, page or no page; a present thread is a
+   path. The open sky reads as a surface until a drag has engaged. */
+.constellation .constellation-star {
+  cursor: pointer;
 }
 
 .constellation[data-scrubbing='true'] {
@@ -1012,20 +1156,30 @@ body::before {
   transform-origin: center;
   transform: scale(0.55);
   opacity: 0;
+  /* Hidden as well as transparent — two rings on every star of a
+     vault is five hundred strokes a frame — and the visibility waits
+     for the fade so the tone dies away rather than stopping. */
+  visibility: hidden;
   transition:
     transform 700ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 700ms cubic-bezier(0.23, 1, 0.32, 1);
+    opacity 700ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 700ms;
 }
 
-.constellation-star[data-active='true'] .constellation-star__echo {
+.constellation-star[data-active='true'] .constellation-star__echo,
+.constellation-star[data-hover='true'] .constellation-star__echo {
   transform: scale(1);
+  visibility: visible;
+  transition-delay: 0s;
 }
 
-.constellation-star[data-active='true'] .constellation-star__echo--1 {
+.constellation-star[data-active='true'] .constellation-star__echo--1,
+.constellation-star[data-hover='true'] .constellation-star__echo--1 {
   opacity: 0.55;
 }
 
-.constellation-star[data-active='true'] .constellation-star__echo--2 {
+.constellation-star[data-active='true'] .constellation-star__echo--2,
+.constellation-star[data-hover='true'] .constellation-star__echo--2 {
   opacity: 0.3;
 }
 
@@ -1088,29 +1242,14 @@ body::before {
   text-decoration-thickness: 2px;
 }
 
-/* Parallax layers — each group translates by a multiplier of the
-   normalized cursor offset stored on the SVG as --parallax-x and
-   --parallax-y (set by useConstellationParallax). The firmament
-   moves least (depth = 6px max); the constellation moves more
-   (depth = 14px max), so the foreground responds to the cursor more
-   than the painted backdrop. Negative multipliers reverse the
-   direction so the surface behaves like a window — moving the
-   cursor right shifts the scene a little left, as if the visitor
-   were looking past it. The 800ms ease-out transition gives the
-   motion an arrival rhythm rather than a one-to-one jitter. */
-/* These layer-translates are now a faint complement to the navigation
-   camera's true mouse-look peer (useConstellationNavigation), which
-   re-projects the whole scene in perspective. Kept small so the cursor
-   drives one coherent parallax, not two competing ones. */
-.constellation-parallax--firmament {
-  transform: translate(calc(var(--parallax-x, 0) * -3px), calc(var(--parallax-y, 0) * -3px));
-  transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.constellation-parallax--sky {
-  transform: translate(calc(var(--parallax-x, 0) * -6px), calc(var(--parallax-y, 0) * -6px));
-  transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-}
+/* The parallax layers no longer translate. The cursor's parallax was
+   a translate of the whole chart by a few pixels behind an 800ms
+   transition — and a transform on a group of thousands of SVG
+   elements repaints all of them every frame it eases. The gaze lean
+   (useSkyTravel.lookToward) is the sky's answer to the cursor now,
+   in perspective, through the same camera as everything else
+   (CONSTELLATION_WALK.md §"Travel": the gaze leans the sky, not the
+   window). The two class names remain as the atmosphere's landmarks. */
 
 /* Daystar — sun by day, moon by night. Both bodies render in the DOM
    so the switch is pure CSS, not React-conditional, avoiding the

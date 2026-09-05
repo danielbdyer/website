@@ -12,6 +12,7 @@
 
 export { Constellation } from '@/shared/organisms/Constellation/Constellation';
 export type {
+  Axis,
   ConstellationGraph,
   ConstellationNode,
   ConstellationEdge,

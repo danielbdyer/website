@@ -1,5 +1,4 @@
 import { useEffect, useReducer } from 'react';
-import type { Facet } from '@/shared/types/common';
 import type { Place } from '@/shared/content/skyWalk';
 import { initialWalk, walkReducer, type WalkState } from '@/shared/sky/walkState';
 import { persistHere } from '@/shared/state/hereStorage';
@@ -10,7 +9,7 @@ import { persistHere } from '@/shared/state/hereStorage';
  *  Walk's Memory". */
 export interface SkyWalk extends WalkState {
   readonly arrive: (place: Place, alongEdgeId?: string) => void;
-  readonly attendFacet: (facet: Facet | null) => void;
+  readonly attendAxis: (axis: string | null) => void;
   readonly aim: (place: string | null) => void;
 }
 
@@ -27,7 +26,7 @@ export function useSkyWalk(initialHere: Place): SkyWalk {
   return {
     ...state,
     arrive: (place, alongEdgeId) => dispatch({ kind: 'arrived', place, alongEdgeId }),
-    attendFacet: (facet) => dispatch({ kind: 'attended', facet }),
+    attendAxis: (axis) => dispatch({ kind: 'attended', axis }),
     aim: (place) => dispatch({ kind: 'aimed', place }),
   };
 }

@@ -24,11 +24,11 @@ describe('walkReducer', () => {
     expect([...state.visited]).toEqual(['garden/a']);
   });
 
-  test('attending a facet lights it; the same event twice is the same state', () => {
-    const lit = walkReducer(initialWalk(POLE_KEY), { kind: 'attended', facet: 'body' });
-    expect(lit.litFacet).toBe('body');
-    expect(walkReducer(lit, { kind: 'attended', facet: 'body' })).toBe(lit);
-    expect(walkReducer(lit, { kind: 'attended', facet: null }).litFacet).toBeNull();
+  test('attending an axis lights it; the same event twice is the same state', () => {
+    const lit = walkReducer(initialWalk(POLE_KEY), { kind: 'attended', axis: 'body' });
+    expect(lit.litAxis).toBe('body');
+    expect(walkReducer(lit, { kind: 'attended', axis: 'body' })).toBe(lit);
+    expect(walkReducer(lit, { kind: 'attended', axis: null }).litAxis).toBeNull();
   });
 
   test('never mutates the state it is given', () => {

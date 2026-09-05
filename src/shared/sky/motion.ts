@@ -171,6 +171,11 @@ export function initialMotion(here: Place, at: UnitVector3, rest = REST_DISTANCE
 
 // ─── The camera ────────────────────────────────────────────────────
 
+// The camera stands on the far side of the sphere from the visitor's
+// surface point and looks at that point through the center. Aiming at
+// the point rather than the center is the same direction at every
+// distance and stays defined at distance zero — the center of the
+// sphere, where the dome overhead fills the frame (sky/dial.ts).
 function orbitalCamera(surfacePos: UnitVector3, distance: number): Camera {
   return {
     position: {
@@ -178,7 +183,7 @@ function orbitalCamera(surfacePos: UnitVector3, distance: number): Camera {
       y: -surfacePos.y * distance,
       z: -surfacePos.z * distance,
     },
-    target: { x: 0, y: 0, z: 0 },
+    target: { x: surfacePos.x, y: surfacePos.y, z: surfacePos.z },
     up: WORLD_UP,
     fovY: CAMERA_FOV_Y,
     near: CAMERA_NEAR,
@@ -199,6 +204,16 @@ export function cameraOf(motion: Motion): { readonly camera: Camera; readonly ba
     pos.z + (right.z * look.x + up.z * look.y) * LOOK_LEAN,
   );
   const camera = orbitalCamera(gaze, motion.rest);
+  return { camera, basis: cameraBasis(camera) };
+}
+
+/** The camera standing at `pos` with the sky at `rest`, gaze level:
+ *  what the dial measures the sky through (sky/dial.ts). */
+export function cameraAt(
+  pos: UnitVector3,
+  rest: number,
+): { readonly camera: Camera; readonly basis: CameraBasis } {
+  const camera = orbitalCamera(pos, rest);
   return { camera, basis: cameraBasis(camera) };
 }
 
@@ -313,6 +328,13 @@ function ease(current: number, target: number, rate: number, dt: number): number
   return current + (target - current) * (1 - Math.exp(-rate * dt));
 }
 
+/** An eased value lands on its target once within the rest epsilon,
+ *  so a settled sky is exactly still — the shell paints nothing for a
+ *  difference of a millionth. */
+function settle(value: number, target: number, epsilon: number): number {
+  return Math.abs(value - target) < epsilon ? target : value;
+}
+
 /** The sky `now`: the phase advanced, the gaze and rest eased, and the
  *  motion of the surface point since the last advance measured for the
  *  atmosphere's streak. */
@@ -328,10 +350,18 @@ export function advance(motion: Motion, now: number): Advanced {
       ...m,
       lastPos: motion.pos,
       look: {
-        x: ease(m.look.x, m.lookTarget.x, LOOK_EASE_RATE, dt),
-        y: ease(m.look.y, m.lookTarget.y, LOOK_EASE_RATE, dt),
+        x: settle(
+          ease(m.look.x, m.lookTarget.x, LOOK_EASE_RATE, dt),
+          m.lookTarget.x,
+          LOOK_REST_EPSILON,
+        ),
+        y: settle(
+          ease(m.look.y, m.lookTarget.y, LOOK_EASE_RATE, dt),
+          m.lookTarget.y,
+          LOOK_REST_EPSILON,
+        ),
       },
-      rest: ease(m.rest, m.restTarget, REST_EASE_RATE, dt),
+      rest: settle(ease(m.rest, m.restTarget, REST_EASE_RATE, dt), m.restTarget, REST_EPSILON),
       omega: { x: axis.x * speed, y: axis.y * speed, z: axis.z * speed },
       speed,
       time: now,

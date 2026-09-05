@@ -3,13 +3,13 @@ import { describe, expect, test } from 'vitest';
 import { Compass, type CompassPoint } from './Compass';
 
 const POINTS: readonly CompassPoint[] = [
-  { facet: 'craft', hue: 'warm', x: 900, y: 500 },
-  { facet: 'beauty', hue: 'rose', x: 500, y: 100 },
-  { facet: 'consciousness', hue: 'violet', x: 100, y: 500 },
+  { axis: 'craft', name: 'craft', hue: 'warm', x: 900, y: 500 },
+  { axis: 'beauty', name: 'beauty', hue: 'rose', x: 500, y: 100 },
+  { axis: 'felt-shift', name: 'felt shift', hue: 'violet', x: 100, y: 500 },
 ];
 
 describe('Compass atom', () => {
-  test('letters each facet at its point, carrying its hue', () => {
+  test('letters each axis by name at its point, carrying its hue', () => {
     const { container } = render(
       <svg>
         <Compass points={POINTS} attended={new Set()} />
@@ -19,10 +19,12 @@ describe('Compass atom', () => {
     expect(craft?.textContent).toBe('craft');
     expect(craft?.getAttribute('x')).toBe('900');
     expect(craft?.dataset.hue).toBe('warm');
+    expect(craft?.dataset.axis).toBe('craft');
+    expect(container.querySelector('[data-compass="felt-shift"]')?.textContent).toBe('felt shift');
     expect(container.querySelectorAll('[data-compass]')).toHaveLength(3);
   });
 
-  test('marks the attended facets and hides itself from assistive output', () => {
+  test('marks the attended axes and hides itself from assistive output', () => {
     const { container } = render(
       <svg>
         <Compass points={POINTS} attended={new Set(['beauty'])} />

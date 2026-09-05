@@ -2,7 +2,7 @@
 
 Held concerns — work that has been named, understood, and deliberately deferred. Not a kanban. Not a roadmap. A list of things the site knows it owes itself, with the reason each is waiting.
 
-The practice: every backlog item has a *trigger* — the condition under which it should be taken up. Items without triggers tend to stay on the list forever. Items with triggers surface themselves when their moment arrives.
+The practice: every backlog item has a _trigger_ — the condition under which it should be taken up. Items without triggers tend to stay on the list forever. Items with triggers surface themselves when their moment arrives.
 
 When a backlog item is taken up, it is removed from this file. Git history preserves the record.
 
@@ -129,7 +129,7 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ### Visible graph surface
 
-**State:** Substantially shipped at `/sky`. The structural future state in pure SVG/CSS is real (layered firmament with paper-grain noise, watercolor-filtered halos, vespers thread bloom, slow rotation, cursor parallax, the daystar, the polestar, the carpet rolling out on first paint), and the atmospheric WebGL layer has since shipped in its full form — a camera-aware firmament (`src/shared/webgl/`) that paints the complete sky when WebGL is available: per-pixel view rays through the live navigation camera, domain-warped watercolor weather, a deep micro-starfield, the room quadrants' chromatic atmospheres, shader-based per-star halos pixel-registered with the structural anchors (pigment by day, twinkling glow by night), and drifting motes with real depth. The SVG firmament remains the complete fallback behind every gate. `CONSTELLATION.md` §"What Shipped (First Form)" and `CONSTELLATION_HORIZON.md` Phases 0–4, 7 enumerate every shipped element. Since then (2026-09-01): the drag became a grab, the 600s turn of the heavens moved into the camera on a wall-clock phase, and the daylight mode became the chart — the sky drawn on paper — with a 1.8s dusk between the hours (`CONSTELLATION.md` §"What Shipped"). Then the walk ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md), 2026-09-01): stars placed by the compass of their facets and spread apart where they would coincide, figures as per-facet spanning trees, destination travel in place of the drag, the whisper, threads as paths, names within a stroke of here, and the walk's session memory. *What remains held*: the strata layer, the time slider integration, audio in the Salon's region, per-room sub-skies.
+**State:** Substantially shipped at `/sky`. The structural future state in pure SVG/CSS is real (layered firmament with paper-grain noise, watercolor-filtered halos, vespers thread bloom, slow rotation, cursor parallax, the daystar, the polestar, the carpet rolling out on first paint), and the atmospheric WebGL layer has since shipped in its full form — a camera-aware firmament (`src/shared/webgl/`) that paints the complete sky when WebGL is available: per-pixel view rays through the live navigation camera, domain-warped watercolor weather, a deep micro-starfield, the room quadrants' chromatic atmospheres, shader-based per-star halos pixel-registered with the structural anchors (pigment by day, twinkling glow by night), and drifting motes with real depth. The SVG firmament remains the complete fallback behind every gate. `CONSTELLATION.md` §"What Shipped (First Form)" and `CONSTELLATION_HORIZON.md` Phases 0–4, 7 enumerate every shipped element. Since then (2026-09-01): the drag became a grab, the 600s turn of the heavens moved into the camera on a wall-clock phase, and the daylight mode became the chart — the sky drawn on paper — with a 1.8s dusk between the hours (`CONSTELLATION.md` §"What Shipped"). Then the walk ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md), 2026-09-01): stars placed by the compass of their facets and spread apart where they would coincide, figures as per-facet spanning trees, destination travel in place of the drag, the whisper, threads as paths, names within a stroke of here, and the walk's session memory. _What remains held_: the strata layer, the time slider integration, audio in the Salon's region, per-room sub-skies.
 **Trigger for the next moves:** each named with its own trigger in `CONSTELLATION_HORIZON.md`; a Salon work that asks for sound remains the audio trigger.
 
 ### Framing the focused star when it sits at the dome's edge
@@ -160,7 +160,7 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 ### The presence cap
 
 **Why:** From a star, at most `PRESENT_CAP` (24) stars are present, two of them strangers; the rest recede. The cap sits above the corpus today, so the reveal has not yet begun; as the corpus grows past it, the cap decides how much of the sky a visitor sees at once, and whether the reveal feels like a tree unfolding or like things going missing.
-**Trigger:** The corpus passing thirty works, or Danny's felt sense sooner. `PRESENT_CAP` and `STRANGER_COUNT` in `presence.ts`.
+**Trigger:** The corpus passing thirty works, or Danny's felt sense sooner. `PRESENT_CAP` and `STRANGER_COUNT` in `presence.ts`. The book's sky passed it first (258 claims, 24 present at any star), and the dial (`CONSTELLATION_WALK.md` §"The Dial") keeps about `VIEW_TARGET` in frame around them.
 
 ### Embeddings behind the concordance
 
@@ -169,8 +169,18 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ### One frame, two painters
 
-**Why:** The sky is projected twice each frame — once by the SVG projector, once by the WebGL hook replaying the SVG's transform chain — and they agree only by construction. `CONSTELLATION_ARCHITECTURE.md` §"What Remains" names the target: a pure `projectFrame` returning every screen position and the label layout as data, and two painters that write it.
+**Why:** The painters split the work now (2026-09-04): the atmosphere draws every thread's resting hairline and every halo; the SVG paints the touchable few and whatever the walk lights. But each still projects for itself, and they agree only by construction. `CONSTELLATION_ARCHITECTURE.md` §"What Remains" names the rest of the way: a pure `projectFrame` returning every screen position and the label layout as data, and two painters that write it.
 **Trigger:** The next change that has to be made in two projections at once.
+
+### The arrival's render
+
+**Why:** When presence changes at arrival, React renders every star and thread to flip a few attributes — in the development build half of a crossing's cost at a vault's density (`CONSTELLATION_ARCHITECTURE.md` §"What Shipped (2026-09-04)"). The hover already left React (`useSkyAttention.ts`); presence could follow it, written by the shell on arrival.
+**Trigger:** Danny's word; the crossing sits at about thirty-five frames a second in production today.
+
+### Hidden, not gone
+
+**Why:** A present star's halo, gold, and echo are hidden with `visibility` so the claim's crescendo can still transition from its resting values, and hidden elements stay in layout: at the pole, moving 258 stars lays out 258 eight-box subtrees a frame. `display: none` would drop them from layout and cost the crescendo its start.
+**Trigger:** Danny's word — the trade is the crescendo's start; the pole under a moving pointer sits at about twenty-six frames a second in production today.
 
 ### Gestures as data
 
@@ -286,10 +296,25 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 Held phases of `CATHEDRALS.md`, the founding document of the workspace the house shares with Danny's knowledge-graph engine. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
 
-### The sky reads a slice
+### Ghosts are drawn
 
-**Why:** The sky's graph layer builds from works directly and draws only the emergent figures; the declared wikilinks between works are not drawn, and origin is not named. Consuming a `Slice` (`@dbd/slice`) gives the sky the words: declared threads solid, discovered dotted, emergent hairline, predicate spoken by the whisper, ghosts drawn from `pending`.
-**Trigger:** Danny blesses `CATHEDRALS.md`. Fired 2026-09-03; the work is open.
+**Why:** The slice carries pending proposals and the vault reader fills them from the inbox, but the sky does not yet draw a ghost — a star not yet lit, where it would land if blessed.
+**Trigger:** Phase 1's second pass; the book has two.
+
+### The field past the center
+
+**Why:** The dial (`CONSTELLATION_WALK.md` §"The Dial") runs the camera from the palantír to the center of the vault and stops there. A sky denser than about fifty stars a steradian still holds more than `VIEW_TARGET` (32) at the center — the book holds about 48. The next stop is a narrower field of view past the center, the camera's `fovY` turned by the same dial.
+**Trigger:** A slice whose center view is half again over the target; `walkDistanceFor` in `src/shared/sky/dial.ts`.
+
+### The atmosphere's sectors follow the compass
+
+**Why:** The dome's meridians and tinted sectors are eight and four in the shader (`atmosphereShaders.ts`); a compass of thirteen speaks over them. The atmosphere should take its sectors from the slice's axes.
+**Trigger:** Phase 1's second pass.
+
+### Labels inside the vault
+
+**Why:** Standing at the center, the atmosphere's halos grow with nearness and the labels' offsets (`slotOffset`, `labelLayout.ts`) do not, so the name of _here_ sits in its own glow. The offsets could follow the projected halo, or the halo could hold its size.
+**Trigger:** Danny's eye inside the book sky.
 
 ### The engine enters the workspace
 
@@ -314,12 +339,17 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 ### The dotting collision
 
 **Why:** The sky dots the second facet of each hue pair to keep adjacent facets apart; the contract wants dotting for origin. One yields.
-**Trigger:** Phase 1, with the item above.
+**Trigger:** Phase 1's second pass, with the book on screen — thirteen axes in four hues make the collision visible.
 
 ### The workspace's visibility
 
-**Why:** This repository is public; the engine, the vault, the seed, and the root are private, and some lineage documents are intimate. Phases 2 and 3 publish whatever enters. A private workspace, a public one with selective lineage, or a public one with everything: Danny's call.
+**Why:** This repository is public; the engine, the vault, the seed, and the root are private, and some lineage documents are intimate. Phases 2 and 3 publish whatever enters. A private workspace, a public one with selective lineage, a public one with everything, or the fourth that arrived with the book — code public, private slices out of git, private skies deployed as their own Workers behind Cloudflare Access (`pnpm deploy:book`): Danny's call.
 **Trigger:** Before Phase 2 or Phase 3 lands.
+
+### Slices load with the sky, not the site
+
+**Why:** A named slice file is bundled eagerly into the main chunk through `import.meta.glob`; the book adds some seventy kilobytes gzipped to every page of that build. A slice should load with the sky route only.
+**Trigger:** Fired 2026-09-04 with the book's first private build; open.
 
 ### One frontmatter for works and claims
 

@@ -25,6 +25,8 @@ import {
   MOTE_VERTEX,
   PIGMENT_FRAGMENT,
   SPRITE_VERTEX,
+  THREAD_FRAGMENT,
+  THREAD_VERTEX,
 } from './atmosphereShaders';
 
 /** One frame's inputs. Deliberately mutable: the hook owns a single
@@ -55,6 +57,13 @@ export interface AtmosphereFrameInput {
   starPresence: Float32Array;
   /** Caller-projected mote centers (2·M). */
   moteCenters: Float32Array;
+  /** Caller-projected thread endpoints (4·T: x0 y0 x1 y1), the alpha of
+   *  each vertex (2·T), and each vertex's dash phase (2·T: -1 for a
+   *  solid line; 0 and the line's length in buffer px for a dotted
+   *  one). */
+  threadVertices: Float32Array;
+  threadAlpha: Float32Array;
+  threadDash: Float32Array;
 }
 
 export interface AtmosphereHandles {
@@ -207,6 +216,7 @@ interface PassSet {
   readonly renderer: Renderer;
   readonly scene: Transform;
   readonly dome: Mesh;
+  readonly threads: Mesh;
   readonly pigment: Mesh;
   readonly glow: Mesh;
   readonly motes: Mesh;
@@ -349,6 +359,51 @@ function buildMoteMesh(
   });
 }
 
+/** The thread pass: every thread's resting hairline as a GL line
+ *  (two vertices), colored by hue index, faded by the walk's presence,
+ *  dotted where its figure is. */
+function buildThreadMesh(
+  ogl: OglModule,
+  gl: OGLRenderingContext,
+  scene: AtmosphericScene,
+  palette: SkyPalette,
+): Mesh {
+  const t = Math.max(scene.threads.length, 1);
+  const hue = new Float32Array(t * 2);
+  for (const [i, thread] of scene.threads.entries()) {
+    hue[i * 2] = thread.hueIndex;
+    hue[i * 2 + 1] = thread.hueIndex;
+  }
+  const program = new ogl.Program(gl, {
+    vertex: THREAD_VERTEX,
+    fragment: THREAD_FRAGMENT,
+    uniforms: {
+      uResolution: { value: [1, 1] },
+      uFitScale: { value: 1 },
+      uAccentWarm: { value: [...palette.accents[0]] },
+      uAccentRose: { value: [...palette.accents[1]] },
+      uAccentViolet: { value: [...palette.accents[2]] },
+      uAccentGold: { value: [...palette.accents[3]] },
+      uInk: { value: [...palette.ink] },
+    },
+    transparent: true,
+    cullFace: false,
+    depthTest: false,
+    depthWrite: false,
+  });
+  program.setBlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  return new ogl.Mesh(gl, {
+    mode: gl.LINES,
+    geometry: new ogl.Geometry(gl, {
+      position: { size: 2, data: new Float32Array(t * 4) },
+      aAlpha: { size: 1, data: new Float32Array(t * 2) },
+      aHueIndex: { size: 1, data: hue },
+      aDash: { size: 1, data: new Float32Array(t * 2).fill(-1) },
+    }),
+    program,
+  });
+}
+
 /** Yield to the next animation frame (or a macrotask outside a
  *  rendering context) so successive shader compiles never stack
  *  into one long main-thread block. */
@@ -379,11 +434,13 @@ async function buildPasses(
   const { pigment, glow } = buildStarMeshes(ogl, gl, scene, palette);
   await nextFrame();
   const motes = buildMoteMesh(ogl, gl, scene, palette);
-  // Paint order: the dome is the ground truth, dust behind the
-  // halos, pigment beneath glow so the theme crossfade reads as one
-  // continuous body of light.
-  for (const mesh of [dome, motes, pigment, glow]) mesh.setParent(root);
-  return { renderer, scene: root, dome, pigment, glow, motes };
+  await nextFrame();
+  const threads = buildThreadMesh(ogl, gl, scene, palette);
+  // Paint order: the dome is the ground truth, the threads' hairlines
+  // on it, dust behind the halos, pigment beneath glow so the theme
+  // crossfade reads as one continuous body of light.
+  for (const mesh of [dome, threads, motes, pigment, glow]) mesh.setParent(root);
+  return { renderer, scene: root, dome, threads, pigment, glow, motes };
 }
 
 function writeFrameUniforms(passes: PassSet, frame: AtmosphereFrameInput): void {
@@ -431,6 +488,7 @@ function writeFrameUniforms(passes: PassSet, frame: AtmosphereFrameInput): void 
   mu.uTime!.value = frame.timeSeconds;
   mu.uMotion!.value = frame.motion;
   mu.uRadiusPx!.value = MOTE_VIEWBOX_RADIUS * fit.scale;
+  uniformsOf(passes.threads.program).uFitScale!.value = fit.scale;
 }
 
 function writeFrameAttributes(passes: PassSet, frame: AtmosphereFrameInput): void {
@@ -447,6 +505,16 @@ function writeFrameAttributes(passes: PassSet, frame: AtmosphereFrameInput): voi
   const moteCenter = passes.motes.geometry.attributes.aCenter!;
   (moteCenter.data as Float32Array).set(frame.moteCenters);
   moteCenter.needsUpdate = true;
+  const threadGeometry = passes.threads.geometry;
+  const tPosition = threadGeometry.attributes.position!;
+  (tPosition.data as Float32Array).set(frame.threadVertices);
+  tPosition.needsUpdate = true;
+  const tAlpha = threadGeometry.attributes.aAlpha!;
+  (tAlpha.data as Float32Array).set(frame.threadAlpha);
+  tAlpha.needsUpdate = true;
+  const tDash = threadGeometry.attributes.aDash!;
+  (tDash.data as Float32Array).set(frame.threadDash);
+  tDash.needsUpdate = true;
 }
 
 /** Create the atmosphere against a probed-good WebGL context. The
@@ -483,7 +551,7 @@ export async function createAtmosphere(
   const setResolution = () => {
     const w = renderer.gl.drawingBufferWidth;
     const h = renderer.gl.drawingBufferHeight;
-    for (const mesh of [passes.dome, passes.pigment, passes.glow, passes.motes]) {
+    for (const mesh of [passes.dome, passes.threads, passes.pigment, passes.glow, passes.motes]) {
       const u = uniformsOf(mesh.program);
       const resolution = u.uResolution!.value as number[];
       resolution[0] = w;
@@ -512,7 +580,13 @@ export async function createAtmosphere(
         // (the blend allocates a fresh object per frame); at rest
         // the reference is stable and the writes are skipped.
         lastResolved = palette;
-        for (const mesh of [passes.dome, passes.pigment, passes.glow, passes.motes]) {
+        for (const mesh of [
+          passes.dome,
+          passes.threads,
+          passes.pigment,
+          passes.glow,
+          passes.motes,
+        ]) {
           writePalette(mesh.program, palette);
         }
       }

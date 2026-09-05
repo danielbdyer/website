@@ -565,3 +565,45 @@ export const MOTE_FRAGMENT = /* glsl */ `
     gl_FragColor = vec4(col * body * strength, 0.0);
   }
 `;
+
+// The thread pass — the resting hairline of every figure and relation,
+// drawn as GL lines beneath the sprites so the SVG paints only the lit
+// ones (tokens.css hides the rest under the atmosphere). Positions
+// arrive in buffer pixels like the sprites'; a dotted figure's dash is
+// measured along the line in viewbox units scaled to the fit, so it
+// keeps Thread.tsx's beat (2.4 on, 3.6 off) at any size.
+export const THREAD_VERTEX = /* glsl */ `
+  attribute vec2 position;
+  attribute float aAlpha;
+  attribute float aHueIndex;
+  attribute float aDash;
+  uniform vec2 uResolution;
+  uniform vec3 uAccentWarm;
+  uniform vec3 uAccentRose;
+  uniform vec3 uAccentViolet;
+  uniform vec3 uAccentGold;
+  uniform vec3 uInk;
+  varying vec4 vColor;
+  varying float vDash;
+  void main() {
+    vec3 hue = aHueIndex < 0.5 ? uAccentWarm
+      : aHueIndex < 1.5 ? uAccentRose
+      : aHueIndex < 2.5 ? uAccentViolet
+      : aHueIndex < 3.5 ? uAccentGold
+      : uInk;
+    vColor = vec4(hue, aAlpha);
+    vDash = aDash;
+    gl_Position = vec4(position.x / uResolution.x * 2.0 - 1.0, 1.0 - position.y / uResolution.y * 2.0, 0.0, 1.0);
+  }
+`;
+
+export const THREAD_FRAGMENT = /* glsl */ `
+  ${PRECISION_HEADER}
+  uniform float uFitScale;
+  varying vec4 vColor;
+  varying float vDash;
+  void main() {
+    if (vDash >= 0.0 && mod(vDash, 6.0 * uFitScale) > 2.4 * uFitScale) discard;
+    gl_FragColor = vec4(vColor.rgb * vColor.a, vColor.a);
+  }
+`;

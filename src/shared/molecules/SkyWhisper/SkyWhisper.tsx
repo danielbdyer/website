@@ -1,14 +1,16 @@
-import type { Facet } from '@/shared/types/common';
 import type { Bearing } from '@/shared/content/skyWalk';
 import { cn } from '@/shared/utils/cn';
 
-/** Where the visitor stands: a star's title and room, or the pole. */
+/** Where the visitor stands: a star's title and, when it has one, the
+ *  group it comes home to; or the pole. */
 export interface WhisperPlace {
   readonly title: string;
-  readonly room: string;
+  readonly group: string | null;
+  /** What the node says of itself, for a node with no page to open. */
+  readonly summary?: string | null;
 }
 
-/** A work whose words echo the one you stand at, though no figure
+/** A node whose words echo the one you stand at, though no thread
  *  joins them (presence.ts, concordantFrom). */
 export interface WhisperConcordant {
   readonly key: string;
@@ -24,14 +26,14 @@ interface SkyWhisperProps {
    *  thread if one carries it. */
   onBearing: (to: string, alongEdgeId?: string) => void;
   /** Attend a bearing (hover / focus) or release it (null). */
-  onAttend: (facet: Facet | null) => void;
+  onAttend: (axis: string | null) => void;
   className?: string;
 }
 
 // The sky speaks once, in second voice, beneath the star the visitor
 // stands at: where you are, then what leads away, then — when the
-// words say so — the one work in concordance with this one that no
-// facet joins to it: the edge you would not have thought to look for.
+// words say so — the one node in concordance with this one that no
+// thread joins to it: the edge you would not have thought to look for.
 // Each bearing is a real control — a button, because taking a bearing
 // changes the sky's state rather than navigating the site. A bearing
 // with nowhere to go yet reads dim and is disabled: *nothing yet
@@ -56,34 +58,41 @@ export function SkyWhisper({
         {place ? (
           <>
             <span className="text-text-2">{place.title}</span>
-            <span aria-hidden="true"> · </span>
-            <span>{place.room}</span>
+            {place.group ? (
+              <>
+                <span aria-hidden="true"> · </span>
+                <span>{place.group}</span>
+              </>
+            ) : null}
           </>
         ) : (
           <span className="text-text-2">the polestar</span>
         )}
       </p>
+      {place?.summary ? (
+        <p className="sky-whisper__summary text-text-2 m-0">{place.summary}</p>
+      ) : null}
       <p className="sky-whisper__bearings m-0 flex flex-wrap gap-x-3 gap-y-1">
         {bearings.map((bearing) => (
           <button
-            key={bearing.facet}
+            key={bearing.axis}
             type="button"
             disabled={bearing.to === null}
-            data-facet={bearing.facet}
+            data-axis={bearing.axis}
             data-hue={bearing.hue}
             aria-label={
               bearing.to
-                ? `Travel along ${bearing.facet}`
-                : `${bearing.facet}: nothing yet points that way`
+                ? `Travel along ${bearing.name}`
+                : `${bearing.name}: nothing yet points that way`
             }
             className={BEARING_CLASS}
             onClick={() => bearing.to && onBearing(bearing.to, bearing.edgeId ?? undefined)}
-            onMouseEnter={() => onAttend(bearing.facet)}
+            onMouseEnter={() => onAttend(bearing.axis)}
             onMouseLeave={() => onAttend(null)}
-            onFocus={() => onAttend(bearing.facet)}
+            onFocus={() => onAttend(bearing.axis)}
             onBlur={() => onAttend(null)}
           >
-            {bearing.facet}
+            {bearing.name}
           </button>
         ))}
       </p>
@@ -93,7 +102,7 @@ export function SkyWhisper({
           <span aria-hidden="true"> · </span>
           <button
             type="button"
-            aria-label={`Travel to ${concordant.title}, in concordance with this work`}
+            aria-label={`Travel to ${concordant.title}, in concordance with this one`}
             className={cn(BEARING_CLASS, 'sky-whisper__concordant')}
             onClick={() => onBearing(concordant.key)}
           >

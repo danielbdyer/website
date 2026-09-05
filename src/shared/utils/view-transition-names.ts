@@ -65,8 +65,8 @@ export function workCardTransitionName(room: Room, slug: string): string {
  *  for the morph to be unambiguous (same name on two elements in
  *  one snapshot is undefined behavior); the suppression lives in
  *  the Constellation organism via `useMatch`. */
-export function skyStarTransitionName(room: Room, slug: string): string {
-  return `sky-star-${room}-${slug}`;
+export function skyStarTransitionName(key: string): string {
+  return `sky-star-${key.replaceAll('/', '-')}`;
 }
 
 /** Daystar — paired between the nav's theme-toggle icon (on every

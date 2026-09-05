@@ -5,6 +5,8 @@ import {
   bearingsOf,
   findNode,
   namedRanks,
+  namesAt,
+  type NamedRank,
   neighborsOf,
   placePosition,
   type Place,
@@ -15,9 +17,11 @@ import { geodesicDistance } from '@/shared/geometry/sphere';
 import type { SkyWalk } from '@/shared/hooks/useSkyWalk';
 import type { WhisperConcordant, WhisperPlace } from '@/shared/molecules/SkyWhisper/SkyWhisper';
 import {
-  ROOM_LABEL,
   activeHueOf,
   compassPoints,
+  adjacencyOf,
+  groupLabelOf,
+  threadPresent,
   type PositionedNode,
   type RenderableNode,
   type ResolvedEdge,
@@ -37,7 +41,13 @@ export function initialHere(graph: ConstellationGraph, focusKey?: string): Place
 
 export function whisperPlaceOf(graph: ConstellationGraph, here: Place): WhisperPlace | null {
   const node = findNode(graph, here);
-  return node ? { title: node.title, room: ROOM_LABEL[node.room] } : null;
+  return node
+    ? {
+        title: node.title,
+        group: groupLabelOf(node.group),
+        summary: node.href === null ? node.summary : null,
+      }
+    : null;
 }
 
 export function whisperConcordantOf(
@@ -50,9 +60,10 @@ export function whisperConcordantOf(
 }
 
 /** The labels visible at rest, in the priority the layout honors:
- *  here, then its neighbors along the figures, then the stars its
+ *  here, then its neighbors along the threads, then the stars its
  *  bearings lead to. */
 export function namedOrder(graph: ConstellationGraph, here: Place): readonly string[] {
+  if (!namesAt(graph, here)) return [];
   const ordered = [
     ...(findNode(graph, here) ? [here] : []),
     ...neighborsOf(graph, here).map((n) => n.key),
@@ -109,34 +120,72 @@ export function navigableEdges(
   });
 }
 
+/** The threads present from here (layout.threadPresent), by id: the
+ *  ones the projector moves every frame. The rest — a vault's receded
+ *  mesh — are painted when the sky settles. */
+export function presentEdgeIds(
+  edges: readonly ResolvedEdge[],
+  present: ReadonlySet<string>,
+  named: ReadonlyMap<string, unknown>,
+): ReadonlySet<string> {
+  return new Set(edges.flatMap((edge) => (threadPresent(present, named, edge) ? [edge.id] : [])));
+}
+
+/** Everything the organism derives from where the visitor stands:
+ *  presence and names (once per place, not per render), the present
+ *  threads the projector moves each frame, and the threads that meet
+ *  each star for the hover to light. */
+export function placeContext(
+  graph: ConstellationGraph,
+  edges: readonly ResolvedEdge[],
+  here: Place,
+): {
+  readonly present: ReadonlySet<string>;
+  readonly named: ReadonlyMap<string, NamedRank>;
+  readonly presentEdges: ReadonlySet<string>;
+  readonly adjacency: ReadonlyMap<string, readonly string[]>;
+} {
+  const present = presentFrom(graph, here);
+  const named = namedRanks(graph, here);
+  return {
+    present,
+    named,
+    presentEdges: presentEdgeIds(edges, present, named),
+    adjacency: adjacencyOf(edges),
+  };
+}
+
 interface WorldInputs {
   readonly edges: readonly ResolvedEdge[];
   readonly nodes: readonly RenderableNode[];
   readonly walk: SkyWalk;
-  readonly hoverKey: string | null;
   readonly overlayKey: string | null;
+  /** Presence and names from here (presence.presentFrom,
+   *  skyWalk.namedRanks), computed once per place by the organism so a
+   *  hover's render does not recompute them for hundreds of stars. */
+  readonly present: ReadonlySet<string>;
+  readonly named: ReadonlyMap<string, NamedRank>;
 }
 
 export function buildWorld(
   graph: ConstellationGraph,
-  { edges, nodes, walk, hoverKey, overlayKey }: WorldInputs,
+  { edges, nodes, walk, overlayKey, present, named }: WorldInputs,
 ): ConstellationWorld {
   const hereKey = walk.here === POLE_KEY ? null : walk.here;
-  const hereFacets = findNode(graph, walk.here)?.facets ?? [];
+  const hereAxes = findNode(graph, walk.here)?.axes ?? [];
   return {
     edges,
     nodes,
     hereKey,
-    hoverKey,
     intentKey: walk.intent,
     overlayKey,
-    activeHue: activeHueOf(nodes, hoverKey ?? walk.intent ?? hereKey),
-    named: namedRanks(graph, walk.here),
-    present: presentFrom(graph, walk.here),
+    activeHue: activeHueOf(nodes, walk.intent ?? hereKey),
+    named,
+    present,
     visited: walk.visited,
     walked: walk.walked,
-    litFacet: walk.litFacet,
-    attended: new Set([...hereFacets, ...(walk.litFacet ? [walk.litFacet] : [])]),
+    litAxis: walk.litAxis,
+    attended: new Set([...hereAxes, ...(walk.litAxis ? [walk.litAxis] : [])]),
     compass: compassPoints(graph),
   };
 }

@@ -11,6 +11,7 @@ import {
 import { buildSkyPalette } from '@/shared/webgl/palette';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
 import { getSkyCamera, subscribeSkyCamera } from '@/shared/state/skyCamera';
+import { getSkyHoverIndex } from '@/shared/state/skyHover';
 import { heavensPhase } from '@/shared/geometry/heavens';
 import type { Camera } from '@/shared/geometry/camera';
 
@@ -86,6 +87,11 @@ interface FrameBuffers {
   readonly starPresence: Float32Array;
   readonly motePositions: MutableVec3[];
   readonly moteCenters: Float32Array;
+  readonly threadVertices: Float32Array;
+  readonly threadAlpha: Float32Array;
+  readonly threadDash: Float32Array;
+  /** Eased presence per thread ∈ [RECEDED_THREAD, 1]. */
+  readonly threadPresence: Float32Array;
 }
 
 interface MutableFit {
@@ -104,6 +110,9 @@ interface LoopState {
   /** Per-star presence targets (index-aligned with the scene), or
    *  null when everything is present. */
   readonly presenceRef: RefObject<Float32Array | null>;
+  /** Per-thread presence targets (scene order), or null when every
+   *  thread is present. */
+  readonly threadPresenceRef: RefObject<Float32Array | null>;
   /** Viewbox→buffer-px mapping, measured against the SVG's actual
    *  box (not the canvas box — the two can differ by chrome above
    *  the SVG). Recomputed on resize, read every frame. */
@@ -166,6 +175,10 @@ function allocateBuffers(scene: AtmosphericScene): FrameBuffers {
     starPresence: new Float32Array(scene.stars.length).fill(1),
     motePositions: scene.motes.map((mote) => ({ ...mote.basePosition })),
     moteCenters: new Float32Array(scene.motes.length * 2),
+    threadVertices: new Float32Array(scene.threads.length * 4),
+    threadAlpha: new Float32Array(scene.threads.length * 2),
+    threadDash: new Float32Array(scene.threads.length * 2).fill(-1),
+    threadPresence: new Float32Array(scene.threads.length).fill(1),
   };
 }
 
@@ -265,7 +278,10 @@ function advanceChains(els: SkyDomElements, chain: ChainState, dt: number): numb
  *  remaining delta so the loop knows when the claim has settled. */
 function easeActivations(state: LoopState, k: number): number {
   const active = state.buffers.starActive;
-  const target = state.activeIndexRef.current;
+  // The pointer's star wins over the walk's (here, the intent); the
+  // hover is a signal, not a prop, so a crossing renders nothing.
+  const hover = getSkyHoverIndex();
+  const target = hover >= 0 ? hover : state.activeIndexRef.current;
   let residual = 0;
   for (const i of active.keys()) {
     const goal = i === target ? 1 : 0;
@@ -280,6 +296,46 @@ function easeActivations(state: LoopState, k: number): number {
 // Presence settles slower than a claim: a star that recedes as the
 // walk moves on should fade like a light going out of view, not snap.
 const PRESENCE_EASE_RATE = 3.3;
+
+/** A receded thread's presence: the faint web the SVG drew at 0.05 of
+ *  a 0.4 hairline (tokens.css, data-present). */
+const RECEDED_THREAD = 0.125;
+
+/** Ease each thread's presence toward its target and write its two
+ *  vertices from the projected star centers: the endpoints, the alpha
+ *  (the resting alpha by origin, faded by presence, zero when an end
+ *  is behind the camera), and the dash phase of a dotted figure.
+ *  Returns the largest remaining presence delta. */
+function writeThreads(state: LoopState, k: number): number {
+  const { scene, buffers } = state;
+  const { starCenters, threadVertices, threadAlpha, threadDash, threadPresence } = buffers;
+  const targets = state.threadPresenceRef.current;
+  let residual = 0;
+  for (const [i, thread] of scene.threads.entries()) {
+    const goal = targets ? (targets[i] ?? 1) : 1;
+    const eased = threadPresence[i]! + (goal - threadPresence[i]!) * k;
+    threadPresence[i] = eased;
+    const delta = Math.abs(goal - eased);
+    if (delta > residual) residual = delta;
+    const ax = starCenters[thread.a * 2]!;
+    const ay = starCenters[thread.a * 2 + 1]!;
+    const bx = starCenters[thread.b * 2]!;
+    const by = starCenters[thread.b * 2 + 1]!;
+    threadVertices[i * 4] = ax;
+    threadVertices[i * 4 + 1] = ay;
+    threadVertices[i * 4 + 2] = bx;
+    threadVertices[i * 4 + 3] = by;
+    const parked = ax < -1e4 || bx < -1e4;
+    const alpha = parked ? 0 : thread.alpha * eased;
+    threadAlpha[i * 2] = alpha;
+    threadAlpha[i * 2 + 1] = alpha;
+    if (thread.dotted) {
+      threadDash[i * 2] = 0;
+      threadDash[i * 2 + 1] = Math.hypot(bx - ax, by - ay);
+    }
+  }
+  return residual;
+}
 
 /** Ease per-star presence toward its target (1 when the caller has no
  *  targets); returns the largest remaining delta. */
@@ -332,10 +388,8 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
     state,
     motion === 0 ? 1 : 1 - Math.exp(-ACTIVE_EASE_RATE * dt),
   );
-  const presenceResidual = easePresence(
-    state,
-    motion === 0 ? 1 : 1 - Math.exp(-PRESENCE_EASE_RATE * dt),
-  );
+  const presenceK = motion === 0 ? 1 : 1 - Math.exp(-PRESENCE_EASE_RATE * dt);
+  const presenceResidual = Math.max(easePresence(state, presenceK), writeThreads(state, presenceK));
   const cursor = getConstellationCursor();
   const poolTarget = cursor.active ? 1 : 0;
   state.poolStrength += (poolTarget - state.poolStrength) * (1 - Math.exp(-POOL_EASE_RATE * dt));
@@ -433,6 +487,7 @@ async function mountAtmosphere(
   fitMode: 'cover' | 'contain',
   activeIndexRef: RefObject<number>,
   presenceRef: RefObject<Float32Array | null>,
+  threadPresenceRef: RefObject<Float32Array | null>,
 ): Promise<MountedAtmosphere | null> {
   await arrivalSettled(container);
   // Probe with our own canvas before ogl gets the chance to
@@ -462,6 +517,7 @@ async function mountAtmosphere(
     fitMode,
     activeIndexRef,
     presenceRef,
+    threadPresenceRef,
     fit: { scale: 1, offsetX: 0, offsetY: 0 },
     chain: newChainState(),
     frame: {
@@ -479,6 +535,9 @@ async function mountAtmosphere(
       starActive: buffers.starActive,
       starPresence: buffers.starPresence,
       moteCenters: buffers.moteCenters,
+      threadVertices: buffers.threadVertices,
+      threadAlpha: buffers.threadAlpha,
+      threadDash: buffers.threadDash,
     },
     poolStrength: 0,
     lastTime: 0,
@@ -697,22 +756,38 @@ function presenceTargets(signature: string | null): Float32Array | null {
   return signature === null ? null : Float32Array.from(signature, (ch) => (ch === '1' ? 1 : 0));
 }
 
+/** The same signature over the scene's threads; a receded thread keeps
+ *  the faint web rather than vanishing. */
+function threadTargets(signature: string | null): Float32Array | null {
+  return signature === null
+    ? null
+    : Float32Array.from(signature, (ch) => (ch === '1' ? 1 : RECEDED_THREAD));
+}
+
 /** Mount the WebGL atmosphere inside `containerRef`'s div. The
  *  scene is the precomputed atmospheric contract for the current
  *  graph; `activeIndex` names the star whose halo is claimed
  *  (-1 for none); `fit` mirrors the SVG's preserveAspectRatio;
  *  `presence` is a per-star signature ('1'/'0' in scene order) for
- *  the contextual cap, or null for everything present. */
+ *  the contextual cap, or null for everything present;
+ *  `threadPresence` the same over the scene's threads. */
 export function useWebGLFirmament(
   containerRef: RefObject<HTMLDivElement | null>,
   scene: AtmosphericScene,
   activeIndex: number,
   fit: 'cover' | 'contain',
   presence: string | null = null,
+  threadPresence: string | null = null,
 ) {
   const mountedRef = useRef<MountedAtmosphere | null>(null);
   const activeIndexRef = useRef(activeIndex);
   const presenceRef = useRef<Float32Array | null>(presenceTargets(presence));
+  const threadPresenceRef = useRef<Float32Array | null>(threadTargets(threadPresence));
+
+  useEffect(() => {
+    threadPresenceRef.current = threadTargets(threadPresence);
+    mountedRef.current?.repaint();
+  }, [threadPresence]);
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -729,7 +804,7 @@ export function useWebGLFirmament(
     if (!container) return;
     if (!shouldRenderWebGL()) return;
     let cancelled = false;
-    void mountAtmosphere(container, scene, fit, activeIndexRef, presenceRef)
+    void mountAtmosphere(container, scene, fit, activeIndexRef, presenceRef, threadPresenceRef)
       .then((mounted) => {
         if (!mounted) return;
         if (cancelled) {

@@ -1,38 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import type { Facet } from '@/shared/types/common';
-import { diskToHemisphere } from '@/shared/geometry/sphere';
-import type { ConstellationGraph, ConstellationNode } from './constellation';
+import { figure, sky, star } from '@/test/sky-graph';
 import { concordantFrom, presentFrom, relevanceFrom } from './presence';
 import { POLE_KEY } from './skyWalk';
-
-const HUES = {
-  craft: 'warm',
-  body: 'warm',
-  beauty: 'rose',
-  language: 'rose',
-  consciousness: 'violet',
-  becoming: 'violet',
-  leadership: 'gold',
-  relation: 'gold',
-} as const;
-
-function star(key: string, facets: Facet[], angleDeg: number, radius: number): ConstellationNode {
-  const [room, slug] = key.split('/') as [ConstellationNode['room'], string];
-  return {
-    room,
-    slug,
-    title: slug,
-    date: new Date('2026-01-01'),
-    facets,
-    posture: undefined,
-    isPreview: false,
-    angleDeg,
-    radius,
-    unitPosition: diskToHemisphere(radius, (angleDeg * Math.PI) / 180),
-    hue: HUES[facets[0] ?? 'craft'],
-    twinklePhase: 0,
-  };
-}
 
 // A ring of eight stars plus a chain of craft strokes; small weather
 // stands alone at the pole's side with words in concordance with the
@@ -48,26 +17,21 @@ const NODES = [
   star('salon/h', ['leadership'], 270, 0.5),
   star('garden/weather', ['relation'], 315, 0.2),
 ];
-const edge = (a: string, b: string, facet: Facet) => ({
-  facet,
-  hue: HUES[facet],
-  source: { room: a.split('/')[0] as ConstellationNode['room'], slug: a.split('/')[1]! },
-  target: { room: b.split('/')[0] as ConstellationNode['room'], slug: b.split('/')[1]! },
-});
-const GRAPH: ConstellationGraph = {
-  nodes: NODES,
-  facetHues: HUES,
-  edges: [
-    edge('studio/a', 'studio/b', 'craft'),
-    edge('studio/b', 'studio/c', 'craft'),
-    edge('garden/d', 'garden/e', 'beauty'),
-    edge('study/f', 'study/g', 'consciousness'),
+const GRAPH = sky(
+  NODES,
+  [
+    figure('studio/a', 'studio/b', 'craft'),
+    figure('studio/b', 'studio/c', 'craft'),
+    figure('garden/d', 'garden/e', 'beauty'),
+    figure('study/f', 'study/g', 'consciousness'),
   ],
-  concordance: {
-    'garden/weather': [{ key: 'salon/h', weight: 0.4 }],
-    'salon/h': [{ key: 'garden/weather', weight: 0.4 }],
+  {
+    concordance: {
+      'garden/weather': [{ key: 'salon/h', weight: 0.4 }],
+      'salon/h': [{ key: 'garden/weather', weight: 0.4 }],
+    },
   },
-};
+);
 
 describe('relevanceFrom', () => {
   test('here is 1; a neighbor outranks a star two strokes away, which outranks a stranger', () => {
@@ -109,7 +73,7 @@ describe('presentFrom', () => {
     const relevance = relevanceFrom(GRAPH, 'studio/a');
     const remainder = [...a].filter((k) => !['studio/a', 'studio/b', 'studio/c'].includes(k));
     const weakest = remainder.toSorted((x, y) => relevance.get(x)! - relevance.get(y)!)[0]!;
-    const allOthers = NODES.map((n) => `${n.room}/${n.slug}`).filter(
+    const allOthers = NODES.map((n) => n.key).filter(
       (k) => !['studio/a', 'studio/b', 'studio/c'].includes(k),
     );
     const strongest = allOthers.toSorted((x, y) => relevance.get(y)! - relevance.get(x)!)[0]!;
@@ -118,7 +82,7 @@ describe('presentFrom', () => {
 });
 
 describe('concordantFrom', () => {
-  test('names the work whose words echo yours when no figure joins them', () => {
+  test('names the node whose words echo yours when no thread joins them', () => {
     expect(concordantFrom(GRAPH, 'garden/weather')).toEqual({ key: 'salon/h', weight: 0.4 });
   });
 

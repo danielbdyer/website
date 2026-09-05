@@ -1,14 +1,13 @@
 import type { RefObject, SyntheticEvent, FocusEvent } from 'react';
 import type { ConstellationHue } from '@/shared/content/constellation';
 import type { NamedRank } from '@/shared/content/skyWalk';
-import type { Facet } from '@/shared/types/common';
 import { Compass, type CompassPoint } from '@/shared/atoms/Compass/Compass';
 import { Polestar } from '@/shared/atoms/Polestar/Polestar';
 import { Thread, type ThreadWalk } from '@/shared/atoms/Thread/Thread';
 import { Star, type StarWalk, type StarWork } from '@/shared/molecules/Star/Star';
 import { TRAIL_LENGTH } from '@/shared/dom/skyProjector';
 import { skyStarTransitionName } from '@/shared/utils/view-transition-names';
-import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
+import { groupLabelOf, threadPresent, type RenderableNode, type ResolvedEdge } from './layout';
 
 // The inside of the travel camera. Extracted from Constellation so the
 // JSX depth at each layer fits the project's max-4 ceiling without
@@ -17,17 +16,16 @@ import { ROOM_LABEL, type RenderableNode, type ResolvedEdge } from './layout';
 
 /** The constellation's observable world — what Stage paints. The
  *  edges + nodes are the structural graph; the rest is the walk:
- *  where the visitor stands (hereKey; null at the pole), what they
- *  hover, what is named within a stroke of here, what is present from
+ *  where the visitor stands (hereKey; null at the pole), what is named
+ *  within a thread of here, what is present from
  *  here (the contextual cap), what they have visited and walked, which
- *  figure is lit by attention, and the compass's lettering.
+ *  axis is lit by attention, and the compass's lettering.
  *  CONSTELLATION_WALK.md. Held in one shape so the organism's prop
  *  count fits the ≤7 ceiling (REACT_NORTH_STAR.md §"Organisms"). */
 export interface ConstellationWorld {
   readonly edges: readonly ResolvedEdge[];
   readonly nodes: readonly RenderableNode[];
   readonly hereKey: string | null;
-  readonly hoverKey: string | null;
   /** The star a held sky is aiming at (useSkyWalk.intent). */
   readonly intentKey: string | null;
   readonly activeHue: ConstellationHue | null;
@@ -36,8 +34,8 @@ export interface ConstellationWorld {
   readonly present: ReadonlySet<string>;
   readonly visited: ReadonlySet<string>;
   readonly walked: ReadonlySet<string>;
-  readonly litFacet: Facet | null;
-  readonly attended: ReadonlySet<Facet>;
+  readonly litAxis: string | null;
+  readonly attended: ReadonlySet<string>;
   readonly compass: readonly CompassPoint[];
 }
 
@@ -49,8 +47,8 @@ export interface StageInteractions {
   readonly onStarLeave: () => void;
   readonly onStarFocus: (e: FocusEvent<Element>) => void;
   readonly onStarBlur: (e: FocusEvent<Element>) => void;
-  readonly onFacetHover: (e: SyntheticEvent<Element>) => void;
-  readonly onFacetLeave: () => void;
+  readonly onAxisHover: (e: SyntheticEvent<Element>) => void;
+  readonly onAxisLeave: () => void;
 }
 
 interface StageProps {
@@ -63,18 +61,18 @@ interface StageProps {
 }
 
 function threadWalkOf(world: ConstellationWorld, edge: ResolvedEdge): ThreadWalk {
-  const attended = world.hoverKey ?? world.intentKey ?? world.hereKey;
+  const attended = world.intentKey ?? world.hereKey;
   return {
     active: attended === edge.sourceKey || attended === edge.targetKey,
     walked: world.walked.has(edge.id),
-    lit: world.litFacet === edge.facet,
-    present: world.present.has(edge.sourceKey) && world.present.has(edge.targetKey),
+    lit: edge.axis !== null && world.litAxis === edge.axis,
+    present: threadPresent(world.present, world.named, edge),
   };
 }
 
 function starWalkOf(world: ConstellationWorld, key: string): StarWalk {
   return {
-    active: key === world.hoverKey || key === world.intentKey || key === world.hereKey,
+    active: key === world.intentKey || key === world.hereKey,
     here: key === world.hereKey,
     named: world.named.get(key),
     visited: world.visited.has(key),
@@ -82,11 +80,14 @@ function starWalkOf(world: ConstellationWorld, key: string): StarWalk {
   };
 }
 
-/** Build the StarWork shape from a renderable node — pure projection. */
+/** Build the StarWork shape from a renderable node — pure projection.
+ *  The accessible name carries the node's group when it has one, so a
+ *  screen reader hears the work and its room. */
 function starWorkFor(node: RenderableNode['node']): StarWork {
+  const group = groupLabelOf(node.group);
   return {
-    href: `/sky/${node.room}/${node.slug}`,
-    label: `${node.title} — ${ROOM_LABEL[node.room]}`,
+    href: node.href,
+    label: group ? `${node.title} — ${group}` : node.title,
     visibleLabel: node.title,
     hue: node.hue,
     isPreview: node.isPreview,
@@ -124,7 +125,7 @@ interface CompanionGroupProps {
 // circles render before the glyph so the live mark paints on top.
 // The travel hook positions each per tick via data-companion /
 // data-companion-trail queries; CSS handles the visual register
-// (paper-amber by default, mixed toward the active facet hue by
+// (paper-amber by default, mixed toward the active hue by
 // --companion-claim, ghosts modulated by --trail-strength).
 // aria-hidden because keyboard / screen-reader focus moves through the
 // addressable star anchors, not this visual marker.
@@ -163,7 +164,7 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
   return (
     <>
       <PoleGroup />
-      <g onMouseOver={interactions.onFacetHover} onMouseLeave={interactions.onFacetLeave}>
+      <g onMouseOver={interactions.onAxisHover} onMouseLeave={interactions.onAxisLeave}>
         <Compass points={world.compass} attended={world.attended} />
       </g>
       <CompanionGroup glyphRef={glyphRef} activeHue={activeHue} />
@@ -171,14 +172,14 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
         {/* Threads first so stars paint above them and win the hit test. */}
         <g
           aria-hidden="true"
-          onMouseOver={interactions.onFacetHover}
-          onMouseLeave={interactions.onFacetLeave}
+          onMouseOver={interactions.onAxisHover}
+          onMouseLeave={interactions.onAxisLeave}
         >
           {edges.map((edge) => (
             <Thread
               key={edge.id}
               id={edge.id}
-              figure={{ facet: edge.facet, hue: edge.hue }}
+              stroke={{ axis: edge.axis, hue: edge.hue, origin: edge.origin, dotted: edge.dotted }}
               endpoints={{ x1: edge.x1, y1: edge.y1, x2: edge.x2, y2: edge.y2 }}
               walk={threadWalkOf(world, edge)}
             />
@@ -201,9 +202,7 @@ export function Stage({ world, interactions, glyphRef }: StageProps) {
                 work={starWorkFor(node)}
                 twinkleDelay={node.twinklePhase}
                 walk={starWalkOf(world, key)}
-                {...(key === overlayKey
-                  ? {}
-                  : { viewTransitionName: skyStarTransitionName(node.room, node.slug) })}
+                {...(key === overlayKey ? {} : { viewTransitionName: skyStarTransitionName(key) })}
               />
             </g>
           ))}

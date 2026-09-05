@@ -43,6 +43,7 @@ import {
   type MotionEvent,
 } from '@/shared/sky/motion';
 import { grab, handOf, moveHand, releaseHand } from '@/shared/sky/hand';
+import { walkDistanceFor } from '@/shared/sky/dial';
 
 // The shell around the sky's pure motion (sky/motion.ts, sky/hand.ts).
 //
@@ -66,6 +67,13 @@ interface UseSkyTravelArgs {
   readonly walk: SkyWalk;
   /** The labels visible at rest, in priority order (here first). */
   readonly namedKeys: readonly string[];
+  /** The threads present from here, by id — the ones the projector
+   *  moves every frame (walk.presentEdgeIds). */
+  readonly presentEdges: ReadonlySet<string>;
+  /** The stars present from here (presence.presentFrom). Under the
+   *  atmosphere, whose sprites carry the receded stars' light, only
+   *  these move while the sky is in motion. */
+  readonly presentKeys: ReadonlySet<string>;
   readonly cameraRef: RefObject<SVGGElement | null>;
   readonly glyphRef: RefObject<SVGCircleElement | null>;
 }
@@ -80,10 +88,27 @@ const LABEL_INTERVAL_MS = 1500;
  *  marks, the schedule. Everything else is a value from the core. */
 interface Shell {
   motion: Motion;
+  /** The dial's two rests for the current frame: the overview, where
+   *  the whole ball fits the oculus, and the walk, where about
+   *  VIEW_TARGET stars are in view (sky/dial.ts). */
+  overview: number;
+  walk: number;
   trail: readonly UnitVector3[];
   trackMark: string | null;
   scrubbing: boolean;
   labelsAt: number;
+  /** The motion last written to the page; null when a paint is due
+   *  regardless, because the DOM changed under the projector. */
+  painted: Motion | null;
+  /** Whether the next paint moves every thread rather than the present
+   *  ones: due when the sky settles and when the walk's presence
+   *  changes what the SVG holds. */
+  full: boolean;
+  /** The svg's frame in CSS pixels, read once per resize or scroll
+   *  rather than per pointer event — a read forces a style flush. */
+  rect: DOMRect | null;
+  moving: boolean;
+  removeScrollListener: (() => void) | null;
   raf: number | null;
   idleTimer: ReturnType<typeof setTimeout> | null;
   resize: ResizeObserver | null;
@@ -95,6 +120,8 @@ interface Refs {
   readonly nodes: RefObject<readonly NavigableNode[]>;
   readonly edges: RefObject<readonly NavigableEdge[]>;
   readonly named: RefObject<readonly string[]>;
+  readonly presentEdges: RefObject<ReadonlySet<string>>;
+  readonly presentKeys: RefObject<ReadonlySet<string>>;
   readonly walk: RefObject<SkyWalk>;
   readonly viewbox: RefObject<number>;
   readonly fit: RefObject<'cover' | 'contain'>;
@@ -120,7 +147,7 @@ function svgOf(refs: Refs): SVGSVGElement | null {
 /** Write one motion to the page: the camera through the projector, the
  *  companion and its trail, the camera and streak to the atmosphere,
  *  and the marks a held sky carries. */
-function paint(refs: Refs, motion: Motion): void {
+function paint(refs: Refs, motion: Motion, full: boolean): void {
   const shell = refs.shell.current;
   const cameraGroup = refs.cameraGroup.current;
   if (!cameraGroup) return;
@@ -128,9 +155,28 @@ function paint(refs: Refs, motion: Motion): void {
   const size = refs.viewbox.current;
   projectPole(cameraGroup, camera, basis, size);
   projectDaystar(cameraGroup.ownerSVGElement, size, refs.fit.current);
-  projectCompass(cameraGroup, camera, basis, size);
-  projectStars(cameraGroup, refs.nodes.current, camera, basis, size);
-  projectThreads(cameraGroup, refs.edges.current, camera, basis, size);
+  projectCompass(cameraGroup, refs.graph.current.axes, camera, basis, size);
+  // Without the atmosphere the SVG is the receded stars' only light,
+  // and every star moves every frame.
+  const live = cameraGroup.ownerSVGElement?.closest<HTMLElement>('.constellation-frame');
+  const sprites = live?.dataset.atmosphere === 'webgl';
+  projectStars(
+    cameraGroup,
+    refs.nodes.current,
+    camera,
+    basis,
+    size,
+    full || !sprites ? null : refs.presentKeys.current,
+  );
+  projectThreads(
+    cameraGroup,
+    refs.edges.current,
+    camera,
+    basis,
+    size,
+    full ? null : refs.presentEdges.current,
+    sprites && !full,
+  );
   const cursor = projectGlyph(refs.glyph.current, motion.pos, camera, basis, size);
   shell.trail = [motion.pos, ...shell.trail.slice(0, TRAIL_LENGTH - 1)];
   projectTrail(cameraGroup, shell.trail, camera, basis, size);
@@ -159,6 +205,40 @@ function paintMarks(refs: Refs, motion: Motion): void {
     svg.dataset.scrubbing = scrubbing ? 'true' : 'false';
     shell.scrubbing = scrubbing;
   }
+  // While the sky travels, the receded threads are not moved; CSS
+  // fades them for the crossing (tokens.css, data-moving).
+  const moving = motion.phase.kind !== 'rest';
+  if (svg && moving !== shell.moving) {
+    svg.dataset.moving = moving ? 'true' : 'false';
+    shell.moving = moving;
+  }
+}
+
+/** Whether two motions put the same picture on the page: the same
+ *  surface point, gaze, rest distance, phase, and hand. The clock and
+ *  the streak's bookkeeping are not a picture. */
+function samePaint(a: Motion, b: Motion): boolean {
+  return (
+    a.pos.x === b.pos.x &&
+    a.pos.y === b.pos.y &&
+    a.pos.z === b.pos.z &&
+    a.look.x === b.look.x &&
+    a.look.y === b.look.y &&
+    a.rest === b.rest &&
+    a.phase.kind === b.phase.kind &&
+    handOf(a) === handOf(b)
+  );
+}
+
+/** Paint unless this motion is already on the page. A sky at rest
+ *  writes nothing; a moving one moves the present threads; a settled
+ *  one — or one whose DOM changed — paints everything once. */
+function paintIfChanged(refs: Refs, motion: Motion): void {
+  const shell = refs.shell.current;
+  if (shell.painted !== null && samePaint(shell.painted, motion)) return;
+  paint(refs, motion, shell.full || isStill(motion));
+  shell.painted = motion;
+  shell.full = false;
 }
 
 /** Lay the labels out when the sky is still — on arrival (labelsAt is
@@ -199,7 +279,7 @@ function dispatch(refs: Refs, events: readonly MotionEvent[]): void {
 /** Take a step of the core and make it visible. */
 function commit(refs: Refs, next: { motion: Motion; events: readonly MotionEvent[] }): void {
   refs.shell.current.motion = next.motion;
-  paint(refs, next.motion);
+  paintIfChanged(refs, next.motion);
   dispatch(refs, next.events);
 }
 
@@ -243,15 +323,24 @@ function stopLoop(shell: Shell): void {
   shell.idleTimer = null;
   shell.resize?.disconnect();
   shell.resize = null;
+  shell.removeScrollListener?.();
+  shell.removeScrollListener = null;
 }
 
 // ─── Requests from the organism ────────────────────────────────────
+
+/** Where the sky rests for a place: the pole at the overview, a star
+ *  at the walk. The only dolly is between the two. */
+function restFor(shell: Shell, place: Place): number {
+  return place === POLE_KEY ? shell.overview : shell.walk;
+}
 
 function beginTravel(refs: Refs, place: Place, alongEdgeId?: string): void {
   const shell = refs.shell.current;
   const to = placePosition(refs.graph.current, place);
   const reduced = prefersReducedMotion();
-  commit(refs, travelTo(shell.motion, to, place, now(), alongEdgeId, reduced));
+  const next = travelTo(shell.motion, to, place, now(), alongEdgeId, reduced);
+  commit(refs, { ...next, motion: fitRest(next.motion, restFor(shell, place), reduced) });
   if (reduced) {
     shell.labelsAt = 0;
     maybePlaceLabels(refs, shell.motion, now());
@@ -273,11 +362,19 @@ function handleKeyDown(refs: Refs, e: KeyboardEvent): void {
 
 // ─── The hand ──────────────────────────────────────────────────────
 
+/** The svg's frame, read once and kept until the frame resizes or the
+ *  page scrolls (watchFrame). */
+function rectOf(refs: Refs): DOMRect | null {
+  const shell = refs.shell.current;
+  if (shell.rect) return shell.rect;
+  shell.rect = svgOf(refs)?.getBoundingClientRect() ?? null;
+  return shell.rect;
+}
+
 /** CSS pixels per viewbox unit for the SVG's current fit. */
 function viewportOf(refs: Refs): { size: number; scale: number } {
   const size = refs.viewbox.current;
-  const svg = svgOf(refs);
-  const rect = svg?.getBoundingClientRect();
+  const rect = rectOf(refs);
   if (!rect || rect.width === 0 || rect.height === 0) return { size, scale: 1 };
   return { size, scale: fitViewboxToCanvas(rect.width, rect.height, size, refs.fit.current).scale };
 }
@@ -308,8 +405,8 @@ function handlePointerMove(refs: Refs, e: PointerEvent<SVGSVGElement>): void {
     return;
   }
   if (prefersReducedMotion()) return;
-  const bounds = e.currentTarget.getBoundingClientRect();
-  if (bounds.width === 0 || bounds.height === 0) return;
+  const bounds = rectOf(refs);
+  if (!bounds || bounds.width === 0 || bounds.height === 0) return;
   // Inverted: moving toward an edge leans the sky the other way, so
   // the gesture reads as "head toward what I'm reaching for."
   const x = -(((e.clientX - bounds.left) / bounds.width) * 2 - 1);
@@ -346,27 +443,43 @@ function handleClickCapture(refs: Refs, e: MouseEvent<SVGSVGElement>): void {
 
 /** Fit the resting camera to the frame now and whenever it changes
  *  shape. */
+/** Fit the dial to a frame: the overview from the frame's aspect, the
+ *  walk from the graph's density at that overview. */
+function fitDial(refs: Refs, width: number, height: number): void {
+  const shell = refs.shell.current;
+  shell.overview = restDistanceFor(width, height, refs.fit.current);
+  shell.walk = walkDistanceFor(refs.graph.current, shell.overview, { width, height });
+}
+
+/** The place the sky is resting at or traveling to. */
+function destinationOf(motion: Motion): Place {
+  return motion.phase.kind === 'travel' ? motion.phase.travel.toPlace : motion.here;
+}
+
 function watchFrame(refs: Refs): void {
   const shell = refs.shell.current;
   const svg = svgOf(refs);
   if (!svg) return;
   const rect = svg.getBoundingClientRect();
-  shell.motion = fitRest(
-    shell.motion,
-    restDistanceFor(rect.width, rect.height, refs.fit.current),
-    true,
-  );
+  shell.rect = rect;
+  fitDial(refs, rect.width, rect.height);
+  shell.motion = fitRest(shell.motion, restFor(shell, destinationOf(shell.motion)), true);
+  const onScroll = (): void => {
+    shell.rect = null;
+  };
+  globalThis.addEventListener('scroll', onScroll, { passive: true });
+  shell.removeScrollListener = () => globalThis.removeEventListener('scroll', onScroll);
   if (typeof ResizeObserver === 'undefined') return;
   shell.resize = new ResizeObserver((entries) => {
     const box = entries[0]?.contentRect;
     if (!box) return;
     const reduced = prefersReducedMotion();
-    shell.motion = fitRest(
-      shell.motion,
-      restDistanceFor(box.width, box.height, refs.fit.current),
-      reduced,
-    );
-    if (reduced) paint(refs, shell.motion);
+    shell.rect = svg.getBoundingClientRect();
+    shell.painted = null;
+    shell.full = true;
+    fitDial(refs, box.width, box.height);
+    shell.motion = fitRest(shell.motion, restFor(shell, destinationOf(shell.motion)), reduced);
+    if (reduced) paintIfChanged(refs, shell.motion);
     else ensureRunning(refs);
   });
   shell.resize.observe(svg);
@@ -382,7 +495,7 @@ function mount(refs: Refs): () => void {
   const shell = refs.shell.current;
   watchFrame(refs);
   if (prefersReducedMotion()) {
-    paint(refs, shell.motion);
+    paintIfChanged(refs, shell.motion);
     maybePlaceLabels(refs, shell.motion, now());
   } else {
     ensureRunning(refs);
@@ -396,8 +509,11 @@ function mount(refs: Refs): () => void {
 
 function initialShell(graph: ConstellationGraph, here: Place): Shell {
   const at = placePosition(graph, here);
+  const motion = initialMotion(here, at);
   return {
-    motion: initialMotion(here, at),
+    motion,
+    overview: motion.rest,
+    walk: motion.rest,
     trail: Array.from({ length: TRAIL_LENGTH }, () => at),
     trackMark: null,
     scrubbing: false,
@@ -405,6 +521,11 @@ function initialShell(graph: ConstellationGraph, here: Place): Shell {
     raf: null,
     idleTimer: null,
     resize: null,
+    painted: null,
+    full: true,
+    rect: null,
+    moving: false,
+    removeScrollListener: null,
   };
 }
 
@@ -416,6 +537,8 @@ export function useSkyTravel({
   fit,
   walk,
   namedKeys,
+  presentEdges,
+  presentKeys,
   cameraRef,
   glyphRef,
 }: UseSkyTravelArgs) {
@@ -424,6 +547,8 @@ export function useSkyTravel({
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const namedRef = useRef(namedKeys);
+  const presentEdgesRef = useRef(presentEdges);
+  const presentKeysRef = useRef(presentKeys);
   const walkRef = useRef(walk);
   const viewboxRef = useRef(viewboxSize);
   const fitRef = useRef(fit);
@@ -433,6 +558,8 @@ export function useSkyTravel({
     nodes: nodesRef,
     edges: edgesRef,
     named: namedRef,
+    presentEdges: presentEdgesRef,
+    presentKeys: presentKeysRef,
     walk: walkRef,
     viewbox: viewboxRef,
     fit: fitRef,
@@ -444,12 +571,26 @@ export function useSkyTravel({
     nodesRef.current = nodes;
     edgesRef.current = edges;
     namedRef.current = namedKeys;
+    presentEdgesRef.current = presentEdges;
+    presentKeysRef.current = presentKeys;
     walkRef.current = walk;
     viewboxRef.current = viewboxSize;
     fitRef.current = fit;
   });
 
   useEffect(() => mount(refsRef.current), []);
+
+  // The walk's presence changed what the SVG holds — hit twins mount
+  // and unmount with it, names move — so the next frame paints
+  // everything once, whatever the camera did.
+  useEffect(() => {
+    const refs = refsRef.current;
+    const shell = refs.shell.current;
+    shell.painted = null;
+    shell.full = true;
+    if (prefersReducedMotion()) paintIfChanged(refs, shell.motion);
+    else ensureRunning(refs);
+  }, [namedKeys, presentEdges, presentKeys]);
 
   // A `here` set from outside the walk (a restored place, a focus jump)
   // is a destination like any other.
