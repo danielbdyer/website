@@ -152,6 +152,11 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** The drag follows the hand fully along a thread and at seven tenths elsewhere, aims at the star nearest the center, and settles onto it or springs home on release ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"). Its constants are first guesses tuned with a mouse in headless Chromium: the play off a thread (`PLAY`) and the give's far limit (`ELASTIC_LIMIT_VB`), the reticle's reach and the head start a graph step gets (`INTENT_RADIUS_VB`, `INTENT_STEP_BONUS_VB` in `intent.ts`), the commit fraction and alignment tolerance of a track, and the two springs' frequency, damping, and velocity cap (`useSkyTravel.ts`).
 **Trigger:** Danny's thumb on a phone, then a trackpad, then a mouse.
 
+### The storyboard's held marks
+
+**Why:** The storyboard pass ([CONSTELLATION_STORYBOARD.md](./CONSTELLATION_STORYBOARD.md), 2026-09-05) took the seams from the three artifacts Danny shared and left their surface marks for a real eye: the struck star's name lettered beside it with a leader rather than beneath; eight-point star bodies; the daystar reflected in water at the foot of the sphere (set down with the pool); a fourth ring, or a breath of scale on the whole figure, at arrival; whether hover should stay quiet through the half-second spring home after a release. The timeline and the corner glyphs in the same frames are the time scrubber and the horizon strip, held with their own triggers below and in `CONSTELLATION_DESIGN.md` §"C6" and §"C9"; the walk's declination of chrome stands.
+**Trigger:** Danny's eye on the lived surface, one mark at a time. Each is a CSS or atom change with no architectural cost.
+
 ### The oculus's fit and the streak
 
 **Why:** The resting camera fits the whole sphere — the oculus — to the frame's shorter side at 92% (about 3.85 radii on a landscape screen, farther on a phone), and travel reads its velocity from the deep field's streak rather than a dolly. The fill, the streak's strength, and the glide's duration range are tuned in a few viewports. Single-facet works also gather along their facet's bearing in a near-straight string; a wider azimuth jitter for them may read more like a sky.
