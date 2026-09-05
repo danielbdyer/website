@@ -79,6 +79,10 @@ interface ThresholdRevealOptions {
   /** Attach touch handling (pull gestures). Off where another
    *  surface owns touch. */
   readonly withTouch?: boolean;
+  /** Called once as each pull begins to gather — the first input of
+   *  a gesture, before any preview shows. The Foyer warms the sky's
+   *  atmosphere on it, so a committed look-up arrives already lit. */
+  readonly onGather?: () => void;
 }
 
 interface RevealState {
@@ -130,8 +134,15 @@ function stepReveal(el: HTMLElement | null, state: RevealState, onCommit: () => 
   state.raf = requestAnimationFrame(() => stepReveal(el, state, onCommit));
 }
 
-function gather(el: HTMLElement | null, state: RevealState, amount: number, commit: () => void) {
+function gather(
+  el: HTMLElement | null,
+  state: RevealState,
+  amount: number,
+  commit: () => void,
+  began?: () => void,
+) {
   if (state.committed) return;
+  if (state.accum <= 0 && amount > 0) began?.();
   state.accum = Math.min(Math.max(state.accum + amount, 0), 1.001);
   state.lastInputAt = performance.now();
   if (state.raf === null) {
@@ -169,6 +180,7 @@ export function useThresholdReveal<T extends HTMLElement>(
       touchBase: 0,
     };
     const commit = () => callbacksRef.current.onCommit();
+    const began = () => callbacksRef.current.onGather?.();
     const outsideBoundary = () => {
       const atBoundary = callbacksRef.current.atBoundary;
       return atBoundary ? !atBoundary() : false;
@@ -180,7 +192,7 @@ export function useThresholdReveal<T extends HTMLElement>(
         state.lastInputAt = 0;
         return;
       }
-      gather(el, state, along / WHEEL_THRESHOLD_PX, commit);
+      gather(el, state, along / WHEEL_THRESHOLD_PX, commit, began);
     };
     // Touch: a pull is a drag against the boundary — finger moving
     // down reveals what is above ('up'), finger moving up reveals
@@ -195,7 +207,7 @@ export function useThresholdReveal<T extends HTMLElement>(
       const y = e.touches[0]?.clientY ?? state.touchY;
       const pulled = (y - state.touchY) * -sign;
       if (pulled <= 0) return;
-      gather(el, state, state.touchBase + pulled / TOUCH_THRESHOLD_PX - state.accum, commit);
+      gather(el, state, state.touchBase + pulled / TOUCH_THRESHOLD_PX - state.accum, commit, began);
     };
     const onTouchEnd = () => {
       state.touchY = null;

@@ -96,12 +96,15 @@ describe('skyProjector element cache', () => {
     // A frame with no size falls back to the plate's resting corner.
     expect(daystar.dataset.vbX).toBe('885.00');
     expect(daystar.dataset.vbY).toBe('288.00');
-    expect(daystar.style.getPropertyValue('--daystar-x')).toMatch(/px$/);
-    expect(daystar.style.getPropertyValue('--daystar-y')).toMatch(/px$/);
+    // The seat is written on the frame — custom properties inherit,
+    // so the daystar and the frame's dusk read the same point.
+    expect(frame.style.getPropertyValue('--daystar-x')).toMatch(/px$/);
+    expect(frame.style.getPropertyValue('--daystar-y')).toMatch(/px$/);
+    expect(daystar.style.getPropertyValue('--daystar-x')).toBe('');
     // Seated once: an unchanged frame writes nothing more.
-    daystar.style.setProperty('--daystar-x', '1px');
+    frame.style.setProperty('--daystar-x', '1px');
     projectDaystar(svg, 1000, 'cover');
-    expect(daystar.style.getPropertyValue('--daystar-x')).toBe('1px');
+    expect(frame.style.getPropertyValue('--daystar-x')).toBe('1px');
   });
 
   test('a thread’s name sits at its midpoint, and follows it', () => {

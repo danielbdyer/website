@@ -1,6 +1,11 @@
 import { useRef, useState, type CSSProperties, type ReactElement, type RefObject } from 'react';
 import { DaystarFace } from '@/shared/atoms/DaystarFace/DaystarFace';
-import { CENTER, fourPointStar } from '@/shared/atoms/DaystarFace/faceGeometry';
+import {
+  CENTER,
+  DISC_RADIUS,
+  MOON_PROFILE,
+  fourPointStar,
+} from '@/shared/atoms/DaystarFace/faceGeometry';
 import { useDaystarMagic } from '@/shared/hooks/useDaystarMagic';
 import { STRAND_COUNT } from '@/shared/sky/scarfGeometry';
 import { DAYSTAR_TRANSITION_NAME } from '@/shared/utils/view-transition-names';
@@ -90,9 +95,53 @@ function stop(from: string, to: string, opacity: [number, number, number]): Reac
   ];
 }
 
-// The washes, as gradients; two still filters — the halo's wet edge
-// and the disc's grain; the wisp that softens the scarf where it
-// passes behind; and the silk, whose colors the magic sweeps around.
+/** The light on the bodies — the sun's core and limb, the moon's
+ *  earthshine and terminator — the dusk's flare, and the clips that
+ *  keep the scarf's echoes to the body each lights or shadows. */
+function LightDefs() {
+  return (
+    <>
+      <radialGradient id="daystar-sun-core" cx="38%" cy="34%" r="62%">
+        <stop offset="0" stopColor="var(--daystar-paper)" stopOpacity="0.55" />
+        <stop offset="0.45" stopColor="var(--accent-gold)" stopOpacity="0.18" />
+        <stop offset="1" stopColor="var(--accent-gold)" stopOpacity="0" />
+      </radialGradient>
+      <radialGradient id="daystar-sun-limb">
+        <stop offset="0.6" stopColor="var(--accent-warm)" stopOpacity="0" />
+        <stop offset="0.88" stopColor="var(--accent-warm)" stopOpacity="0.32" />
+        <stop offset="1" stopColor="var(--daystar-ink)" stopOpacity="0.5" />
+      </radialGradient>
+      <radialGradient id="daystar-earthshine" cx="58%" cy="48%" r="64%">
+        <stop offset="0" stopColor="var(--daystar-paper)" stopOpacity="0.22" />
+        <stop offset="0.7" stopColor="var(--daystar-paper)" stopOpacity="0.08" />
+        <stop offset="1" stopColor="var(--accent-violet)" stopOpacity="0.14" />
+      </radialGradient>
+      <linearGradient id="daystar-moon-shade" x1="1" y1="0.2" x2="0" y2="0.8">
+        <stop offset="0" stopColor="var(--accent-violet)" stopOpacity="0" />
+        <stop offset="0.5" stopColor="var(--accent-violet)" stopOpacity="0.2" />
+        <stop offset="1" stopColor="var(--daystar-ink)" stopOpacity="0.42" />
+      </linearGradient>
+      <radialGradient id="daystar-dusk">
+        <stop offset="0" stopColor="var(--accent-gold)" stopOpacity="0.55" />
+        <stop offset="0.45" stopColor="var(--accent-rose)" stopOpacity="0.4" />
+        <stop offset="1" stopColor="var(--accent-violet)" stopOpacity="0" />
+      </radialGradient>
+      <clipPath id="daystar-disc-clip">
+        <circle cx={CENTER} cy={CENTER} r={DISC_RADIUS} />
+      </clipPath>
+      <clipPath id="daystar-crescent-clip">
+        <path d={MOON_PROFILE} />
+      </clipPath>
+    </>
+  );
+}
+
+// The washes, as gradients — the discs, the light on them (the sun's
+// core and limb, the moon's earthshine and terminator), the dusk's
+// flare; two still filters — the halo's wet edge and the disc's grain;
+// the wisp that softens the scarf where it passes behind; the clips
+// that keep the scarf's echoes to the bodies they light or shadow;
+// and the silk, whose colors the magic sweeps around.
 function DaystarDefs() {
   return (
     <defs>
@@ -131,6 +180,7 @@ function DaystarDefs() {
         <stop offset="0.55" stopColor="var(--accent-gold)" stopOpacity="0.9" />
         <stop offset="1" stopColor="var(--accent-warm)" stopOpacity="0.95" />
       </radialGradient>
+      <LightDefs />
       <radialGradient id="daystar-moon-disc" cx="42%" cy="38%" r="70%">
         <stop offset="0" stopColor="var(--daystar-paper)" stopOpacity="1" />
         <stop offset="0.72" stopColor="var(--daystar-paper)" stopOpacity="0.92" />
@@ -168,21 +218,28 @@ function DaystarDefs() {
   );
 }
 
-interface DaystarSvgProps {
-  ref: RefObject<SVGSVGElement | null>;
-  turns: number;
-}
-
-function DaystarSvg({ ref, turns }: DaystarSvgProps) {
+/** The daystar's three layers, all filling the seat: the scarf's
+ *  behind slot; the body's canvas, which the magic paints as living
+ *  pigment (empty until then — the drawn discs are the body); and the
+ *  drawn faces with the scarf's front slot over them. The defs live in
+ *  the front svg; url() references resolve across the document, so
+ *  the behind slot's silk finds them too. */
+function DaystarLayers({ turns }: { turns: number }) {
   return (
-    <svg ref={ref} viewBox="0 0 240 240" aria-hidden="true" className="daystar__svg">
-      <DaystarDefs />
-      <Scarf side="behind" />
-      <DaystarFace variant="sun" />
-      <DaystarFace variant="moon" />
-      <Scarf side="front" />
-      {turns > 0 && <Magic key={turns} />}
-    </svg>
+    <>
+      <svg viewBox="0 0 240 240" aria-hidden="true" className="daystar__svg daystar__svg--behind">
+        <Scarf side="behind" />
+      </svg>
+      <canvas width={240} height={240} aria-hidden="true" className="daystar__paint" />
+      <svg viewBox="0 0 240 240" aria-hidden="true" className="daystar__svg daystar__svg--front">
+        <DaystarDefs />
+        <circle cx={CENTER} cy={CENTER} r={112} className="daystar__dusk" />
+        <DaystarFace variant="sun" />
+        <DaystarFace variant="moon" />
+        <Scarf side="front" />
+        {turns > 0 && <Magic key={turns} />}
+      </svg>
+    </>
   );
 }
 
@@ -192,13 +249,14 @@ function label(hour: SkyHour): string {
 
 export function Daystar({ hour, className }: DaystarProps) {
   const [turns, setTurns] = useState(0);
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const magic = useDaystarMagic(svgRef);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const magic = useDaystarMagic(rootRef);
   const style = { viewTransitionName: DAYSTAR_TRANSITION_NAME };
   const attend = (on: boolean) => () => magic.current?.hover(on);
   if (!hour) {
     return (
       <div
+        ref={rootRef as RefObject<HTMLDivElement | null>}
         data-daystar="true"
         aria-hidden="true"
         style={style}
@@ -206,12 +264,13 @@ export function Daystar({ hour, className }: DaystarProps) {
         onPointerEnter={attend(true)}
         onPointerLeave={attend(false)}
       >
-        <DaystarSvg ref={svgRef} turns={0} />
+        <DaystarLayers turns={0} />
       </div>
     );
   }
   return (
     <button
+      ref={rootRef as RefObject<HTMLButtonElement | null>}
       type="button"
       data-daystar="true"
       data-hour={hour.current}
@@ -228,7 +287,7 @@ export function Daystar({ hour, className }: DaystarProps) {
         hour.turn();
       }}
     >
-      <DaystarSvg ref={svgRef} turns={turns} />
+      <DaystarLayers turns={turns} />
     </button>
   );
 }

@@ -90,6 +90,35 @@ describe('DaystarFace atom — the two faces', () => {
     expect(container.querySelector('.daystar__grain')).not.toBeNull();
   });
 
+  test('the sun is its own light: a core, a limb over the marks, and the silk backlit within the disc', () => {
+    const { container } = render(withSvg(<DaystarFace variant="sun" />));
+    const body = container.querySelector('.daystar__body')!;
+    const order = [...body.children].map((el) => el.getAttribute('class') ?? el.tagName);
+    expect(order.indexOf('daystar__core')).toBeGreaterThan(order.indexOf('daystar__disc'));
+    expect(order.indexOf('daystar__limb')).toBeGreaterThan(order.indexOf('daystar__grain'));
+    const backlit = container.querySelector<SVGElement>('.daystar__backlit')!;
+    expect(backlit.dataset.scarfEcho).toBe('front-0');
+    expect(backlit.getAttribute('clip-path')).toBe('url(#daystar-disc-clip)');
+    expect(backlit.getAttribute('d')).toBe('');
+    expect(container.querySelector('.daystar__terminator')).toBeNull();
+    expect(container.querySelector('.daystar__cast')).toBeNull();
+  });
+
+  test('the moon is lit from its rim: a terminator over the crescent, and the silk’s shadow cast on it', () => {
+    const { container } = render(withSvg(<DaystarFace variant="moon" />));
+    const face = container.querySelector('.daystar__face')!;
+    const order = [...face.children].map((el) => el.getAttribute('class') ?? el.tagName);
+    expect(order.indexOf('daystar__terminator')).toBe(order.indexOf('daystar__crescent') + 1);
+    expect(container.querySelector('.daystar__terminator')?.getAttribute('d')).toBe(MOON_PROFILE);
+    const cast = container.querySelector<SVGElement>('.daystar__cast')!;
+    expect(cast.dataset.scarfEcho).toBe('front-0');
+    expect(cast.getAttribute('clip-path')).toBe('url(#daystar-crescent-clip)');
+    // The shadow falls a little down and to the right of the silk.
+    expect(cast.parentElement?.getAttribute('transform')).toBe('translate(3 4)');
+    expect(container.querySelector('.daystar__core')).toBeNull();
+    expect(container.querySelector('.daystar__backlit')).toBeNull();
+  });
+
   test('both faces keep the halo behind and the disc beneath the features', () => {
     for (const variant of ['sun', 'moon'] as const) {
       const { container } = render(withSvg(<DaystarFace variant={variant} />));

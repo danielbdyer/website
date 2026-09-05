@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
@@ -195,6 +196,33 @@ describe('Constellation organism', () => {
     expect(daystar.dataset.daystar).toBe('true');
     await user.click(daystar);
     expect(turn).toHaveBeenCalledTimes(1);
+  });
+
+  test('the hour turning puts the frame into its dusk, with the sunset’s surface beneath the daystar', async () => {
+    const user = userEvent.setup();
+    // The hour lives in the host, as it does in the route: the daystar
+    // turns it in place, and the frame answers with its dusk.
+    function Host() {
+      const [hour, setHour] = useState<'day' | 'night'>('day');
+      const turn = () => setHour((h) => (h === 'day' ? 'night' : 'day'));
+      return <Constellation graph={SAMPLE_GRAPH} hour={{ current: hour, turn }} />;
+    }
+    const rootRoute = createRootRoute({ component: Host });
+    const router = createRouter({
+      routeTree: rootRoute,
+      history: createMemoryHistory({ initialEntries: ['/'] }),
+    });
+    const { container } = render(<RouterProvider router={router} />);
+    const frame = await screen.findByRole('navigation', { name: /constellation/i });
+    // A mount is not a turn.
+    expect(frame.dataset.dusk).toBeUndefined();
+    const dusk = container.querySelector<HTMLElement>('.constellation-dusk');
+    expect(dusk?.getAttribute('aria-hidden')).toBe('true');
+    const above = dusk?.nextElementSibling as HTMLElement | null;
+    expect(above?.dataset.daystar).toBe('true');
+    await user.click(screen.getByRole('button', { name: /turn the hour to night/i }));
+    await screen.findByRole('button', { name: /turn the hour to day/i });
+    expect(frame.dataset.dusk).toBe('true');
   });
 
   test('without an hour the daystar is decorative and the sky still stands', async () => {

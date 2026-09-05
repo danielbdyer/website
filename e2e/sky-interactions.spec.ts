@@ -226,8 +226,32 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
     );
     expect(turn.sunHalf).toBeGreaterThan(0);
     expect(turn.moonRise).toBeGreaterThan(turn.sunHalf);
-    // The rising face waits the better part of the setting face's turn.
-    expect(turn.moonRise - turn.sunHalf).toBeGreaterThan(200);
+    // The rising face waits for the setting one to go edge-on — but no
+    // longer: the dead middle of the turn was cut (the fourth pass).
+    expect(turn.moonRise - turn.sunHalf).toBeGreaterThan(80);
+    expect(turn.moonRise).toBeLessThan(900);
+  });
+
+  test('the hour turns through a sunset: the frame carries its dusk for the arc, then rests', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'light');
+    });
+    await openSkyAtRest(page);
+    const frame = page.locator('nav[aria-labelledby="constellation-title"]');
+    expect(await frame.getAttribute('data-dusk')).toBeNull();
+    await page.getByRole('button', { name: /turn the hour to night/i }).click();
+    await expect(frame).toHaveAttribute('data-dusk', 'true');
+    // The sunset's surface flares — gathered at the daystar's seat.
+    const dusk = page.locator('.constellation-dusk');
+    await expect
+      .poll(async () => Number(await dusk.evaluate((el) => getComputedStyle(el).opacity)), {
+        timeout: 1500,
+      })
+      .toBeGreaterThan(0.3);
+    await expect(frame).not.toHaveAttribute('data-dusk', 'true', { timeout: 3000 });
+    expect(await dusk.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
   });
 
   test('looking up from the Foyer lands the daystar in the sky; the nav stays below', async ({
@@ -254,6 +278,64 @@ test.describe('the hour’s face', { tag: '@smoke' }, () => {
   });
 });
 
+// The way down (CONSTELLATION.md §"The Sun and the Moon", the fourth
+// pass): the return continues the pull — the room slides up beneath a
+// daystar that stays, then the daystar settles into the nav's corner.
+// The descent is named on the root while it plays; the choreography
+// itself is CSS on that class.
+test.describe('the way down', { tag: '@smoke' }, () => {
+  test('the return pull names the descent on the root for the transition, then lets it go', async ({
+    page,
+    isMobile,
+  }) => {
+    await openSkyAtRest(page);
+    await page.evaluate(() => {
+      const w = window as unknown as { __descent: { seen: boolean; gone: boolean } };
+      w.__descent = { seen: false, gone: false };
+      new MutationObserver(() => {
+        const has = document.documentElement.classList.contains('descending');
+        if (has) w.__descent.seen = true;
+        if (w.__descent.seen && !has) w.__descent.gone = true;
+      }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    });
+    // On the touch project the sphere owns the touch and the wheel is
+    // not an instrument; the visible link is the return there.
+    if (isMobile) {
+      await page.getByRole('link', { name: /return to the foyer/i }).click();
+    } else {
+      await page.mouse.move(640, 450);
+      for (let i = 0; i < 6; i++) {
+        await page.mouse.wheel(0, 60);
+        await page.waitForTimeout(40);
+      }
+    }
+    await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 4000 });
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCount(1);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => (window as unknown as { __descent: { seen: boolean; gone: boolean } }).__descent,
+          ),
+        { timeout: 3000 },
+      )
+      .toEqual({ seen: true, gone: true });
+  });
+
+  test('reaching for the sky warms its atmosphere ahead of the look-up', async ({ page }) => {
+    await page.goto('/');
+    const fetched = () =>
+      page.evaluate(() =>
+        performance.getEntriesByType('resource').some((e) => /atmosphereRenderer/.test(e.name)),
+      );
+    expect(await fetched()).toBe(false);
+    await page.getByRole('link', { name: /look up/i }).hover();
+    await expect.poll(fetched, { timeout: 4000 }).toBe(true);
+    // Still on the Foyer: warmed, not navigated.
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCount(1);
+  });
+});
+
 // The magic is a lazy layer (PERFORMANCE_BUDGET.md §"The sky's lazy
 // layers"): the scarf's driver and its animation library arrive after
 // the page has loaded and gone idle, never ahead of the sky's first
@@ -276,6 +358,18 @@ test.describe('the magic', { tag: '@smoke' }, () => {
       return { loadEventStart: nav.loadEventStart, magicStart: magic?.startTime ?? -1 };
     });
     expect(timing.magicStart).toBeGreaterThanOrEqual(timing.loadEventStart);
+    // Where WebGL is to be had, the body is painted and says so; the
+    // drawn disc thins to a wash so the paint shows through the ink.
+    const webgl = await page.evaluate(
+      () => document.createElement('canvas').getContext('webgl') !== null,
+    );
+    if (webgl) {
+      await expect(page.locator('[data-daystar]')).toHaveClass(/daystar--painted/);
+      const discOpacity = await page
+        .locator('.daystar__sun .daystar__disc')
+        .evaluate((el) => getComputedStyle(el).fillOpacity);
+      expect(Number(discOpacity)).toBeLessThan(0.5);
+    }
     // It moves on its own.
     const before = await page.locator(SCARF).getAttribute('d');
     await page.waitForTimeout(300);
@@ -283,7 +377,7 @@ test.describe('the magic', { tag: '@smoke' }, () => {
     // The pointer lends it energy: the glow rises, and falls when it leaves.
     const glow = () =>
       page
-        .locator('svg.daystar__svg')
+        .locator('[data-daystar]')
         .evaluate((el) => Number(el.style.getPropertyValue('--scarf-glow')));
     expect(await glow()).toBeLessThan(0.2);
     await page.locator('[data-daystar]').hover();
@@ -300,7 +394,7 @@ test.describe('the magic', { tag: '@smoke' }, () => {
     await expect(page.locator(SCARF)).toHaveAttribute('d', /^M /, { timeout: 8000 });
     const glow = () =>
       page
-        .locator('svg.daystar__svg')
+        .locator('[data-daystar]')
         .evaluate((el) => Number(el.style.getPropertyValue('--scarf-glow')));
     // The click leaves the pointer on the face, whose energy alone
     // lifts the glow to 0.7; the whirl on top of it saturates it.

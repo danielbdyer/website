@@ -9,6 +9,11 @@ import {
   applyAffine,
 } from '@/shared/webgl/atmosphereProjection';
 import { buildSkyPalette } from '@/shared/webgl/palette';
+import {
+  atmosphereWarmed,
+  loadAtmosphereRenderer,
+  shouldRenderWebGL,
+} from '@/shared/webgl/warmAtmosphere';
 import { getConstellationCursor } from '@/shared/state/constellationCursor';
 import { getSkyCamera, subscribeSkyCamera } from '@/shared/state/skyCamera';
 import { heavensPhase } from '@/shared/geometry/heavens';
@@ -381,22 +386,6 @@ function prefersStillAtmosphere(): boolean {
   return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
-function shouldRenderWebGL(): boolean {
-  if (globalThis.window === undefined || typeof document === 'undefined') return false;
-  // The perf probe's deterministic knob — CI measures the SVG
-  // surface against calibrated thresholds; SwiftShader WebGL would
-  // skew them. Visitors never carry this param.
-  if (new URLSearchParams(globalThis.location.search).get('atmosphere') === 'off') return false;
-  // Save-Data: the painted weather is exactly the weight to shed.
-  const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-  if (conn?.saveData) return false;
-  // Forced colors / prefers-contrast: the painterly layer softens
-  // contrast by nature; the SVG firmament is the honest form.
-  if (globalThis.matchMedia?.('(forced-colors: active)').matches) return false;
-  if (globalThis.matchMedia?.('(prefers-contrast: more)').matches) return false;
-  return true;
-}
-
 interface MountedAtmosphere {
   dispose: () => void;
   repaint: () => void;
@@ -416,7 +405,8 @@ interface MountedAtmosphere {
  *  creation and shader compiles — the SVG firmament is the arrival's
  *  first-paint surface anyway, and a GL init mid-carpet-roll is a
  *  stutter the visitor feels. Resolves immediately when no arrival
- *  is running (direct loads, reduced motion, the perf harness). */
+ *  is running (direct loads, reduced motion, the perf harness), and
+ *  is skipped altogether when the renderer was warmed ahead. */
 function arrivalSettled(container: HTMLElement): Promise<void> {
   const arrival = container.closest('.sky-arrival');
   const running = arrival?.getAnimations?.().find((animation) => animation.playState === 'running');
@@ -438,14 +428,14 @@ async function mountAtmosphere(
   activeIndexRef: RefObject<number>,
   presenceRef: RefObject<Float32Array | null>,
 ): Promise<MountedAtmosphere | null> {
-  await arrivalSettled(container);
+  if (!atmosphereWarmed()) await arrivalSettled(container);
   // Probe with our own canvas before ogl gets the chance to
   // console.error on context failure (headless CI without GPU).
   const probe = document.createElement('canvas');
   if (!probe.getContext('webgl2') && !probe.getContext('webgl')) return null;
   const els = locateSkyDom(container);
   if (!els) return null;
-  const { createAtmosphere } = await import('@/shared/webgl/atmosphereRenderer');
+  const { createAtmosphere } = await loadAtmosphereRenderer();
   const root = document.documentElement;
   const readToken = (token: string) => getComputedStyle(root).getPropertyValue(token);
   const isDark = () => root.classList.contains('dk');

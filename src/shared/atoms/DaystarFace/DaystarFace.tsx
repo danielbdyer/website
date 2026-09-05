@@ -17,6 +17,17 @@ interface DaystarFaceProps {
 // watercolor granulation over the gold. The moon: the whole disc's
 // earthshine, faint; the crescent in profile, asleep, with a closed
 // eye and a cheek; freckles of crater; three small stars in the dark.
+//
+// The light (the fourth pass): the faces are lit bodies, not stickers.
+// The sun is its own light — a core that brightens toward the upper
+// left, a limb that darkens and warms toward the rim — and the silk
+// that crosses it is backlit, a paper glow where the strand passes
+// over the disc. The moon is lit from the right, where its outer rim
+// is: a terminator shades the crescent toward the profile, the
+// earthshine is a dim wash, and the silk that crosses it casts a soft
+// shadow on the lit body. The two echoes of the scarf (backlit, cast)
+// are paths the magic writes alongside the front strand.
+//
 // Every wash is a gradient, so the face can breathe, blink, and follow
 // the pointer cheaply; the filters are still ones — the halo's wet
 // edge and the grain. The molecule (Daystar) frames the two faces,
@@ -117,13 +128,18 @@ const MOON_STARS = [
   { x: 94, y: 158, r: 2.6, delay: 2.4 },
 ] as const;
 
-// The moon's face: the crescent asleep in profile, its eye closed, a
-// cheek, the corner of a smile; the freckles on the lit body; the
-// stars in the hollow's dark.
+// The moon's face: the crescent asleep in profile, lit from the right
+// and shaded toward the profile, the silk's shadow falling across it;
+// its eye closed, a cheek, the corner of a smile; the freckles on the
+// lit body; the stars in the hollow's dark.
 function MoonFeatures() {
   return (
     <g className="daystar__face">
       <path d={MOON_PROFILE} className="daystar__crescent" />
+      <path d={MOON_PROFILE} className="daystar__terminator" />
+      <g transform="translate(3 4)">
+        <ScarfEcho className="daystar__cast" clip="daystar-crescent-clip" />
+      </g>
       <ellipse cx={147} cy={118} rx={5.5} ry={4.2} className="daystar__cheek" />
       <path d="M 138 100 Q 143 103 148 100" className="daystar__lid" />
       <path d="M 138.6 100.8 Q 140.4 102.6 139.4 104.4" className="daystar__lash" />
@@ -143,17 +159,44 @@ function MoonFeatures() {
   );
 }
 
+/** An echo of the scarf's main front strand — the magic writes the
+ *  same path here each frame — clipped to a body and styled by class:
+ *  the sun's backlit silk, the moon's cast shadow. Empty until then. */
+function ScarfEcho({ className, clip }: { className: string; clip: string }) {
+  return <path d="" data-scarf-echo="front-0" clipPath={`url(#${clip})`} className={className} />;
+}
+
+function SunBody() {
+  return (
+    <g className="daystar__body">
+      <path d={DISC_PATH} className="daystar__disc" />
+      <circle cx={CENTER} cy={CENTER} r={DISC_RADIUS} className="daystar__core" />
+      <SunFeatures />
+      <Grain />
+      <ScarfEcho className="daystar__backlit" clip="daystar-disc-clip" />
+      <circle cx={CENTER} cy={CENTER} r={DISC_RADIUS} className="daystar__limb" />
+      <Rings radii={[55, 51]} />
+    </g>
+  );
+}
+
+function MoonBody() {
+  return (
+    <g className="daystar__body">
+      <path d={DISC_PATH} className="daystar__disc" />
+      <MoonFeatures />
+      <Grain />
+      <Rings radii={[56]} />
+    </g>
+  );
+}
+
 export function DaystarFace({ variant }: DaystarFaceProps) {
   return (
     <g className={cn('daystar__hour', `daystar__${variant}`)}>
       <circle cx={CENTER} cy={CENTER} r={100} className="daystar__halo" />
       {variant === 'sun' && <Crown />}
-      <g className="daystar__body">
-        <path d={DISC_PATH} className="daystar__disc" />
-        {variant === 'sun' ? <SunFeatures /> : <MoonFeatures />}
-        <Grain />
-        <Rings radii={variant === 'sun' ? [55, 51] : [56]} />
-      </g>
+      {variant === 'sun' ? <SunBody /> : <MoonBody />}
     </g>
   );
 }

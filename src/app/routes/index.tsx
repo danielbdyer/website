@@ -2,6 +2,8 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Reveal } from '@/shared/molecules/Reveal/Reveal';
 import { GeometricFigure } from '@/shared/atoms/GeometricFigure/GeometricFigure';
 import { useThresholdReveal } from '@/shared/hooks/useThresholdReveal';
+import { warmDaystarMagic } from '@/shared/hooks/useDaystarMagic';
+import { warmAtmosphere } from '@/shared/webgl/warmAtmosphere';
 
 export const Route = createFileRoute('/')({
   component: FoyerPage,
@@ -10,6 +12,12 @@ export const Route = createFileRoute('/')({
 // The boundary for looking up: the visitor is at the page's top.
 const atPageTop = () => globalThis.scrollY <= 1;
 
+/** The sky's lazy layers, fetched as the visitor reaches for it. */
+function warmSky(): void {
+  warmAtmosphere();
+  warmDaystarMagic();
+}
+
 function FoyerPage() {
   const navigate = useNavigate();
   // The held reveal gesture, first form: scrolling up against the
@@ -17,10 +25,15 @@ function FoyerPage() {
   // past the threshold the look-up commits and the sky unfurls the
   // rest of the way. Release early and the ceiling breathes back.
   // CONSTELLATION.md §"The Reveal Mechanism".
+  // The sky's atmosphere is warmed as the visitor reaches for it — the
+  // first input of a pull, or the pointer resting on the link — so a
+  // committed look-up arrives already lit, in one substrate, rather
+  // than the chart first and the weather a breath later.
   const curtainRef = useThresholdReveal<HTMLDivElement>({
     direction: 'up',
     atBoundary: atPageTop,
     withTouch: true,
+    onGather: warmSky,
     onCommit: () => {
       void navigate({ to: '/sky' });
     },
@@ -48,7 +61,12 @@ function FoyerPage() {
           CONSTELLATION.md; until they pull, this small italic line is
           the door from the Foyer to the firmament above it. */}
         <p className="max-w-deck font-body text-list leading-body text-text-3 mt-4 italic">
-          <Link to="/sky" className="hover:text-text-2 no-underline transition-colors duration-200">
+          <Link
+            to="/sky"
+            className="hover:text-text-2 no-underline transition-colors duration-200"
+            onPointerEnter={warmSky}
+            onFocus={warmSky}
+          >
             ↑ Look up
           </Link>
         </p>

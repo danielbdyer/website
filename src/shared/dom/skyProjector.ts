@@ -437,6 +437,10 @@ export function projectDaystar(
   const frameRect = frame.getBoundingClientRect();
   const x = rect.left - frameRect.left + box.offsetX + p.x * box.scale;
   const y = rect.top - frameRect.top + box.offsetY + p.y * box.scale;
-  el.style.setProperty('--daystar-x', `${x.toFixed(1)}px`);
-  el.style.setProperty('--daystar-y', `${y.toFixed(1)}px`);
+  // Written on the frame, not the daystar: custom properties inherit,
+  // so the daystar seats itself by them and the frame's other
+  // surfaces — the dusk's sunset, gathered at the sun — find the same
+  // point without a second write.
+  frame.style.setProperty('--daystar-x', `${x.toFixed(1)}px`);
+  frame.style.setProperty('--daystar-y', `${y.toFixed(1)}px`);
 }

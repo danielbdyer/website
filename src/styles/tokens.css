@@ -689,6 +689,62 @@ body::before {
   will-change: transform;
 }
 
+/* ─── The dusk — a sunset because of the sun ───────────────────
+   When the hour turns, the frame carries data-dusk for the sky's 1.8s
+   dusk (the constellation sets it), and this surface flares: a
+   sunset gathered at the daystar's seat (--daystar-x/y, written on
+   the frame by the projector) and a flush along the foot of the
+   frame — gold nearest the sun, rose beyond, violet at the far edge —
+   fullest not quite halfway, gone at both ends. By night it screens
+   over the darkening sky as light; by day (the dawn) it lies on the
+   lightening paper as a wash. The WebGL atmosphere flushes its own
+   horizon on the same arc; this surface belongs to both substrates,
+   so the chart without the weather sets its sun too. Reduced motion
+   holds it still (the attribute is set; the animation is not). */
+.constellation-dusk {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(
+      circle at var(--daystar-x, 88%) var(--daystar-y, 10%),
+      color-mix(in oklab, var(--accent-gold) 72%, white) 0%,
+      var(--accent-rose) 18%,
+      color-mix(in oklab, var(--accent-violet) 60%, transparent) 40%,
+      transparent 58%
+    ),
+    linear-gradient(to top, var(--accent-rose) 0%, var(--accent-gold) 12%, transparent 40%);
+  will-change: opacity;
+}
+
+.dk .constellation-dusk {
+  mix-blend-mode: screen;
+}
+
+.lt .constellation-dusk {
+  mix-blend-mode: multiply;
+}
+
+.constellation-frame[data-dusk] .constellation-dusk {
+  animation: sky-sunset 1.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes sky-sunset {
+  0% {
+    opacity: 0;
+  }
+
+  40% {
+    opacity: 0.72;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
 /* The sky's return link sits over the firmament, and a star can
    drift beneath it. A soft halo of the page ground around the
    letters keeps them legible without boxing them in chrome. */
@@ -1226,10 +1282,14 @@ body::before {
    right — the plate's corner emblem — and the hour's own toggle
    (CONSTELLATION.md §"The Sun and the Moon"). Both faces render; the
    html's .lt / .dk chooses the hour's, so first paint is right before
-   any script. The turn is a coin's: the setting face goes edge-on and
-   fades over 700ms, the rising one waits for it and comes round over
-   the next 700ms — 1.4s in all, inside the sky's own 1.8s dusk — so
-   the two never overlap as an eclipse.
+   any script. The turn is a coin's, and a setting: the setting face
+   sinks a little as it goes edge-on and fades over 440ms; the rising
+   one waits 300ms and comes round from just below over 500ms — 0.8s
+   in all, the dead middle cut (Danny: the segment from a half to two
+   thirds through could go and no one would notice), inside the sky's
+   own 1.8s dusk, through which the daystar's own light flares rose
+   (.daystar__dusk) and the frame's sunset gathers at it
+   (.constellation-dusk).
 
    The register is the engraver's (the third pass, 2026-09-05): the
    sun in splendour on an astronomical clock's dial, the moon asleep
@@ -1294,11 +1354,47 @@ div.daystar {
   cursor: default;
 }
 
-.daystar__svg {
+/* Three layers fill the seat: the scarf's behind slot, the body's
+   canvas, and the drawn faces with the scarf's front slot. */
+.daystar__svg,
+.daystar__paint {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   overflow: visible;
+  pointer-events: none;
+}
+
+/* The body's paint arrives on the reveal rhythm once the magic has
+   mounted it, and the drawn discs thin to a wash so the living pigment
+   shows through the ink and the grain. Where there is no WebGL the
+   canvas stays clear and the discs stay the body. */
+.daystar__paint {
+  opacity: 0;
+  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+}
+
+.daystar.daystar--painted .daystar__paint {
+  opacity: 1;
+}
+
+.daystar.daystar--painted .daystar__sun .daystar__disc {
+  fill-opacity: 0.22;
+}
+
+.daystar.daystar--painted .daystar__core {
+  opacity: 0.45;
+}
+
+.daystar.daystar--painted .daystar__moon .daystar__disc {
+  fill-opacity: 0.3;
+}
+
+.daystar.daystar--painted .daystar__crescent {
+  opacity: 0.9;
 }
 
 /* The turn. */
@@ -1306,8 +1402,8 @@ div.daystar {
   transform-box: fill-box;
   transform-origin: center;
   transition:
-    transform 700ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 700ms ease;
+    transform 440ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 440ms ease;
 }
 
 .daystar__sun {
@@ -1318,20 +1414,23 @@ div.daystar {
   --daystar-line: color-mix(in oklab, var(--accent-violet) 45%, var(--daystar-ink));
 }
 
+/* The set face sinks as it goes edge-on; the rising one comes up from
+   the same little way below. */
 .dk .daystar__sun {
-  transform: scaleX(0.02) rotate(-14deg);
+  transform: translateY(14px) scaleX(0.02) rotate(-14deg);
   opacity: 0;
 }
 
 .lt .daystar__moon {
-  transform: scaleX(0.02) rotate(14deg);
+  transform: translateY(14px) scaleX(0.02) rotate(14deg);
   opacity: 0;
 }
 
 /* The rising face waits for the setting one to turn edge-on. */
 .lt .daystar__sun,
 .dk .daystar__moon {
-  transition-delay: 640ms;
+  transition-delay: 300ms;
+  transition-duration: 500ms;
 }
 
 /* The theme-toggle window's blanket transition rule would replace the
@@ -1339,15 +1438,29 @@ div.daystar {
    its own arc (with the window's fill/stroke fades alongside). */
 .theme-transitioning .daystar__hour {
   transition:
-    transform 700ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 700ms ease,
+    transform 440ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 440ms ease,
     fill 0.5s ease,
     stroke 0.5s ease !important;
 }
 
 .theme-transitioning.lt .daystar__sun,
 .theme-transitioning.dk .daystar__moon {
-  transition-delay: 640ms !important;
+  transition-delay: 300ms !important;
+  transition-duration: 500ms !important;
+}
+
+/* The dusk's flare: the daystar's own light going rose-gold as it
+   sets or rises, behind the faces, for the frame's 1.8s dusk. */
+.daystar__dusk {
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: url('#daystar-dusk');
+  opacity: 0;
+}
+
+.constellation-frame[data-dusk] .daystar__dusk {
+  animation: daystar-dusk 1.8s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* The halo — the one wash that keeps a filter; it never moves. */
@@ -1401,11 +1514,49 @@ div.daystar {
 }
 
 .daystar__moon .daystar__disc {
-  fill: var(--daystar-paper);
-  fill-opacity: 0.14;
+  fill: url('#daystar-earthshine');
   stroke: var(--accent-violet);
   stroke-opacity: 0.35;
   stroke-width: 0.9;
+}
+
+/* The sun is its own light: a core brightening toward the upper left,
+   a limb that warms and darkens toward the rim. */
+.daystar__core {
+  fill: url('#daystar-sun-core');
+  opacity: 0.85;
+}
+
+.daystar__limb {
+  fill: url('#daystar-sun-limb');
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* The silk backlit where it crosses the sun's disc: a paper glow that
+   rises with the scarf's glow. */
+.daystar__backlit {
+  fill: var(--daystar-paper);
+  mix-blend-mode: screen;
+  filter: url('#daystar-wisp');
+  opacity: calc(0.16 + var(--scarf-glow, 0) * 0.3);
+}
+
+/* The moon is lit from the right, where its rim is: the crescent
+   shades toward the profile, and the silk casts a soft shadow on it. */
+.daystar__terminator {
+  fill: url('#daystar-moon-shade');
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.daystar__cast {
+  fill: var(--daystar-ink);
+  mix-blend-mode: multiply;
+  filter: url('#daystar-wisp');
+  opacity: calc(0.1 + var(--scarf-glow, 0) * 0.12);
 }
 
 .daystar__crescent {
@@ -1616,6 +1767,23 @@ div.daystar {
   animation: daystar-spark 1.3s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
+@keyframes daystar-dusk {
+  0% {
+    opacity: 0;
+    scale: 0.8;
+  }
+
+  42% {
+    opacity: 0.9;
+    scale: 1.18;
+  }
+
+  100% {
+    opacity: 0;
+    scale: 1.3;
+  }
+}
+
 @keyframes daystar-crown {
   to {
     rotate: 360deg;
@@ -1728,6 +1896,46 @@ div.daystar {
   animation-duration: 900ms;
 }
 
+/* The descent (the fourth pass, with Danny): the way down continues
+   the pull. The room slides up beneath from where the ground had
+   leaned in — the preview strip is 18dvh, so the room's top edge
+   starts where the strip's top was — while the sky drifts up and
+   out; the daystar stays exactly where it is through the reveal, and
+   only when the room has settled does it travel down into the nav's
+   corner and become the glyph. html.descending is set by the sky
+   route for the return's duration (routes/sky.tsx). */
+html.descending::view-transition-old(root) {
+  animation: descend-sky-away 640ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+html.descending::view-transition-new(root) {
+  animation: descend-room-up 640ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+html.descending::view-transition-group(daystar) {
+  animation-delay: 560ms;
+  animation-duration: 760ms;
+}
+
+html.descending::view-transition-old(daystar),
+html.descending::view-transition-new(daystar) {
+  animation-delay: 560ms;
+  animation-duration: 760ms;
+}
+
+@keyframes descend-sky-away {
+  to {
+    transform: translateY(-10%);
+    opacity: 0;
+  }
+}
+
+@keyframes descend-room-up {
+  from {
+    transform: translateY(82dvh);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .daystar__hour {
     transition-delay: 0s !important;
@@ -1737,7 +1945,9 @@ div.daystar {
   .daystar__body,
   .daystar__face,
   .daystar__eye,
-  .daystar__star {
+  .daystar__star,
+  .daystar__dusk,
+  .constellation-dusk {
     animation: none !important;
   }
 
