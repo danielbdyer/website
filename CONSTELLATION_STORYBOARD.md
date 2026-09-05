@@ -110,6 +110,24 @@ Scroll down at rest, ArrowDown, Escape, or the link: the Foyer's ground leans in
 
 *Stands.* All of it.
 
+*Changes (the second pass).* The daystar sinks a little with the pull, and on commit it descends into the nav's corner as the glyph (§"Scene 13").
+
+### Scene 12 — The hour turns
+
+The daystar in the margin is a face. By day, the sun: gilded, plump, rosy-cheeked, a bulb of a nose, teal eyes under arched brows, laughing, a crown of flame rays turning on the slowest clock. Rest on it and the cheeks flush, the brows lift; move, and its eyes follow, the head turning a degree. It breathes; every six seconds or so it blinks. Click it. The sun turns edge-on (*Reach*, 700 ms) as a flare and eight sparks leave the turn, and from the other side the moon comes round (700 ms more): paler, cooler, heavy-lidded, golden-eyed, its lit limb and its freckles and three small stars. Meanwhile the sky changes its hour over its own 1.8 s dusk, the stars twinkle up, the whisper dims in the sigh. One being, two faces. Click again and the sun comes back round.
+
+*Stands (before the pass).* The daystar as a gilded disc and a masked crescent, decorative, crossfading over 1.1 s with the rising body waiting 0.7 s.
+
+*Changes.* The daystar is a real button with the hour's label, seated on the page beside the sky rather than inside it; the two faces are drawn (`DaystarFace`), the turn is a coin's, the magic mounts fresh on every turn, and the face breathes, blinks, and follows the pointer through the frame's parallax. Reduced motion swaps the hour at once and holds the face still.
+
+### Scene 13 — The ascent
+
+At the Foyer's top, pull up. The sky leans in from the ceiling, and the nav's small sun-or-moon glyph readies itself: it lifts and grows with the pull. Release early and everything breathes back. Past the threshold the look-up commits: the room crossfades, and the glyph rises and grows into the daystar's face on its way to the sky's margin — one body, in its place. The face makes a small entrance, settling with a breath, as a character who was always there. Look down and it descends into the corner and is a glyph again.
+
+*Stands (before the pass).* The look-up navigation; the glyph and the daystar sharing a view-transition name that could not pair, because the daystar was a stroke inside the sky's svg and a view transition names boxes.
+
+*Changes.* The daystar is a box beside the svg; the glyph lifts with the pull through `--reveal` mirrored on the root; the morph runs over 900 ms on the signature curve; the nav's glyph shows the hour the room keeps so the morph reads as one being.
+
 ---
 
 ## The Audit
@@ -161,6 +179,17 @@ Enforced in code as of 2026-09-05:
 
 ---
 
+## The Second Pass — The Hour's Face
+
+Built the same day, on Danny's next pull: the daystar as the hour's toggle (§"Scene 12") and the glyph's ascent into it (§"Scene 13"). Enforced in code:
+
+- **The drawing** (`src/shared/atoms/DaystarFace/`): the two faces as pure geometry (`faceGeometry.ts` — a hand's circle, the crown's flames, the sparkle) and an atom that renders them; the molecule (`src/shared/molecules/Daystar/`) frames both, gives them their button, the hour's label, the view-transition name, and the magic that mounts fresh on every turn.
+- **The seat** (`src/shared/dom/skyProjector.ts`): the daystar is seated beside the sky's svg in page pixels and viewbox units, written only when the frame changes shape; the atmosphere (`src/shared/hooks/useWebGLFirmament.ts`) reads the viewbox point back for its glow and page light.
+- **The register** (`src/styles/tokens.css` §"The daystar"): the turn, the crown, the breath, the blink, the gaze, the flush, the hello, the flare and sparks, the glyph's lift with the pull, the 900 ms morph, and reduced motion's stillness.
+- **The route** (`src/app/routes/sky.tsx`) owns the theme and hands the hour down; the constellation never reads the store.
+- **The nav** (`src/app/layout/ThemeToggle.tsx`) shows the hour the room keeps.
+- **Tests**: the geometry as values; the faces' anatomy; the button, its label, its magic, and its decorative form; the constellation with and without an hour; the seat written once; and, in a real browser, the turn changing the room's hour and the look-up landing the daystar in the sky.
+
 ## Held — Named So It Is Not Lost
 
 - **The name beside the struck star.** The frames letter the name to the right of the star with a leader; the walk letters it below by habit and moves it only to clear a collision. Held for Danny's eye.
@@ -170,6 +199,7 @@ Enforced in code as of 2026-09-05:
 - **A departure's sound.** The rings collapsing is the struck bowl in reverse; whether arrival wants a fourth ring, or a breath of scale on the whole figure, is a tuning for a real eye.
 - **Hover during the spring home.** After a release with nothing in reach the sky springs home for half a second; hover is not refused during the spring. It has not read as noise; named in case it does.
 - **Names and the rim.** The label layout keeps a name clear of other names and of stars, not of the compass lettered at the rim or of a thread; a star that arrives near the rim can set its name on a facet's. Seen once in the night chart during this pass. The fix belongs in `labelLayout.ts` — the rim's names and the lit threads as boxes to avoid — when it reads as more than once.
+- **The face's held marks.** A beard of curls for the sun, in the card's register; whether the nav's glyph wants a hint of the face before it rises; the moon's nightcap, refused so far as kitsch; the sparks' count and reach; whether the turn wants a sound. Each is a stroke in `DaystarFace` or a line in the register, for Danny's eye.
 
 ---
 

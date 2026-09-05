@@ -157,6 +157,11 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** The storyboard pass ([CONSTELLATION_STORYBOARD.md](./CONSTELLATION_STORYBOARD.md), 2026-09-05) took the seams from the three artifacts Danny shared and left their surface marks for a real eye: the struck star's name lettered beside it with a leader rather than beneath; eight-point star bodies; the daystar reflected in water at the foot of the sphere (set down with the pool); a fourth ring, or a breath of scale on the whole figure, at arrival; whether hover should stay quiet through the half-second spring home after a release. The timeline and the corner glyphs in the same frames are the time scrubber and the horizon strip, held with their own triggers below and in `CONSTELLATION_DESIGN.md` §"C6" and §"C9"; the walk's declination of chrome stands.
 **Trigger:** Danny's eye on the lived surface, one mark at a time. Each is a CSS or atom change with no architectural cost.
 
+### The daystar's face, tuned by eye
+
+**Why:** The daystar became a character on 2026-09-05 (`CONSTELLATION.md` §"The Sun and the Moon"): a plump, rosy face that breathes, blinks, follows the pointer, and turns like a coin when clicked. Its proportions, its blush, the crown's turn, the blink's cadence, the sparks' reach, and the morph's 900 ms were drawn once, in a headless browser, against Danny's reference images. Held within it: a beard of curls for the sun; a hint of the face in the nav's glyph before it rises; whether the moon's profile wants to show more of itself in the turn.
+**Trigger:** Danny's eye on the lived face at a phone's size and a wide screen's. Every value is a stroke in `src/shared/atoms/DaystarFace/faceGeometry.ts` or a line in `tokens.css` §"The daystar".
+
 ### The oculus's fit and the streak
 
 **Why:** The resting camera fits the whole sphere — the oculus — to the frame's shorter side at 92% (about 3.85 radii on a landscape screen, farther on a phone), and travel reads its velocity from the deep field's streak rather than a dolly. The fill, the streak's strength, and the glide's duration range are tuned in a few viewports. Single-facet works also gather along their facet's bearing in a near-straight string; a wider azimuth jitter for them may read more like a sky.
