@@ -100,6 +100,8 @@ The frame loop moves the camera and writes positions. It knows nothing of React;
 
 The boundary is data. Down: the graph and `here` (a change of `here` from outside — a restored place, a look-up jump — is a destination like any other). Up: `departed`, `arrived`, `held`, `released`, and `aimed`, handed on by one `send`. When the hand aims at a star, the walk hears it, React renders the claim, and the frame loop keeps moving the sky underneath. When a travel departs, the walk hears that too, and React frames the destination ahead while the loop carries the sky toward it. Neither clock waits for the other.
 
+*A third clock, apart (2026-09-05).* The daystar's magic — the scarf of silk around the hour's face — runs on GSAP's ticker, in its own lazily fetched chunk (`dom/daystarMagic.ts`, mounted by `hooks/useDaystarMagic.ts` after load and idle). It touches nothing the other two clocks own: it reads no camera, writes no star, and hears no walk event. Its inputs are three moods — the energy the pointer lends, the whirl of the turn, the flow of the silk's colors — set through a handle the molecule holds; its geometry is pure (`sky/scarfGeometry.ts`); its output is four paths, a gradient's turn, and one custom property. It disposes with the molecule. The sky would be whole without it, and is, until it arrives.
+
 ---
 
 ## What Shipped (2026-09-03, PR #57)
@@ -129,7 +131,7 @@ Named so the next passes are steps on one path, not detours.
 ## Enforced in Code
 
 - The FP selectors in `eslint.config.js` §"FP discipline" apply to everything in `src/` by default: no mutation methods, no imperative loops, no update or compound assignment, no `delete`, no classes.
-- The exemption names the rim: `hooks/useSkyTravel.ts`, `hooks/useThresholdReveal.ts`, `hooks/useWebGLFirmament.ts`, `dom/skyProjector.ts`, `state/constellationCursor.ts`, `state/skyCamera.ts`, `geometry/camera.ts`, `webgl/atmosphereProjection.ts`, `webgl/atmosphereRenderer.ts`. Nothing in `sky/` is on it. A file joins the list with a `@bigO` note or not at all.
+- The exemption names the rim: `hooks/useSkyTravel.ts`, `hooks/useThresholdReveal.ts`, `hooks/useWebGLFirmament.ts`, `dom/skyProjector.ts`, `state/constellationCursor.ts`, `state/skyCamera.ts`, `geometry/camera.ts`, `webgl/atmosphereProjection.ts`, `webgl/atmosphereRenderer.ts`. Nothing in `sky/` is on it, and neither is `dom/daystarMagic.ts`: the magic's only mutable state is the moods GSAP tweens in place, and its paths go out through `setAttribute`. A file joins the list with a `@bigO` note or not at all.
 - `max-lines-per-function` (80), the component-shape check, and the boundary rules hold as before ([REACT_NORTH_STAR.md](./REACT_NORTH_STAR.md)).
 
 *If this document and the code disagree, the code is the present and this is what it is reaching for. Catch the document up, or catch the code up — but say which.*

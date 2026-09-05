@@ -114,11 +114,13 @@ Scroll down at rest, ArrowDown, Escape, or the link: the Foyer's ground leans in
 
 ### Scene 12 — The hour turns
 
-The daystar in the margin is a face. By day, the sun: gilded, plump, rosy-cheeked, a bulb of a nose, teal eyes under arched brows, laughing, a crown of flame rays turning on the slowest clock. Rest on it and the cheeks flush, the brows lift; move, and its eyes follow, the head turning a degree. It breathes; every six seconds or so it blinks. Click it. The sun turns edge-on (*Reach*, 700 ms) as a flare and eight sparks leave the turn, and from the other side the moon comes round (700 ms more): paler, cooler, heavy-lidded, golden-eyed, its lit limb and its freckles and three small stars. Meanwhile the sky changes its hour over its own 1.8 s dusk, the stars twinkle up, the whisper dims in the sigh. One being, two faces. Click again and the sun comes back round.
+The daystar in the margin is a face, drawn the engraver's way. By day, the sun in splendour from an astronomical clock's dial: a crown of sixteen rays, straight and wavy by turns, turning on the slowest clock; the dial's fine rings inside the rim; thin arched brows, almond eyes, a line of a nose, a closed smile; watercolor grain settled into the gold. Around it a scarf of silk in the hour's four colors swoops in three dimensions — behind the disc, out through the rays, over the face — three strands, the main one and two wisps that part from it like smoke, drifting at rest. Rest on it and the cheeks warm, the brows lift, and the scarf quickens and brightens; move, and its eyes follow, the head turning a degree. It breathes; every six seconds or so it blinks. Click it. The scarf whirls tight, the sun turns edge-on (*Reach*, 700 ms) as a flare and eight sparks leave the turn, and from the other side the moon comes round (700 ms more): the crescent asleep in profile, its eye closed, the earthshine of the disc faint in its hollow with three small stars, freckles of crater on the lit body, the silk now lit from within. Meanwhile the sky changes its hour over its own 1.8 s dusk, the stars twinkle up, the whisper dims in the sigh. One being, two faces. Click again and the sun comes back round, and the scarf lets go.
 
 *Stands (before the pass).* The daystar as a gilded disc and a masked crescent, decorative, crossfading over 1.1 s with the rising body waiting 0.7 s.
 
-*Changes.* The daystar is a real button with the hour's label, seated on the page beside the sky rather than inside it; the two faces are drawn (`DaystarFace`), the turn is a coin's, the magic mounts fresh on every turn, and the face breathes, blinks, and follows the pointer through the frame's parallax. Reduced motion swaps the hour at once and holds the face still.
+*Changes (the second pass).* The daystar is a real button with the hour's label, seated on the page beside the sky rather than inside it; the two faces are drawn (`DaystarFace`), the turn is a coin's, the magic mounts fresh on every turn, and the face breathes, blinks, and follows the pointer through the frame's parallax. Reduced motion swaps the hour at once and holds the face still.
+
+*Changes (the third pass).* The register moves from the card's Santa to the engraver's — the sun in splendour, the moon asleep in profile — on Danny's *less clowny, more illustrated*; the scarf arrives, procedural and lazy (§"The Third Pass").
 
 ### Scene 13 — The ascent
 
@@ -190,6 +192,19 @@ Built the same day, on Danny's next pull: the daystar as the hour's toggle (§"S
 - **The nav** (`src/app/layout/ThemeToggle.tsx`) shows the hour the room keeps.
 - **Tests**: the geometry as values; the faces' anatomy; the button, its label, its magic, and its decorative form; the constellation with and without an hour; the seat written once; and, in a real browser, the turn changing the room's hour and the look-up landing the daystar in the sky.
 
+## The Third Pass — The Engraver's Register and the Scarf
+
+Built the same day again, on Danny's self-critique of the second pass — *how do we get it to look even more illustrated and less clowny? watercolored, wispy, cartoony, a three-d magic scarf that changes brilliant colors and swooshes around; a full animation library with great primitives; lazy load the payload post-network-idle; Destino and Fantasia; the sun and moon clocks* — and on his permission to spend the weight where it is right. Enforced in code:
+
+- **The drawing** (`src/shared/atoms/DaystarFace/`): the sun in splendour — sixteen rays, straight and wavy by turns, each its own cut — the dial's rings, almond eyes with lid and lash, a line of a nose, a closed smile, granulation; the moon as a true crescent whose inner edge is the sleeping profile, with the earthshine in its hollow. The geometry stays pure and the tests hold it as values: the crown's count and kinds, the horns on the rim.
+- **The scarf's geometry** (`src/shared/sky/scarfGeometry.ts`): a ribbon on a tilted orbit about the face, fluttering, tapering to nothing at both tails, split by depth into a piece behind the face and a piece in front that share the crossing point so no seam shows; a sheen along the crest; three strands from one shape. Pure, tested: closed pieces, a flat orbit wholly in front, the tails meeting, the lens, the wisps following.
+- **The driver** (`src/shared/dom/daystarMagic.ts`): the scarf's moods — the energy the pointer lends, the whirl of the turn, the flow of the silk's colors — tweened with GSAP and painted on GSAP's ticker; the glow handed to CSS as `--scarf-glow`. Tested on the real ticker under happy-dom: written, moving, brightening, whirling, still once disposed.
+- **The lazy path** (`src/shared/hooks/useDaystarMagic.ts`, `src/shared/sky/magicGate.ts`): the driver and the library fetched after load and idle, only when reduced motion, Save-Data, and `?magic=off` allow; disposed on unmount. `PERFORMANCE_BUDGET.md` §"The Sky's Lazy Layers" is the rule; `.size-limit.cjs` counts the lazy layers apart from the eager path.
+- **The register** (`src/styles/tokens.css` §"The daystar"): the line-work as one thin ink in the hour's color, the silk's four colors by hour — pigments on paper by day, lit from within by night — the strands' opacities under the glow, the wisps feathered, the behind piece softened.
+- **In a real browser** (`e2e/sky-interactions.spec.ts` §"the magic"): the scarf arrives after `loadEventStart`, swoops on its own, brightens under the pointer and dims when it leaves, saturates through a turn; and never loads under reduced motion or `?magic=off`.
+
+What this pass refuses: an authored animation asset (Lottie, Rive) with nothing yet authored — the slots and the path are ready for one (`BACKLOG.md` §"An authored animation layer over the daystar"); and the card's beard, nightcap, and laugh, set down with the register.
+
 ## Held — Named So It Is Not Lost
 
 - **The name beside the struck star.** The frames letter the name to the right of the star with a leader; the walk letters it below by habit and moves it only to clear a collision. Held for Danny's eye.
@@ -199,7 +214,7 @@ Built the same day, on Danny's next pull: the daystar as the hour's toggle (§"S
 - **A departure's sound.** The rings collapsing is the struck bowl in reverse; whether arrival wants a fourth ring, or a breath of scale on the whole figure, is a tuning for a real eye.
 - **Hover during the spring home.** After a release with nothing in reach the sky springs home for half a second; hover is not refused during the spring. It has not read as noise; named in case it does.
 - **Names and the rim.** The label layout keeps a name clear of other names and of stars, not of the compass lettered at the rim or of a thread; a star that arrives near the rim can set its name on a facet's. Seen once in the night chart during this pass. The fix belongs in `labelLayout.ts` — the rim's names and the lit threads as boxes to avoid — when it reads as more than once.
-- **The face's held marks.** A beard of curls for the sun, in the card's register; whether the nav's glyph wants a hint of the face before it rises; the moon's nightcap, refused so far as kitsch; the sparks' count and reach; whether the turn wants a sound. Each is a stroke in `DaystarFace` or a line in the register, for Danny's eye.
+- **The face's held marks.** Whether the nav's glyph wants a hint of the face before it rises; a second, inner crown of short rays, as the clocks' suns wear; whether the scarf wants to trail sparks through the turn, or the moon's crescent to face the sun across it; the sparks' count and reach; whether the turn wants a sound. The card's beard and nightcap were set down with the card's register. Each is a stroke in `DaystarFace` or `scarfGeometry`, a mood in the driver, or a line in the register, for Danny's eye.
 
 ---
 

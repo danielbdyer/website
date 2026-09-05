@@ -39,6 +39,8 @@ As of the post-SSG state with the content loader moved to `createServerFn`:
 | CSS bundle | ~21KB | ~4.3KB | within target |
 | Prerendered HTML (per route) | ~7KB | — | static; included in first paint |
 
+*As of 2026-09-05 (the sky's third pass): the main entry is ~148 KB gzipped, the eager set — main plus every route chunk and the sky's structural chunk — ~219 KB, and the sky's two lazy layers ~38 KB together; `.size-limit.cjs` holds the floors (175 / 225 / 64 KB) and §"The Sky's Lazy Layers" below says why the last is counted apart.*
+
 `marked` and `gray-matter` are no longer in the client bundle. The loader module is server-only (only reached via `createServerFn` handler bodies, which Start's plugin strips from client chunks). The 70KB-gzipped drop from the pre-refactor bundle reflects that extraction.
 
 The remaining JS weight is primarily:
@@ -121,6 +123,23 @@ No images exist today. When they arrive (in works and possibly the Salon), the b
 
 ---
 
+## The Sky's Lazy Layers
+
+*Added 2026-09-05, with Danny.* The sky carries two layers that are fetched only after the page has loaded and the browser has gone idle, and never block a paint: the WebGL atmosphere (`hooks/useWebGLFirmament.ts` → `webgl/atmosphereRenderer.ts`) and the daystar's magic (`hooks/useDaystarMagic.ts` → `dom/daystarMagic.ts`, which carries GSAP). They are weight the visitor chooses by lingering, not weight the page costs on arrival, and the budget counts them apart from the eager path.
+
+The rule for a lazy layer:
+
+- **After load, after idle.** The import is scheduled from `load` through `requestIdleCallback` (a 4 s ceiling; a 200 ms pause where idle callbacks are missing). The structural sky — the SVG, the walk, the face — is complete and interactive before the fetch begins. `e2e/sky-interactions.spec.ts` §"the magic" pins the chunk's fetch to after the navigation's `loadEventStart`.
+- **Gated by the visitor.** `prefers-reduced-motion: reduce` and `Save-Data` refuse the layer outright (`sky/magicGate.ts`); `?magic=off` and `?atmosphere=off` switch each off so a probe can measure the sky without it.
+- **Its own chunk, its own budget.** Vite splits each behind its dynamic import; `.size-limit.cjs` counts the lazy chunks together (64 KB gzipped) and excludes them from the eager entry (225 KB). A lazy layer growing never fails the eager budget; a lazy layer leaking onto the eager path — a static import from a route — fails it at once.
+- **Disposable.** Each mounts with a handle and disposes on unmount — the atmosphere's loop, the magic's ticker and tweens — so a visitor who looks up and back down pays once.
+
+The sizes today (gzipped): the atmosphere ~10 KB; the magic ~28 KB, of which GSAP's core is the greater part. GSAP is admitted — the refusal of third-party animation libraries in `CONSTELLATION_HORIZON.md` is amended to name it — because a scarf of silk that swoops in three dimensions wants a real tween engine's easing, overwrite discipline, and ticker, and hand-rolling those is the abstraction tax paid in the other direction. `motion`, which nothing imported, left the same day. Danny's ask was explicit: *lazy load or non-blocking eager fetch post-network-idle the payload for the library; we don't have to not make the right decision out of a desire to stay under the size budget.* The budget's answer is this section: the right decision, and a shape that keeps it off the first paint.
+
+This is the site's one exception to hand-rolled motion, and its shape is the rule for any other: lazy, gated, budgeted apart, disposable, and never in the path of the first paint.
+
+---
+
 ## What This File Does Not Govern
 
 - **Motion philosophy.** That is `INTERACTION_DESIGN.md`. This file holds the line between intentional motion and unintentional slowness.
@@ -135,7 +154,7 @@ Today:
 
 - Vite's default build optimizations (tree-shaking, minification).
 - `font-display: swap` via the Google Fonts URL.
-- No per-route code splitting (bundle weight currently small enough not to matter; held in backlog).
+- Route chunks and the sky's lazy layers split behind dynamic imports (Vite); `.size-limit.cjs` holds three gzipped floors in CI — the main entry (175 KB), the eager client JS (225 KB), and the sky's lazy layers counted apart (64 KB) — and blocks a merge that crosses one.
 
 Enforcement gaps (all held in backlog):
 
