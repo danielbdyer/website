@@ -152,6 +152,21 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 **Why:** The drag follows the hand fully along a thread and at seven tenths elsewhere, aims at the star nearest the center, and settles onto it or springs home on release ([CONSTELLATION_WALK.md](./CONSTELLATION_WALK.md) §"Input"). Its constants are first guesses tuned with a mouse in headless Chromium: the play off a thread (`PLAY`) and the give's far limit (`ELASTIC_LIMIT_VB`), the reticle's reach and the head start a graph step gets (`INTENT_RADIUS_VB`, `INTENT_STEP_BONUS_VB` in `intent.ts`), the commit fraction and alignment tolerance of a track, and the two springs' frequency, damping, and velocity cap (`useSkyTravel.ts`).
 **Trigger:** Danny's thumb on a phone, then a trackpad, then a mouse.
 
+### The storyboard's held marks
+
+**Why:** The storyboard pass ([CONSTELLATION_STORYBOARD.md](./CONSTELLATION_STORYBOARD.md), 2026-09-05) took the seams from the three artifacts Danny shared and left their surface marks for a real eye: the struck star's name lettered beside it with a leader rather than beneath; eight-point star bodies; the daystar reflected in water at the foot of the sphere (set down with the pool); a fourth ring, or a breath of scale on the whole figure, at arrival; whether hover should stay quiet through the half-second spring home after a release. The timeline and the corner glyphs in the same frames are the time scrubber and the horizon strip, held with their own triggers below and in `CONSTELLATION_DESIGN.md` §"C6" and §"C9"; the walk's declination of chrome stands.
+**Trigger:** Danny's eye on the lived surface, one mark at a time. Each is a CSS or atom change with no architectural cost.
+
+### The daystar's face and its scarf, tuned by eye
+
+**Why:** The daystar became a character on 2026-09-05 (`CONSTELLATION.md` §"The Sun and the Moon") and, the same day, changed register on Danny's self-critique — *less clowny, more illustrated* — from a card's Santa to the engraver's sun in splendour and the moon asleep in profile, with a scarf of silk swooping around the face in three strands (`CONSTELLATION_STORYBOARD.md` §"The Third Pass"). The crown's cut, the line-work's weight, the grain's density, the crescent's profile, the scarf's width, orbit, flutter, and the four colors of its silk by hour, the glow the pointer lends it and the whirl of the turn — all were drawn once, in a headless browser. Held within it: a hint of the face in the nav's glyph before it rises; whether the sun wants a second, inner crown of short rays as the clocks' suns do; whether the scarf wants to trail sparks through the turn; whether the moon's crescent wants to face the sun across the turn.
+**Trigger:** Danny's eye on the lived face at a phone's size and a wide screen's. Every value is a stroke in `src/shared/atoms/DaystarFace/faceGeometry.ts` or `src/shared/sky/scarfGeometry.ts`, a mood in `src/shared/dom/daystarMagic.ts`, or a line in `tokens.css` §"The daystar".
+
+### An authored animation layer over the daystar
+
+**Why:** Danny named the destination — *a layer that goes over the top of this magic play dough, animated on the page; Destino and Fantasia; the ultra-detailed sun and moon clocks; maybe Lottie* — and the third pass built the procedural half: the scarf's geometry and its GSAP driver, in slots the molecule keeps behind and in front of the face. An authored animation (Lottie or Rive, drawn frame by frame or rigged) would go in the same slots, on the same lazy path, under the same gate and budget (`PERFORMANCE_BUDGET.md` §"The Sky's Lazy Layers"); `lottie-web`'s light build is ~40 KB gzipped, `@rive-app/canvas-lite` ~30 KB, and either would be a third lazy layer with its own floor. What it needs that code cannot supply is the drawing itself.
+**Trigger:** An authored animation exists — Danny's, or a collaborator's — that the procedural silk cannot reach; or the procedural silk stops being enough for the register the storyboard names.
+
 ### The oculus's fit and the streak
 
 **Why:** The resting camera fits the whole sphere — the oculus — to the frame's shorter side at 92% (about 3.85 radii on a landscape screen, farther on a phone), and travel reads its velocity from the deep field's streak rather than a dolly. The fill, the streak's strength, and the glide's duration range are tuned in a few viewports. Single-facet works also gather along their facet's bearing in a near-straight string; a wider azimuth jitter for them may read more like a sky.
@@ -233,7 +248,7 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ### Dependency policy
 
-**Why:** `DEPENDENCY_POLICY.md` is partially covered in the north star's technology stack table. A full policy would name evaluation criteria, update cadence, and the philosophical stance on third-party code.
+**Why:** `DEPENDENCY_POLICY.md` is partially covered in the north star's technology stack table. A full policy would name evaluation criteria, update cadence, and the philosophical stance on third-party code. *2026-09-05:* GSAP joined as the daystar's lazy layer, on Danny's ask; the guidance that admitted it — lazy, gated by the visitor's preferences, budgeted apart from the eager path, disposable — is written in `PERFORMANCE_BUDGET.md` §"The Sky's Lazy Layers" and is the seed of this policy.
 **Trigger:** When a new dependency needs adding and the existing table doesn't give enough guidance.
 
 ### Testing strategy

@@ -1,34 +1,15 @@
-import { useRef } from 'react';
 import type { ConstellationGraph } from '@/shared/content/constellation';
-import { POLE_KEY, bearingsOf } from '@/shared/content/skyWalk';
+import { bearingsOf } from '@/shared/content/skyWalk';
 import { ConstellationFilters } from '@/shared/atoms/ConstellationFilters/ConstellationFilters';
-import { Daystar } from '@/shared/atoms/Daystar/Daystar';
 import { Firmament } from '@/shared/atoms/Firmament/Firmament';
+import { Daystar, type SkyHour } from '@/shared/molecules/Daystar/Daystar';
 import { WebGLFirmament } from '@/shared/molecules/WebGLFirmament/WebGLFirmament';
 import { SkyWhisper } from '@/shared/molecules/SkyWhisper/SkyWhisper';
-import { useConstellationParallax } from '@/shared/hooks/useConstellationParallax';
-import { useSkyTravel } from '@/shared/hooks/useSkyTravel';
-import { useSkyWalk } from '@/shared/hooks/useSkyWalk';
 import { cn } from '@/shared/utils/cn';
 import { Stage } from './Stage';
-import {
-  DAYSTAR_REST_TRANSFORM,
-  VIEWBOX,
-  buildPositionedMap,
-  buildRenderableNodes,
-  resolveEdges,
-  skyTitle,
-} from './layout';
-import { useOverlayKey, useSkyInteractions } from './useSkyInteractions';
-import {
-  buildWorld,
-  initialHere,
-  namedOrder,
-  navigableEdges,
-  navigableNodes,
-  whisperConcordantOf,
-  whisperPlaceOf,
-} from './walk';
+import { VIEWBOX, skyTitle } from './layout';
+import { useSkyScene } from './useSkyScene';
+import { attentionKeyOf, whisperConcordantOf, whisperPlaceOf } from './walk';
 
 interface ConstellationProps {
   graph: ConstellationGraph;
@@ -41,47 +22,38 @@ interface ConstellationProps {
    *  (or the session's remembered place).
    *  CONSTELLATION_PARALLEL.md §"The Orientation Contract." */
   focusKey?: string | undefined;
+  /** The hour the sky keeps and the way to turn it; with it the
+   *  daystar is the hour's toggle, without it a decoration. */
+  hour?: SkyHour | undefined;
   className?: string;
 }
 
 // The sky as a walk (CONSTELLATION_WALK.md): the visitor is always
 // somewhere; the camera rests there; a named destination — a star, a
 // bearing, a thread, an arrow, a drag along a thread — is the only
-// thing that moves it.
+// thing that moves it. While it moves, the frame says so
+// (data-traveling), and the destination is framed ahead. The frame
+// carries the pointer's parallax, so the chart, the daystar's gaze,
+// and the atmosphere all lean from one pair of variables.
 
 export function Constellation({
   graph,
   fullViewport = false,
   focusKey,
+  hour,
   className,
 }: ConstellationProps) {
-  const parallaxRef = useConstellationParallax<SVGSVGElement>();
-  const cameraRef = useRef<SVGGElement | null>(null);
-  const glyphRef = useRef<SVGCircleElement | null>(null);
-  const positioned = buildPositionedMap(graph);
-  const edges = resolveEdges(graph.edges, positioned);
-  const nodes = buildRenderableNodes(graph.nodes, positioned);
-  const titleId = 'constellation-title';
-  const walk = useSkyWalk(initialHere(graph, focusKey));
-  const travel = useSkyTravel({
+  const { parallaxRef, cameraRef, glyphRef, walk, travel, interactions, world } = useSkyScene({
     graph,
-    nodes: navigableNodes(nodes),
-    edges: navigableEdges(edges, positioned),
-    viewboxSize: VIEWBOX,
-    fit: fullViewport ? 'cover' : 'contain',
-    walk,
-    namedKeys: namedOrder(graph, walk.here),
-    cameraRef,
-    glyphRef,
+    fullViewport,
+    focusKey,
   });
-  const interactions = useSkyInteractions({ graph, walk, travel });
-  const overlayKey = useOverlayKey();
-  const { hoverKey } = interactions;
-  const world = buildWorld(graph, { edges, nodes, walk, hoverKey, overlayKey });
-  const hereKey = walk.here === POLE_KEY ? null : walk.here;
+  const titleId = 'constellation-title';
+  const traveling = walk.heading !== null;
 
   return (
     <nav
+      ref={parallaxRef}
       aria-labelledby={titleId}
       className={cn('constellation-frame relative isolate overflow-hidden', className)}
     >
@@ -90,14 +62,14 @@ export function Constellation({
       </h2>
       <WebGLFirmament
         graph={graph}
-        activeKey={hoverKey ?? walk.intent ?? hereKey}
+        activeKey={attentionKeyOf(walk)}
         present={world.present}
         fullViewport={fullViewport}
       />
       <svg
-        ref={parallaxRef}
         viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
         preserveAspectRatio={fullViewport ? 'xMidYMid slice' : 'xMidYMid meet'}
+        data-traveling={traveling ? 'true' : undefined}
         onClick={interactions.onSkyClick}
         onKeyDown={travel.onKeyDown}
         onPointerDown={interactions.onPointerDown}
@@ -107,9 +79,6 @@ export function Constellation({
         <ConstellationFilters />
         <g className="constellation-parallax--firmament">
           <Firmament size={VIEWBOX} />
-          <g data-daystar="true" transform={DAYSTAR_REST_TRANSFORM}>
-            <Daystar cx={0} cy={0} />
-          </g>
         </g>
         <g className="constellation-parallax--sky">
           <g ref={cameraRef} className="constellation-camera">
@@ -117,12 +86,14 @@ export function Constellation({
           </g>
         </g>
       </svg>
+      <Daystar hour={hour} />
       <SkyWhisper
         place={whisperPlaceOf(graph, walk.here)}
         bearings={bearingsOf(graph, walk.here)}
         concordant={whisperConcordantOf(graph, walk.here)}
         onBearing={travel.travelTo}
         onAttend={walk.attendFacet}
+        traveling={traveling}
         className="absolute right-6 bottom-16 left-6 z-10 sm:right-auto sm:bottom-6"
       />
     </nav>

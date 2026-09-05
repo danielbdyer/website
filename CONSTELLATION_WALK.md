@@ -85,7 +85,9 @@ The eight facets take the eight points of the polestar. Adjacent points share a 
 
 **The gaze leans the sky, not the window.** The mouse-look peer no longer swings the camera — that moved the oculus on the page. Instead the surface point the camera rests on slides a little toward the cursor, so the sky breathes inside a window that holds still.
 
-**Arrival acknowledges.** The destination becomes *here*: the echo widens, the label settles, the whisper changes, the new neighborhood's names fade in. The thread walked stays lit.
+**Departure frames.** Naming a destination is a beat of its own: the rings collapse out of the star being left, hover goes quiet, the whisper dims, the thread about to be walked lights end to end, and the destination claims — halo, gold, name, the atmosphere's crescendo — so it is framed ahead through the whole crossing. A change of mind mid-flight is a new departure from wherever the sky is; nothing rewinds ([`CONSTELLATION_STORYBOARD.md`](./CONSTELLATION_STORYBOARD.md) §"Scene 3").
+
+**Arrival acknowledges.** The destination becomes *here*: the echo's rings widen out of it, the label settles, the whisper returns, the new neighborhood's names fade in. The thread walked stays lit.
 
 **Nothing ambient.** No wells, no flick, no coast, no demonstration drift, no settle assist. The heavens still turn on the clock, the stars twinkle, the atmosphere breathes; those are the sky's own motions, not the visitor's.
 
@@ -97,11 +99,12 @@ The eight facets take the eight points of the polestar. Adjacent points share a 
 
 | Gesture | Result |
 |---|---|
-| **Hover a star** | Its label; its figures light softly; its threads bloom |
-| **Click a star that is not here** | Travel to it |
+| **Hover a star** | Its label; its threads bloom; the halo claims with gold — a breath, not an arrival: the rings wait for *here* |
+| **Click a star that is not here** | Travel to it: the rings collapse out of the star being left, the whisper dims, the thread to be walked lights, and the destination is framed ahead — halo, gold, name — until arrival widens the rings out of it |
 | **Click, or Enter on, the star that is here** | Open the work in the sky (`/sky/{room}/{slug}`) |
-| **Hover a thread** | Both endpoints light; the facet's name at the midpoint |
+| **Hover a thread** | It lights end to end; both its stars light halfway and name themselves; the facet's name at the midpoint; its figure lights and the rim name brightens |
 | **Click a thread** | Travel along it to its far end |
+| **Hover while the sky is under way** | Nothing. While a travel is bound somewhere or a hand holds the sky, hover is quiet; the destination, or the reticle's star, is the one claim |
 | **Hover a bearing** (a facet word in the whisper) | That facet's figure lights |
 | **Click a bearing** | Travel along that facet to its nearest star |
 | **Arrow keys** | Travel to the neighbor in that screen direction |
@@ -174,6 +177,8 @@ What stays: the two hours and the dusk; the weather's turn on the clock (the sta
 *Shipped 2026-09-02, the second pass with Danny:* the dolly is gone and travel is a sine glide with the deep field's streak (`uTravel` in `src/shared/webgl/atmosphereShaders.ts`, carried by `src/shared/state/skyCamera.ts`); the rest distance adapts to the frame (`restDistanceFor`, `skyWalk.ts`); the scrub along a track lives in `useSkyTravel.ts`; the compass is drawn — meridians and sector atmospheres in the dome shader, names at the rim in `src/shared/atoms/Compass/` projected by `skyProjector.projectCompass`, dotted second figures in `Thread.tsx`; the horizon rim in the dome shader; label layout in `src/shared/dom/labelLayout.ts` applied by `skyProjector.placeLabels`; the concordance in `src/shared/content/concordance.ts` and presence in `src/shared/content/presence.ts`, with absent stars receding in both the SVG (`data-present`) and the atmosphere (`aPresence`). Not yet built: the proposed state and its author gate, the placement override, embeddings behind the concordance.
 
 *Shipped 2026-09-02, the third pass — the oculus:* the rest distance fits the whole sphere to the frame's shorter side (`restDistanceFor`, `limbNdcAt`, `skyWalk.ts`), the page beyond the limb and the luminous limb in the dome shader, the daystar seated on the page as the plate's corner emblem (`daystarViewboxPoint`, `skyProjector.projectDaystar`, read back by the atmosphere), the chart held still with the heavens' turn moved into the atmosphere's spin (`useWebGLFirmament.ts`), the gaze as a lean of the surface point (`useSkyTravel.ts`), labels at three volumes moved by translate (`labelLayout.ts`, `data-named` ranks), the names at the rim as bearings (`useSkyInteractions.ts`), gold returned to attention in the grid and the whisper's bearings in their hues, and the presence cap set above the corpus.
+
+*Shipped 2026-09-05 (the storyboard pass, [`CONSTELLATION_STORYBOARD.md`](./CONSTELLATION_STORYBOARD.md)):* the seams. The core announces `departed`, `held`, and `released` beside `arrived` and `aimed`; the walk's reducer (`src/shared/sky/walkState.ts`) holds the heading and the thread it follows, the hand's hold, the hovered star, and the traced thread, and refuses a hover while the sky is under way; the destination is framed ahead (`data-heading` on the star, `data-traveling` on the thread, the frame, and the whisper); the echo's rings belong to *here* alone and collapse at departure; a traced thread lights its ends (`data-lit`) and names its facet at the midpoint (`data-thread-name`, carried by the projector); the companion wears the hue of the place the body is at or bound for; the aim persists through the settle; and the sky owns the touch (`touch-action: none` on the constellation, which had been declared only under the overlay's veil).
 
 *Shipped 2026-09-03 (PR #57):* the travel hook became a thin shell around a pure core — `src/shared/sky/motion.ts` (the camera's state machine), `src/shared/sky/hand.ts` (the drag), `src/shared/sky/walkState.ts` (the walk as a reducer), `src/shared/geometry/spring.ts` — with tests for each transition; and the drag stopped preferring the neighbor: the track no longer caps the hand at its own star, the reticle decides at release, and the graph's head start shrank. `CONSTELLATION_ARCHITECTURE.md` names the whole shape.
 

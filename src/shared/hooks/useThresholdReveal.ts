@@ -92,8 +92,16 @@ interface RevealState {
   touchBase: number;
 }
 
+/** The gesture's progress, written to the preview element and mirrored
+ *  on the root, so surfaces outside the preview can lean with the pull
+ *  — the nav's glyph readying itself to rise into the sky, the daystar
+ *  sinking as the visitor looks back down. */
 function writeReveal(el: HTMLElement | null, value: number): void {
-  el?.style.setProperty('--reveal', value.toFixed(4));
+  const progress = value.toFixed(4);
+  el?.style.setProperty('--reveal', progress);
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--reveal', progress);
+  }
 }
 
 function stepReveal(el: HTMLElement | null, state: RevealState, onCommit: () => void): void {

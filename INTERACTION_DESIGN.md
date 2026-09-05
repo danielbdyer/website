@@ -86,7 +86,9 @@ The header has its own 500ms transition on `background` to stay continuous with 
 
 **The one longer arc.** The constellation's atmosphere on `/sky` is the exception the rule allows: the farthest surface in the house, it changes its hour over 1.8s rather than 500ms, passing through a dusk that belongs to neither hour (`CONSTELLATION.md` §"Night: the firmament"). The room's own chrome on that page — the return link, the labels, the star bodies — still dims in the sigh; only the sky behind them takes longer, and the sun and moon set and rise in sequence across the same arc. A sky that snapped its hour in 500ms read as a slide changing; a sky that takes a breath longer reads as weather. This is decided (2026-09-01) and scoped to the firmament; no other surface inherits it.
 
-**No icon animation on the toggle.** When the visitor clicks the theme button, the icon swaps (sun → moon or vice versa) instantly. The room around the icon does the dimming; the icon itself just changes its hand. Animating the icon would compete with the room's transition for attention; the toggle should be the smallest motion, the room the largest.
+**No icon animation on the toggle.** When the visitor clicks the theme button, the icon swaps (sun → moon or vice versa) instantly. The room around the icon does the dimming; the icon itself just changes its hand. Animating the icon would compete with the room's transition for attention; the toggle should be the smallest motion, the room the largest. The glyph shows the hour the room keeps — the sun by day, the moon by night — so that its ascent into the sky (below) reads as one body.
+
+**The sky's toggle is the exception, as the sky is.** On `/sky` the toggle is the daystar itself — a face in the margin — and clicking it turns it like a coin: the setting face goes edge-on over 700 ms and the rising face comes round over the next 700 ms, 1.4 s in all, inside the atmosphere's 1.8 s dusk, with a flare and sparks at the turn. The two durations are the sky's own (`tokens.css` §"The daystar") and no other surface inherits them. `CONSTELLATION.md` §"The Sun and the Moon".
 
 **No flash of wrong theme.** The theme store applies the DOM class at module load (`applyToDOM(isDark())` in `src/app/providers/theme-store.ts`), before React renders. The first paint is already in the visitor's preferred theme. This is honored as an invariant: any future change that introduces a flash of wrong theme is a regression, not a tradeoff.
 
@@ -131,6 +133,7 @@ A view transition is the site's body moving. Different navigations are different
 | **Rearrange** | The same surface is filtering | Cards stay; positions shift; missing fade out; new fade in | Stable per-card `viewTransitionName` on listing wrapper (`workCardTransitionName`); default-root carries the rest. The visitor's scroll position is preserved (see "Scroll on navigation" below). |
 | **Cross** | A room → another room is a different atmosphere | Instant. The rooms aren't continuous; pretending they are is dishonest. | `viewTransition={false}` on the `<Link>`. Room-jump links in `Nav`, the wordmark, the "Back home →" links on NotFound and ErrorBoundary. The adjacent-room hint in `RoomOutwardInvitation` is *not* yet opted out — see "Held question on RoomOutwardInvitation" below. |
 | **Step** | A prose link points elsewhere | Default-root crossfade — the eye moves from one paragraph to a new article | `[[wikilinks]]` in prose, backlinks in the outward invitation, facet chips on work pages, `RoomOutwardInvitation` thread links. The visitor stepped through prose-as-pointer; a fade is the gesture for turning the page. |
+| **Ascend / Descend** | The Foyer opens its ceiling; the sky closes it again | The room crossfades (320 ms) while the nav's sun-or-moon glyph rises and grows into the daystar's face in the sky's margin over 900 ms — the same being, in its place; on return it descends into the corner | The `daystar` view-transition name, paired between the nav toggle's glyph (every route but `/sky`) and the sky's daystar button. The "↑ Look up" link, the look-up pull's commit, the "↓ Return" link, and the return pull's commit all keep the default transition. `CONSTELLATION.md` §"The Sun and the Moon". |
 
 A sixth state, **Fall through**, is "the visitor arrived fresh" — direct URL, hard reload, first paint. No transition; browser default.
 
@@ -156,8 +159,8 @@ A sixth state, **Fall through**, is "the visitor arrived fresh" — direct URL, 
 | Work page | another work | `[[wikilink]]` | Step |
 | Work page | another work | backlink in outward invitation | Step |
 | 404 / ErrorBoundary | Foyer | "Back home →" | Cross |
-| Foyer | `/sky` | "↑ Look up" link | Cross |
-| `/sky` | Foyer | "↓ Return to the Foyer" link | Cross |
+| Foyer | `/sky` | "↑ Look up" link, or the look-up pull | Ascend |
+| `/sky` | Foyer | "↓ Return to the Foyer" link, or the return pull | Descend |
 | any | any | browser back/forward | matches the forward gesture, reversed (browser-native) |
 | any | any | direct URL / reload | Fall through |
 

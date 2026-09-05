@@ -204,12 +204,13 @@ function setEndpoints(el: Element, x1: string, y1: string, x2: string, y2: strin
 
 /**
  * Position every thread's endpoints via the data-thread-id selector,
- * and the wide transparent hit twin beside it (data-thread-hit) that
- * makes the hairline able to be hovered and clicked. Threads connecting
- * behind-camera endpoints render off-canvas through the same
- * far-offscreen trick.
+ * the wide transparent hit twin beside it (data-thread-hit) that makes
+ * the hairline able to be hovered and clicked, and the facet's name at
+ * the midpoint (data-thread-name), which CSS shows only while the
+ * thread is traced or traveled. Threads connecting behind-camera
+ * endpoints render off-canvas through the same far-offscreen trick.
  *
- * @bigO Time: O(E) per call (two cached element lookups + two
+ * @bigO Time: O(E) per call (three cached element lookups + two
  *       matrix-multiplies per edge). Hot path: called once per RAF
  *       tick alongside projectStars.
  *       Space: O(E) for the element cache, O(1) per tick.
@@ -227,14 +228,23 @@ export function projectThreads(
     const el = cachedElement(cameraGroup, `[data-thread-id="${edge.id}"]`);
     if (!el) continue;
     projectInto(edge.sourcePos, camera, basis, 1, SCRATCH);
-    const x1 = (center + SCRATCH.screenX * radius).toFixed(2);
-    const y1 = (center - SCRATCH.screenY * radius).toFixed(2);
+    const sx = center + SCRATCH.screenX * radius;
+    const sy = center - SCRATCH.screenY * radius;
     projectInto(edge.targetPos, camera, basis, 1, SCRATCH);
-    const x2 = (center + SCRATCH.screenX * radius).toFixed(2);
-    const y2 = (center - SCRATCH.screenY * radius).toFixed(2);
+    const tx = center + SCRATCH.screenX * radius;
+    const ty = center - SCRATCH.screenY * radius;
+    const x1 = sx.toFixed(2);
+    const y1 = sy.toFixed(2);
+    const x2 = tx.toFixed(2);
+    const y2 = ty.toFixed(2);
     setEndpoints(el, x1, y1, x2, y2);
     const hit = cachedElement(cameraGroup, `[data-thread-hit="${edge.id}"]`);
     if (hit) setEndpoints(hit, x1, y1, x2, y2);
+    const name = cachedElement(cameraGroup, `[data-thread-name="${edge.id}"]`);
+    if (name) {
+      name.setAttribute('x', ((sx + tx) / 2).toFixed(2));
+      name.setAttribute('y', ((sy + ty) / 2).toFixed(2));
+    }
   }
 }
 
@@ -401,17 +411,32 @@ export function markTrack(cameraGroup: SVGGElement, threadId: string | null): vo
 
 /** Seat the daystar on the page in the frame's upper right — the
  *  plate's corner emblem — wherever the live frame puts that corner.
- *  Writes the wrapper's transform; the WebGL atmosphere reads it back
- *  for the glow and the page light. */
+ *  The daystar is an element beside the sky's svg, not inside it (so
+ *  it can be a button, and so a look-up can morph the nav's glyph into
+ *  it); its place is written as page pixels in `--daystar-x/y` and as
+ *  viewbox units in `data-vb-x/y`, which the WebGL atmosphere reads
+ *  back for the glow and the page light. Written only when it moves —
+ *  the frame changing shape — never per tick. */
 export function projectDaystar(
   svg: SVGSVGElement | null,
   viewboxSize: number,
   fit: 'cover' | 'contain',
 ): void {
-  if (!svg) return;
-  const el = cachedElement(svg, '[data-daystar]');
+  const frame = svg?.parentElement;
+  if (!svg || !frame) return;
+  const el = cachedElement(frame, '[data-daystar]') as HTMLElement | null;
   if (!el) return;
   const rect = svg.getBoundingClientRect();
   const p = daystarViewboxPoint(rect.width, rect.height, viewboxSize, fit);
-  el.setAttribute('transform', `translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})`);
+  const vbX = p.x.toFixed(2);
+  const vbY = p.y.toFixed(2);
+  if (el.dataset.vbX === vbX && el.dataset.vbY === vbY) return;
+  el.dataset.vbX = vbX;
+  el.dataset.vbY = vbY;
+  const box = fitViewboxToCanvas(rect.width, rect.height, viewboxSize, fit);
+  const frameRect = frame.getBoundingClientRect();
+  const x = rect.left - frameRect.left + box.offsetX + p.x * box.scale;
+  const y = rect.top - frameRect.top + box.offsetY + p.y * box.scale;
+  el.style.setProperty('--daystar-x', `${x.toFixed(1)}px`);
+  el.style.setProperty('--daystar-y', `${y.toFixed(1)}px`);
 }

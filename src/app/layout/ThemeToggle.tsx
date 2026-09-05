@@ -10,13 +10,18 @@ import { DAYSTAR_TRANSITION_NAME } from '@/shared/utils/view-transition-names';
 // region; the inner <span> is the visible chrome that picks up the
 // hover tint at icon scale.
 //
-// The icon-bearing span carries the `daystar` view-transition name —
-// the same name applied to the constellation's celestial body on
-// /sky. When the visitor navigates from any non-/sky route to /sky,
-// the View Transitions API morphs the small corner icon into the
-// large firmament daystar; on return, the morph runs in reverse.
-// Uniqueness is preserved by the layout: /sky hides the Nav so the
-// toggle is not present there, and other routes have no firmament.
+// The glyph shows the hour the room keeps — the sun by day, the moon
+// by night — and the label says what a click does. The icon-bearing
+// span carries the `daystar` view-transition name, the same name the
+// constellation's daystar carries on /sky. When the visitor looks up
+// from a room, the View Transitions API morphs this small glyph into
+// the daystar's face on its way to the sky's margin — the same being,
+// grown into its place — and on return the face descends into the
+// corner. Showing the current hour is what lets the morph read as one
+// body: the moon rises at night. Uniqueness is preserved by the
+// layout: /sky hides the Nav, and other routes have no firmament. The
+// glyph also readies itself with the Foyer's look-up pull (--reveal on
+// the root, tokens.css). CONSTELLATION.md §"The Sun and the Moon".
 export function ThemeToggle() {
   const { dark, toggle } = useTheme();
 
@@ -29,9 +34,9 @@ export function ThemeToggle() {
     >
       <span
         style={{ viewTransitionName: DAYSTAR_TRANSITION_NAME }}
-        className="text-text-3 group-hover:bg-tag-bg group-hover:text-text flex items-center rounded p-[5px] transition-colors duration-200"
+        className="theme-toggle__glyph text-text-3 group-hover:bg-tag-bg group-hover:text-text flex items-center rounded p-[5px] transition-colors duration-200"
       >
-        {dark ? <SunIcon /> : <MoonIcon />}
+        {dark ? <MoonIcon /> : <SunIcon />}
       </span>
     </button>
   );

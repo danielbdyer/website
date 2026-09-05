@@ -27,13 +27,18 @@ export interface StarWork {
 }
 
 /** The star's place in the walk (CONSTELLATION_WALK.md). `active`:
- *  hovered or focused — the halo claims. `here`: the visitor stands
- *  at it. `named`: within one stroke of here, so its label shows at
- *  rest. `visited`: stood at earlier this session — it keeps a
- *  little warmth. All are CSS hooks via data attributes. */
+ *  hovered, focused, or aimed at — the halo claims. `here`: the
+ *  visitor stands at it — the echo's rings widen and hold. `heading`:
+ *  the sky is bound for it — framed ahead through the crossing. `lit`:
+ *  it is one end of a thread the pointer traces — a half claim, and
+ *  its name. `named`: within one stroke of here, so its label shows at
+ *  rest. `visited`: stood at earlier this session — it keeps a little
+ *  warmth. All are CSS hooks via data attributes. */
 export interface StarWalk {
   readonly active?: boolean;
   readonly here?: boolean;
+  readonly heading?: boolean;
+  readonly lit?: boolean;
   readonly named?: NamedRank | undefined;
   readonly visited?: boolean;
   /** Present from where the visitor stands (the contextual cap);
@@ -69,7 +74,15 @@ interface StarProps {
 
 export function Star({ work, twinkleDelay, walk = {}, viewTransitionName }: StarProps) {
   const { href, label, visibleLabel, hue, isPreview = false } = work;
-  const { active = false, here = false, named, visited = false, present = true } = walk;
+  const {
+    active = false,
+    here = false,
+    heading = false,
+    lit = false,
+    named,
+    visited = false,
+    present = true,
+  } = walk;
   return (
     <a
       href={href}
@@ -83,6 +96,8 @@ export function Star({ work, twinkleDelay, walk = {}, viewTransitionName }: Star
       data-hue={hue}
       data-active={active ? 'true' : undefined}
       data-here={here ? 'true' : undefined}
+      data-heading={heading ? 'true' : undefined}
+      data-lit={lit ? 'true' : undefined}
       data-named={named}
       data-visited={visited ? 'true' : undefined}
       data-present={present ? 'true' : 'false'}

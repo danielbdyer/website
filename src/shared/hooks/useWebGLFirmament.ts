@@ -36,18 +36,19 @@ import type { Camera } from '@/shared/geometry/camera';
 
 const VIEWBOX = 1000;
 const VIEWBOX_CENTER = VIEWBOX / 2;
-const DAYSTAR_VIEWBOX = { x: 500, y: 240 };
+const DAYSTAR_VIEWBOX = { x: 885, y: 288 };
 
-/** The daystar's live viewbox position, read from the wrapper the
- *  travel hook seats on the page each tick (skyProjector.projectDaystar). */
-function daystarX(wrapper: SVGGElement | null): number {
-  const list = wrapper?.transform.baseVal;
-  return list && list.numberOfItems > 0 ? list.getItem(0).matrix.e : DAYSTAR_VIEWBOX.x;
+/** The daystar's live viewbox position, read from the data the travel
+ *  hook writes when it seats the daystar on the page
+ *  (skyProjector.projectDaystar). */
+function daystarX(daystar: HTMLElement | null): number {
+  const x = Number(daystar?.dataset.vbX);
+  return Number.isFinite(x) ? x : DAYSTAR_VIEWBOX.x;
 }
 
-function daystarY(wrapper: SVGGElement | null): number {
-  const list = wrapper?.transform.baseVal;
-  return list && list.numberOfItems > 0 ? list.getItem(0).matrix.f : DAYSTAR_VIEWBOX.y;
+function daystarY(daystar: HTMLElement | null): number {
+  const y = Number(daystar?.dataset.vbY);
+  return Number.isFinite(y) ? y : DAYSTAR_VIEWBOX.y;
 }
 const ACTIVE_EASE_RATE = 7;
 const POOL_EASE_RATE = 5;
@@ -70,7 +71,7 @@ interface SkyDomElements {
   readonly parallaxSky: Element;
   readonly cameraGroup: Element;
   readonly glyph: SVGCircleElement | null;
-  readonly daystar: SVGGElement | null;
+  readonly daystar: HTMLElement | null;
 }
 
 interface MutableVec3 {
@@ -154,7 +155,7 @@ function locateSkyDom(container: HTMLElement): SkyDomElements | null {
     parallaxSky,
     cameraGroup,
     glyph: frame.querySelector<SVGCircleElement>('[data-companion]'),
-    daystar: frame.querySelector<SVGGElement>('[data-daystar]'),
+    daystar: frame.querySelector<HTMLElement>('[data-daystar]'),
   };
 }
 
@@ -248,8 +249,10 @@ function writeRotationAffine(out: MutableAffine, angle: number, tx: number, ty: 
  *  way.) */
 function advanceChains(els: SkyDomElements, chain: ChainState, dt: number): number {
   const k = 1 - Math.exp(-PARALLAX_EASE_RATE * dt);
-  const targetX = inlineVar(els.svg, '--parallax-x') * PARALLAX_SKY_PX;
-  const targetY = inlineVar(els.svg, '--parallax-y') * PARALLAX_SKY_PX;
+  // The parallax variables live on the frame (the constellation's
+  // <nav>), where the pointer hook writes them.
+  const targetX = inlineVar(els.frame, '--parallax-x') * PARALLAX_SKY_PX;
+  const targetY = inlineVar(els.frame, '--parallax-y') * PARALLAX_SKY_PX;
   chain.parSkyX += (targetX - chain.parSkyX) * k;
   chain.parSkyY += (targetY - chain.parSkyY) * k;
   chain.parFirX = (chain.parSkyX * PARALLAX_FIRMAMENT_PX) / PARALLAX_SKY_PX;
@@ -362,8 +365,9 @@ function renderAtmosphereFrame(state: LoopState, timeSeconds: number, motion: nu
   frame.pool.x = fit.offsetX + pool.x * fit.scale;
   frame.pool.y = fit.offsetY + pool.y * fit.scale;
   frame.pool.strength = state.poolStrength * motion;
-  frame.daystar.x = fit.offsetX + (daystarX(els.daystar) + chain.parFirX) * fit.scale;
-  frame.daystar.y = fit.offsetY + (daystarY(els.daystar) + chain.parFirY) * fit.scale;
+  // The daystar sits on the page, not in the sky: it does not parallax.
+  frame.daystar.x = fit.offsetX + daystarX(els.daystar) * fit.scale;
+  frame.daystar.y = fit.offsetY + daystarY(els.daystar) * fit.scale;
   handles.render(frame);
   return Math.max(
     activeResidual,

@@ -137,8 +137,15 @@ export interface Motion {
   readonly releasedAt: number;
 }
 
+/** What the core tells the walk. A travel announces its departure and
+ *  its arrival; a hand announces taking hold and letting go; the
+ *  reticle announces a change of aim. Each is data the shell hands on
+ *  (CONSTELLATION_ARCHITECTURE.md §"The Two Clocks"). */
 export type MotionEvent =
+  | { readonly kind: 'departed'; readonly place: Place; readonly alongEdgeId: string | undefined }
   | { readonly kind: 'arrived'; readonly place: Place; readonly alongEdgeId: string | undefined }
+  | { readonly kind: 'held' }
+  | { readonly kind: 'released' }
   | { readonly kind: 'aimed'; readonly place: string | null };
 
 export interface Advanced {
@@ -242,8 +249,10 @@ export function arrive(
 
 // ─── Transitions the shell requests ────────────────────────────────
 
-/** Begin travel toward a place, from wherever the sky is now. Under
- *  reduced motion the arrival is immediate. */
+/** Begin travel toward a place, from wherever the sky is now — a
+ *  `departed` event names the heading so the destination can be framed
+ *  ahead. Under reduced motion the arrival is immediate and there is
+ *  no departure to frame. */
 export function travelTo(
   motion: Motion,
   to: UnitVector3,
@@ -264,7 +273,10 @@ export function travelTo(
     startTime: now,
     durationMs,
   };
-  return { motion: { ...motion, phase: { kind: 'travel', travel } }, events: [] };
+  return {
+    motion: { ...motion, phase: { kind: 'travel', travel } },
+    events: [{ kind: 'departed', place, alongEdgeId }],
+  };
 }
 
 export function fitRest(motion: Motion, restTarget: number, snap = false): Motion {

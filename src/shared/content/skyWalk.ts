@@ -68,7 +68,11 @@ export function restDistanceFor(
 /** Where the daystar sits: not in the sky but on the page, as the
  *  plate's corner emblem — the sun or moon an atlas keeps in the margin
  *  — in the frame's upper right, clear of the oculus at every aspect.
- *  Viewbox units, for a frame of the given size under the given fit. */
+ *  Viewbox units, for a frame of the given size under the given fit.
+ *  The projector seats the daystar there in page pixels each tick and
+ *  hands the atmosphere the same point for its glow; before the loop
+ *  wakes, CSS seats it by the same rule for a cover-fit frame
+ *  (tokens.css §"The daystar"). */
 export function daystarViewboxPoint(
   frameWidth: number,
   frameHeight: number,
@@ -85,10 +89,6 @@ export function daystarViewboxPoint(
   const top = -offsetY / scale;
   return { x: right - viewboxSize * 0.115, y: top + viewboxSize * 0.1 };
 }
-
-/** The frame the prerender assumes — a landscape screen — so first paint
- *  seats the emblem where hydration will find it. */
-export const DAYSTAR_REST_FRAME = { width: 1440, height: 900 } as const;
 
 /** Where each facet's name is lettered: on its bearing, just outside
  *  the populated cap, so the compass reads around the sky's edge. */

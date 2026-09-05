@@ -33,6 +33,7 @@ import {
   type Advanced,
   type Hand,
   type Motion,
+  type MotionEvent,
   type Track,
 } from './motion';
 
@@ -223,8 +224,8 @@ export function aimOf(
 }
 
 /** The hand has moved. Below the threshold nothing happens; past it the
- *  sky is held and follows. Returns the motion and an `aimed` event
- *  when the intent changes. */
+ *  sky is held and follows. Returns the motion and its events: `held`
+ *  the moment the hand engages, `aimed` when the intent changes. */
 export function moveHand(
   motion: Motion,
   pointer: Pointer,
@@ -237,6 +238,7 @@ export function moveHand(
   const dx = pointer.x - held.startX;
   const dy = pointer.y - held.startY;
   if (!held.engaged && Math.hypot(dx, dy) < SCRUB_THRESHOLD_PX) return { motion, events: [] };
+  const taking: readonly MotionEvent[] = held.engaged ? [] : [{ kind: 'held' }];
   const hand = held.engaged ? held : engage(motion, held, graph, viewport.size);
   const hx = dx / viewport.scale;
   const hy = dy / viewport.scale;
@@ -249,7 +251,10 @@ export function moveHand(
   const next: Hand = { ...hand, track, t, u, uPrev: hand.u, intent, lastMoveAt: now };
   return {
     motion: { ...moved, phase: { kind: 'held', hand: next } },
-    events: intent === hand.intent ? [] : [{ kind: 'aimed', place: intent }],
+    events: [
+      ...taking,
+      ...(intent === hand.intent ? [] : [{ kind: 'aimed' as const, place: intent }]),
+    ],
   };
 }
 
@@ -261,7 +266,9 @@ export function moveHand(
  *  track's star; otherwise the sky springs back to where the visitor
  *  stood. Either way it carries the hand's parting velocity. A
  *  cancelled pointer always springs back. An unengaged hand (a tap)
- *  simply lets go. */
+ *  simply lets go. The aim is kept — or set — to the star the sky
+ *  settles onto, so its claim persists through the settle rather than
+ *  blinking off and back on at arrival. */
 export function releaseHand(
   motion: Motion,
   pointerId: number,
@@ -302,6 +309,9 @@ export function releaseHand(
         },
       },
     },
-    events: hand.intent === null ? [] : [{ kind: 'aimed', place: null }],
+    events: [
+      { kind: 'released' },
+      ...(place === hand.intent ? [] : [{ kind: 'aimed' as const, place }]),
+    ],
   };
 }

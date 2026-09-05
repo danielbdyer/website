@@ -12,7 +12,7 @@ import {
 import type { NavigableEdge } from '@/shared/dom/skyProjector';
 import type { NavigableNode } from '@/shared/geometry/wellPhysics';
 import { geodesicDistance } from '@/shared/geometry/sphere';
-import type { SkyWalk } from '@/shared/hooks/useSkyWalk';
+import type { WalkState } from '@/shared/sky/walkState';
 import type { WhisperConcordant, WhisperPlace } from '@/shared/molecules/SkyWhisper/SkyWhisper';
 import {
   ROOM_LABEL,
@@ -80,6 +80,10 @@ export function starKeyOf(target: Element): string | null {
   return target.closest<SVGGElement>('[data-node-key]')?.dataset.nodeKey ?? null;
 }
 
+export function threadIdOf(target: Element): string | null {
+  return target.closest<SVGGElement>('[data-thread]')?.dataset.thread ?? null;
+}
+
 /** Where walking a thread takes you: its other end when you stand at
  *  one; otherwise its farther end, so the crossing passes the nearer
  *  star on the way. Null for a malformed id. */
@@ -109,28 +113,66 @@ export function navigableEdges(
   });
 }
 
+// ─── One attention ─────────────────────────────────────────────────
+//
+// The sky claims one thing at a time, in a fixed order. The pure rules
+// live here so the organism's world is a derivation and the seams —
+// a hover during a glide, a hand aiming past a hover — are decided in
+// one place and tested with values. CONSTELLATION_STORYBOARD.md
+// §"The Hybrid".
+
+/** A place as a star key; the pole is no star. */
+const starKey = (place: Place | null): string | null =>
+  place === null || place === POLE_KEY ? null : place;
+
+/** The star the sky's attention is on — what the atmosphere's halo
+ *  crescendos toward: the one under the pointer, else the one a hand
+ *  aims at, else the one the sky is bound for, else here. */
+export function attentionKeyOf(walk: WalkState): string | null {
+  return walk.hovered ?? walk.intent ?? starKey(walk.heading) ?? starKey(walk.here);
+}
+
+/** Where the visitor's body is, or is going — what the companion glyph
+ *  wears the hue of. A hover is a glance, not a step; it never colors
+ *  the body. */
+export function bodyPlaceOf(walk: WalkState): string | null {
+  return walk.intent ?? starKey(walk.heading) ?? starKey(walk.here);
+}
+
+/** The two ends of a traced thread, lit while the pointer rests on it;
+ *  empty when no thread is traced. */
+export function litEndsOf(
+  edges: readonly ResolvedEdge[],
+  tracedThread: string | null,
+): ReadonlySet<string> {
+  const edge = edges.find((e) => e.id === tracedThread);
+  return new Set(edge ? [edge.sourceKey, edge.targetKey] : []);
+}
+
 interface WorldInputs {
   readonly edges: readonly ResolvedEdge[];
   readonly nodes: readonly RenderableNode[];
-  readonly walk: SkyWalk;
-  readonly hoverKey: string | null;
+  readonly walk: WalkState;
   readonly overlayKey: string | null;
 }
 
 export function buildWorld(
   graph: ConstellationGraph,
-  { edges, nodes, walk, hoverKey, overlayKey }: WorldInputs,
+  { edges, nodes, walk, overlayKey }: WorldInputs,
 ): ConstellationWorld {
-  const hereKey = walk.here === POLE_KEY ? null : walk.here;
   const hereFacets = findNode(graph, walk.here)?.facets ?? [];
   return {
     edges,
     nodes,
-    hereKey,
-    hoverKey,
+    hereKey: starKey(walk.here),
+    hoverKey: walk.hovered,
     intentKey: walk.intent,
+    headingKey: starKey(walk.heading),
+    headingEdgeId: walk.headingEdgeId,
+    tracedThreadId: walk.tracedThread,
+    litEnds: litEndsOf(edges, walk.tracedThread),
     overlayKey,
-    activeHue: activeHueOf(nodes, hoverKey ?? walk.intent ?? hereKey),
+    bodyHue: activeHueOf(nodes, bodyPlaceOf(walk)),
     named: namedRanks(graph, walk.here),
     present: presentFrom(graph, walk.here),
     visited: walk.visited,

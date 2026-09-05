@@ -366,6 +366,15 @@ words:
   - Synthesizable
   - headlessly
 
+  # The daystar's magic (dom/daystarMagic.ts) and its register
+  - gsap
+  - splendour
+  - tweens
+  - tweened
+  - Destino
+  - clowny
+  - watercolored
+
 dictionaries:
   - en_US
   - typescript
@@ -377,3 +386,4 @@ dictionaries:
   - npm
   - node
   - misc
+

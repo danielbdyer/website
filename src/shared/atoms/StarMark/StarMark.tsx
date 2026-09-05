@@ -70,6 +70,14 @@ export function StarMark({ hue, isPreview = false, twinkleDelay }: StarMarkProps
         strokeWidth={0.45}
         className="constellation-star__echo constellation-star__echo--2 pointer-events-none"
       />
+      <circle
+        r={24}
+        fill="none"
+        stroke="var(--accent-gold)"
+        strokeWidth={0.4}
+        strokeDasharray="1.6 3.2"
+        className="constellation-star__echo constellation-star__echo--3 pointer-events-none"
+      />
       <circle r={12} fill="transparent" className="constellation-star__hit" />
     </>
   );
