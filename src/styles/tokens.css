@@ -2044,16 +2044,19 @@ div.daystar {
 
 /* ─── The daystar's seat ─────────────────────────────────────────
    The nav's glyph carries the daystar's name at rest — the same name
-   the sky's daystar carries — and gives it to its seat the moment the
-   eye begins to move (dom/daystarSeat.ts, the ninth pass with Danny:
-   *the moon jumps around; it doesn't feel contiguous*). The seat is a
-   fixed box outside the stage showing the same icon at the icon's own
-   rest, the glyph hidden beneath it, so the falling page leaves the
-   moon where it is; it rises and grows through the lift to exactly
-   where the sky will seat its daystar, so the transition turns the
-   moon in place with nothing to fly. On the way down it begins where
-   the daystar stood, the turn plays, and it comes down to the corner
-   once the room has settled. Its icon fills its box at every size. */
+   the sky's daystar carries — and is otherwise left alone: it falls
+   away with the page, unnoticed (the tenth pass, with Danny: *I liked
+   that I didn't think about the glyphs as soon as the transition
+   happened; the ends needed to change, not the body*). The seat is a
+   fixed box outside the stage showing the same icon. On the way up it
+   appears in the sky, at exactly the place and the size the sky will
+   seat its daystar, fading in as the room falls — the moon already
+   there a little before the route changes — and takes the name, so the
+   transition turns it into the face where it stands with nothing to
+   fly; the glyph fades beneath by the same measure. On the way down it
+   stands at the glyph's own rest from the first paint, so the face has
+   somewhere exact to land (dom/daystarSeat.ts). Its icon fills its box
+   at every size. */
 .theme-toggle__glyph {
   view-transition-name: daystar;
 }
@@ -2064,6 +2067,7 @@ div.daystar {
   display: block;
   visibility: hidden;
   pointer-events: none;
+  opacity: var(--seat-presence, 0);
 }
 
 .daystar-seat svg {
@@ -2078,7 +2082,7 @@ html.daystar-seated .daystar-seat {
 }
 
 html.daystar-seated .theme-toggle__glyph {
-  visibility: hidden;
+  opacity: calc(1 - var(--seat-presence, 0));
   view-transition-name: none;
 }
 
@@ -2198,14 +2202,14 @@ html.descending::view-transition-old(root) {
 }
 
 html.descending::view-transition-group(daystar) {
-  animation-delay: 250ms;
-  animation-duration: 760ms;
+  animation-delay: 480ms;
+  animation-duration: 640ms;
 }
 
 html.descending::view-transition-old(daystar),
 html.descending::view-transition-new(daystar) {
-  animation-delay: 250ms;
-  animation-duration: 760ms;
+  animation-delay: 480ms;
+  animation-duration: 640ms;
 }
 
 @keyframes descend-sky-away {

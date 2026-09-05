@@ -413,13 +413,13 @@ test.describe('the glyph', { tag: '@smoke' }, () => {
 });
 
 // The daystar's seat (CONSTELLATION.md §"The Sun and the Moon", the
-// ninth pass): the glyph gives its name to a fixed seat the moment the
-// eye moves, the seat rises to exactly where the sky seats the daystar,
-// and the transition turns the moon in place; on the way down the seat
-// begins where the daystar stood and comes to the corner once the room
-// has settled.
+// ninth pass and the tenth): the glyph is left alone at the start and
+// falls with the page; the moon appears in the sky a little before the
+// route changes, at exactly where the sky seats the daystar, and the
+// transition turns it into the face there; on the way down the face
+// flies to exactly where the glyph rests and resolves into it.
 test.describe('the seat', { tag: '@smoke' }, () => {
-  test('the glyph gives its name to a seat that rises to where the sky seats the daystar, so the turn plays in place', async ({
+  test('the glyph is left alone at the start; the moon is already in the sky, where the daystar will be, when the route changes', async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -428,10 +428,18 @@ test.describe('the seat', { tag: '@smoke' }, () => {
     await page.goto('/');
     await expect(page.locator('.theme-toggle__glyph')).toHaveCSS('view-transition-name', 'daystar');
     await expect(page.locator('.daystar-seat')).toBeHidden();
-    // Recorded at the moment the transition begins.
     await page.evaluate(() => {
-      const w = window as unknown as { __seat: Record<string, unknown> };
-      w.__seat = {};
+      const w = window as unknown as {
+        __seat: { appearedAt: number | null; atStart: Record<string, unknown> };
+      };
+      w.__seat = { appearedAt: null, atStart: {} };
+      // The reveal at which the seat first appears: not at the start.
+      new MutationObserver(() => {
+        if (w.__seat.appearedAt !== null) return;
+        if (!document.documentElement.classList.contains('daystar-seated')) return;
+        w.__seat.appearedAt = Number(document.documentElement.style.getPropertyValue('--reveal'));
+      }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      // Recorded at the moment the transition begins.
       const doc = document as Document & {
         startViewTransition: (cb: () => void | Promise<void>) => ViewTransition;
       };
@@ -439,11 +447,11 @@ test.describe('the seat', { tag: '@smoke' }, () => {
       doc.startViewTransition = (cb) => {
         const seat = document.querySelector('.daystar-seat');
         const glyph = document.querySelector('.theme-toggle__glyph');
-        w.__seat = {
+        w.__seat.atStart = {
           seated: document.documentElement.classList.contains('daystar-seated'),
           seatName: seat ? getComputedStyle(seat).viewTransitionName : null,
+          seatOpacity: seat ? Number(getComputedStyle(seat).opacity) : null,
           glyphName: glyph ? getComputedStyle(glyph).viewTransitionName : null,
-          glyphVisibility: glyph ? getComputedStyle(glyph).visibility : null,
           rect: seat ? seat.getBoundingClientRect().toJSON() : null,
         };
         return original(cb);
@@ -457,28 +465,34 @@ test.describe('the seat', { tag: '@smoke' }, () => {
         (
           window as unknown as {
             __seat: {
-              seated: boolean;
-              seatName: string;
-              glyphName: string;
-              glyphVisibility: string;
-              rect: { x: number; y: number; width: number; height: number };
+              appearedAt: number | null;
+              atStart: {
+                seated: boolean;
+                seatName: string;
+                seatOpacity: number;
+                glyphName: string;
+                rect: { x: number; y: number; width: number; height: number };
+              };
             };
           }
         ).__seat,
     );
-    expect(seat.seated).toBe(true);
-    expect(seat.seatName).toBe('daystar');
-    expect(seat.glyphName).toBe('none');
-    expect(seat.glyphVisibility).toBe('hidden');
+    expect(seat.appearedAt).not.toBeNull();
+    expect(seat.appearedAt!).toBeGreaterThan(0.6);
+    expect(seat.atStart.seated).toBe(true);
+    expect(seat.atStart.seatName).toBe('daystar');
+    expect(seat.atStart.seatOpacity).toBeGreaterThan(0.98);
+    expect(seat.atStart.glyphName).toBe('none');
     // The seat's center is the daystar's center, its size the face's.
     const box = (await daystar.boundingBox())!;
-    expect(Math.abs(seat.rect.x + seat.rect.width / 2 - (box.x + box.width / 2))).toBeLessThan(4);
-    expect(Math.abs(seat.rect.y + seat.rect.height / 2 - (box.y + box.height / 2))).toBeLessThan(4);
-    expect(seat.rect.width / box.width).toBeGreaterThan(0.6);
-    expect(seat.rect.width / box.width).toBeLessThan(0.75);
+    const r = seat.atStart.rect;
+    expect(Math.abs(r.x + r.width / 2 - (box.x + box.width / 2))).toBeLessThan(4);
+    expect(Math.abs(r.y + r.height / 2 - (box.y + box.height / 2))).toBeLessThan(4);
+    expect(r.width / box.width).toBeGreaterThan(0.6);
+    expect(r.width / box.width).toBeLessThan(0.75);
   });
 
-  test('on the way down the seat begins where the daystar stood, and the glyph has its place back once the seat has landed', async ({
+  test('on the way down the face flies to exactly where the glyph rests, and the glyph has its place back once it has landed', async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -486,41 +500,73 @@ test.describe('the seat', { tag: '@smoke' }, () => {
     });
     await page.goto('/');
     await page.getByRole('link', { name: /look up/i }).click();
-    const daystar = page.locator('[data-daystar]');
-    await daystar.waitFor();
+    await page.locator('[data-daystar]').waitFor();
     await page.waitForTimeout(1500);
-    const box = (await daystar.boundingBox())!;
     await page.evaluate(() => {
-      const w = window as unknown as { __land: { first: DOMRect | null } };
-      w.__land = { first: null };
+      const w = window as unknown as {
+        __land: { seatRect: DOMRect | null; flightEnd: Record<string, string> | null };
+      };
+      w.__land = { seatRect: null, flightEnd: null };
       new MutationObserver(() => {
-        if (w.__land.first) return;
+        if (w.__land.seatRect) return;
         if (!document.documentElement.classList.contains('daystar-seated')) return;
         const seat = document.querySelector('.daystar-seat');
-        if (seat) w.__land.first = seat.getBoundingClientRect().toJSON();
+        if (seat) w.__land.seatRect = seat.getBoundingClientRect().toJSON();
       }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      const doc = document as Document & {
+        startViewTransition: (cb: () => void | Promise<void>) => ViewTransition;
+      };
+      const original = doc.startViewTransition.bind(doc);
+      doc.startViewTransition = (cb) => {
+        const transition = original(cb);
+        void transition.ready.then(() => {
+          const group = document
+            .getAnimations()
+            .map((a) => a.effect as KeyframeEffect | null)
+            .find((e) => e?.pseudoElement === '::view-transition-group(daystar)');
+          const last = group?.getKeyframes().at(-1);
+          if (last) {
+            w.__land.flightEnd = {
+              transform: String(last.transform),
+              width: String(last.width),
+            };
+          }
+        });
+        return transition;
+      };
     });
     await page.getByRole('link', { name: /return to the foyer/i }).click();
     await expect(page).toHaveURL(/\/(\?.*)?$/, { timeout: 4000 });
-    await expect
-      .poll(
-        () =>
-          page.evaluate(
-            () => (window as unknown as { __land: { first: DOMRect | null } }).__land.first,
-          ),
-        { timeout: 10_000 },
-      )
-      .not.toBeNull();
-    const first = (await page.evaluate(
-      () => (window as unknown as { __land: { first: DOMRect } }).__land.first,
-    ))!;
-    expect(Math.abs(first.x + first.width / 2 - (box.x + box.width / 2))).toBeLessThan(4);
-    expect(Math.abs(first.y + first.height / 2 - (box.y + box.height / 2))).toBeLessThan(4);
-    // Landed: the seat gone, the glyph visible and named again, in its corner.
+    // Landed: the seat gone, the glyph visible and named again.
     await expect(page.locator('html')).not.toHaveClass(/daystar-seated/, { timeout: 20_000 });
-    await expect(page.locator('.theme-toggle__glyph')).toHaveCSS('visibility', 'visible');
     await expect(page.locator('.theme-toggle__glyph')).toHaveCSS('view-transition-name', 'daystar');
+    await expect(page.locator('.theme-toggle__glyph')).toHaveCSS('opacity', '1');
     await expect(page.locator('.daystar-seat')).toBeHidden();
+    const land = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __land: {
+              seatRect: { x: number; y: number; width: number; height: number } | null;
+              flightEnd: { transform: string; width: string } | null;
+            };
+          }
+        ).__land,
+    );
+    // The seat stood at the glyph's own rest from the first paint …
+    const glyphIcon = (await page.locator('.theme-toggle__glyph svg').boundingBox())!;
+    expect(land.seatRect).not.toBeNull();
+    expect(Math.abs(land.seatRect!.x - glyphIcon.x)).toBeLessThan(2);
+    expect(Math.abs(land.seatRect!.y - glyphIcon.y)).toBeLessThan(2);
+    expect(Math.abs(land.seatRect!.width - glyphIcon.width)).toBeLessThan(2);
+    // … and the transition's flight ended exactly there.
+    if (land.flightEnd) {
+      const end = /matrix\(1, 0, 0, 1, ([-\d.]+), ([-\d.]+)\)/.exec(land.flightEnd.transform);
+      expect(end).not.toBeNull();
+      expect(Math.abs(Number(end![1]) - glyphIcon.x)).toBeLessThan(2);
+      expect(Math.abs(Number(end![2]) - glyphIcon.y)).toBeLessThan(2);
+      expect(Math.abs(Number.parseFloat(land.flightEnd.width) - glyphIcon.width)).toBeLessThan(2);
+    }
   });
 });
 
