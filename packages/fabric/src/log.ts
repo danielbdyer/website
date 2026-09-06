@@ -8,6 +8,7 @@ import type {
   Receipt,
   Reflection,
   Refusal,
+  Retrieval,
   Source,
   Space,
   Verb,
@@ -39,6 +40,7 @@ export interface FabricState {
   readonly references: readonly WeakReference[];
   readonly patches: ReadonlyMap<string, PatchRecord>;
   readonly outcomes: readonly OutcomeRecord[];
+  readonly retrievals: readonly Retrieval[];
   readonly step: number;
   /** The latest time any event carried, whatever order the tenants' logs were read in. */
   readonly lastAt: string;
@@ -55,6 +57,7 @@ export const emptyState: FabricState = {
   references: [],
   patches: new Map(),
   outcomes: [],
+  retrievals: [],
   step: -1,
   lastAt: '1970-01-01T00:00:00.000Z',
 };
@@ -159,6 +162,10 @@ const handlers: { readonly [K in FabricEventKind]: Handler<K> } = {
       : state;
   },
   'patch.outcome': (state, { payload }) => ({ ...state, outcomes: [...state.outcomes, payload] }),
+  'retrieval.surfaced': (state, { payload }) => ({
+    ...state,
+    retrievals: [...state.retrievals, payload],
+  }),
 };
 
 /** The later of two ISO times, which sort as text. */

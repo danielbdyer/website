@@ -38,7 +38,7 @@ const AT = '2026-09-06T12:00:00.000Z';
 type Bare = Omit<FabricEvent, 'step' | 'actor'>;
 
 const stamp = (events: readonly Bare[]): readonly FabricEvent[] =>
-  events.map((event, step) => ({ actor: 'test', ...event, step }) as FabricEvent);
+  events.map((event, step) => ({ actor: 'runtime', ...event, step }) as FabricEvent);
 
 const opened = (): readonly Bare[] => [
   {
@@ -132,7 +132,7 @@ describe('the description', () => {
     expect(once.vocabularies.eventKinds).toEqual(EVENT_KINDS);
     expect(EVENT_KINDS).toContain('verb.refused');
     expect(EVENT_KINDS).toContain('source.blessed');
-    expect(once.invariants).toHaveLength(9);
+    expect(once.invariants).toHaveLength(11);
     const schema = eventJsonSchema();
     expect(JSON.stringify(schema)).toContain('"verb.refused"');
     const readme = readmeFrom(once);
@@ -367,7 +367,7 @@ describe('recall without a compiler', () => {
     const run = runnerWith(seeded(['recall', 'reflect']));
     await handleCall(run, call, 'reflect', { attempted: 'a', observed: ['b'] });
     const recalled = await answer<{ compiler: string; resonance: unknown[] }>(
-      handleCall(run, call, 'recall', { query: 'b' }),
+      handleCall(run, call, 'recall', { query: 'b', because: 'asking memory' }),
     );
     expect(recalled.compiler).toBe('none');
     expect(recalled.resonance).toEqual([]);

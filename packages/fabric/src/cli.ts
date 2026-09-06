@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Effect, Option } from 'effect';
 import { canonicalJson } from './canonical';
+import { compounding } from './compounding';
 import { describe, eventJsonSchema, graduation, readmeFrom } from './describe';
 import { unified } from './diff';
 import {
@@ -20,6 +21,7 @@ import { Consent, EventLog, Resonance } from './ports';
 import {
   RUNTIME_ACTOR,
   SOURCE_KINDS,
+  authorActor,
   type Check,
   type Patch,
   type Reflection,
@@ -261,7 +263,7 @@ const bless = async (
                   kind: 'verb.blessed',
                   at,
                   space,
-                  actor: by,
+                  actor: authorActor(by),
                   causedBy: verb.id,
                   payload: { verb: verb.id, by, at },
                 }
@@ -269,7 +271,7 @@ const bless = async (
                   kind: 'source.blessed',
                   at,
                   space,
-                  actor: by,
+                  actor: authorActor(by),
                   causedBy: source?.id ?? '',
                   payload: { source: source?.id ?? '', by, at },
                 },
@@ -336,6 +338,40 @@ const line = (current: FabricState, reflection: Reflection): string => {
   ].join('\n');
 };
 
+/** Printing memory into a session's context is a retrieval, and every
+ *  retrieval is an event (INV-FAB-010): the hook records what it showed,
+ *  so a later citation can be traced to it. */
+const recordOrient = (shownTo: string, memory: readonly Reflection[]): Promise<void> => {
+  const at = now();
+  return run(
+    EventLog.pipe(
+      Effect.flatMap((log) =>
+        log.append({
+          kind: 'retrieval.surfaced',
+          at,
+          space: AGENT_SPACE,
+          actor: RUNTIME_ACTOR,
+          because: 'the start hook printed the newest reflections into the session’s context',
+          payload: {
+            id: `retrieval/orient-${shownTo}-${at}`,
+            session: shownTo,
+            at,
+            verb: 'orient',
+            context: 'session start',
+            k: 8,
+            candidates: memory.map((reflection, index) => ({
+              node: reflection.id,
+              rank: index + 1,
+              by: 'recency' as const,
+            })),
+          },
+        }),
+      ),
+      Effect.asVoid,
+    ),
+  );
+};
+
 const orient = async (): Promise<void> => {
   const input = hookInput();
   const session =
@@ -361,9 +397,11 @@ const orient = async (): Promise<void> => {
   const waitingPatches = patchesPendingIn(current, OPERATOR_SPACE);
   const unmeasured = unmeasuredIn(current, OPERATOR_SPACE);
   const measure = graduation(current);
+  const compounds = compounding(current);
   const memory = visibleReflections(current, AGENT_SPACE)
     .toSorted((a, b) => b.at.localeCompare(a.at))
     .slice(0, 8);
+  await recordOrient(session ?? (await readSession(root)), memory);
   const blessings = [
     ...unblessedVerbs.map((verb) => `\`pnpm fabric bless ${verb.name}\``),
     ...unblessedSources.map((source) => `\`pnpm fabric bless ${source.id}\``),
@@ -391,6 +429,7 @@ const orient = async (): Promise<void> => {
           ]
         : []),
       `The loop: ${measure.proposed} patch(es) proposed, ${measure.applied} applied, ${measure.confirmed} confirmed and ${measure.contradicted} contradicted in the last ${measure.window}; ${measure.graduated ? 'graduated' : 'not graduated'} against a floor of ${measure.floor}.`,
+      `Compounding: ${compounds.retrievals} retrieval(s) so far, ${compounds.used} used by a later act; hit@${compounds.k} ${compounds.hitAtK === undefined ? 'none yet' : compounds.hitAtK.toFixed(2)}; ${compounds.missed} node(s) used that nothing surfaced. Cite what you read in \`reflect.cites\`; that is how this number is measured.`,
       memory.length > 0 ? 'Memory, newest first:' : 'Memory: nothing recorded yet.',
       ...memory.map((reflection) => line(current, reflection)),
       'Before ending, record what this session noticed with `reflect`. The stop hook asks once if nothing was recorded. A change a node needs is a `propose`, not a paragraph.',
@@ -444,6 +483,7 @@ const showLog = async (): Promise<void> => {
       `receipts: ${current.receipts.length}; refusals: ${current.refusals.length}`,
       `bridges: ${current.bridges.size} (${pendingIn(current, OPERATOR_SPACE).length} waiting)`,
       `patches: ${current.patches.size} (${patchesPendingIn(current, OPERATOR_SPACE).length} waiting, ${[...current.patches.values()].filter((patch) => patch.applied).length} applied); outcomes: ${current.outcomes.length}`,
+      `retrievals: ${current.retrievals.length} (${compounding(current).used} used by a later act)`,
     ].join('\n'),
   );
 };

@@ -4,12 +4,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -56,12 +60,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -154,12 +162,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -207,12 +219,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -260,12 +276,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -282,6 +302,10 @@
             "at": {
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "because": {
+              "minLength": 1,
               "type": "string"
             },
             "consequence": {
@@ -320,6 +344,7 @@
             "session",
             "at",
             "consequence",
+            "because",
             "inputFingerprint",
             "outputFingerprint"
           ],
@@ -342,12 +367,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -399,12 +428,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -464,12 +497,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -517,12 +554,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -684,12 +725,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -774,12 +819,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -831,12 +880,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -907,12 +960,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -1024,12 +1081,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -1096,12 +1157,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -1156,12 +1221,16 @@
       "additionalProperties": false,
       "properties": {
         "actor": {
-          "minLength": 1,
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
           "type": "string"
         },
         "at": {
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
           "type": "string"
         },
         "causedBy": {
@@ -1198,6 +1267,106 @@
             }
           },
           "required": ["patch", "outcome", "because", "session", "at"],
+          "type": "object"
+        },
+        "space": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "step": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "because": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "causedBy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "const": "retrieval.surfaced",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": false,
+          "properties": {
+            "at": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "candidates": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "by": {
+                    "enum": ["resonance", "mention", "recency"],
+                    "type": "string"
+                  },
+                  "node": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "rank": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "score": {
+                    "type": "number"
+                  }
+                },
+                "required": ["node", "rank", "by"],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "context": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "k": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "query": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "session": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "verb": {
+              "enum": ["slice", "recall", "orient"],
+              "type": "string"
+            }
+          },
+          "required": ["id", "session", "at", "verb", "context", "k", "candidates"],
           "type": "object"
         },
         "space": {

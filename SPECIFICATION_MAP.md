@@ -291,6 +291,14 @@ CONTENT_SCHEMA + DESIGN_SYSTEM
               per tenant, verbs as blessed nodes, a receipt on
               every call, consent as the only way across a wall.
               │
+              ├─→ CORPUS.md
+              │     The charter for the corpus, verbatim, and the
+              │     fabric's reconciliation with it.
+              │
+              ├─→ DECISIONS.md
+              │     The decision log: each decision, its reason,
+              │     the alternatives rejected, what reopens it.
+              │
               └─→ DYERVERSE.md
                     The whole. The six repositories read as one,
                     what they share, what they call by different
@@ -320,6 +328,12 @@ The shared ground. Danny's second repository, `cathedrals` — a consent-gated k
 
 **`FABRIC.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `CATHEDRALS.md` + `REACT_NORTH_STAR.md` + `CONSTELLATION_ARCHITECTURE.md`
 The loom. The runtime a local agent session lives in, and the ground Danny's six repositories share (2026-09-06, with Danny). What each repository contributed and where it was written; the memory runtime vendored as a model first (ActiveGraph's event-sourced graph) and a package second, behind a port; the five layers — the log per tenant, the two sovereign spaces with bridge proposals and weak references between them, verbs as blessed nodes projected into a manifest, the consent port that never becomes a verb, the session shell that starts and ends with a human message; the first slice, a reflection recorded by the agent and blessed across into the operator's memory; the six invariants (INV-FAB-001..006); the workspace direction — a monorepo whose living siblings enter as submodules, each a pinned citation, with one `sync` verb to play nice from afar; and six phases held with pulls. Phase 0 shipped the package; Phase 1 shipped the session shell — the server over stdio, the start hook that prints memory into context, the stop hook that asks for a reflection, the log at `fabric/spaces/` — and the handshake table that names the conduits the fabric is built along. Phase 2 shipped in part: the vendor's two laws as code (`actor` and `causedBy` on every event; refusals as events), the self-description (`fabric/manifest.json`, `fabric/events.schema.json`, a generated `fabric/README.md`, served as resources and drift-checked in lint), sources for the operator's space (vault, works, skills) behind a composite graph source, the memory compile as a deterministic Python sidecar, and qmd as the resonance provider.
+
+**`CORPUS.md`** | Grounds | Exists | Depends on: `AGENTS.md` + `FABRIC.md`
+Danny's charter for the personal knowledge system — "the corpus that compounds" — kept verbatim, and the fabric's reconciliation with it, section by section: what already holds, what Phase 6 built the day it arrived (the instrument for R(t), actors and `because` at the schema, the four property tests), what is held with a trigger, the amendments proposed where the charter and a standing directive disagree, the definition of done answered with numbers, and the session record. Written 2026-09-06.
+
+**`DECISIONS.md`** | Grounds | Exists | Depends on: `CORPUS.md` §7
+The house's decision log, opened 2026-09-06 at the charter's ask: one entry per architectural decision with the reason, the alternatives rejected and why, and what would reopen it. Seeded with the six decisions of Phase 6, including the fold's measured quadratic cost held with its trigger. Decisions made before this file lived inline in the specs and stay there.
 
 **`DYERVERSE.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `CATHEDRALS.md` + `FABRIC.md` + `AGENTS.md`
 The manifesto of the whole, under the name `CATHEDRALS.md` decided for the workspace. Reads the six repositories as one: the lineage from the root through the seed to the engine, the vault, the product, and the house; the five convergences they share without having said so (the sovereign and the sacred gap, provenance minted at the event, the bounded read for one turn, the apparatus that names the day it stops, the state machine that can do everything except finish); the words that collide across them and the rule for holding them; the shape and its three laws; the culture as norms a newcomer would notice; where it is headed, each convergence with its trigger; what the six refuse; and what it asks. Written 2026-09-06 with Danny. `MANIFESTO.md` remains the site's manifesto.

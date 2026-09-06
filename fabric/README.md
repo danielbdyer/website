@@ -1,6 +1,6 @@
 # The fabric, described
 
-*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-06T06:27:48.797Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
+*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-06T08:57:41.815Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
 
 ## What this is
 
@@ -43,6 +43,14 @@ A session proposes a change to one of the operator’s nodes with `propose`: the
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | 0 | 0 | 0 | no outcome yet | 0.5 | 5 | not yet |
 
+## Does it compound?
+
+A corpus compounds when outputs become inputs: something stored is surfaced in a context other than the one it was made in, and the next act uses it. Every retrieval a session makes is an event with its candidates in rank order; a use is a later citation or patch by the same session naming a candidate another session made. The numbers below are that measure, folded from the log. They gate nothing; they are what the operator reads before building anything meant to raise them.
+
+| Retrievals | Used | Rate | Hit@3 | MRR | Missed | Proposals decided | Blessed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | none yet | none yet | none yet | 0 | 0 | none yet |
+
 ## Speaking to it
 
 - **Transport:** stdio. Start the server with `pnpm fabric serve`; it speaks the Model Context Protocol.
@@ -58,7 +66,7 @@ A session proposes a change to one of the operator’s nodes with `propose`: the
 - **decisions:** `blessed`, `rejected`
 - **changeTargets:** `prompt`, `skill`, `verb`, `policy`
 - **sourceKinds:** `vault`, `works`, `skills`
-- **eventKinds:** `space.opened`, `verb.proposed`, `verb.blessed`, `verb.retired`, `verb.called`, `verb.refused`, `source.proposed`, `source.blessed`, `reflection.recorded`, `bridge.proposed`, `bridge.resolved`, `reference.cited`, `patch.proposed`, `patch.evaluated`, `patch.resolved`, `patch.outcome`
+- **eventKinds:** `space.opened`, `verb.proposed`, `verb.blessed`, `verb.retired`, `verb.called`, `verb.refused`, `source.proposed`, `source.blessed`, `reflection.recorded`, `bridge.proposed`, `bridge.resolved`, `reference.cited`, `patch.proposed`, `patch.evaluated`, `patch.resolved`, `patch.outcome`, `retrieval.surfaced`
 
 ## Invariants
 
@@ -71,3 +79,5 @@ A session proposes a change to one of the operator’s nodes with `propose`: the
 - **INV-FAB-007** — A signature is frozen at blessing.
 - **INV-FAB-008** — A patch is applied only to the base it was proposed against, only by the sovereign, and once.
 - **INV-FAB-009** — An outcome cites a patch that was applied.
+- **INV-FAB-010** — Every retrieval is an event, with its context and every candidate in rank order; a receipt for a retrieval verb has one.
+- **INV-FAB-011** — Every event names its actor in the closed grammar, and an agent event carries a because; the schema refuses one without.

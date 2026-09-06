@@ -20,14 +20,18 @@ import {
 import {
   CHANGE_TARGETS,
   RUNTIME_ACTOR,
+  agentActor,
+  authorActor,
   changeRequestSchema,
   citationSchema,
   evaluationSchema,
   outcomeReportSchema,
+  type Candidate,
   type ChangeTarget,
   type Decision,
   type Evaluation,
   type Patch,
+  type RetrievalVerb,
   type Verb,
 } from './schema';
 
@@ -218,8 +222,20 @@ const resonate = (
 export interface VerbDefinition<I> {
   readonly verb: Verb;
   readonly input: z.ZodType<I>;
+  /** The sentence the receipt carries: why this call was made, read
+   *  off the input. Every agent event has one (INV-FAB-011). */
+  readonly becauseOf: (input: I) => string;
   readonly run: (input: I, call: CallContext) => Effect.Effect<unknown, unknown, VerbEnvironment>;
 }
+
+/** The one field every verb asks for: why, in a sentence. It is the
+ *  context a retrieval is made in and the reason a receipt records. */
+const because = z
+  .string()
+  .min(1)
+  .describe(
+    'Why this call, in one sentence: the context you are in. It travels with the receipt and is what a later session reads.',
+  );
 
 /** The JSON Schema a zod schema emits, in canonical form: what a verb
  *  node carries, what the manifest lists, and what a call is checked
@@ -236,6 +252,7 @@ const define = <I>(
   consequence: Verb['consequence'],
   input: z.ZodType<I>,
   output: z.ZodType,
+  becauseOf: VerbDefinition<I>['becauseOf'],
   run: VerbDefinition<I>['run'],
 ): VerbDefinition<I> => ({
   verb: {
@@ -249,6 +266,7 @@ const define = <I>(
     origin: 'declared',
   },
   input,
+  becauseOf,
   run,
 });
 
@@ -266,6 +284,57 @@ const aperture = (input: {
   ...(input.topK === undefined ? {} : { topK: input.topK }),
 });
 
+/** The candidates a cut surfaced, in the order the session saw them:
+ *  resonance where it scored the node, mention where a query matched
+ *  its text, recency otherwise. */
+export const candidatesOf = (
+  nodes: readonly { readonly id: string }[],
+  scores: ReadonlyMap<string, number>,
+  query: string | undefined,
+): readonly Candidate[] =>
+  nodes.map((node, index) => {
+    const score = scores.get(node.id);
+    return {
+      node: node.id,
+      rank: index + 1,
+      ...(score === undefined ? {} : { score }),
+      by: score === undefined ? (query === undefined ? 'recency' : 'mention') : 'resonance',
+    };
+  });
+
+/** Record what a retrieval surfaced. Every retrieval is an event, with
+ *  its context and every candidate in rank order (INV-FAB-010): the raw
+ *  material of R(t), the measure of whether the corpus compounds. */
+const surfaced = (
+  call: CallContext,
+  verb: RetrievalVerb,
+  context: string,
+  query: string | undefined,
+  k: number,
+  candidates: readonly Candidate[],
+) =>
+  EventLog.pipe(
+    Effect.flatMap((log) =>
+      log.append({
+        kind: 'retrieval.surfaced',
+        at: call.at,
+        space: call.space,
+        actor: agentActor(call.session),
+        because: context,
+        payload: {
+          id: `retrieval/${call.fingerprint({ verb, session: call.session, at: call.at, context, query }).slice(0, 16)}`,
+          session: call.session,
+          at: call.at,
+          verb,
+          context,
+          ...(query === undefined ? {} : { query }),
+          k,
+          candidates: [...candidates],
+        },
+      }),
+    ),
+  );
+
 // ─── slice ────────────────────────────────────────────────────────
 
 const sliceInput = z.object({
@@ -276,6 +345,7 @@ const sliceInput = z.object({
     .describe('The space to read: your own, or the operator’s through what he has blessed.'),
   query: z.string().min(1).optional().describe('Keep only nodes whose text mentions this.'),
   topK: z.number().int().min(1).optional().describe('Keep at most this many, newest first.'),
+  because,
 });
 
 const sliceOutput = z.object({}).passthrough();
@@ -286,6 +356,7 @@ export const slice = define(
   'observe',
   sliceInput,
   sliceOutput,
+  (input) => input.because,
   (input, call) =>
     Effect.gen(function* () {
       const source = yield* GraphSource;
@@ -301,7 +372,16 @@ export const slice = define(
         input.query,
         input.topK ?? 12,
       );
-      return cut(loaded, aperture(input), scores);
+      const seen = cut(loaded, aperture(input), scores);
+      yield* surfaced(
+        call,
+        'slice',
+        input.because,
+        input.query,
+        input.topK ?? seen.nodes.length,
+        candidatesOf(seen.nodes, scores, input.query),
+      );
+      return seen;
     }),
 );
 
@@ -369,6 +449,7 @@ export const reflect = define(
   'propose',
   reflectInput,
   reflectOutput,
+  (input) => input.attempted,
   (input, call) =>
     Effect.gen(function* () {
       const log = yield* EventLog;
@@ -381,7 +462,8 @@ export const reflect = define(
         kind: 'reflection.recorded',
         at: call.at,
         space: call.space,
-        actor: call.session,
+        actor: agentActor(call.session),
+        because: input.attempted,
         payload: reflection,
       });
       yield* Effect.forEach((report: z.infer<typeof outcomeReportSchema>, index: number) =>
@@ -389,19 +471,23 @@ export const reflect = define(
           kind: 'patch.outcome',
           at: call.at,
           space: measured[index]?.space ?? OPERATOR_SPACE,
-          actor: call.session,
+          actor: agentActor(call.session),
           causedBy: id,
+          because: report.because,
           payload: { ...report, session: call.session, at: call.at },
         }),
       )(input.outcomes);
-      const bridge = yield* consent.propose({
-        id: `bridge/${call.fingerprint({ id, to: OPERATOR_SPACE }).slice(0, 16)}`,
-        from: call.space,
-        to: OPERATOR_SPACE,
-        node: id,
-        evidence: `session ${call.session}: ${input.attempted}`,
-        proposedAt: call.at,
-      });
+      const bridge = yield* consent.propose(
+        {
+          id: `bridge/${call.fingerprint({ id, to: OPERATOR_SPACE }).slice(0, 16)}`,
+          from: call.space,
+          to: OPERATOR_SPACE,
+          node: id,
+          evidence: `session ${call.session}: ${input.attempted}`,
+          proposedAt: call.at,
+        },
+        agentActor(call.session),
+      );
       // The index is recomputable from the log: a derive, not a write.
       yield* Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh('reflections')));
       return { reflection: id, bridge: bridge.id, outcomes: input.outcomes.length };
@@ -437,6 +523,7 @@ export const propose = define(
   'propose',
   proposeInput,
   proposeOutput,
+  (input) => input.because,
   (input, call) =>
     Effect.gen(function* () {
       const canon = yield* Canon;
@@ -483,7 +570,8 @@ export const propose = define(
         kind: 'patch.proposed',
         at: call.at,
         space: OPERATOR_SPACE,
-        actor: call.session,
+        actor: agentActor(call.session),
+        because: input.because,
         payload: patch,
       });
       const evaluation = yield* canon.evaluate(patch);
@@ -503,6 +591,7 @@ export const propose = define(
 
 const recallInput = z.object({
   query: z.string().min(1).describe('The question, in plain words.'),
+  because,
 });
 
 const recallOutput = z.object({}).passthrough();
@@ -537,6 +626,7 @@ export const recall = define(
   'observe',
   recallInput,
   recallOutput,
+  (input) => input.because,
   (input, call) =>
     Effect.gen(function* () {
       const source = yield* GraphSource;
@@ -544,6 +634,14 @@ export const recall = define(
       const mine = yield* source.slice(call.space, { viewer: call.space, asOf: call.at });
       const scores = yield* resonate(['reflections'], input.query, 12);
       const nearest = scores.size > 0 ? cut(mine, { query: input.query }, scores) : mine;
+      yield* surfaced(
+        call,
+        'recall',
+        input.because,
+        input.query,
+        12,
+        candidatesOf(nearest.nodes, scores, scores.size > 0 ? input.query : undefined),
+      );
       const recollection = yield* compile.recall(turnsFrom(nearest), input.query, call.at);
       return {
         resonance: [...scores.entries()].map(([id, score]) => ({ id, score })),
@@ -559,6 +657,7 @@ export const recall = define(
 
 const pendingInput = z.object({
   space: z.string().min(1).default(OPERATOR_SPACE).describe('The space whose gap to count.'),
+  because,
 });
 
 const pendingOutput = z.object({
@@ -574,6 +673,7 @@ export const pending = define(
   'observe',
   pendingInput,
   pendingOutput,
+  (input) => input.because,
   (input) =>
     state().pipe(
       Effect.map((current) => {
@@ -591,7 +691,7 @@ export const pending = define(
 
 // ─── sync ─────────────────────────────────────────────────────────
 
-const syncInput = z.object({});
+const syncInput = z.object({ because });
 
 const syncOutput = z.object({ siblings: z.array(z.unknown()) });
 
@@ -601,6 +701,7 @@ export const sync = define(
   'observe',
   syncInput,
   syncOutput,
+  (input) => input.because,
   () =>
     Siblings.pipe(
       Effect.flatMap((siblings) => siblings.list()),
@@ -662,7 +763,7 @@ export const decidePatch = (
       kind: 'patch.resolved',
       at,
       space: patch.space,
-      actor: by,
+      actor: authorActor(by),
       causedBy: patch.id,
       payload: { patch: patch.id, decision, by, at, applied },
     });

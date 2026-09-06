@@ -45,6 +45,34 @@ export type SourceKind = (typeof SOURCE_KINDS)[number];
 /** Who wrote an event when no session or sovereign did. */
 export const RUNTIME_ACTOR = 'runtime';
 
+/** The four kinds of actor an event may carry: the author of a space,
+ *  an agent session, the runtime, or an import. The kind is read off
+ *  the actor string, so provenance is checked at the schema, never by
+ *  convention (INV-FAB-011). */
+export const ACTOR_KINDS = ['author', 'agent', 'runtime', 'import'] as const;
+export type ActorKind = (typeof ACTOR_KINDS)[number];
+
+export const authorActor = (space: string): string => `author:${space}`;
+export const agentActor = (session: string): string => `agent:${session}`;
+export const importActor = (source: string): string => `import:${source}`;
+
+/** The kind an actor string carries. */
+export const actorKind = (actor: string): ActorKind =>
+  actor === RUNTIME_ACTOR
+    ? 'runtime'
+    : (ACTOR_KINDS.find((kind) => actor.startsWith(`${kind}:`)) ?? 'agent');
+
+export const isAgent = (actor: string): boolean => actorKind(actor) === 'agent';
+
+/** Why a retrieval surfaced a node: resonance ranked it, its text
+ *  mentions the query, or it is simply recent. */
+export const CANDIDATE_REASONS = ['resonance', 'mention', 'recency'] as const;
+export type CandidateReason = (typeof CANDIDATE_REASONS)[number];
+
+/** The verbs that surface memory to a session, and so are retrievals. */
+export const RETRIEVAL_VERBS = ['slice', 'recall', 'orient'] as const;
+export type RetrievalVerb = (typeof RETRIEVAL_VERBS)[number];
+
 /** What a later session found about an applied change. */
 export const OUTCOMES = ['confirmed', 'contradicted'] as const;
 export type Outcome = (typeof OUTCOMES)[number];
@@ -59,6 +87,19 @@ const step = z.number().int().min(0);
 /** A JSON Schema document, carried as data. The fabric validates verb
  *  payloads against it at the boundary; it never interprets it here. */
 const jsonSchema = z.record(z.string(), z.unknown());
+
+/** An actor, in the closed grammar: `runtime`, `author:<space>`,
+ *  `agent:<session>`, or `import:<source>`. */
+export const actorSchema = z
+  .string()
+  .regex(
+    /^(runtime|author:\S+|agent:\S+|import:\S+)$/,
+    'an actor is runtime, author:<space>, agent:<session>, or import:<source>',
+  );
+
+/** Why: one sentence, required of every agent event, carried by the
+ *  receipt and read by the next session. */
+const because = z.string().min(1);
 
 // ─── Spaces ───────────────────────────────────────────────────────
 
@@ -124,10 +165,39 @@ export const receiptSchema = z.object({
   session: id,
   at,
   consequence: z.enum(CONSEQUENCE_CLASSES),
+  because,
   inputFingerprint: z.string().min(1),
   outputFingerprint: z.string().min(1),
 });
 export type Receipt = z.infer<typeof receiptSchema>;
+
+// ─── Retrievals ───────────────────────────────────────────────────
+
+/** One node a retrieval surfaced, at what rank, with what score, and
+ *  why. Ranks start at one and are the order the session saw. */
+export const candidateSchema = z.object({
+  node: id,
+  rank: z.number().int().min(1),
+  score: z.number().optional(),
+  by: z.enum(CANDIDATE_REASONS),
+});
+export type Candidate = z.infer<typeof candidateSchema>;
+
+/** A retrieval: memory surfaced to a session by a verb, with the
+ *  context it was asked in and every candidate in rank order. The raw
+ *  material of R(t): a retrieval compounds when a later event of the
+ *  same session uses a candidate that another session made. */
+export const retrievalSchema = z.object({
+  id,
+  session: id,
+  at,
+  verb: z.enum(RETRIEVAL_VERBS),
+  context: z.string().min(1),
+  query: z.string().min(1).optional(),
+  k: z.number().int().min(0),
+  candidates: z.array(candidateSchema),
+});
+export type Retrieval = z.infer<typeof retrievalSchema>;
 
 // ─── Reflection ───────────────────────────────────────────────────
 
@@ -290,11 +360,15 @@ const eventBase = z.object({
   step,
   at,
   space: id,
-  actor: id,
+  actor: actorSchema,
   causedBy: id.optional(),
+  because: because.optional(),
 });
 
-export const eventSchema = z.discriminatedUnion('kind', [
+/** The union of event kinds, before the provenance refinement. The
+ *  JSON Schema and the kind list are read from this; parsing goes
+ *  through `eventSchema`, which adds INV-FAB-011. */
+export const eventUnion = z.discriminatedUnion('kind', [
   eventBase.extend({ kind: z.literal('space.opened'), payload: spaceSchema }),
   eventBase.extend({ kind: z.literal('verb.proposed'), payload: verbSchema }),
   eventBase.extend({
@@ -326,8 +400,22 @@ export const eventSchema = z.discriminatedUnion('kind', [
     payload: z.object({ patch: id, decision: z.enum(DECISIONS), by: id, at, applied: z.boolean() }),
   }),
   eventBase.extend({ kind: z.literal('patch.outcome'), payload: outcomeSchema }),
+  eventBase.extend({ kind: z.literal('retrieval.surfaced'), payload: retrievalSchema }),
 ]);
-export type FabricEvent = z.infer<typeof eventSchema>;
+
+/** An event, with provenance complete: an agent event carries a
+ *  `because`, or it is not an event (INV-FAB-011). Refused here, at
+ *  the schema, never by convention. */
+export const eventSchema = eventUnion.superRefine((event, ctx) => {
+  if (isAgent(event.actor) && !event.because) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['because'],
+      message: `INV-FAB-011: an agent event carries a because; ${event.kind} by ${event.actor} has none`,
+    });
+  }
+});
+export type FabricEvent = z.infer<typeof eventUnion>;
 export type FabricEventKind = FabricEvent['kind'];
 
 /** Parse unknown input as one event, or throw with every issue named. */

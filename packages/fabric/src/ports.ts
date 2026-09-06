@@ -1,6 +1,6 @@
 import { Context, Data, Effect, Layer, Ref } from 'effect';
 import type { Slice } from '@dbd/slice';
-import type { BridgeProposal, Decision, FabricEvent } from './schema';
+import { authorActor, type BridgeProposal, type Decision, type FabricEvent } from './schema';
 import { pendingIn, project, type FabricState } from './log';
 
 // ─── Ports ────────────────────────────────────────────────────────
@@ -57,6 +57,7 @@ export const noResonance: Layer.Layer<ResonanceService> = Layer.succeed(Resonanc
 export interface ConsentService {
   readonly propose: (
     proposal: Omit<BridgeProposal, 'decision' | 'decidedAt' | 'decidedBy'>,
+    actor: string,
   ) => Effect.Effect<BridgeProposal, LogRejected>;
   readonly pending: (space: string) => Effect.Effect<readonly BridgeProposal[]>;
   readonly resolve: (
@@ -126,13 +127,14 @@ export const consentOverLog: Layer.Layer<ConsentService, never, EventLogService>
     const log = yield* EventLog;
     const state = (): Effect.Effect<FabricState> => log.read().pipe(Effect.map(project));
     return {
-      propose: (proposal) =>
+      propose: (proposal, actor) =>
         log
           .append({
             kind: 'bridge.proposed',
             at: proposal.proposedAt,
             space: proposal.to,
-            actor: proposal.from,
+            actor,
+            because: proposal.evidence,
             payload: { ...proposal, decision: null },
           })
           .pipe(
@@ -150,7 +152,7 @@ export const consentOverLog: Layer.Layer<ConsentService, never, EventLogService>
             kind: 'bridge.resolved',
             at,
             space: bridge.to,
-            actor: by,
+            actor: authorActor(by),
             causedBy: bridge.id,
             payload: { proposal, decision, by, at },
           });

@@ -21,6 +21,7 @@ import { MEMORY_DIR, qmdResonance } from './node/qmd';
 import { gitSiblings } from './node/siblings';
 import { consentOverLog, EventLog } from './ports';
 import { sourcesOf } from './log';
+import { agentActor } from './schema';
 import {
   AGENT_SPACE,
   OPERATOR_SPACE,
@@ -92,7 +93,8 @@ export const handleCall = (
           kind: 'verb.refused',
           at: call.at,
           space: call.space,
-          actor: call.session,
+          actor: agentActor(call.session),
+          because: why,
           payload: { verb: name, session: call.session, at: call.at, reason: why },
         });
         return failure(why);
@@ -103,11 +105,13 @@ export const handleCall = (
       if (!parsed.success) return failure(`${name}: ${parsed.error.message}`);
       const output = yield* definition.run(parsed.data, call);
       const id = `receipt/${call.fingerprint({ name, session: call.session, at: call.at, args }).slice(0, 16)}`;
+      const because = definition.becauseOf(parsed.data);
       yield* log.append({
         kind: 'verb.called',
         at: call.at,
         space: call.space,
-        actor: call.session,
+        actor: agentActor(call.session),
+        because,
         payload: {
           id,
           verb: definition.verb.id,
@@ -115,6 +119,7 @@ export const handleCall = (
           session: call.session,
           at: call.at,
           consequence: definition.verb.consequence,
+          because,
           inputFingerprint: call.fingerprint(parsed.data),
           outputFingerprint: call.fingerprint(output),
         },
