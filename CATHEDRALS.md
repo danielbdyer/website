@@ -114,6 +114,7 @@ dyerverse/                    the workspace: the site's repository, renamed when
 ├── packages/
 │   ├── slice/                @dbd/slice: the contract that crosses the wall (types, schema, invariants)
 │   ├── sky/                  @dbd/sky: the surface (a shim today; the pure core moves in with a second consumer)
+│   ├── fabric/               @dbd/fabric: the runtime a session lives in — the log, the verbs, the receipts, the consent port (FABRIC.md)
 │   └── hg/                   @dbd/hg: the engine, entered by subtree with its history (Phase 2)
 ├── vault/                    the claim vault: markdown in git, imported by no code, read through an adapter
 ├── .claude/skills/           the house's five outcomes; the vault's sixteen verbs (held: fold them into one outcome)
@@ -298,6 +299,7 @@ Phases in pull order, not calendar order. Each names its pull, its scope, its ex
 - How HTML reaches the browser and when that stance flips: `RENDERING_STRATEGY.md`.
 - The engine's constitution, decisions, and protocol: its own `docs/`, which this file cites and never rewrites.
 - The vault's methodology: its own `CLAUDE.md`, generated from `vault/ops/derivation.md`.
+- The runtime a session lives in — the log per tenant, the verbs and their manifest, the receipts, the second tenant, and the workspace's living siblings as submodules: `FABRIC.md`. It stands on this ground and adds no second name for anything named here.
 
 ---
 

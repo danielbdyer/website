@@ -1,0 +1,22 @@
+{
+  "name": "@dbd/fabric",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The interaction fabric: the well-permissioned runtime a local agent session lives in. An append-only log per tenant, verbs as blessed nodes, receipts on every call, consent as the only way across the wall. See FABRIC.md.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@dbd/slice": "workspace:*",
+    "effect": "^3.22.1"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  }
+}

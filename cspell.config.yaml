@@ -58,6 +58,12 @@ words:
   - garden
   - study
   - spanda
+  # The fabric's vocabulary (FABRIC.md)
+  - permissioned
+  - replayable
+  - unretired
+  - Yohei
+  - Nakajima
   # The engine's vocabulary, carried across the wall (CATHEDRALS.md)
   - midground
   - privated

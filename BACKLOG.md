@@ -353,6 +353,42 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 ---
 
+## The Fabric
+
+Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
+
+### The session shell
+
+**Why:** No server exists. A Model Context Protocol server in `packages/fabric` lists the manifest as tools and appends a receipt per call; a start hook loads a slice; a stop hook calls `reflect`; the log is JSON lines in git. The first four verbs: `slice`, `reflect`, `pending`, `sync`.
+**Trigger:** Danny opens a session that should remember the last one.
+
+### The vendor behind the port
+
+**Why:** The fold runs in process. ActiveGraph as a sidecar behind `EventLog` and `GraphSource`, speaking the event schema and the slice, owns the log store, the projection, and the memory compile. One afternoon; if it fails, the engine's event store behind the same ports.
+**Trigger:** The in-process fold is asked a question only the memory compile answers — a conflict between two sessions' claims, or a retrieval by resonance.
+
+### The second tenant
+
+**Why:** The agent space opened; the bridge proposal on `reflect`; `hg bless` resolving it; the retrieval filter live, so a blessed reflection appears in an operator session and an unblessed one does not.
+**Trigger:** The first reflection that should cross into the operator space.
+
+### The workspace as submodules
+
+**Why:** The living siblings stay sovereign in their own repositories and enter as pinned submodules — each pin a citation by hash — with a `sync` verb that reports drift and a pull request as the only way a pin moves. Answers the workspace's visibility: a pointer publishes a URL and a hash, never the content.
+**Trigger:** Danny's word on visibility and on which siblings enter, before `CATHEDRALS.md` Phase 4.
+
+### The loop pointed at itself
+
+**Why:** A reflection's *what should change* names prompt, skill, verb, and policy nodes; a change to any of them is a bridge proposal evaluated against a held-out set before promotion, with the graduation boolean stated in advance.
+**Trigger:** A reflection whose *what should change* names a skill or a verb, and Danny wants to bless the change rather than make it by hand.
+
+### The fabric's names
+
+**Why:** `@dbd/fabric`, the verb names, and the path of the log in git are candidates until blessed.
+**Trigger:** Danny's word.
+
+---
+
 ## Code Quality
 
 ### Frontmatter validation in the pre-commit hook

@@ -136,6 +136,7 @@ export default defineConfig({
       // The contract that crosses the wall between the site and the
       // engine (CATHEDRALS.md §"The Contract: The Slice").
       '@dbd/slice': path.resolve(__dirname, './packages/slice/src/index.ts'),
+      '@dbd/fabric': path.resolve(__dirname, './packages/fabric/src/index.ts'),
     },
   },
   // Cloudflare Web Analytics token. Inlined as a build-time constant

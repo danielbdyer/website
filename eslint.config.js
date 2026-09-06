@@ -149,9 +149,12 @@ export default tseslint.config(
   //
   // The contract package (@dbd/slice) is held to the same bar in full:
   // it is pure data and pure functions, and it is what the site and
-  // the engine share (CATHEDRALS.md §"Preferences" 5).
+  // the engine share (CATHEDRALS.md §"Preferences" 5). The fabric
+  // (@dbd/fabric) is held to it as well: its schema and its fold are
+  // pure, and its Effect programs describe effects without performing
+  // them (FABRIC.md §"Invariants").
   {
-    files: ['src/**/*.{ts,tsx}', 'packages/slice/src/**/*.ts'],
+    files: ['src/**/*.{ts,tsx}', 'packages/slice/src/**/*.ts', 'packages/fabric/src/**/*.ts'],
     ignores: ['**/*.test.{ts,tsx}', 'src/test/**'],
     rules: {
       'no-restricted-syntax': [
