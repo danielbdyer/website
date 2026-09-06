@@ -294,7 +294,7 @@ export const reflect = define(
         proposedAt: call.at,
       });
       // The index is recomputable from the log: a derive, not a write.
-      yield* Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh()));
+      yield* Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh('reflections')));
       return { reflection: id, bridge: bridge.id };
     }).pipe(Effect.orDie),
 );

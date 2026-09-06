@@ -40,7 +40,9 @@ export interface Hit {
  *  qmd is the first provider; an absent one ranks nothing. */
 export interface ResonanceService {
   readonly nearest: (collection: string, query: string, k: number) => Effect.Effect<readonly Hit[]>;
-  readonly refresh: () => Effect.Effect<void>;
+  /** Re-index what changed: only the reflections, which a session
+   *  writes, or every collection, which the operator asks for. */
+  readonly refresh: (scope: 'reflections' | 'all') => Effect.Effect<void>;
 }
 export const Resonance = Context.GenericTag<ResonanceService>('@dbd/fabric/Resonance');
 

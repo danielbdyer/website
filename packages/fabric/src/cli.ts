@@ -387,7 +387,7 @@ const describeCommand = async (flag: string | undefined): Promise<void> => {
 };
 
 const index = async (): Promise<void> => {
-  await run(Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh())));
+  await run(Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh('all'))));
   say('the reflections are written out and qmd has updated and embedded what it could');
 };
 

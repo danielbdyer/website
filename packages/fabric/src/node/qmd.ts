@@ -115,6 +115,7 @@ export const materialize = async (
   root: string,
   reflections: readonly Reflection[],
   collections: readonly Collection[],
+  scope: 'reflections' | 'all',
 ): Promise<void> => {
   const dir = path.join(root, MEMORY_DIR);
   await mkdir(dir, { recursive: true });
@@ -144,7 +145,14 @@ export const materialize = async (
     ),
   );
   await quiet(qmd(root, ['update']));
-  await quiet(qmd(root, ['embed', '--timeout', '10']));
+  await quiet(
+    qmd(
+      root,
+      scope === 'all'
+        ? ['embed', '--timeout', '30']
+        : ['embed', '-c', 'reflections', '--timeout', '5'],
+    ),
+  );
 };
 
 /** Resonance through qmd, over the project-local index at the root.
@@ -165,9 +173,9 @@ export const qmdResonance = (
           () => [],
         ),
       ),
-    refresh: () =>
+    refresh: (scope) =>
       Effect.promise(async () => {
         const { reflections, collections } = await current();
-        await materialize(root, reflections, collections);
+        await materialize(root, reflections, collections, scope);
       }),
   });
