@@ -137,14 +137,22 @@ DESIGN_SYSTEM.md
   │     rather than performing delight.
   │     Depends on: DESIGN_SYSTEM.
   │
-  └─→ INFORMATION_ARCHITECTURE.md
-        The hallways and doors. Navigation model, URL design, room-to-
-        route mapping, the visitor's journey from arrival through
-        orientation to wandering to deepening. How the house metaphor
-        manifests in actual wayfinding — what each room's landing page
-        contains, how a visitor discovers works within a room, how
-        rooms invite you into adjacent rooms.
-        Depends on: DESIGN_SYSTEM + DOMAIN_MODEL (cross-dependency).
+  ├─→ INFORMATION_ARCHITECTURE.md
+  │     The hallways and doors. Navigation model, URL design, room-to-
+  │     route mapping, the visitor's journey from arrival through
+  │     orientation to wandering to deepening. How the house metaphor
+  │     manifests in actual wayfinding — what each room's landing page
+  │     contains, how a visitor discovers works within a room, how
+  │     rooms invite you into adjacent rooms.
+  │     Depends on: DESIGN_SYSTEM + DOMAIN_MODEL (cross-dependency).
+  │
+  └─→ PATTERN_LANGUAGE.md
+        What the rooms display, as a pattern language: one anatomy
+        of a work, fragments inside the body, the figure, the facade,
+        sound, moving image, the quoted work and the quoted claim,
+        code, the gathering, and the materials that fit.
+        Depends on: DESIGN_SYSTEM + INTERACTION_DESIGN + CONTENT_SCHEMA
+        + GRAPH_AND_LINKING + INFORMATION_ARCHITECTURE.
 ```
 
 **`DESIGN_SYSTEM.md`** | Outside | Exists | Depends on: Entry sequence
@@ -158,6 +166,9 @@ Motion as material. Names the four current durations (200ms hover, 500ms theme, 
 
 **`INFORMATION_ARCHITECTURE.md`** | Outside | Exists | Depends on: `DESIGN_SYSTEM.md` + `DOMAIN_MODEL.md`
 The hallways and doors. Names the four registers (arrival, orientation, wandering, deepening) and maps each to a surface. Specifies URL design (`/`, `/{room}`, `/{room}/{slug}`, `/facet/{facet}`), the sticky text-only nav with the wordmark as home, room-landing shape, the Foyer's composition, work-page anatomy with the no-dead-ends commitment, facet chips + facet pages grouped by room, and error/empty-state behavior. Holds search and the graph-view surface as deferred concepts; holds the time-slider location in the nav top-right.
+
+**`PATTERN_LANGUAGE.md`** | Outside | Exists | Depends on: `DESIGN_SYSTEM.md` + `INTERACTION_DESIGN.md` + `CONTENT_SCHEMA.md` + `GRAPH_AND_LINKING.md` + `INFORMATION_ARCHITECTURE.md`
+The pattern language for what the rooms display, in Christopher Alexander's form: eighteen patterns in four scales — the page (one anatomy of a work, fragments inside the body, the figure, the facade), the fragments (sound, moving image, the quoted work, the quoted claim, code, the specimen, the margin note, the anchor, the poem's lineation, the ledger), the gathering (threads not filters, the gathering, the series, search), and construction (which libraries fit the house's epistemics and aesthetics, and which are declined). Each pattern carries its status and its trigger. Written 2026-09-06 at Danny's request as documentation only; it fills the presentation half of the `MEDIA_STRATEGY.md` gap.
 
 ## The House — Where Inside Meets Outside
 
@@ -175,6 +186,11 @@ The component architecture is where the two trunks converge into one built thing
                      become code. Currently comprehensive
                      at ~31K bytes; also partially covers
                      testing, dependencies, and performance.
+                       │
+                       └─→ REFINEMENT_AUDIT.md
+                             Where inside and outside became code
+                             and where they did not quite meet;
+                             the adjudications.
                             ▲
          DESIGN_SYSTEM ─────┘
          (outside)
@@ -182,6 +198,9 @@ The component architecture is where the two trunks converge into one built thing
 
 **`REACT_NORTH_STAR.md`** | The House | Exists | Depends on: `DOMAIN_MODEL.md` + `DESIGN_SYSTEM.md`
 The component architecture. The fourteen axioms, atomic hierarchy, dependency direction law, threshold system, state decisions, hook taxonomy. Currently comprehensive at ~31K bytes. Also partially covers concerns that belong to the threshold (performance budget, accessibility) and the grounds (testing strategy, dependency policy) — these subsections may or may not need to be extracted into their own files as the site grows. The architecture file is where an agent learns how to *build* after learning what to build (inside) and what it should feel like (outside).
+
+**`REFINEMENT_AUDIT.md`** | The House | Exists | Depends on: every spec it cites
+The implemented realities of the house read against their higher disposition, so a refinement treatment can be adjudicated. Resolves the primitives the concerns share (address, anatomy, orientation, gesture, lens, and state in three tiers), then audits view transitions and continuity, filtering semantics, the overlay, deep-link resourcing, the crossing from any content up to the sky and back, facets in the UI, and congruency, each as disposition, reality with file and line, gap, treatment, and adjudication; names the contradictions between specs it inherits; and ends in thirteen decisions only Danny makes, with options and the strength of the evidence. Made 2026-09-06 by reading the tree, driving the built site in a browser, and probing the deployed preview. Its sibling for the sky alone is `CONSTELLATION_IMPLEMENTATION_AUDIT.md`.
 
 ## The Threshold — Where the House Meets the World
 
@@ -266,6 +285,16 @@ CONTENT_SCHEMA + DESIGN_SYSTEM
         The shared ground. The workspace the house stands on
         with the engine beneath it; the slice that crosses
         between them; the sequence.
+        │
+        └─→ FABRIC.md
+              The loom. The runtime a session lives in: a log
+              per tenant, verbs as blessed nodes, a receipt on
+              every call, consent as the only way across a wall.
+              │
+              └─→ DYERVERSE.md
+                    The whole. The six repositories read as one,
+                    what they share, what they call by different
+                    names, the culture, and where it is headed.
 ```
 
 **`RENDERING_STRATEGY.md`** | Grounds | Exists | Depends on: `REACT_NORTH_STAR.md` + `PERFORMANCE_BUDGET.md` + `CONTENT_SCHEMA.md`
@@ -288,6 +317,12 @@ The master plan. How the codebase grows over time. Refactoring triggers (already
 
 **`CATHEDRALS.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `DOMAIN_MODEL.md` + `GRAPH_AND_LINKING.md` + `REACT_NORTH_STAR.md` + `RENDERING_STRATEGY.md` + `CONSTELLATION_ARCHITECTURE.md`
 The shared ground. Danny's second repository, `cathedrals` — a consent-gated knowledge graph whose constitution is *agents propose; the author blesses* — turned out to stand on the same three operations as the house. This file names what each project preserves, what is blended (one thing, two registers, never a third), the wall they share and the one door through it (`@dbd/slice`, a bounded view of the graph as plain data with a schema of record), dependency injection without a container, git as the vessel, the agent's preferences for the engine's successor, the practice the agent works by, and the phases with their pulls. The movements from "What Is Preserved" through "How the Agent Works Here" are written to become the workspace's root `CLAUDE.md` when the site moves under `apps/`.
+
+**`FABRIC.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `CATHEDRALS.md` + `REACT_NORTH_STAR.md` + `CONSTELLATION_ARCHITECTURE.md`
+The loom. The runtime a local agent session lives in, and the ground Danny's six repositories share (2026-09-06, with Danny). What each repository contributed and where it was written; the memory runtime vendored as a model first (ActiveGraph's event-sourced graph) and a package second, behind a port; the five layers — the log per tenant, the two sovereign spaces with bridge proposals and weak references between them, verbs as blessed nodes projected into a manifest, the consent port that never becomes a verb, the session shell that starts and ends with a human message; the first slice, a reflection recorded by the agent and blessed across into the operator's memory; the six invariants (INV-FAB-001..006); the workspace direction — a monorepo whose living siblings enter as submodules, each a pinned citation, with one `sync` verb to play nice from afar; and six phases held with pulls. Phase 0 shipped the package; Phase 1 shipped the session shell — the server over stdio, the start hook that prints memory into context, the stop hook that asks for a reflection, the log at `fabric/spaces/` — and the handshake table that names the conduits the fabric is built along. Phase 2 shipped in part: the vendor's two laws as code (`actor` and `causedBy` on every event; refusals as events), the self-description (`fabric/manifest.json`, `fabric/events.schema.json`, a generated `fabric/README.md`, served as resources and drift-checked in lint), sources for the operator's space (vault, works, skills) behind a composite graph source, the memory compile as a deterministic Python sidecar, and qmd as the resonance provider.
+
+**`DYERVERSE.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `CATHEDRALS.md` + `FABRIC.md` + `AGENTS.md`
+The manifesto of the whole, under the name `CATHEDRALS.md` decided for the workspace. Reads the six repositories as one: the lineage from the root through the seed to the engine, the vault, the product, and the house; the five convergences they share without having said so (the sovereign and the sacred gap, provenance minted at the event, the bounded read for one turn, the apparatus that names the day it stops, the state machine that can do everything except finish); the words that collide across them and the rule for holding them; the shape and its three laws; the culture as norms a newcomer would notice; where it is headed, each convergence with its trigger; what the six refuse; and what it asks. Written 2026-09-06 with Danny. `MANIFESTO.md` remains the site's manifesto.
 
 ---
 
@@ -326,6 +361,8 @@ The five outcomes today:
 **Why outcomes rather than tasks.** The earlier draft of this layer was five task-oriented skills (`write-a-work`, `add-component`, ...). The current draft replaces them with five *outcome* orientations. The shift matters: Danny requests outcomes, not tasks. "Help me code on this site" loads `coding` — the full orientation, persistent as core memory for the session. Task-level help emerges *inside* that orientation when needed. The outcome-skill surface is smaller and richer; the task-step breakdown lives inside the relevant spec, a click away.
 
 **When to add a new skill.** When a new outcome category surfaces — a kind of work that doesn't fit any of the five above, that Danny requests often enough to warrant its own core memory bundle. Not before.
+
+**The charter.** Beside the skills, [`AGENTS.md`](./AGENTS.md) holds the standing directives Danny has given the agent, dated and quoted: spanda and the smallest real version, the feeling as the spec, propose-then-bless, recursive sovereignty, the session as the only reasoner, world verbs by blessing, reflection first, lossless handshakes as the tell, elegance without obscurantism, documents before code, invariants first, held names, faithful reporting, the voices, the enough. A Claude Code session reaches it through the one line in `CLAUDE.md`; a Copilot session reads it directly. It never summarizes the soul.
 
 ---
 
@@ -366,6 +403,7 @@ The five outcomes today:
 | `CONSTELLATION_ARCHITECTURE.md` | Exists | The sky's application architecture (2026-09-03, with Danny): a pure core in a thin shell. Six layers — Graph, Walk (a reducer), Motion (the camera's state machine: travel, the hand, the spring, the gaze), Frame (the projection, a target), Paint (SVG and GL painters), Shell (the ref, the schedule, the dispatch) — under the View. Two clocks meet at a boundary that carries only data. Names the lint rim and what remains to go the whole way (one frame, two painters; gestures as data; the event log). Depends on `REACT_NORTH_STAR.md`, `CONSTELLATION_WALK.md`, `CONSTELLATION_HORIZON.md`. |
 | `CONSTELLATION_STORYBOARD.md` | Exists | The sky frame by frame (2026-09-05, from Danny's request to keep polishing `/sky`): the three artifacts read as inspiration, twelve scenes with their beats and motion registers and — the addition — a discipline for the seams, where one gesture lands while another is still unfolding; an audit of the lived surface against the storyboard (what stood, what changed materially); the hybrid decided (the walk's grammar unchanged, the plate's singular struck star, the trench drawn in three beats, one attention, five events across the boundary); what the pass built and the tests that keep it; and what is held from the artifacts for a real eye. Cross-trunk: outside (interaction, motion) and the house (the architecture the beats fold into). Depends on `CONSTELLATION_WALK.md`, `CONSTELLATION_DESIGN.md`, `CONSTELLATION_ARCHITECTURE.md`. |
 | `CATHEDRALS.md` | Exists | The founding document of the workspace the house shares with Danny's knowledge-graph engine (2026-09-03, with Danny). What is preserved from each, what is blended, the `@dbd/slice` contract and its invariants (INV-SLC-001..005), dependency direction and injection without a container, git as the vessel, the preferences for the engine's successor, how the agent works, and five phases held with pulls. Phase 0 shipped: the contract package, the works adapter, the workspace aliases. Depends on `CLAUDE.md`, `DOMAIN_MODEL.md`, `GRAPH_AND_LINKING.md`, `REACT_NORTH_STAR.md`, `RENDERING_STRATEGY.md`, `CONSTELLATION_ARCHITECTURE.md`. |
+| `FABRIC.md` | Exists | The runtime a local agent session lives in, and the ground the six repositories share (2026-09-06, with Danny). The vendor (ActiveGraph's event-sourced model, behind a port), the five layers (log, tenants, verbs, consent, session shell), the first slice (a reflection blessed across), the invariants (INV-FAB-001..009), the workspace as submodules with a `sync` verb, and six phases with pulls. Phase 0 shipped `@dbd/fabric` with its schema, fold, manifest projection, invariant check, Effect ports, in-memory adapter, and tests; Phase 1 shipped the session shell (server, hooks, terminal, the JSON-lines log) and the handshake table; Phase 2 in part: actor and cause on events, refusals as events, the self-description with its drift check and resources, sources for the operator's space, the compile sidecar, and qmd as resonance; Phase 5 shipped the loop pointed at itself: `propose` as a patch against a base, the fabric's own evaluation, blessing that applies once, outcomes reported by the next session, and graduation stated in advance (INV-FAB-008, 009). Six verbs and three sources wait for blessing. Depends on `CLAUDE.md`, `CATHEDRALS.md`, `REACT_NORTH_STAR.md`, `CONSTELLATION_ARCHITECTURE.md`. |
 | `MANIFESTO.md` | Exists | The slingshot — six arrows already in motion, named so the building can lean into them on purpose. Companion: `MANIFESTO_NOTES.md`. |
 | `MANIFESTO_NOTES.md` | Exists | Technical accompaniment to the manifesto: file paths, lint rules, drift inventory. Updated as drift resolves or surfaces. |
 

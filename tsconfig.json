@@ -20,7 +20,8 @@
       "@/*": ["./src/*"],
       "@dbd/sky": ["./packages/sky/src/index.ts"],
       "@dbd/sky/*": ["./packages/sky/src/*"],
-      "@dbd/slice": ["./packages/slice/src/index.ts"]
+      "@dbd/slice": ["./packages/slice/src/index.ts"],
+      "@dbd/fabric": ["./packages/fabric/src/index.ts"]
     }
   },
   "include": ["src", "packages/slice/src"]

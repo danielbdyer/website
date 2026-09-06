@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "fabric": {
+      "command": "pnpm",
+      "args": ["--silent", "fabric", "serve"]
+    }
+  }
+}

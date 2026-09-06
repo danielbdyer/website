@@ -42,6 +42,10 @@ Almost never. `useEffect` decision tree (from `REACT_NORTH_STAR.md`):
 
 Effects that fit the two legitimate patterns (subscriptions; analytics) live in custom hooks, never raw in components.
 
+## The bar: the code reads as its sentence
+
+`AGENTS.md` directive 16 holds the exemplar (the fabric's `pending` verb) and the five tests. Before a transform over an aggregate ships — a verb, a fold handler, a selector, an adapter, a loader — read it once as the sentence it implements and once as code, and confirm they are the same shape: described before it runs in the aggregate's own vocabulary, each clause one line in reading order, one name on every surface, the aggregate folded rather than poked, the description written to whoever will call it.
+
 ## FP discipline at the component layer
 
 The site commits to functional-programming style at the React layer. The compiler auto-memoizes; the lint forbids manual `useMemo` / `useCallback` / `memo`. That trust is only honest if the component author writes code the compiler can memoize cleanly. The discipline below is what makes a component *compiler-friendly* and *intent-clear* at the same time.

@@ -24,6 +24,7 @@
 
 pnpm exec lint-staged
 pnpm exec tsc -b
+pnpm exec tsc -p packages/fabric
 node ./scripts/check-component-shapes.mjs
 node ./scripts/check-spec-wikilinks.mjs
 node ./scripts/check-voice-and-copy.mjs

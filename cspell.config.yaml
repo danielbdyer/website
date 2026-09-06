@@ -58,6 +58,37 @@ words:
   - garden
   - study
   - spanda
+  # The fabric's vocabulary (FABRIC.md)
+  - permissioned
+  - replayable
+  - unretired
+  - monoid
+  - Bandcamp
+  - Chakra
+  - cmdk
+  - epistemics
+  - mutables
+  - narrowings
+  - sharpnesses
+  - shiki
+  - slashless
+  - slugified
+  - transclusions
+  - multisets
+  - modelcontextprotocol
+  - activegraph
+  - tobilu
+  - compensatable
+  - llms
+  - vsearch
+  - axiomatized
+  - jsonl
+  - gitmodules
+  - submodule
+  - submodules
+  - Tesseract
+  - Yohei
+  - Nakajima
   # The engine's vocabulary, carried across the wall (CATHEDRALS.md)
   - midground
   - privated

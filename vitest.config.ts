@@ -9,6 +9,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@dbd/sky': path.resolve(__dirname, './packages/sky/src/index.ts'),
       '@dbd/slice': path.resolve(__dirname, './packages/slice/src/index.ts'),
+      '@dbd/fabric': path.resolve(__dirname, './packages/fabric/src/index.ts'),
     },
   },
   // Mirror the build-time define from vite.config.ts so the tests see
@@ -26,7 +27,11 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}', 'packages/slice/src/**/*.test.ts'],
+    include: [
+      'src/**/*.test.{ts,tsx}',
+      'packages/slice/src/**/*.test.ts',
+      'packages/fabric/src/**/*.test.ts',
+    ],
     coverage: {
       // Soft floor — scoped to pure logic (domain + utils + seo
       // builders), where strict coverage matches the cost of writing

@@ -353,6 +353,58 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 ---
 
+## The Refinement
+
+The refinement audit (`REFINEMENT_AUDIT.md`) gathers the house's implemented realities against their disposition and ends in thirteen adjudications; the pattern language (`PATTERN_LANGUAGE.md`) carries its held patterns with their triggers in the patterns themselves. Neither is restated here. Two items from the audit have no decision in them and wait only for a hand:
+
+### The edge keeps the address grammar
+
+**Why:** The deployed site answers an unknown URL with Cloudflare's empty 404 because the build emits no `404.html`, and redirects every work address to a trailing slash because `wrangler.jsonc` sets no `html_handling`, against `INFORMATION_ARCHITECTURE.md` §"URL Design". No canonical link is emitted, and the sitemap lists query-string addresses that serve their base path's HTML.
+**Trigger:** The next deploy-facing change, or the first shared link that lands on the empty page. `REFINEMENT_AUDIT.md` §4 names the smallest version.
+
+### The overlay keeps the walk
+
+**Why:** Opening a star's overlay remounts the whole sky because the root keys its error boundary on the last match's pathname; the overlay's body has no link delegation; the dialog is not modal and the root steals its focus. Three high findings, one cause each, no decision in any of them.
+**Trigger:** The next session in the sky. `REFINEMENT_AUDIT.md` §1 and §3.
+
+---
+
+## The Fabric
+
+Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
+
+### The runtime over the log
+
+**Why:** The log's event shape maps losslessly to ActiveGraph's, so mirroring it into a run would give `inspect`, `diff`, and `fork` over the fabric's history without the runtime keeping the log. A patch to a verb or a policy would be evaluated in a fork.
+**Trigger:** A patch whose evaluation needs a fork of the runtime rather than the lints.
+
+### Conflicts in the compile
+
+**Why:** The vendor's deterministic extractor names no subject, so two reflections that disagree compile to two claims and no conflict. Either `reflect` asks for a subject per observation, or a reasoner is wired into the compile.
+**Trigger:** The first two reflections that disagree.
+
+### The second tenant
+
+**Why:** The agent space opened; the bridge proposal on `reflect`; `hg bless` resolving it; the retrieval filter live, so a blessed reflection appears in an operator session and an unblessed one does not.
+**Trigger:** The first reflection that should cross into the operator space.
+
+### The workspace as submodules
+
+**Why:** The living siblings stay sovereign in their own repositories and enter as pinned submodules — each pin a citation by hash — with a `sync` verb that reports drift and a pull request as the only way a pin moves. Answers the workspace's visibility: a pointer publishes a URL and a hash, never the content.
+**Trigger:** Danny's word on visibility and on which siblings enter, before `CATHEDRALS.md` Phase 4.
+
+### The canon beyond skills
+
+**Why:** `propose` changes what the canon holds, and today that is the skills. Prompt, verb, and policy nodes are targets the schema admits; a verb's text is code, and a policy node does not exist yet. Each needs its own evaluation — a fork of the runtime rather than the lints — which is where the runtime over the log enters.
+**Trigger:** The first `propose` refused for naming a node the canon does not hold.
+
+### The fabric's names
+
+**Why:** `@dbd/fabric`, the verb names, and the path of the log in git are candidates until blessed.
+**Trigger:** Danny's word.
+
+---
+
 ## Code Quality
 
 ### Frontmatter validation in the pre-commit hook

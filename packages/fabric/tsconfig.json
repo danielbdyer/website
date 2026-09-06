@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2024"],
+    "types": ["node"],
+    "paths": {
+      "@dbd/slice": ["../slice/src/index.ts"],
+      "@dbd/fabric": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "../slice/src"]
+}
