@@ -31,6 +31,18 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
         ];
   });
 
+  const strangerSources = events.flatMap((event) => {
+    if (event.kind !== 'source.blessed') return [];
+    const source = state.sources.get(event.payload.source);
+    if (!source)
+      return [`INV-FAB-002: source.blessed names ${event.payload.source}, never proposed`];
+    return blessedByOwner(state, source.space, event.payload.by)
+      ? []
+      : [
+          `INV-FAB-002: ${event.payload.by} blessed source ${source.id} in ${source.space}, whose sovereign is ${state.spaces.get(source.space)?.sovereign ?? 'unknown'}`,
+        ];
+  });
+
   const sameSpaceBridges = [...state.bridges.values()].flatMap((bridge) =>
     bridge.from === bridge.to
       ? [`INV-FAB-003: bridge ${bridge.id} does not cross a wall (${bridge.from} to ${bridge.to})`]
@@ -59,6 +71,7 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
   return [
     ...unblessedCalls,
     ...strangerBlessings,
+    ...strangerSources,
     ...sameSpaceBridges,
     ...strangerResolutions,
     ...homelessReferences,

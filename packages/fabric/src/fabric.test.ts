@@ -51,10 +51,12 @@ const reflection = (over: Partial<Reflection> = {}): Reflection =>
     ...over,
   });
 
-const stamp = (events: readonly Omit<FabricEvent, 'step'>[]): readonly FabricEvent[] =>
-  events.map((event, step) => ({ ...event, step }) as FabricEvent);
+type Bare = Omit<FabricEvent, 'step' | 'actor'>;
 
-const opened = (): readonly Omit<FabricEvent, 'step'>[] => [
+const stamp = (events: readonly Bare[]): readonly FabricEvent[] =>
+  events.map((event, step) => ({ actor: 'test', ...event, step }) as FabricEvent);
+
+const opened = (): readonly Bare[] => [
   { kind: 'space.opened', at: AT, space: 'danny', payload: operator },
   { kind: 'space.opened', at: AT, space: 'agent', payload: agent },
 ];
@@ -169,7 +171,7 @@ describe('the manifest', () => {
 });
 
 describe('crossing the wall', () => {
-  const crossing = (): readonly Omit<FabricEvent, 'step'>[] => [
+  const crossing = (): readonly Bare[] => [
     ...opened(),
     { kind: 'reflection.recorded', at: AT, space: 'agent', payload: reflection() },
     {
@@ -282,12 +284,25 @@ describe('the ports, over the in-memory log', () => {
   const program = Effect.gen(function* () {
     const log = yield* EventLog;
     const consent = yield* Consent;
-    yield* log.append({ kind: 'space.opened', at: AT, space: 'danny', payload: operator });
-    yield* log.append({ kind: 'space.opened', at: AT, space: 'agent', payload: agent });
+    yield* log.append({
+      kind: 'space.opened',
+      at: AT,
+      space: 'danny',
+      actor: 'test',
+      payload: operator,
+    });
+    yield* log.append({
+      kind: 'space.opened',
+      at: AT,
+      space: 'agent',
+      actor: 'test',
+      payload: agent,
+    });
     yield* log.append({
       kind: 'reflection.recorded',
       at: AT,
       space: 'agent',
+      actor: 'test',
       payload: reflection(),
     });
     const proposed = yield* consent.propose({

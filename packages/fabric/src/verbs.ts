@@ -1,10 +1,21 @@
-import { Context, Effect } from 'effect';
+import { Context, Effect, Option } from 'effect';
 import { z } from 'zod';
+import type { Slice } from '@dbd/slice';
 import { canonical, same } from './canonical';
-import { sliceFromState } from './graph';
-import { pendingIn, project } from './log';
+import { cut } from './graph';
+import { pendingIn, project, sourcesOf } from './log';
 import { manifestFor } from './manifest';
-import { Consent, EventLog, type ConsentService, type EventLogService } from './ports';
+import {
+  Consent,
+  EventLog,
+  GraphSource,
+  Resonance,
+  type ConsentService,
+  type EventLogService,
+  type GraphSourceService,
+  type Hit,
+  type ResonanceService,
+} from './ports';
 import { changeRequestSchema, citationSchema, type Verb } from './schema';
 
 // ─── The verbs ────────────────────────────────────────────────────
@@ -49,13 +60,101 @@ export interface SiblingsService {
 }
 export const Siblings = Context.GenericTag<SiblingsService>('@dbd/fabric/Siblings');
 
+/** One observation of one reflection, as the compile receives it. */
+export interface SourceTurn {
+  readonly id: string;
+  readonly session: string;
+  readonly date: string;
+  readonly sessionIndex: number;
+  readonly turnIndex: number;
+  readonly role: string;
+  readonly text: string;
+}
+
+/** What the memory compile hands back for a question: the compiled
+ *  claims and events with their times and quantities, the conflicts it
+ *  found, and its answer, reported as it gave it. */
+export interface Recollection {
+  readonly compiler: string;
+  readonly claims: readonly {
+    readonly id: string;
+    readonly text: string;
+    readonly kind: string;
+    readonly validFrom: string | undefined;
+    readonly observedAt: string | undefined;
+    readonly sources: readonly string[];
+  }[];
+  readonly events: readonly {
+    readonly id: string;
+    readonly text: string;
+    readonly predicate: string;
+    readonly start: string | undefined;
+    readonly end: string | undefined;
+    readonly observedAt: string | undefined;
+    readonly quantities: readonly {
+      readonly property: string;
+      readonly value: number;
+      readonly unit: string;
+    }[];
+  }[];
+  readonly entities: readonly { readonly id: string; readonly label: string }[];
+  readonly conflicts: readonly { readonly id: string; readonly claims: readonly string[] }[];
+  readonly answer: {
+    readonly text: string;
+    readonly selected: readonly string[];
+    readonly status: string | undefined;
+  };
+}
+
+/** The memory-compile port. Fed the reflections a viewer may see as
+ *  source turns; asked one question; deterministic without a reasoner.
+ *  Absent when no compiler is wired, so `recall` can say so. */
+export interface MemoryCompileService {
+  readonly recall: (
+    turns: readonly SourceTurn[],
+    query: string,
+    asOf: string,
+  ) => Effect.Effect<Option.Option<Recollection>>;
+}
+export const MemoryCompile = Context.GenericTag<MemoryCompileService>('@dbd/fabric/MemoryCompile');
+
+export type VerbEnvironment =
+  | EventLogService
+  | ConsentService
+  | SiblingsService
+  | GraphSourceService
+  | MemoryCompileService
+  | ResonanceService;
+
+/** The collections resonance may search for a space: a tenant's own
+ *  reflections, and the operator's blessed sources by kind. */
+export const collectionsFor = (space: string, sourceKinds: readonly string[]): readonly string[] =>
+  space === AGENT_SPACE ? ['reflections'] : ['reflections', ...sourceKinds];
+
+/** What resonance found for a query across collections, as scores by
+ *  node id; empty when there is no provider or nothing near. */
+const resonate = (
+  collections: readonly string[],
+  query: string | undefined,
+  k: number,
+): Effect.Effect<ReadonlyMap<string, number>, never, ResonanceService> =>
+  query === undefined
+    ? Effect.succeed(new Map())
+    : Resonance.pipe(
+        Effect.flatMap((resonance) =>
+          Effect.forEach((collection: string) => resonance.nearest(collection, query, k))(
+            collections,
+          ),
+        ),
+        Effect.map(
+          (found) => new Map(found.flat().map((hit: Hit): [string, number] => [hit.id, hit.score])),
+        ),
+      );
+
 export interface VerbDefinition<I> {
   readonly verb: Verb;
   readonly input: z.ZodType<I>;
-  readonly run: (
-    input: I,
-    call: CallContext,
-  ) => Effect.Effect<unknown, never, EventLogService | ConsentService | SiblingsService>;
+  readonly run: (input: I, call: CallContext) => Effect.Effect<unknown, never, VerbEnvironment>;
 }
 
 /** The JSON Schema a zod schema emits, in canonical form: what a verb
@@ -95,10 +194,23 @@ const state = () =>
     Effect.map(project),
   );
 
+const aperture = (input: {
+  readonly query?: string | undefined;
+  readonly topK?: number | undefined;
+}) => ({
+  ...(input.query === undefined ? {} : { query: input.query }),
+  ...(input.topK === undefined ? {} : { topK: input.topK }),
+});
+
 // ─── slice ────────────────────────────────────────────────────────
 
 const sliceInput = z.object({
-  query: z.string().min(1).optional().describe('Keep only reflections whose text contains this.'),
+  space: z
+    .string()
+    .min(1)
+    .default(AGENT_SPACE)
+    .describe('The space to read: your own, or the operator’s through what he has blessed.'),
+  query: z.string().min(1).optional().describe('Keep only nodes whose text mentions this.'),
   topK: z.number().int().min(1).optional().describe('Keep at most this many, newest first.'),
 });
 
@@ -106,19 +218,27 @@ const sliceOutput = z.object({}).passthrough();
 
 export const slice = define(
   'slice',
-  'Load your memory for this turn: the reflections you may see, newest first, with the proposals still waiting as ghosts.',
+  'Load a space for this turn as a slice: nodes, edges, axes, and the proposals still waiting as ghosts. Your own space whole; the operator’s through its blessed sources and what he has blessed across.',
   'observe',
   sliceInput,
   sliceOutput,
   (input, call) =>
-    state().pipe(
-      Effect.map((current) =>
-        sliceFromState(current, call.space, call.at, {
-          ...(input.query === undefined ? {} : { query: input.query }),
-          ...(input.topK === undefined ? {} : { topK: input.topK }),
-        }),
-      ),
-    ),
+    Effect.gen(function* () {
+      const source = yield* GraphSource;
+      const loaded = yield* source.slice(input.space, {
+        viewer: call.space,
+        asOf: call.at,
+        ...aperture(input),
+      });
+      const current = yield* state();
+      const kinds = sourcesOf(current, input.space).map((entry) => entry.kind);
+      const scores = yield* resonate(
+        collectionsFor(input.space, kinds),
+        input.query,
+        input.topK ?? 12,
+      );
+      return cut(loaded, aperture(input), scores);
+    }),
 );
 
 // ─── reflect ──────────────────────────────────────────────────────
@@ -128,7 +248,7 @@ const reflectInput = z.object({
   observed: z
     .array(z.string().min(1))
     .min(1)
-    .describe('What actually happened. Facts a later session can rely on.'),
+    .describe('What actually happened. Facts a later session can rely on, one per entry.'),
   inferred: z
     .array(z.string().min(1))
     .default([])
@@ -162,6 +282,7 @@ export const reflect = define(
         kind: 'reflection.recorded',
         at: call.at,
         space: call.space,
+        actor: call.session,
         payload: reflection,
       });
       const bridge = yield* consent.propose({
@@ -172,8 +293,66 @@ export const reflect = define(
         evidence: `session ${call.session}: ${input.attempted}`,
         proposedAt: call.at,
       });
+      // The index is recomputable from the log: a derive, not a write.
+      yield* Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh()));
       return { reflection: id, bridge: bridge.id };
     }).pipe(Effect.orDie),
+);
+
+// ─── recall ───────────────────────────────────────────────────────
+
+const recallInput = z.object({
+  query: z.string().min(1).describe('The question, in plain words.'),
+});
+
+const recallOutput = z.object({}).passthrough();
+
+/** The reflections in a slice, as the compile's source turns: each
+ *  observation one turn, in the order it was recorded. */
+export const turnsFrom = (slice: Slice): readonly SourceTurn[] =>
+  slice.nodes
+    .filter((node) => node.kind === 'reflection')
+    .toSorted((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+    .flatMap((node, sessionIndex) =>
+      (node.summary ?? '').split(' · ').flatMap((text, turnIndex) =>
+        text.length === 0
+          ? []
+          : [
+              {
+                id: `${node.id}#${turnIndex}`,
+                session: node.id,
+                date: node.createdAt.slice(0, 10),
+                sessionIndex,
+                turnIndex,
+                role: 'agent',
+                text,
+              },
+            ],
+      ),
+    );
+
+export const recall = define(
+  'recall',
+  'Ask your memory a question. Resonance ranks the reflections nearest it; those are compiled into claims and events with their times and quantities, conflicts between them are named, and the compile answers as far as it can. Without a compiler wired, it says so.',
+  'observe',
+  recallInput,
+  recallOutput,
+  (input, call) =>
+    Effect.gen(function* () {
+      const source = yield* GraphSource;
+      const compile = yield* MemoryCompile;
+      const mine = yield* source.slice(call.space, { viewer: call.space, asOf: call.at });
+      const scores = yield* resonate(['reflections'], input.query, 12);
+      const nearest = scores.size > 0 ? cut(mine, { query: input.query }, scores) : mine;
+      const recollection = yield* compile.recall(turnsFrom(nearest), input.query, call.at);
+      return {
+        resonance: [...scores.entries()].map(([id, score]) => ({ id, score })),
+        ...Option.getOrElse(recollection, () => ({
+          compiler: 'none',
+          note: 'No memory compiler is wired; use slice.',
+        })),
+      };
+    }),
 );
 
 // ─── pending ──────────────────────────────────────────────────────
@@ -227,7 +406,7 @@ export const sync = define(
 /** Every verb the code knows how to run, by name. The manifest decides
  *  which of these a session may see; this decides what a call does. */
 export const REGISTRY: ReadonlyMap<string, VerbDefinition<never>> = new Map(
-  [slice, reflect, pending, sync].map((definition) => [
+  [slice, reflect, recall, pending, sync].map((definition) => [
     definition.verb.name,
     definition as unknown as VerbDefinition<never>,
   ]),
@@ -245,8 +424,9 @@ export function refusal(name: string, manifestVerbs: readonly Verb[]): string | 
     (verb) => verb.name === name,
   );
   const definition = REGISTRY.get(name);
-  if (!blessed)
+  if (!blessed) {
     return `INV-FAB-001: ${name} is not in the manifest; it is unblessed, retired, or unknown`;
+  }
   if (!definition) return `${name} is blessed but this build has no program for it`;
   if (!same(blessed.inputSchema, definition.verb.inputSchema)) {
     return `INV-FAB-007: ${name}'s signature was frozen at blessing and this build's differs; propose it as a new verb`;

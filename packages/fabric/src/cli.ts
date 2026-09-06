@@ -1,23 +1,26 @@
 import { readFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Effect } from 'effect';
-import { homeOf, pendingIn, project, visibleReflections, type FabricState } from './log';
+import { canonicalJson } from './canonical';
+import { describe, eventJsonSchema, readmeFrom } from './describe';
+import { homeOf, pendingIn, project, sourcesOf, visibleReflections, type FabricState } from './log';
 import { manifestFor } from './manifest';
-import { Consent, EventLog } from './ports';
-import type { Reflection, Space } from './schema';
+import { Consent, EventLog, Resonance } from './ports';
+import { RUNTIME_ACTOR, SOURCE_KINDS, type Reflection, type Source, type Space } from './schema';
 import { paths, readSession, runnerFor, serve, type Runner } from './server';
 import { AGENT_SPACE, OPERATOR_SPACE, proposedVerbs } from './verbs';
 
 // ─── The sovereign's terminal, and the hooks ──────────────────────
 //
-// `init` opens the two spaces and proposes the verbs, unblessed.
-// `bless` and `reject` are the operator's, from the terminal, per
-// CATHEDRALS.md §"Git Is the Vessel": blessing happens where it
-// already happens, and the commit that follows is its record.
-// `orient` and `stop-check` are the two hooks a session runs: the
-// first marks the session and prints its memory into context; the
-// second asks for a reflection if none was recorded.
+// `init` opens the two spaces and proposes the verbs and the sources,
+// unblessed. `bless` and `reject` are the operator's, from the
+// terminal, per CATHEDRALS.md §"Git Is the Vessel": blessing happens
+// where it already happens, and the commit that follows is its record.
+// `describe` writes the fabric's self-description beside the log, and
+// `describe --check` fails when the written copy has drifted from the
+// log, so the description in git is never stale. `orient` and
+// `stop-check` are the two hooks a session runs.
 //
 // Both hooks are a handshake with no loss: Claude Code hands a hook
 // its session id as JSON on stdin, takes a start hook's stdout into
@@ -34,10 +37,34 @@ const say = (text: string): void => {
   process.stdout.write(`${text}\n`);
 };
 
+const complain = (text: string): void => {
+  process.stderr.write(`${text}\n`);
+  process.exitCode = 2;
+};
+
 const spaces: readonly Space[] = [
   { id: OPERATOR_SPACE, kind: 'operator', sovereign: OPERATOR_SPACE },
   { id: AGENT_SPACE, kind: 'agent', sovereign: AGENT_SPACE },
 ];
+
+/** The sources `init` proposes into the operator's space: the house's
+ *  own skills and works, and the vault beside the house. Paths are
+ *  relative to the workspace root; a sibling not checked out reads as
+ *  nothing. */
+const proposedSources = (): readonly Source[] =>
+  (
+    [
+      ['skills', '.claude/skills'],
+      ['works', 'src/content'],
+      ['vault', '../book-research'],
+    ] as const
+  ).map(([kind, sourcePath]) => ({
+    id: `source/${kind}`,
+    space: OPERATOR_SPACE,
+    kind,
+    path: sourcePath,
+    origin: 'declared',
+  }));
 
 const state = (): Promise<FabricState> =>
   run(
@@ -69,7 +96,8 @@ const init = async (): Promise<void> => {
   const current = await state();
   const at = now();
   const opened = spaces.filter((space) => !current.spaces.has(space.id));
-  const proposed = proposedVerbs().filter((verb) => !current.verbs.has(verb.id));
+  const verbs = proposedVerbs().filter((verb) => !current.verbs.has(verb.id));
+  const sources = proposedSources().filter((source) => !current.sources.has(source.id));
   await run(
     EventLog.pipe(
       Effect.flatMap((log) =>
@@ -79,13 +107,22 @@ const init = async (): Promise<void> => {
               kind: 'space.opened' as const,
               at,
               space: space.id,
+              actor: RUNTIME_ACTOR,
               payload: space,
             })),
-            ...proposed.map((verb) => ({
+            ...verbs.map((verb) => ({
               kind: 'verb.proposed' as const,
               at,
               space: verb.space,
+              actor: RUNTIME_ACTOR,
               payload: verb,
+            })),
+            ...sources.map((source) => ({
+              kind: 'source.proposed' as const,
+              at,
+              space: source.space,
+              actor: RUNTIME_ACTOR,
+              payload: source,
             })),
           ],
           (event) => log.append(event),
@@ -94,13 +131,46 @@ const init = async (): Promise<void> => {
     ),
   );
   const after = await state();
-  const waiting = [...after.verbs.values()].flatMap((verb) =>
+  const waitingVerbs = [...after.verbs.values()].flatMap((verb) =>
     verb.blessedAt === undefined ? [verb.name] : [],
   );
-  say(
-    `opened ${opened.length} space(s); proposed ${proposed.length} verb(s). ` +
-      `Waiting for blessing: ${waiting.join(', ') || 'none'}.`,
+  const waitingSources = [...after.sources.values()].flatMap((source) =>
+    source.blessedAt === undefined ? [source.id] : [],
   );
+  say(
+    `opened ${opened.length} space(s); proposed ${verbs.length} verb(s) and ${sources.length} source(s). ` +
+      `Waiting for blessing: ${[...waitingVerbs, ...waitingSources].join(', ') || 'none'}.`,
+  );
+};
+
+const propose = async (kind: string | undefined, sourcePath: string | undefined): Promise<void> => {
+  const known = SOURCE_KINDS.find((candidate) => candidate === kind);
+  if (!known || !sourcePath) {
+    complain(`propose source <${SOURCE_KINDS.join('|')}> <path>`);
+    return;
+  }
+  const at = now();
+  const source: Source = {
+    id: `source/${known}/${path.basename(sourcePath)}`,
+    space: OPERATOR_SPACE,
+    kind: known,
+    path: sourcePath,
+    origin: 'declared',
+  };
+  await run(
+    EventLog.pipe(
+      Effect.flatMap((log) =>
+        log.append({
+          kind: 'source.proposed',
+          at,
+          space: source.space,
+          actor: RUNTIME_ACTOR,
+          payload: source,
+        }),
+      ),
+    ),
+  );
+  say(`proposed ${source.id} into ${source.space}; waiting for blessing`);
 };
 
 const bless = async (
@@ -108,54 +178,67 @@ const bless = async (
   decision: 'blessed' | 'rejected',
 ): Promise<void> => {
   if (!target) {
-    console.error('name a verb or a bridge id');
-    process.exitCode = 2;
+    complain('name a verb, a source, or a bridge id');
     return;
   }
   const current = await state();
   const at = now();
+  const sovereignOf = (space: string): string =>
+    current.spaces.get(space)?.sovereign ?? OPERATOR_SPACE;
   const verb = [...current.verbs.values()].find(
     (entry) => entry.name === target || entry.id === target,
   );
-  if (verb) {
+  const source = [...current.sources.values()].find(
+    (entry) => entry.id === target || entry.id === `source/${target}`,
+  );
+  if (verb || source) {
     if (decision === 'rejected') {
-      console.error('a verb is retired, not rejected; retire is held');
-      process.exitCode = 2;
+      complain('a verb or a source is retired, not rejected; retire is held');
       return;
     }
+    const space = verb?.space ?? source?.space ?? OPERATOR_SPACE;
+    const by = sovereignOf(space);
     await run(
       EventLog.pipe(
         Effect.flatMap((log) =>
-          log.append({
-            kind: 'verb.blessed',
-            at,
-            space: verb.space,
-            payload: {
-              verb: verb.id,
-              by: current.spaces.get(verb.space)?.sovereign ?? OPERATOR_SPACE,
-              at,
-            },
-          }),
+          log.append(
+            verb
+              ? {
+                  kind: 'verb.blessed',
+                  at,
+                  space,
+                  actor: by,
+                  causedBy: verb.id,
+                  payload: { verb: verb.id, by, at },
+                }
+              : {
+                  kind: 'source.blessed',
+                  at,
+                  space,
+                  actor: by,
+                  causedBy: source?.id ?? '',
+                  payload: { source: source?.id ?? '', by, at },
+                },
+          ),
         ),
       ),
     );
-    say(`blessed ${verb.name} into the manifest of ${verb.space}`);
+    say(`blessed ${verb?.name ?? source?.id ?? target} into ${space}`);
     return;
   }
   const bridge = current.bridges.get(target);
   if (!bridge) {
-    console.error(`nothing named ${target} is waiting`);
-    process.exitCode = 2;
+    complain(`nothing named ${target} is waiting`);
     return;
   }
-  const by = current.spaces.get(bridge.to)?.sovereign ?? OPERATOR_SPACE;
+  const by = sovereignOf(bridge.to);
   await run(
     Consent.pipe(Effect.flatMap((consent) => consent.resolve(bridge.id, decision, by, at))),
   );
   say(`${decision} ${bridge.node} into ${bridge.to}`);
 };
 
-const describe = (current: FabricState, reflection: Reflection): string => {
+const line = (current: FabricState, reflection: Reflection): string => {
   const home = homeOf(current, reflection);
   const changes = reflection.shouldChange.map(
     (change) => `${change.target} ${change.node}: ${change.change}`,
@@ -182,28 +265,37 @@ const orient = async (): Promise<void> => {
   }
   const current = await state();
   const manifest = manifestFor(OPERATOR_SPACE, now(), current.verbs.values());
-  const unblessed = [...current.verbs.values()].filter(
+  const unblessedVerbs = [...current.verbs.values()].filter(
     (verb) => verb.blessedAt === undefined && verb.retiredAt === undefined,
   );
+  const unblessedSources = [...current.sources.values()].filter(
+    (source) => source.blessedAt === undefined,
+  );
+  const sources = sourcesOf(current, OPERATOR_SPACE);
   const waiting = pendingIn(current, OPERATOR_SPACE);
   const memory = visibleReflections(current, AGENT_SPACE)
     .toSorted((a, b) => b.at.localeCompare(a.at))
     .slice(0, 8);
+  const blessings = [
+    ...unblessedVerbs.map((verb) => `\`pnpm fabric bless ${verb.name}\``),
+    ...unblessedSources.map((source) => `\`pnpm fabric bless ${source.id}\``),
+  ];
   say(
     [
       '## The fabric',
-      `Session ${session ?? (await readSession(root))}, acting as \`${AGENT_SPACE}\`. The log is \`fabric/spaces/\`.`,
+      `Session ${session ?? (await readSession(root))}, acting as \`${AGENT_SPACE}\`. The log is \`fabric/spaces/\`; the description is \`fabric/README.md\`.`,
       manifest.verbs.length > 0
         ? `Manifest of \`${OPERATOR_SPACE}\`: ${manifest.verbs.map((verb) => `\`${verb.name}\` (${verb.consequence})`).join(', ')}.`
-        : `No verb is blessed yet, so the manifest is empty.`,
-      ...(unblessed.length > 0
-        ? [
-            `Waiting for the operator's blessing: ${unblessed.map((verb) => `\`pnpm fabric bless ${verb.name}\``).join(', ')}.`,
-          ]
+        : 'No verb is blessed yet, so the manifest is empty.',
+      sources.length > 0
+        ? `Sources of \`${OPERATOR_SPACE}\`: ${sources.map((source) => `${source.kind} at \`${source.path}\``).join(', ')}.`
+        : `No source is blessed into \`${OPERATOR_SPACE}\` yet; its slice holds only what was blessed across.`,
+      ...(blessings.length > 0
+        ? [`Waiting for the operator's blessing: ${blessings.join(', ')}.`]
         : []),
       `Waiting in \`${OPERATOR_SPACE}\`: ${waiting.length} proposal(s).`,
       memory.length > 0 ? 'Memory, newest first:' : 'Memory: nothing recorded yet.',
-      ...memory.map((reflection) => describe(current, reflection)),
+      ...memory.map((reflection) => line(current, reflection)),
       'Before ending, record what this session noticed with `reflect`. The stop hook asks once if nothing was recorded.',
     ].join('\n'),
   );
@@ -244,47 +336,103 @@ const showPending = async (): Promise<void> => {
 
 const showLog = async (): Promise<void> => {
   const current = await state();
+  const mark = (blessedAt: string | undefined): string => (blessedAt ? '' : ' (unblessed)');
   say(
     [
       `spaces: ${[...current.spaces.keys()].join(', ') || 'none'}`,
-      `verbs: ${[...current.verbs.values()].map((verb) => `${verb.name}${verb.blessedAt ? '' : ' (unblessed)'}`).join(', ') || 'none'}`,
+      `verbs: ${[...current.verbs.values()].map((verb) => `${verb.name}${mark(verb.blessedAt)}`).join(', ') || 'none'}`,
+      `sources: ${[...current.sources.values()].map((source) => `${source.id}${mark(source.blessedAt)}`).join(', ') || 'none'}`,
       `reflections: ${current.reflections.size}`,
-      `receipts: ${current.receipts.length}`,
+      `receipts: ${current.receipts.length}; refusals: ${current.refusals.length}`,
       `bridges: ${current.bridges.size} (${pendingIn(current, OPERATOR_SPACE).length} waiting)`,
     ].join('\n'),
   );
 };
 
+/** The three files the description becomes, as they should read now. */
+const rendered = async (): Promise<readonly { readonly file: string; readonly text: string }[]> => {
+  const description = describe(await state());
+  const { manifest, eventsSchema, readme } = paths(root);
+  return [
+    { file: manifest, text: `${JSON.stringify(description, null, 2)}\n` },
+    { file: eventsSchema, text: `${JSON.stringify(eventJsonSchema(), null, 2)}\n` },
+    { file: readme, text: readmeFrom(description) },
+  ];
+};
+
+const describeCommand = async (flag: string | undefined): Promise<void> => {
+  const files = await rendered();
+  if (flag === '--check') {
+    const drifted = await Promise.all(
+      files.map(async ({ file, text }) => {
+        const current = await readFile(file, 'utf8').catch(() => '');
+        const same = file.endsWith('.json')
+          ? canonicalJson(JSON.parse(current || 'null')) === canonicalJson(JSON.parse(text))
+          : current === text;
+        return same ? [] : [path.relative(root, file)];
+      }),
+    );
+    const names = drifted.flat();
+    if (names.length > 0) {
+      complain(
+        `the description has drifted from the log: ${names.join(', ')}. Run \`pnpm fabric describe\`.`,
+      );
+      return;
+    }
+    say('the description matches the log');
+    return;
+  }
+  await Promise.all(files.map(({ file, text }) => writeFile(file, text, 'utf8')));
+  say(files.map(({ file }) => `wrote ${path.relative(root, file)}`).join('\n'));
+};
+
+const index = async (): Promise<void> => {
+  await run(Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh())));
+  say('the reflections are written out and qmd has updated and embedded what it could');
+};
+
 const usage = (): void => {
   say(
     [
-      'fabric init                 open the two spaces and propose the verbs, unblessed',
-      'fabric bless <verb|bridge>  the operator blesses a verb into the manifest, or a proposal across',
-      'fabric reject <bridge>      the operator rejects a proposal; it is kept, as data',
-      'fabric pending              what is waiting in the operator’s space',
-      'fabric log                  what the log holds',
-      'fabric orient               the start hook: mark the session, print its memory',
-      'fabric stop-check           the stop hook: ask for a reflection if none was recorded',
-      'fabric serve                the Model Context Protocol server, over stdio',
+      'fabric init                          open the spaces; propose the verbs and the sources, unblessed',
+      'fabric propose source <kind> <path>  propose another source into the operator’s space',
+      'fabric bless <verb|source|bridge>    the operator blesses a verb or a source into his space, or a proposal across',
+      'fabric reject <bridge>               the operator rejects a proposal; it is kept, as data',
+      'fabric pending                       what is waiting in the operator’s space',
+      'fabric log                           what the log holds',
+      'fabric describe [--check]            write the self-description beside the log, or check it has not drifted',
+      'fabric index                         write the reflections out for qmd; update and embed the collections',
+      'fabric orient                        the start hook: mark the session, print its memory',
+      'fabric stop-check                    the stop hook: ask for a reflection if none was recorded',
+      'fabric serve                         the Model Context Protocol server, over stdio',
     ].join('\n'),
   );
 };
 
-const commands: Record<string, (argument: string | undefined) => Promise<void>> = {
+const commands: Record<
+  string,
+  (first: string | undefined, second: string | undefined) => Promise<void>
+> = {
   init: () => init(),
-  bless: (argument) => bless(argument, 'blessed'),
-  reject: (argument) => bless(argument, 'rejected'),
+  propose: (first, second) =>
+    first === 'source'
+      ? propose(second, process.argv[5])
+      : Promise.resolve(complain('propose source <kind> <path>')),
+  bless: (first) => bless(first, 'blessed'),
+  reject: (first) => bless(first, 'rejected'),
   pending: () => showPending(),
   log: () => showLog(),
+  describe: (first) => describeCommand(first),
+  index: () => index(),
   orient: () => orient(),
   'stop-check': () => stopCheck(),
   serve: () => serve(root),
 };
 
-const [command, argument] = process.argv.slice(2);
+const [command, first, second] = process.argv.slice(2);
 const chosen = command === undefined ? undefined : commands[command];
 if (chosen) {
-  await chosen(argument);
+  await chosen(first, second);
 } else {
   usage();
   process.exitCode = command === undefined ? 0 : 2;

@@ -4,6 +4,8 @@ import type {
   FabricEventKind,
   Receipt,
   Reflection,
+  Refusal,
+  Source,
   Space,
   Verb,
   WeakReference,
@@ -23,20 +25,27 @@ export interface FabricState {
   readonly spaces: ReadonlyMap<string, Space>;
   readonly verbs: ReadonlyMap<string, Verb>;
   readonly receipts: readonly Receipt[];
+  readonly refusals: readonly Refusal[];
+  readonly sources: ReadonlyMap<string, Source>;
   readonly reflections: ReadonlyMap<string, Reflection>;
   readonly bridges: ReadonlyMap<string, BridgeProposal>;
   readonly references: readonly WeakReference[];
   readonly step: number;
+  /** The latest time any event carried, whatever order the tenants' logs were read in. */
+  readonly lastAt: string;
 }
 
 export const emptyState: FabricState = {
   spaces: new Map(),
   verbs: new Map(),
   receipts: [],
+  refusals: [],
+  sources: new Map(),
   reflections: new Map(),
   bridges: new Map(),
   references: [],
   step: -1,
+  lastAt: '1970-01-01T00:00:00.000Z',
 };
 
 type EventOf<K extends FabricEventKind> = Extract<FabricEvent, { kind: K }>;
@@ -71,6 +80,20 @@ const handlers: { readonly [K in FabricEventKind]: Handler<K> } = {
   'verb.retired': (state, event) =>
     amendVerb((verb) => ({ ...verb, retiredAt: event.payload.at }))(state, event),
   'verb.called': (state, { payload }) => ({ ...state, receipts: [...state.receipts, payload] }),
+  'verb.refused': (state, { payload }) => ({ ...state, refusals: [...state.refusals, payload] }),
+  'source.proposed': (state, { payload }) => ({
+    ...state,
+    sources: withEntry(state.sources, payload.id, payload),
+  }),
+  'source.blessed': (state, { payload }) => {
+    const source = state.sources.get(payload.source);
+    return source
+      ? {
+          ...state,
+          sources: withEntry(state.sources, source.id, { ...source, blessedAt: payload.at }),
+        }
+      : state;
+  },
   'reflection.recorded': (state, { payload }) => ({
     ...state,
     reflections: withEntry(state.reflections, payload.id, payload),
@@ -100,16 +123,30 @@ const handlers: { readonly [K in FabricEventKind]: Handler<K> } = {
   }),
 };
 
+/** The later of two ISO times, which sort as text. */
+const later = (a: string, b: string): string => (a.localeCompare(b) > 0 ? a : b);
+
 /** One event applied to one state: the handler for its kind, then the
  *  step advanced. */
 export function apply(state: FabricState, event: FabricEvent): FabricState {
   const handle = handlers[event.kind] as Handler<typeof event.kind>;
-  return { ...handle(state, event), step: event.step };
+  return {
+    ...handle(state, event),
+    step: event.step,
+    lastAt: later(event.at, state.lastAt),
+  };
 }
 
 /** The whole log, folded. */
 export function project(events: readonly FabricEvent[]): FabricState {
   return events.reduce(apply, emptyState);
+}
+
+/** The sources a space reads from: blessed, in proposal order. */
+export function sourcesOf(state: FabricState, space: string): readonly Source[] {
+  return [...state.sources.values()].filter(
+    (source) => source.space === space && source.blessedAt !== undefined,
+  );
 }
 
 /** The proposals still waiting in a space: the gap, counted. */

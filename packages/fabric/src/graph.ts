@@ -1,4 +1,11 @@
-import { parseSlice, type Ghost, type Slice, type SliceEdge, type SliceNode } from '@dbd/slice';
+import {
+  parseSlice,
+  type Axis,
+  type Ghost,
+  type Slice,
+  type SliceEdge,
+  type SliceNode,
+} from '@dbd/slice';
 import { homeOf, pendingIn, visibleReflections, type FabricState } from './log';
 import type { Aperture } from './ports';
 import type { Reflection } from './schema';
@@ -92,5 +99,90 @@ export function sliceFromState(
       unresolved: waiting.length,
       ghosts: waiting.flatMap((bridge) => ghostFrom(state)(bridge.id)),
     },
+  });
+}
+
+// ─── Merging and cutting ──────────────────────────────────────────
+
+export interface SliceParts {
+  readonly axes: readonly Axis[];
+  readonly nodes: readonly SliceNode[];
+  readonly edges: readonly SliceEdge[];
+}
+
+/** The items with one per key, the first occurrence kept. A Map keeps
+ *  the last, so the list is reversed on the way in and out. */
+const uniqueBy = <T>(items: readonly T[], key: (item: T) => string): readonly T[] =>
+  [...new Map(items.toReversed().map((item) => [key(item), item])).values()].toReversed();
+
+const edgeKey = (edge: SliceEdge): string => `${edge.subject} ${edge.predicate} ${edge.object}`;
+
+/** Several sources' parts as one slice for one space: nodes and axes
+ *  by id, first wins; edges kept only when both ends survived, so the
+ *  merge is grounded whatever the parts were. */
+export function mergeParts(
+  space: string,
+  asOf: string,
+  pending: Slice['pending'],
+  parts: readonly SliceParts[],
+): Slice {
+  const nodes = uniqueBy(
+    parts.flatMap((part) => part.nodes),
+    (node) => node.id,
+  );
+  const known = new Set(nodes.map((node) => node.id));
+  const axes = uniqueBy(
+    parts.flatMap((part) => part.axes),
+    (axis) => axis.id,
+  );
+  const named = new Set(axes.map((axis) => axis.id));
+  return parseSlice({
+    space,
+    asOf,
+    axes,
+    nodes: nodes.map((node) => ({ ...node, axes: node.axes.filter((axis) => named.has(axis)) })),
+    edges: uniqueBy(
+      parts
+        .flatMap((part) => part.edges)
+        .filter((edge) => known.has(edge.subject) && known.has(edge.object)),
+      edgeKey,
+    ),
+    pending,
+  });
+}
+
+const mentions =
+  (query: string) =>
+  (node: SliceNode): boolean =>
+    [node.title, node.summary ?? '', node.kind, ...node.axes].some((text) =>
+      text.toLowerCase().includes(query.toLowerCase()),
+    );
+
+/** A slice, cut by an aperture. With scores, the nodes resonance found
+ *  come first, nearest first, and the rest follow if they mention the
+ *  query; without, mention alone decides. Newest first among equals;
+ *  at most `topK`; edges between what remains; ghosts untouched. */
+export function cut(
+  slice: Slice,
+  aperture: Aperture,
+  scores: ReadonlyMap<string, number> = new Map(),
+): Slice {
+  const score = (node: SliceNode): number => scores.get(node.id) ?? Number.NEGATIVE_INFINITY;
+  const kept = slice.nodes
+    .filter(
+      aperture.query === undefined
+        ? () => true
+        : (node) => scores.has(node.id) || mentions(aperture.query ?? '')(node),
+    )
+    .toSorted(
+      (a, b) =>
+        score(b) - score(a) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id),
+    )
+    .slice(0, aperture.topK ?? Number.POSITIVE_INFINITY);
+  const known = new Set(kept.map((node) => node.id));
+  return parseSlice({
+    ...slice,
+    nodes: kept,
+    edges: slice.edges.filter((edge) => known.has(edge.subject) && known.has(edge.object)),
   });
 }

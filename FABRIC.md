@@ -46,6 +46,10 @@ The memory runtime is not written here. It is vendored, as a model first and as 
 
 **Declined: reasoning inside the runtime.** ActiveGraph ships LLM-backed behaviors. The fabric does not use them. The session is the only reasoner; every behavior the sidecar runs is deterministic. This is not a constraint the vendor imposes. It is the whole point: the deterministic action scripts Danny named are exactly the behaviors, and the reasoning stays where a human can kick it off and read it back.
 
+**How the vendor came in (2026-09-06).** Two of its laws first, as code: every event now carries `actor` and `causedBy`, the fields the vendor's record has and the fabric's lacked; and a refused call is an event, `verb.refused`, never an exception. Then the compile, behind the `MemoryCompile` port: `activegraph-memory`, run as a sidecar for one question with its deterministic extractor and no reasoner, turns the reflections a viewer may see into claims and events with event time kept apart from observation time and quantities extracted, and answers as far as it can. Measured against a real drive, the compile is real and the retrieval is not yet: without an embedding provider the vendor's `retrieve` answers "unanswerable from available memory" to every question, and its conflict detection needs a keyed subject the deterministic extractor does not supply. So `recall` reports the compile and the vendor's answer as given, and the ranking comes from elsewhere.
+
+**Resonance is qmd's (Danny, 2026-09-06: "let's add qmd as the embedding provider").** qmd is the vault's own search — a project-local index of markdown folders with local embeddings and no key — and it speaks JSON with a `qmd://<collection>/<path>` URI on every hit. The fabric's node ids are functions of those paths, so a hit maps to a node with nothing guessed. The collections are the sources: the vault's notes, the works, the skills, and the reflections, which the fabric writes out as markdown under `fabric/.memory/` for qmd to read. `slice` ranks by resonance first and by mention after; `recall` lets resonance choose which reflections the compile sees; `reflect` refreshes the index as a derive. Where no qmd is installed, resonance ranks nothing and the fabric degrades to mention. qmd is itself a Model Context Protocol server, so a session may also speak to it directly; the fabric uses it as a provider.
+
 ---
 
 ## The Shape
@@ -55,6 +59,10 @@ Five layers, in dependency order. Each is data or a pure function until the last
 **The log.** One append-only log per tenant. Every event carries its step in that log, the time it was recorded, and the space it belongs to. The working state — spaces, verbs, receipts, reflections, bridges, references — is a fold over the log, and folding the same log twice yields the same state. Nothing else is ever written. In this repository the log is markdown and JSON in git, per `CATHEDRALS.md` §"Git Is the Vessel"; the sidecar's SQLite is an index of it, rebuilt from it.
 
 **The tenants.** Two spaces from the first day: an operator space and an agent space, each with a sovereign, and each sovereign over itself. Inside its own space a tenant writes without asking. A node moves between spaces only by a bridge proposal, which materializes as pending in the target space and waits for the target's sovereign. A weak reference is the other way across: a citation written onto the relating node, in its own space, pointing at a node across the wall by text — a historical textual citation, resolvable by the fabric and never an edge. The vault's rule for a reference, that it is a receipt and not the content, holds here at the scale of two graphs.
+
+**The sources.** The operator's space is not only what crossed into it. It reads from sources — a vault of claims, a house of works, a folder of skills — each a node in his space, proposed and blessed like a verb, and read only once blessed. Blessing a source is disclosing it: whatever a source holds, a session that may load the space may see. Three adapters read the three kinds, all from markdown with frontmatter and wikilinks, the one shape the vault, the house, and the skills already share, and a composite merges their parts with what was blessed across into one grounded slice. A source whose path is not checked out reads as nothing.
+
+**The self-description.** The system sees itself. From the log and the schema alone, `describe` derives one document — the spaces, the manifest with every verb's JSON Schema, the sources, what is waiting, the closed vocabularies, the event log's own schema as JSON Schema, the invariants, and the protocol — and writes it beside the log as `fabric/manifest.json`, `fabric/events.schema.json`, and a generated `fabric/README.md` for any system that has only that folder. The same three are served as resources (`fabric://manifest`, `fabric://events.schema`, `fabric://readme`). The description's time is the last event's, not the clock's, so the same log describes itself the same way twice, and `describe --check` runs in the lint chain: a description that has drifted from the log fails the build.
 
 **The verbs.** A verb is a node. It carries its input schema and output schema as JSON Schema data, a consequence class, an origin, and the moment it was blessed. The four consequence classes:
 
@@ -68,6 +76,8 @@ Five layers, in dependency order. Each is data or a pure function until the last
 The manifest is a projection: the verbs of one space that are blessed and not retired, and nothing else. A session reads it once. The agent's tool list is the manifest, verbatim. A `world` verb exists in the collection the same way anything becomes canonical — proposed, then blessed by the operator — and until it is blessed the session cannot see it, let alone call it. A verb's signature is frozen at blessing; a change is a new verb and a retirement.
 
 **The consent port.** The engine's, unchanged: a proposal is pending with a null decision; the target's sovereign resolves it once; the resolution is an event. `resolve` is never a verb. It is the one operation the fabric refuses to put in the manifest, so that no session, however permitted, can bless.
+
+**The five verbs.** `slice` loads a space for one turn, the viewer's own whole or the operator's through its blessed sources, ranked by resonance then mention. `reflect` records what a session noticed and proposes its crossing. `recall` asks memory a question through resonance and the compile. `pending` counts the gap. `sync` reports the siblings' drift.
 
 **The session shell.** A Claude Code or Copilot session, started by a human message or a reply, is the only way the fabric runs. The session starts the fabric as a Model Context Protocol server and ends it. The start hook marks the session and prints its memory into context: the manifest, what is waiting, and the reflections it may see. The stop hook asks for a reflection if none was recorded for the session, and the session answers with `reflect` — a hook can carry a session's id and a refusal, but it cannot author what the session noticed. Between sessions nothing runs, nothing polls, and nothing wakes on its own. Every verb call appends a receipt: the verb, the space, the session, a fingerprint of the input, a fingerprint of the output. The payloads stay in the events that carried them.
 
@@ -120,7 +130,13 @@ Danny's rule, 2026-09-06: a perfect lossless handshake — two vocabularies meet
 | Tagged unions on both sides | Effect's `Data.tagged` and `catchTag`; zod's `discriminatedUnion` | An error is `{ _tag }`; an event is `{ kind }`. Both are closed unions dispatched by one field, and the fold over events is a table indexed by that field. |
 | The log and the vessel | JSON Lines; git | One event is one line; one session's lines are one commit; the commit is the provenance. `git log` reads the event log without a tool. |
 | Pins and citations | git submodules; weak references | A submodule pin is a commit hash written in the relating repository — a weak reference by construction. `sync` reads it as one. |
-| Candidates and bridges | ActiveGraph's core pack; the first slice | `memory_candidate`, then `evaluation`, is `reflection.recorded`, then `bridge.proposed`, then a decision. Held until Phase 2 confirms it against the sidecar. |
+| Candidates and bridges | ActiveGraph's core pack; the first slice | `memory_candidate`, then `evaluation`, is `reflection.recorded`, then `bridge.proposed`, then a decision. Held until the runtime enters as a tool over the log. |
+| The event record | ActiveGraph's event; the fabric's event | His `type`, `payload`, `actor`, `caused_by`, `timestamp`, `id` are our `kind`, `payload`, `actor`, `causedBy`, `at`, `step`: dotted namespace to dotted namespace, monotonic id to monotonic step. The last two fields were his before they were ours. |
+| Frames and spaces | ActiveGraph's `frame_id`; the fabric's `space` | A behavior filtered to one frame is a verb scoped to one space. Two tenancies, reached independently, one field apart. |
+| Approval and blessing | ActiveGraph's `propose`, `pending_approvals`, `approve(approved_by)`; the fabric's `propose`, `pending`, `bless` | `approval.proposed` to `granted` or `denied` is `bridge.proposed` to `resolved` with `decision` and `by`. Nothing translates. |
+| Footprint and consequence | `agent-runtime-laws`' effect footprint; the fabric's consequence classes | pure, idempotent, compensatable, one-shot is observe, derive, propose, world with fewer rungs; his finding that fork safety is relative to the footprint is why a world verb needs a receipt first. |
+| The description and the machine-readable docs | `fabric://readme`; ActiveGraph's `/llms.txt` | Both are one generated page a system reads before speaking. Ours is derived from the log, so it cannot say what the log does not. |
+| Hits and nodes | qmd's `qmd://<collection>/<path>`; the fabric's node ids | The sources name nodes by path; qmd names hits by path; one function maps the second to the first. Resonance arrives with nothing guessed. |
 
 ---
 
@@ -129,7 +145,7 @@ Danny's rule, 2026-09-06: a perfect lossless handshake — two vocabularies meet
 Each carries an id in the engine's ledger style and a test in `packages/fabric/src/fabric.test.ts`.
 
 - **INV-FAB-001 — a call is to a verb in the manifest.** A receipt names a verb that is blessed and not retired. The manifest projection enforces the first half; the invariant check reports the second.
-- **INV-FAB-002 — a verb is blessed by the sovereign of its space.** A bless or retire event whose `by` is not the space's sovereign is reported. A bless for a verb never proposed is reported and ignored by the fold.
+- **INV-FAB-002 — a verb or a source is blessed by the sovereign of its space.** A bless or retire event whose `by` is not the space's sovereign is reported. A bless for a verb or a source never proposed is reported and ignored by the fold.
 - **INV-FAB-003 — a bridge crosses a wall and is closed once, by the target's sovereign.** `from` and `to` differ; the first resolution wins; a resolution by anyone but the target's sovereign is reported.
 - **INV-FAB-004 — a weak reference crosses a wall as text.** It lives on the citing node, in the citing space, and points to another space. Inside one space a relation is an edge, not a reference.
 - **INV-FAB-005 — the fold is a function.** Projecting the same log yields the same state, and the state survives the round trip through JSON. The only write is an append.
@@ -181,11 +197,12 @@ Phases in pull order. Each names its pull, its scope, its exit, and what stays h
 - **Exit, met:** Driven end to end over the in-memory log in the tests, and over the file log in a scratch copy — blessed, reflected, crossed, and remembered by the next session from the log alone.
 - **Held:** The sidecar. The fold runs in process until the boundary is spiked. The verbs in this repository wait for Danny's blessing; until then the manifest is empty and the start hook says so.
 
-### Phase 2 — The vendor behind the port
+### Phase 2 — The vendors behind the ports (shipped in part, 2026-09-06)
 
-- **Pull:** The in-process fold is asked a question only the memory compile answers: a conflict between two sessions' claims, or a retrieval by resonance.
-- **Scope:** One afternoon. ActiveGraph as a sidecar behind `EventLog` and `GraphSource`, speaking the event schema and the slice. If the afternoon fails, the engine's event store behind the same ports.
-- **Exit:** The same six-step slice runs with the sidecar owning the log, and `fabricIssues` is empty over the replayed log.
+- **Pull:** Danny asked for a massive slice toward fluency for any other system, and named qmd as the embedding provider.
+- **Scope, shipped:** The two laws as code (`actor` and `causedBy`; refusals as events). The self-description, its three files, the drift check in lint, and the resources. Sources for the operator's space with three adapters and a composite. The compile as a sidecar behind `MemoryCompile`, deterministic, with the vendor's answer reported as given. qmd behind `Resonance`, ranking `slice` and choosing what `recall` compiles, refreshed by `reflect` and by `pnpm fabric index`.
+- **Exit, met:** Driven end to end in a scratch copy with both vendors installed: reflections written, embedded, and found by meaning; the vault's claims sliced into the operator's space by resonance; the compile's claims and quantities returned for a question.
+- **Held:** The runtime as a tool over the log (`inspect`, `diff`, `fork`), which the log's event shape now maps to losslessly. Conflicts keyed by subject, which need either the vendor's reasoner or the fabric naming subjects at reflect time. The vendor's own retrieval, once an embedding provider is wired into it rather than beside it.
 
 ### Phase 3 — The second tenant
 
@@ -211,7 +228,9 @@ Phases in pull order. Each names its pull, its scope, its exit, and what stays h
 
 - **The names.** `@dbd/fabric`; the verb names; the path of the log in git. Trigger: Danny's word.
 - **The log's path.** `fabric/spaces/<space>.jsonl` in this repository is where Phase 1 put it; the name is a candidate, and it may move to the engine's repository once it enters. Trigger: Danny's word, or Phase 2.
-- **The reflection's compile.** Whether the vendor's claim compiler runs on every reflection or only on crossing. Trigger: Phase 2.
+- **Conflicts.** The compile names none until claims carry a subject; `reflect` could ask for one. Trigger: the first two reflections that disagree.
+- **The runtime over the log.** Mirroring the log into an ActiveGraph run for `inspect`, `diff`, and `fork`. Trigger: Phase 5's held-out evaluation.
+- **Refusal receipts.** A refusal is an event now; whether it also earns a receipt id. Trigger: the first world verb.
 - **World verbs.** None are proposed here. The first will name itself when a session wants to do something the graph cannot hold. Trigger: the first ask.
 - **Copilot as the session.** The hooks are written for Claude Code first. Copilot's equivalent surface is held until a session runs there. Trigger: Danny opens one.
 - **The submodule set.** Which siblings enter, under which visibility. Trigger: Danny's word, before Phase 4.
@@ -237,10 +256,11 @@ Today:
 - The verbs at [packages/fabric/src/verbs.ts](./packages/fabric/src/verbs.ts): `slice`, `reflect`, `pending`, `sync`, each a zod schema, a JSON Schema emitted from it, and an Effect program; `refusal` as the gate a call passes.
 - The memory slice at [packages/fabric/src/graph.ts](./packages/fabric/src/graph.ts); the rim at `packages/fabric/src/node/`: the JSON-lines log, the fingerprint, the siblings through git.
 - The shell at [packages/fabric/src/server.ts](./packages/fabric/src/server.ts) and the terminal and hooks at [packages/fabric/src/cli.ts](./packages/fabric/src/cli.ts); `.mcp.json` starts the server for a session; `.claude/settings.json` binds `orient` to session start and `stop-check` to stop; `pnpm fabric` is the operator's command.
-- The log at `fabric/spaces/`: two spaces opened and four verbs proposed, none blessed.
+- The sources at [packages/fabric/src/node/sources.ts](./packages/fabric/src/node/sources.ts) and the composite at [packages/fabric/src/node/graph-source.ts](./packages/fabric/src/node/graph-source.ts); the self-description at [packages/fabric/src/describe.ts](./packages/fabric/src/describe.ts), written to `fabric/manifest.json`, `fabric/events.schema.json`, and `fabric/README.md` by `pnpm fabric describe` and checked by `pnpm lint:fabric`; the compile sidecar at [packages/fabric/sidecar/memory.py](./packages/fabric/sidecar/memory.py) behind [packages/fabric/src/node/compile.ts](./packages/fabric/src/node/compile.ts); qmd behind [packages/fabric/src/node/qmd.ts](./packages/fabric/src/node/qmd.ts). [packages/fabric/src/slice.test.ts](./packages/fabric/src/slice.test.ts) holds refusals as events, the description's determinism, the adapters over fixtures, merging and cutting, and the vendor handshakes.
+- The log at `fabric/spaces/`: two spaces opened, five verbs and three sources proposed, none blessed.
 - The workspace: the fabric is its own TypeScript project with node types (`packages/fabric/tsconfig.json`), checked by `pnpm typecheck` and the pre-commit hook; the `@dbd/fabric` alias in `vite.config.ts` and `vitest.config.ts`; the FP rim extended over `packages/fabric/src` in `eslint.config.js`.
 
-Not yet: everything from Phase 2 on. No sidecar runs. No submodule is pinned. Copilot's hook surface is held.
+Not yet: the runtime over the log; Phase 4's submodules; Copilot's hook surface. The vendors run only where they are installed: `pip install "git+https://github.com/yoheinakajima/activegraph-memory"` into the interpreter `FABRIC_PYTHON` names, and `npm install -g @tobilu/qmd`; absent either, the fabric degrades to the fold and says so.
 
 ---
 

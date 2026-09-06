@@ -15,7 +15,7 @@
     "preview": "pnpm build && vite preview",
     "preview:deploy": "pnpm build:deploy && wrangler dev",
     "deploy:workers": "pnpm build:deploy && wrangler deploy",
-    "lint": "pnpm lint:eslint && pnpm lint:css && pnpm lint:contrast && pnpm lint:component-shapes && pnpm lint:md && pnpm lint:spell && pnpm lint:secrets && pnpm lint:wikilinks && pnpm lint:voice",
+    "lint": "pnpm lint:eslint && pnpm lint:css && pnpm lint:contrast && pnpm lint:component-shapes && pnpm lint:md && pnpm lint:spell && pnpm lint:secrets && pnpm lint:wikilinks && pnpm lint:voice && pnpm lint:fabric",
     "lint:component-shapes": "node ./scripts/check-component-shapes.mjs",
     "lint:wikilinks": "node ./scripts/check-spec-wikilinks.mjs",
     "lint:voice": "node ./scripts/check-voice-and-copy.mjs",
@@ -46,7 +46,8 @@
     "size": "pnpm build && size-limit",
     "setup": "node ./scripts/setup-playwright.mjs",
     "prepare": "husky",
-    "fabric": "tsx packages/fabric/src/cli.ts"
+    "fabric": "tsx packages/fabric/src/cli.ts",
+    "lint:fabric": "pnpm --silent fabric describe --check"
   },
   "dependencies": {
     "@fontsource-variable/literata": "^5.2.8",

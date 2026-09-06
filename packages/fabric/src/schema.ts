@@ -36,6 +36,15 @@ export type Decision = (typeof DECISIONS)[number];
 export const CHANGE_TARGETS = ['prompt', 'skill', 'verb', 'policy'] as const;
 export type ChangeTarget = (typeof CHANGE_TARGETS)[number];
 
+/** Where a space's contents come from besides the log. Each kind has one
+ *  adapter in the rim; the operator blesses a source into his space the
+ *  way he blesses a verb, and blessing a source is disclosing it. */
+export const SOURCE_KINDS = ['vault', 'works', 'skills'] as const;
+export type SourceKind = (typeof SOURCE_KINDS)[number];
+
+/** Who wrote an event when no session or sovereign did. */
+export const RUNTIME_ACTOR = 'runtime';
+
 // ─── Atoms ────────────────────────────────────────────────────────
 
 const id = z.string().min(1);
@@ -154,6 +163,30 @@ export const reflectionSchema = z.object({
 });
 export type Reflection = z.infer<typeof reflectionSchema>;
 
+// ─── Sources ──────────────────────────────────────────────────────
+
+/** A place a space reads from: a vault of claims, a house of works, a
+ *  folder of skills. Read only once blessed. */
+export const sourceSchema = z.object({
+  id,
+  space: id,
+  kind: z.enum(SOURCE_KINDS),
+  path: z.string().min(1),
+  origin: z.enum(ORIGINS),
+  blessedAt: at.optional(),
+});
+export type Source = z.infer<typeof sourceSchema>;
+
+/** A call the fabric would not run, and why. Refusals are events, never
+ *  exceptions: the audit trail extends, control flow does not break. */
+export const refusalSchema = z.object({
+  verb: z.string().min(1),
+  session: id,
+  at,
+  reason: z.string().min(1),
+});
+export type Refusal = z.infer<typeof refusalSchema>;
+
 // ─── Crossing the wall ────────────────────────────────────────────
 
 /** A proposal to carry a node from one space into another. It lands as
@@ -187,10 +220,17 @@ export type WeakReference = z.infer<typeof weakReferenceSchema>;
 // ─── Events ───────────────────────────────────────────────────────
 //
 // The log is the only thing written. Each event carries its step in
-// the tenant's log, the time it was recorded, and the space it belongs
-// to. The projection in log.ts folds these into state.
+// the tenant's log, the time it was recorded, the space it belongs to,
+// who wrote it, and, when something did, what caused it. The projection
+// in log.ts folds these into state.
 
-const eventBase = z.object({ step, at, space: id });
+const eventBase = z.object({
+  step,
+  at,
+  space: id,
+  actor: id,
+  causedBy: id.optional(),
+});
 
 export const eventSchema = z.discriminatedUnion('kind', [
   eventBase.extend({ kind: z.literal('space.opened'), payload: spaceSchema }),
@@ -204,6 +244,12 @@ export const eventSchema = z.discriminatedUnion('kind', [
     payload: z.object({ verb: id, by: id, at }),
   }),
   eventBase.extend({ kind: z.literal('verb.called'), payload: receiptSchema }),
+  eventBase.extend({ kind: z.literal('verb.refused'), payload: refusalSchema }),
+  eventBase.extend({ kind: z.literal('source.proposed'), payload: sourceSchema }),
+  eventBase.extend({
+    kind: z.literal('source.blessed'),
+    payload: z.object({ source: id, by: id, at }),
+  }),
   eventBase.extend({ kind: z.literal('reflection.recorded'), payload: reflectionSchema }),
   eventBase.extend({ kind: z.literal('bridge.proposed'), payload: bridgeProposalSchema }),
   eventBase.extend({

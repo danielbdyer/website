@@ -357,10 +357,15 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
 
-### The vendor behind the port
+### The runtime over the log
 
-**Why:** The fold runs in process. ActiveGraph as a sidecar behind `EventLog` and `GraphSource`, speaking the event schema and the slice, owns the log store, the projection, and the memory compile. One afternoon; if it fails, the engine's event store behind the same ports.
-**Trigger:** The in-process fold is asked a question only the memory compile answers — a conflict between two sessions' claims, or a retrieval by resonance.
+**Why:** The log's event shape maps losslessly to ActiveGraph's, so mirroring it into a run would give `inspect`, `diff`, and `fork` over the fabric's history without the runtime keeping the log. Phase 5's held-out evaluation is a fork.
+**Trigger:** A change request that needs evaluating before promotion.
+
+### Conflicts in the compile
+
+**Why:** The vendor's deterministic extractor names no subject, so two reflections that disagree compile to two claims and no conflict. Either `reflect` asks for a subject per observation, or a reasoner is wired into the compile.
+**Trigger:** The first two reflections that disagree.
 
 ### The second tenant
 

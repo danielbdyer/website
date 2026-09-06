@@ -17,6 +17,9 @@ import { fileEventLog } from './node/file-log';
 import { canonicalJson } from './canonical';
 import { fingerprint } from './node/fingerprint';
 import { parseGitmodules } from './node/siblings';
+import { noMemoryCompile } from './node/compile';
+import { graphSourceOver } from './node/graph-source';
+import { noResonance } from './ports';
 import { handleCall, handleList, runnerOver, type Runner, type ToolResult } from './server';
 import {
   AGENT_SPACE,
@@ -31,7 +34,7 @@ const AT = '2026-09-06T12:00:00.000Z';
 
 const noSiblings = Layer.succeed(Siblings, { list: () => Effect.succeed([]) });
 
-const opened = (): readonly Omit<FabricEvent, 'step'>[] => [
+const opened = (): readonly Bare[] => [
   {
     kind: 'space.opened',
     at: AT,
@@ -46,8 +49,10 @@ const opened = (): readonly Omit<FabricEvent, 'step'>[] => [
   },
 ];
 
-const stamp = (events: readonly Omit<FabricEvent, 'step'>[]): readonly FabricEvent[] =>
-  events.map((event, step) => ({ ...event, step }) as FabricEvent);
+type Bare = Omit<FabricEvent, 'step' | 'actor'>;
+
+const stamp = (events: readonly Bare[]): readonly FabricEvent[] =>
+  events.map((event, step) => ({ actor: 'test', ...event, step }) as FabricEvent);
 
 /** A runner over the in-memory log, seeded with the spaces and the
  *  verbs, with the named verbs already blessed by the operator. */
@@ -71,7 +76,19 @@ const runnerWith = (blessed: readonly string[]): Runner => {
       })),
   ]);
   const log = memoryEventLog(seeded);
-  return runnerOver(Layer.mergeAll(log, Layer.provide(consentOverLog, log), noSiblings));
+  return runnerOver(
+    Layer.mergeAll(
+      log,
+      Layer.provide(consentOverLog, log),
+      Layer.provide(
+        graphSourceOver(() => Promise.resolve([])),
+        log,
+      ),
+      noMemoryCompile,
+      noResonance,
+      noSiblings,
+    ),
+  );
 };
 
 /** The JSON a tool answered with, typed by the caller. */
@@ -267,12 +284,19 @@ describe('the log as JSON lines', () => {
     const layer = fileEventLog(dir);
     const program = Effect.gen(function* () {
       const log = yield* EventLog;
-      const first = yield* log.append(opened()[0]!);
-      const second = yield* log.append(opened()[1]!);
+      const first = yield* log.append({ ...opened()[0], actor: 'test' } as Omit<
+        FabricEvent,
+        'step'
+      >);
+      const second = yield* log.append({ ...opened()[1], actor: 'test' } as Omit<
+        FabricEvent,
+        'step'
+      >);
       const third = yield* log.append({
         kind: 'verb.proposed',
         at: AT,
         space: OPERATOR_SPACE,
+        actor: 'test',
         payload: proposedVerbs()[0] as never,
       });
       return { steps: [first.step, second.step, third.step], all: yield* log.read() };

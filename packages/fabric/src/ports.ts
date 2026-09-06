@@ -26,6 +26,30 @@ export interface GraphSourceService {
 }
 export const GraphSource = Context.GenericTag<GraphSourceService>('@dbd/fabric/GraphSource');
 
+/** One thing resonance found: a node, how near, and the span that
+ *  matched. `id` is the fabric's node id, mapped by the adapter. */
+export interface Hit {
+  readonly id: string;
+  readonly score: number;
+  readonly title: string;
+  readonly snippet: string;
+}
+
+/** Resonance: the third axis of the aperture. `nearest` ranks a
+ *  collection's nodes by meaning; `refresh` re-indexes what changed.
+ *  qmd is the first provider; an absent one ranks nothing. */
+export interface ResonanceService {
+  readonly nearest: (collection: string, query: string, k: number) => Effect.Effect<readonly Hit[]>;
+  readonly refresh: () => Effect.Effect<void>;
+}
+export const Resonance = Context.GenericTag<ResonanceService>('@dbd/fabric/Resonance');
+
+/** No resonance at all: what a test or a bare checkout provides. */
+export const noResonance: Layer.Layer<ResonanceService> = Layer.succeed(Resonance, {
+  nearest: () => Effect.succeed([]),
+  refresh: () => Effect.void,
+});
+
 /** The consent loop. `propose` lands as pending in the target space;
  *  `resolve` is the sovereign's act and is never exposed as a verb. */
 export interface ConsentService {
@@ -42,9 +66,12 @@ export interface ConsentService {
 }
 export const Consent = Context.GenericTag<ConsentService>('@dbd/fabric/Consent');
 
-/** How much of a graph a turn may see. Identity, structure, resonance:
- *  the engine's triple addressing, carried as data. */
+/** How much of a graph a turn may see, and who is looking, and when.
+ *  Identity, structure, resonance: the engine's triple addressing,
+ *  carried as data. Time is an argument. */
 export interface Aperture {
+  readonly viewer?: string;
+  readonly asOf?: string;
   readonly ids?: readonly string[];
   readonly anchors?: readonly string[];
   readonly hops?: number;
@@ -103,6 +130,7 @@ export const consentOverLog: Layer.Layer<ConsentService, never, EventLogService>
             kind: 'bridge.proposed',
             at: proposal.proposedAt,
             space: proposal.to,
+            actor: proposal.from,
             payload: { ...proposal, decision: null },
           })
           .pipe(
@@ -120,6 +148,8 @@ export const consentOverLog: Layer.Layer<ConsentService, never, EventLogService>
             kind: 'bridge.resolved',
             at,
             space: bridge.to,
+            actor: by,
+            causedBy: bridge.id,
             payload: { proposal, decision, by, at },
           });
           return { ...bridge, decision, decidedAt: at, decidedBy: by };
