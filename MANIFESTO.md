@@ -2,7 +2,7 @@
 
 *This is not a roadmap. It is a reading of the arrows already in motion — named so that the building can lean into them on purpose.*
 
-The other documents in this repository are reference. They say what the decision is. This one is a slingshot. It says where the codebase is headed, by listening to where it is already going.
+The other documents in this repository are reference. They say what the decision is. This one is a slingshot. It says where the codebase is headed, by listening to where it is already going. It is the site's manifesto; the manifesto of the whole — the six repositories read as one — is [`DYERVERSE.md`](./DYERVERSE.md), written 2026-09-06 and downstream of this one.
 
 ---
 

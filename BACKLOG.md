@@ -353,6 +353,22 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 ---
 
+## The Refinement
+
+The refinement audit (`REFINEMENT_AUDIT.md`) gathers the house's implemented realities against their disposition and ends in thirteen adjudications; the pattern language (`PATTERN_LANGUAGE.md`) carries its held patterns with their triggers in the patterns themselves. Neither is restated here. Two items from the audit have no decision in them and wait only for a hand:
+
+### The edge keeps the address grammar
+
+**Why:** The deployed site answers an unknown URL with Cloudflare's empty 404 because the build emits no `404.html`, and redirects every work address to a trailing slash because `wrangler.jsonc` sets no `html_handling`, against `INFORMATION_ARCHITECTURE.md` §"URL Design". No canonical link is emitted, and the sitemap lists query-string addresses that serve their base path's HTML.
+**Trigger:** The next deploy-facing change, or the first shared link that lands on the empty page. `REFINEMENT_AUDIT.md` §4 names the smallest version.
+
+### The overlay keeps the walk
+
+**Why:** Opening a star's overlay remounts the whole sky because the root keys its error boundary on the last match's pathname; the overlay's body has no link delegation; the dialog is not modal and the root steals its focus. Three high findings, one cause each, no decision in any of them.
+**Trigger:** The next session in the sky. `REFINEMENT_AUDIT.md` §1 and §3.
+
+---
+
 ## The Fabric
 
 Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
