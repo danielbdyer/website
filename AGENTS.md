@@ -47,6 +47,35 @@
 
 **15. The enough.** Every piece placed here is an act of saying this is enough, this can exist now, this does not need to be more complete to deserve a room. Build from that. *(`CLAUDE.md`.)*
 
+**16. The code reads as the sentence it implements.** Danny's words, on the fabric's `pending` verb: "Not often you get to have code read like that with that level of semantic validity in terms of logical space as they do with the programming space. This is a gold standard" — "domain alignment and purpose-fit for the speculative logically described transform affiliated with the aggregate." The exemplar, kept whole so the standard has a referent:
+
+```ts
+export const pending = define(
+  'pending',
+  'The proposals still waiting in a space: what has been offered and not yet answered.',
+  'observe',
+  pendingInput,
+  pendingOutput,
+  (input) =>
+    state().pipe(
+      Effect.map((current) => {
+        const proposals = pendingIn(current, input.space);
+        return { space: input.space, unresolved: proposals.length, proposals };
+      }),
+    ),
+);
+```
+
+What makes it the standard, as tests a reviewer can apply:
+
+- **The transform is described before it runs, in the aggregate's own terms.** A verb is a name, a sentence in the site's voice, a consequence class from the closed vocabulary (`observe`), an input schema, an output schema, and only then a program. The description is data the manifest carries and the call is checked against; the program is the other half. The two are one declaration, so they cannot drift apart unnoticed (INV-FAB-007).
+- **The program is its sentence and nothing else.** *Read the state; find the proposals pending in the space; answer with the space, how many, and which.* Each clause is one line, in reading order, and no line does anything the sentence does not say. A newcomer says what it does without running it.
+- **One name, every surface.** `pending` is the verb's name, the fold's query (`pendingIn`), the manifest entry, the terminal command, and the word the spec uses. Nothing is translated between the logical space and the program space; where a translation would be needed, that is a seam to draw, not a name to invent.
+- **The aggregate is folded, never poked.** The verb reads a projection of the log (`state()`, the fold) and derives; it holds no state of its own and reaches into no store. Purpose-fit means the transform's consequence class is true: an `observe` verb observes.
+- **The description is for the reader who will call it.** The sentence a session sees in its tool list is written to that session, in the register `VOICE_AND_COPY.md` sets for the site's own speech: quiet, definite, no jargon the caller did not bring.
+
+This is the bar for every transform over an aggregate — a verb, a fold handler, a selector, a slice adapter, a route loader: the domain shape and the code shape are the same shape, and the code is read the way the sentence is read. It extends directive 9; where 9 asks for elegance without obscurantism, 16 names what the elegance is for. *(Danny, 2026-09-06; `FABRIC.md` §"Enforced in Code"; `packages/fabric/src/verbs.ts`.)*
+
 ---
 
 ## Where the Ground Is
