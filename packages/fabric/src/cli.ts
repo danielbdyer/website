@@ -5,6 +5,7 @@ import { Effect, Option } from 'effect';
 import { canonicalJson } from './canonical';
 import { compounding } from './compounding';
 import { describe, eventJsonSchema, graduation, readmeFrom } from './describe';
+import { writeBaseline } from './sim/baseline';
 import { unified } from './diff';
 import {
   homeOf,
@@ -530,6 +531,12 @@ const index = async (): Promise<void> => {
   say('the reflections are written out and qmd has updated and embedded what it could');
 };
 
+const simBaseline = async (): Promise<void> => {
+  say('running the synthetic discrimination sweep; this takes a moment…');
+  const file = await writeBaseline(root);
+  say(`wrote ${path.relative(root, file)}`);
+};
+
 const usage = (): void => {
   say(
     [
@@ -543,6 +550,7 @@ const usage = (): void => {
       'fabric index                         write the reflections out for qmd; update and embed the collections',
       'fabric orient                        the start hook: mark the session, print its memory',
       'fabric stop-check                    the stop hook: ask for a reflection if none was recorded',
+      'fabric sim-baseline                  regenerate fabric/sim/baseline.json: the synthetic discrimination baseline',
       'fabric serve                         the Model Context Protocol server, over stdio',
     ].join('\n'),
   );
@@ -565,6 +573,7 @@ const commands: Record<
   index: () => index(),
   orient: () => orient(),
   'stop-check': () => stopCheck(),
+  'sim-baseline': () => simBaseline(),
   serve: () => serve(root),
 };
 

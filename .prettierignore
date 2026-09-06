@@ -1,3 +1,4 @@
 dist
 pnpm-lock.yaml
 src/app/routeTree.gen.ts
+fabric/sim/baseline.json

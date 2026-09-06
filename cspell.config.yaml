@@ -98,6 +98,13 @@ words:
   - unrepresentable
   - Yohei
   - Nakajima
+  # Phase 7 — synthetic proof
+  - regenerable
+  - inspectable
+  - decorrelating
+  - fmix
+  - mrrs
+  - quarantined
   # The engine's vocabulary, carried across the wall (CATHEDRALS.md)
   - midground
   - privated

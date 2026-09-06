@@ -85,3 +85,69 @@
 - *Persistent (structurally shared) maps.* Rejected: a dependency for a problem a hundred sessions away.
 
 **Reopens when.** The real log's fold p95 crosses 100 ms, which the bench above places near a thousand events; or the first session that notices a slow `slice`.
+
+## D-007 · Synthetic events are the existing import kind, not a new actor
+
+**Decision.** A synthetic event carries actor `import:synthetic` — the `import:<source>` kind the grammar already has, with source `synthetic`. The closed actor grammar (D-002) is not extended.
+
+**Because.** A synthetic session is an import into the fabric from a generator, which is exactly what the import kind means. Extending the grammar for it would touch the schema, the JSON Schema, `describe`, and the README for no gain, and the charter's §1 firewall asks only that a synthetic event be unrepresentable as a real one — which `import:synthetic` already is, since a real session's activity is `agent:<session>`.
+
+**Alternatives.**
+
+- *A new actor kind, `synthetic:<run>`.* Rejected: a fourth prefix in the closed grammar is a schema change with no behavior behind it; the source name inside the import kind already carries the run's identity.
+- *Reuse `runtime` for synthetic events.* Rejected: `runtime` is the fabric's own scaffolding (bootstrap, evaluations), and a synthetic session's activity must be told apart from it; `import:synthetic` is that distinction.
+
+**Reopens when.** A real consumer needs to tell a synthetic import from a real vault import at the actor level, which today the source name `synthetic` already does.
+
+## D-008 · Synthetic event logs never enter the repository
+
+**Decision.** A synthetic run writes its event log to a temporary directory and a `sim:<run-id>` tenant. No synthetic `.jsonl` is committed; the only committed synthetic artifact is `fabric/sim/baseline.json`, the regenerable metrics. The real read path is `fabric/spaces/` alone.
+
+**Because.** The file log's `read` folds every `*.jsonl` in its directory. A synthetic log committed beside the real one is one misconfigured directory away from polluting the real R(t) that `describe`, the README, and `orient` print. The firewall must be structural, not vigilant: physical separation makes the pollution unrepresentable rather than merely forbidden.
+
+**Alternatives.**
+
+- *Commit an example synthetic log for inspection.* Rejected: the inspection value is small and the pollution vector is real; the baseline JSON and the tests are the inspectable artifacts.
+- *Write synthetic logs to `fabric/sim/*.jsonl` and rely on the real read pointing only at `fabric/spaces/`.* Rejected: it makes the firewall a property of a path string in the CLI, not of the filesystem; a temp directory outside the repo cannot be read by the real fold by accident.
+
+**Reopens when.** The real read path gains an actor-level filter that excludes `import:synthetic`, at which point co-location would be safe — but that filter would be cost on the hot path for a risk physical separation already removes.
+
+## D-009 · Provenance is stamped at the log seam, over the real verbs
+
+**Decision.** The synthetic harness runs the real `slice` and `reflect` programs through the real shell (`handleCall`), and stamps `import:synthetic` at the one write in the fabric — an `EventLog` decorator over the real file or memory adapter. Every metric-bearing field (candidates, ranks, citations, the fold) is produced by the real code upstream of the stamp.
+
+**Because.** The charter's §2: "If you bypass the actual code to make numbers, you have proven nothing about the actual system." Stamping provenance at the seam is the smallest change that quarantines the run while leaving the real code path intact, and provenance minted at the event is the fabric's own principle.
+
+**Alternatives.**
+
+- *Forge events directly with `import:synthetic`.* Rejected: it bypasses the verb programs, so a green synthetic number would say nothing about `cut`, `candidatesOf`, or the fold — the code a retrieval change would touch.
+- *Give synthetic sessions import identities upstream, in the verbs.* Rejected: `surfaced` and `reflect` hardcode `agent:<session>`, and changing them would change real verb behavior to serve the harness.
+
+**Reopens when.** The real verbs ever take the actor as a parameter, at which point the stamp moves from the seam to the call.
+
+## D-010 · The metric discriminates; the committed baseline is the §5 gate
+
+**Decision.** The compounding metric responds monotonically to retrieval quality — over a planted corpus, hit@3 climbs from 0.057 at pure noise to 0.850 at real signal, and MRR tracks it — so `fabric/sim/baseline.json` is the anchor the §5 regression gate needs, and a retrieval-code change that lowers the curve is a regression.
+
+**Because.** The charter's §3 names discrimination the real prize: a metric that cannot tell good retrieval from bad would green-light regressions. The synthetic sweep varies retrieval quality with a dial the metric never sees and reads the metric off the real fold; that it climbs is the proof the metric has teeth, and the deterministic curve is a baseline a future change compares against.
+
+**Alternatives.**
+
+- *Baseline a qmd fusion-weight vector.* Rejected: qmd is not synthetically testable, and the baseline's job is to guard the retrieval code — `cut`, `candidatesOf`, the fold — not an embedding model's weights.
+- *Trust that R_sim > 0 proves the metric.* Rejected explicitly by the charter: a synthetic citer cites by construction, so a nonzero number proves only plumbing; discrimination is the separate, higher claim.
+
+**Reopens when.** Real retrieval accumulates and a real baseline can stand beside the synthetic one.
+
+## D-011 · The fold's 100 ms breach is 1,150–2,800 events, mix-dependent; still a hold, sharper trigger
+
+**Decision.** Refines D-006. The fold stays a pure immutable fold. The 100 ms p95 breach is now measured precisely and is mix-dependent: fold-plus-compounding is quadratic with constant about 12.6 × 10⁻⁶ ms per event² on a realistic session mix, breaching 100 ms near 2,800 events, and about 76 × 10⁻⁶ on a reflection-heavy log, breaching near 1,150. The trigger is sharpened to 800 total `fabric/spaces` events.
+
+**Because.** Measured 2026-09-06 (Node 22, this container, p95 over repeated folds): a realistic mix — one reflection, one retrieval, two receipts per unit — folds at 12.8 ms / 1,024 events, 56.9 ms / 2,048, 220.8 ms / 4,096, 848.3 ms / 8,192, a clean quadratic. A reflection-only log, the worst case because `withEntry` copies the reflections map every event, breaches at ~1,150. D-006's estimate of "near a thousand events" was the worst case; the realistic breach is roughly 2,800. At Danny's cadence — about ten to fifteen events a session — that is 100 to 250 sessions, well over a year. Fixing it now is core surgery for a payoff a year out, against the charter's preference for the discrimination proof over breadth.
+
+**Alternatives.**
+
+- *Fix now with persistent (structurally shared) maps in `log.ts`.* The recommended fix when the trigger fires: replace the O(n)-per-append `new Map([...map, entry])` with a persistent map of O(log n) insert, which removes the quadratic while keeping the pure-fold shape and INV-FAB-005; the identity test guards it. Held: no present payoff.
+- *A cached projection advanced on append.* Also removes the fold's cost and the file re-read per call, but adds cache-invalidation state the pure fold does not have. Held as the heavier option.
+- *Characterize to 10⁵ events as the charter's §4 asks.* Not run: at the measured constant, a 10⁵-event fold is about 126 seconds, and the interesting breach is at 1–3k events, two orders of magnitude below. The quadratic is pinned by the 128–8,192 grid; extrapolation to 10⁵ is arithmetic, and burning hours to confirm it would be measurement for its own sake.
+
+**Reopens when.** The real `fabric/spaces` log crosses 800 events, or a session notices a slow start.
