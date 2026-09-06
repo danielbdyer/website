@@ -1,7 +1,10 @@
 import type {
   BridgeProposal,
+  Evaluation,
   FabricEvent,
   FabricEventKind,
+  OutcomeRecord,
+  Patch,
   Receipt,
   Reflection,
   Refusal,
@@ -21,6 +24,10 @@ import type {
 // yields the same state (INV-FAB-005); the only write anywhere is an
 // append. Nothing here performs an effect.
 
+/** A patch as the fold holds it: the proposal, and the fabric's
+ *  evaluation once it arrives. */
+export type PatchRecord = Patch & { readonly evaluation?: Evaluation };
+
 export interface FabricState {
   readonly spaces: ReadonlyMap<string, Space>;
   readonly verbs: ReadonlyMap<string, Verb>;
@@ -30,6 +37,8 @@ export interface FabricState {
   readonly reflections: ReadonlyMap<string, Reflection>;
   readonly bridges: ReadonlyMap<string, BridgeProposal>;
   readonly references: readonly WeakReference[];
+  readonly patches: ReadonlyMap<string, PatchRecord>;
+  readonly outcomes: readonly OutcomeRecord[];
   readonly step: number;
   /** The latest time any event carried, whatever order the tenants' logs were read in. */
   readonly lastAt: string;
@@ -44,6 +53,8 @@ export const emptyState: FabricState = {
   reflections: new Map(),
   bridges: new Map(),
   references: [],
+  patches: new Map(),
+  outcomes: [],
   step: -1,
   lastAt: '1970-01-01T00:00:00.000Z',
 };
@@ -121,6 +132,33 @@ const handlers: { readonly [K in FabricEventKind]: Handler<K> } = {
     ...state,
     references: [...state.references, payload],
   }),
+  'patch.proposed': (state, { payload }) => ({
+    ...state,
+    patches: withEntry(state.patches, payload.id, payload),
+  }),
+  'patch.evaluated': (state, { payload }) => {
+    const patch = state.patches.get(payload.patch);
+    return patch
+      ? { ...state, patches: withEntry(state.patches, patch.id, { ...patch, evaluation: payload }) }
+      : state;
+  },
+  // The first answer wins here too (INV-FAB-008).
+  'patch.resolved': (state, { payload }) => {
+    const patch = state.patches.get(payload.patch);
+    return patch?.decision === null
+      ? {
+          ...state,
+          patches: withEntry(state.patches, patch.id, {
+            ...patch,
+            decision: payload.decision,
+            decidedAt: payload.at,
+            decidedBy: payload.by,
+            applied: payload.applied,
+          }),
+        }
+      : state;
+  },
+  'patch.outcome': (state, { payload }) => ({ ...state, outcomes: [...state.outcomes, payload] }),
 };
 
 /** The later of two ISO times, which sort as text. */
@@ -146,6 +184,13 @@ export function project(events: readonly FabricEvent[]): FabricState {
 export function sourcesOf(state: FabricState, space: string): readonly Source[] {
   return [...state.sources.values()].filter(
     (source) => source.space === space && source.blessedAt !== undefined,
+  );
+}
+
+/** The patches still waiting in a space. */
+export function patchesPendingIn(state: FabricState, space: string): readonly PatchRecord[] {
+  return [...state.patches.values()].filter(
+    (patch) => patch.space === space && patch.decision === null,
   );
 }
 

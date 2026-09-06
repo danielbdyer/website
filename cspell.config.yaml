@@ -63,6 +63,7 @@ words:
   - replayable
   - unretired
   - monoid
+  - multisets
   - modelcontextprotocol
   - activegraph
   - tobilu
@@ -74,6 +75,7 @@ words:
   - gitmodules
   - submodule
   - submodules
+  - Tesseract
   - Yohei
   - Nakajima
   # The engine's vocabulary, carried across the wall (CATHEDRALS.md)

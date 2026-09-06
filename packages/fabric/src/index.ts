@@ -7,6 +7,7 @@ export {
   CHANGE_TARGETS,
   CONSEQUENCE_CLASSES,
   DECISIONS,
+  OUTCOMES,
   RUNTIME_ACTOR,
   SOURCE_KINDS,
   SPACE_KINDS,
@@ -14,8 +15,13 @@ export {
   sourceSchema,
   bridgeProposalSchema,
   changeRequestSchema,
+  checkSchema,
   citationSchema,
+  evaluationSchema,
   eventSchema,
+  outcomeReportSchema,
+  outcomeSchema,
+  patchSchema,
   manifestSchema,
   manifestVerbSchema,
   parseEvent,
@@ -29,7 +35,13 @@ export type {
   BridgeProposal,
   ChangeRequest,
   ChangeTarget,
+  Check,
   Citation,
+  Evaluation,
+  Outcome,
+  OutcomeRecord,
+  OutcomeReport,
+  Patch,
   ConsequenceClass,
   Decision,
   FabricEvent,
@@ -51,12 +63,13 @@ export {
   apply,
   emptyState,
   homeOf,
+  patchesPendingIn,
   pendingIn,
   project,
   sourcesOf,
   visibleReflections,
 } from './log';
-export type { FabricState } from './log';
+export type { FabricState, PatchRecord } from './log';
 
 export { manifestFor, toolsFrom } from './manifest';
 export type { ToolListing } from './manifest';
@@ -86,34 +99,49 @@ export type {
 export { canonical, canonicalJson, same } from './canonical';
 export { cut, mergeParts, sliceFromState } from './graph';
 export type { SliceParts } from './graph';
+export { changed, diffLines, unified } from './diff';
+export type { Hunk } from './diff';
 export {
   EVENT_KINDS,
+  GRADUATION,
   INVARIANTS,
   RESOURCES,
   describe,
   eventJsonSchema,
+  graduation,
   readmeFrom,
 } from './describe';
-export type { Description } from './describe';
+export type { Description, Graduation } from './describe';
 export {
   AGENT_SPACE,
+  BaseMoved,
+  Canon,
   MemoryCompile,
+  NoSuchNode,
+  NotApplied,
+  NotWaiting,
   OPERATOR_SPACE,
   REGISTRY,
   Siblings,
   collectionsFor,
+  decidePatch,
   pending,
+  propose,
   proposedVerbs,
   recall,
   reflect,
   refusal,
   slice,
   sync,
+  targetOf,
   turnsFrom,
+  unmeasuredIn,
 } from './verbs';
 export type {
   CallContext,
+  CanonService,
   MemoryCompileService,
+  NodeText,
   Recollection,
   Sibling,
   SiblingsService,

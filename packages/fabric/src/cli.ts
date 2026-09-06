@@ -1,15 +1,40 @@
 import { readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import { canonicalJson } from './canonical';
-import { describe, eventJsonSchema, readmeFrom } from './describe';
-import { homeOf, pendingIn, project, sourcesOf, visibleReflections, type FabricState } from './log';
+import { describe, eventJsonSchema, graduation, readmeFrom } from './describe';
+import { unified } from './diff';
+import {
+  homeOf,
+  patchesPendingIn,
+  pendingIn,
+  project,
+  sourcesOf,
+  visibleReflections,
+  type FabricState,
+  type PatchRecord,
+} from './log';
 import { manifestFor } from './manifest';
 import { Consent, EventLog, Resonance } from './ports';
-import { RUNTIME_ACTOR, SOURCE_KINDS, type Reflection, type Source, type Space } from './schema';
-import { paths, readSession, runnerFor, serve, type Runner } from './server';
-import { AGENT_SPACE, OPERATOR_SPACE, proposedVerbs } from './verbs';
+import {
+  RUNTIME_ACTOR,
+  SOURCE_KINDS,
+  type Check,
+  type Patch,
+  type Reflection,
+  type Source,
+  type Space,
+} from './schema';
+import { paths, readSession, reasonOf, runnerFor, serve, type Runner } from './server';
+import {
+  AGENT_SPACE,
+  Canon,
+  OPERATOR_SPACE,
+  decidePatch,
+  proposedVerbs,
+  unmeasuredIn,
+} from './verbs';
 
 // ─── The sovereign's terminal, and the hooks ──────────────────────
 //
@@ -17,6 +42,9 @@ import { AGENT_SPACE, OPERATOR_SPACE, proposedVerbs } from './verbs';
 // unblessed. `bless` and `reject` are the operator's, from the
 // terminal, per CATHEDRALS.md §"Git Is the Vessel": blessing happens
 // where it already happens, and the commit that follows is its record.
+// A patch is blessed the same way: `pending` shows it as a diff with
+// what the fabric could check, and `bless patch/<id>` applies it to
+// the canon and records that it did.
 // `describe` writes the fabric's self-description beside the log, and
 // `describe --check` fails when the written copy has drifted from the
 // log, so the description in git is never stale. `orient` and
@@ -173,6 +201,32 @@ const propose = async (kind: string | undefined, sourcePath: string | undefined)
   say(`proposed ${source.id} into ${source.space}; waiting for blessing`);
 };
 
+/** The operator's answer to a patch: applied to the canon first when
+ *  blessed, then recorded; or refused with the reason, and still
+ *  waiting. */
+const blessPatch = async (
+  patch: Patch,
+  decision: 'blessed' | 'rejected',
+  by: string,
+  at: string,
+): Promise<void> => {
+  const answered = await run(
+    decidePatch(patch.id, decision, by, at).pipe(
+      Effect.map((decided) => ({ ok: true as const, decided })),
+      Effect.catchAll((cause) => Effect.succeed({ ok: false as const, why: reasonOf(cause) })),
+    ),
+  );
+  if (!answered.ok) {
+    complain(answered.why);
+    return;
+  }
+  say(
+    answered.decided.applied
+      ? `blessed ${patch.id}: ${patch.node} now reads as proposed; commit it, and the next session will report on “${patch.hypothesis}”`
+      : `${decision} ${patch.id}; ${patch.node} is unchanged`,
+  );
+};
+
 const bless = async (
   target: string | undefined,
   decision: 'blessed' | 'rejected',
@@ -226,6 +280,11 @@ const bless = async (
     say(`blessed ${verb?.name ?? source?.id ?? target} into ${space}`);
     return;
   }
+  const patch = current.patches.get(target);
+  if (patch) {
+    await blessPatch(patch, decision, sovereignOf(patch.space), at);
+    return;
+  }
   const bridge = current.bridges.get(target);
   if (!bridge) {
     complain(`nothing named ${target} is waiting`);
@@ -236,6 +295,32 @@ const bless = async (
     Consent.pipe(Effect.flatMap((consent) => consent.resolve(bridge.id, decision, by, at))),
   );
   say(`${decision} ${bridge.node} into ${bridge.to}`);
+};
+
+const checkLine = (check: Check): string =>
+  `  ${check.passed ? '✓' : '✗'} ${check.name}${check.detail ? `: ${check.detail.split('\n')[0]}` : ''}`;
+
+/** A patch as the operator reads it before answering: what it changes,
+ *  why, what it predicts, what the fabric could check, and the diff
+ *  against the node as it is now. */
+const patchLines = async (patch: PatchRecord): Promise<string> => {
+  const now = await run(Canon.pipe(Effect.flatMap((canon) => canon.read(patch.node))));
+  const before = Option.match(now, { onNone: () => '', onSome: (node) => node.text });
+  const checks = patch.evaluation?.checks ?? [];
+  const checkLines = checks.map(checkLine);
+  return [
+    `${patch.id}  ${patch.node}  from ${patch.proposedBy}  ${patch.proposedAt}`,
+    `  because: ${patch.because}`,
+    `  hypothesis: ${patch.hypothesis}`,
+    patch.evaluation
+      ? `  evaluation: ${patch.evaluation.passed ? 'passed' : 'did not pass'}`
+      : '  evaluation: none yet',
+    ...checkLines,
+    '',
+    ...unified(before, patch.body)
+      .split('\n')
+      .map((line) => `  ${line}`),
+  ].join('\n');
 };
 
 const line = (current: FabricState, reflection: Reflection): string => {
@@ -273,6 +358,9 @@ const orient = async (): Promise<void> => {
   );
   const sources = sourcesOf(current, OPERATOR_SPACE);
   const waiting = pendingIn(current, OPERATOR_SPACE);
+  const waitingPatches = patchesPendingIn(current, OPERATOR_SPACE);
+  const unmeasured = unmeasuredIn(current, OPERATOR_SPACE);
+  const measure = graduation(current);
   const memory = visibleReflections(current, AGENT_SPACE)
     .toSorted((a, b) => b.at.localeCompare(a.at))
     .slice(0, 8);
@@ -293,10 +381,19 @@ const orient = async (): Promise<void> => {
       ...(blessings.length > 0
         ? [`Waiting for the operator's blessing: ${blessings.join(', ')}.`]
         : []),
-      `Waiting in \`${OPERATOR_SPACE}\`: ${waiting.length} proposal(s).`,
+      `Waiting in \`${OPERATOR_SPACE}\`: ${waiting.length} proposal(s) to carry across, ${waitingPatches.length} patch(es) to a node.`,
+      ...(unmeasured.length > 0
+        ? [
+            'Applied since a session last looked, with the hypothesis each was proposed under. Report each through `reflect.outcomes` as confirmed or contradicted, with why:',
+            ...unmeasured.map(
+              (patch) => `- \`${patch.id}\` on \`${patch.node}\`: ${patch.hypothesis}`,
+            ),
+          ]
+        : []),
+      `The loop: ${measure.proposed} patch(es) proposed, ${measure.applied} applied, ${measure.confirmed} confirmed and ${measure.contradicted} contradicted in the last ${measure.window}; ${measure.graduated ? 'graduated' : 'not graduated'} against a floor of ${measure.floor}.`,
       memory.length > 0 ? 'Memory, newest first:' : 'Memory: nothing recorded yet.',
       ...memory.map((reflection) => line(current, reflection)),
-      'Before ending, record what this session noticed with `reflect`. The stop hook asks once if nothing was recorded.',
+      'Before ending, record what this session noticed with `reflect`. The stop hook asks once if nothing was recorded. A change a node needs is a `propose`, not a paragraph.',
     ].join('\n'),
   );
 };
@@ -322,15 +419,16 @@ const stopCheck = async (): Promise<void> => {
 const showPending = async (): Promise<void> => {
   const current = await state();
   const waiting = pendingIn(current, OPERATOR_SPACE);
+  const patches = patchesPendingIn(current, OPERATOR_SPACE);
+  const bridges = waiting.map(
+    (bridge) =>
+      `${bridge.id}  ${bridge.node}  from ${bridge.from}  ${bridge.proposedAt}\n  ${bridge.evidence}`,
+  );
+  const shown = await Promise.all(patches.map((patch) => patchLines(patch)));
   say(
-    waiting.length === 0
+    bridges.length + shown.length === 0
       ? `nothing is waiting in ${OPERATOR_SPACE}`
-      : waiting
-          .map(
-            (bridge) =>
-              `${bridge.id}  ${bridge.node}  from ${bridge.from}  ${bridge.proposedAt}\n  ${bridge.evidence}`,
-          )
-          .join('\n'),
+      : [...bridges, ...shown].join('\n\n'),
   );
 };
 
@@ -345,6 +443,7 @@ const showLog = async (): Promise<void> => {
       `reflections: ${current.reflections.size}`,
       `receipts: ${current.receipts.length}; refusals: ${current.refusals.length}`,
       `bridges: ${current.bridges.size} (${pendingIn(current, OPERATOR_SPACE).length} waiting)`,
+      `patches: ${current.patches.size} (${patchesPendingIn(current, OPERATOR_SPACE).length} waiting, ${[...current.patches.values()].filter((patch) => patch.applied).length} applied); outcomes: ${current.outcomes.length}`,
     ].join('\n'),
   );
 };
@@ -396,9 +495,9 @@ const usage = (): void => {
     [
       'fabric init                          open the spaces; propose the verbs and the sources, unblessed',
       'fabric propose source <kind> <path>  propose another source into the operator’s space',
-      'fabric bless <verb|source|bridge>    the operator blesses a verb or a source into his space, or a proposal across',
-      'fabric reject <bridge>               the operator rejects a proposal; it is kept, as data',
-      'fabric pending                       what is waiting in the operator’s space',
+      'fabric bless <verb|source|bridge|patch>  the operator blesses a verb or a source into his space, a proposal across, or a patch onto a node',
+      'fabric reject <bridge|patch>         the operator rejects a proposal or a patch; it is kept, as data',
+      'fabric pending                       what is waiting in the operator’s space: proposals, and patches as diffs',
       'fabric log                           what the log holds',
       'fabric describe [--check]            write the self-description beside the log, or check it has not drifted',
       'fabric index                         write the reflections out for qmd; update and embed the collections',

@@ -1,6 +1,6 @@
 # The fabric, described
 
-*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-06T05:25:38.694Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
+*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-06T06:27:48.797Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
 
 ## What this is
 
@@ -21,7 +21,7 @@ Each verb carries its input and output schema as JSON Schema in `manifest.json`.
 | --- | --- | --- |
 | — | — | No verb is blessed yet; the manifest is empty. |
 
-Waiting for the operator's blessing: `slice`, `reflect`, `recall`, `pending`, `sync`.
+Waiting for the operator's blessing: `slice`, `reflect`, `propose`, `recall`, `pending`, `sync`.
 
 ## Sources
 
@@ -33,14 +33,22 @@ Where the operator’s space reads from besides the log. A source is proposed an
 
 Waiting for the operator's blessing: `source/skills`, `source/works`, `source/vault`.
 
-Proposals waiting in `danny`: 0.
+Proposals waiting in `danny`: 0 to carry across, 0 to change a node.
+
+## The loop, pointed at itself
+
+A session proposes a change to one of the operator’s nodes with `propose`: the node’s whole new text, the base it read, why, and a hypothesis the next session can check. The fabric evaluates what it can and the patch waits; the operator applies it from his terminal, only to the base it named. The next session sees the applied patch at start and reports through `reflect` whether the hypothesis held. Graduation is a number the operator reads, and it gates nothing.
+
+| Proposed | Applied | Confirmed | Contradicted | Rate | Floor | Window | Graduated |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | 0 | 0 | no outcome yet | 0.5 | 5 | not yet |
 
 ## Speaking to it
 
 - **Transport:** stdio. Start the server with `pnpm fabric serve`; it speaks the Model Context Protocol.
 - **Resources:** `fabric://manifest`, `fabric://events.schema`, `fabric://readme`.
 - **Hooks:** `pnpm fabric orient` at session start prints memory into context; `pnpm fabric stop-check` at stop asks once for a reflection.
-- **Blessing:** `pnpm fabric bless <verb | source | bridge>`, in the operator's terminal. Never a verb.
+- **Blessing:** `pnpm fabric bless <verb | source | bridge | patch>`, in the operator's terminal. Never a verb.
 - **The log:** `fabric/spaces/<space>.jsonl`, one event per line, validated by `events.schema.json`. Steps are per tenant.
 
 ## Vocabularies
@@ -50,7 +58,7 @@ Proposals waiting in `danny`: 0.
 - **decisions:** `blessed`, `rejected`
 - **changeTargets:** `prompt`, `skill`, `verb`, `policy`
 - **sourceKinds:** `vault`, `works`, `skills`
-- **eventKinds:** `space.opened`, `verb.proposed`, `verb.blessed`, `verb.retired`, `verb.called`, `verb.refused`, `source.proposed`, `source.blessed`, `reflection.recorded`, `bridge.proposed`, `bridge.resolved`, `reference.cited`
+- **eventKinds:** `space.opened`, `verb.proposed`, `verb.blessed`, `verb.retired`, `verb.called`, `verb.refused`, `source.proposed`, `source.blessed`, `reflection.recorded`, `bridge.proposed`, `bridge.resolved`, `reference.cited`, `patch.proposed`, `patch.evaluated`, `patch.resolved`, `patch.outcome`
 
 ## Invariants
 
@@ -61,3 +69,5 @@ Proposals waiting in `danny`: 0.
 - **INV-FAB-005** — The fold is a function: the same log yields the same state.
 - **INV-FAB-006** — A tenant sees its own space whole and the other space through blessing.
 - **INV-FAB-007** — A signature is frozen at blessing.
+- **INV-FAB-008** — A patch is applied only to the base it was proposed against, only by the sovereign, and once.
+- **INV-FAB-009** — An outcome cites a patch that was applied.

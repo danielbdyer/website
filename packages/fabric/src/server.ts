@@ -12,6 +12,7 @@ import {
 import { describe, eventJsonSchema, readmeFrom, RESOURCES } from './describe';
 import { project } from './log';
 import { manifestFor, toolsFrom, type ToolListing } from './manifest';
+import { canonFor } from './node/canon';
 import { pythonMemoryCompile } from './node/compile';
 import { fileEventLog } from './node/file-log';
 import { fingerprint } from './node/fingerprint';
@@ -61,7 +62,9 @@ const currentState = EventLog.pipe(
 
 /** A failure as one line, whatever was thrown. */
 export const reasonOf = (cause: unknown): string =>
-  cause instanceof Error ? cause.message : JSON.stringify(cause);
+  typeof cause === 'object' && cause !== null && 'message' in cause
+    ? String(cause.message)
+    : JSON.stringify(cause);
 
 /** The manifest of the operator's space, as tools. */
 export const handleList = (run: Runner, at: string): Promise<readonly ToolListing[]> =>
@@ -167,7 +170,8 @@ export const paths = (root: string) => ({
 });
 
 /** The layers a real shell provides: the file log, consent over it,
- *  the sources on disk, the compile sidecar, and the siblings. */
+ *  the sources on disk, the canon on disk, the compile sidecar, and
+ *  the siblings. */
 export const layersFor = (root: string) => {
   const log = fileEventLog(paths(root).spaces);
   const state = () => ManagedRuntime.make(log).runPromise(currentState);
@@ -188,6 +192,7 @@ export const layersFor = (root: string) => {
     log,
     Layer.provide(consentOverLog, log),
     Layer.provide(graphSourceFor(root), log),
+    Layer.provide(canonFor(root), log),
     pythonMemoryCompile(root),
     resonance,
     gitSiblings(root),

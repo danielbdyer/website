@@ -1,9 +1,9 @@
-import { Context, Effect, Option } from 'effect';
+import { Context, Data, Effect, Option } from 'effect';
 import { z } from 'zod';
 import type { Slice } from '@dbd/slice';
 import { canonical, same } from './canonical';
 import { cut } from './graph';
-import { pendingIn, project, sourcesOf } from './log';
+import { patchesPendingIn, pendingIn, project, sourcesOf, type FabricState } from './log';
 import { manifestFor } from './manifest';
 import {
   Consent,
@@ -14,9 +14,22 @@ import {
   type EventLogService,
   type GraphSourceService,
   type Hit,
+  type LogRejected,
   type ResonanceService,
 } from './ports';
-import { changeRequestSchema, citationSchema, type Verb } from './schema';
+import {
+  CHANGE_TARGETS,
+  RUNTIME_ACTOR,
+  changeRequestSchema,
+  citationSchema,
+  evaluationSchema,
+  outcomeReportSchema,
+  type ChangeTarget,
+  type Decision,
+  type Evaluation,
+  type Patch,
+  type Verb,
+} from './schema';
 
 // ─── The verbs ────────────────────────────────────────────────────
 //
@@ -118,13 +131,62 @@ export interface MemoryCompileService {
 }
 export const MemoryCompile = Context.GenericTag<MemoryCompileService>('@dbd/fabric/MemoryCompile');
 
+/** A node's text as the canon holds it now, with its fingerprint: the
+ *  base a patch is proposed against. */
+export interface NodeText {
+  readonly text: string;
+  readonly fingerprint: string;
+}
+
+/** The canon port: the nodes a patch may change, wherever the shell
+ *  keeps them. `read` gives the base; `evaluate` runs what the fabric
+ *  can verify on its own before the operator sees the patch; `apply`
+ *  writes the body only if the base still matches, and answers whether
+ *  it did. Only the operator's terminal calls `apply`. */
+export interface CanonService {
+  readonly read: (node: string) => Effect.Effect<Option.Option<NodeText>>;
+  readonly evaluate: (patch: Patch) => Effect.Effect<Evaluation>;
+  readonly apply: (patch: Patch) => Effect.Effect<boolean>;
+}
+export const Canon = Context.GenericTag<CanonService>('@dbd/fabric/Canon');
+
 export type VerbEnvironment =
   | EventLogService
   | ConsentService
   | SiblingsService
   | GraphSourceService
   | MemoryCompileService
-  | ResonanceService;
+  | ResonanceService
+  | CanonService;
+
+// ─── Why a program stops ──────────────────────────────────────────
+//
+// A verb's program may fail, and the shell answers the caller with the
+// reason; a failure is a value, never a thrown exception. The two
+// reasons the loop's verbs have are named here.
+
+/** The node named is not one the canon holds, or not one a patch may
+ *  change. */
+export interface NoSuchNode {
+  readonly _tag: 'NoSuchNode';
+  readonly node: string;
+  readonly message: string;
+}
+export const NoSuchNode = Data.tagged<NoSuchNode>('NoSuchNode');
+
+/** An outcome was reported for a patch that was never applied, so
+ *  there is nothing it could have measured (INV-FAB-009). */
+export interface NotApplied {
+  readonly _tag: 'NotApplied';
+  readonly patch: string;
+  readonly message: string;
+}
+export const NotApplied = Data.tagged<NotApplied>('NotApplied');
+
+/** What a change targets, read off the node's id: `skill/coding` is a
+ *  skill. A node outside the four targets is not one a patch may change. */
+export const targetOf = (node: string): Option.Option<ChangeTarget> =>
+  Option.fromNullable(CHANGE_TARGETS.find((target) => node.startsWith(`${target}/`)));
 
 /** The collections resonance may search for a space: a tenant's own
  *  reflections, and the operator's blessed sources by kind. */
@@ -151,10 +213,12 @@ const resonate = (
         ),
       );
 
+/** A verb's two halves. `run` may fail with a named reason, which the
+ *  shell answers with; it never throws. */
 export interface VerbDefinition<I> {
   readonly verb: Verb;
   readonly input: z.ZodType<I>;
-  readonly run: (input: I, call: CallContext) => Effect.Effect<unknown, never, VerbEnvironment>;
+  readonly run: (input: I, call: CallContext) => Effect.Effect<unknown, unknown, VerbEnvironment>;
 }
 
 /** The JSON Schema a zod schema emits, in canonical form: what a verb
@@ -256,18 +320,52 @@ const reflectInput = z.object({
   shouldChange: z
     .array(changeRequestSchema)
     .default([])
-    .describe('What a prompt, skill, verb, or policy should do differently, and why.'),
+    .describe(
+      'What a prompt, skill, verb, or policy should do differently, and why. A wish; `propose` is the patch.',
+    ),
+  outcomes: z
+    .array(outcomeReportSchema)
+    .default([])
+    .describe(
+      'For each applied patch `orient` showed you: was its hypothesis confirmed or contradicted by this session, and why.',
+    ),
   cites: z
     .array(citationSchema)
     .default([])
     .describe('The nodes you read, by space and id, with the span if it matters.'),
 });
 
-const reflectOutput = z.object({ reflection: z.string(), bridge: z.string() });
+const reflectOutput = z.object({
+  reflection: z.string(),
+  bridge: z.string(),
+  outcomes: z.number(),
+});
+
+/** The outcomes a reflection reports, each checked against the log:
+ *  an outcome measures an applied patch or it measures nothing. */
+const outcomesOf = (
+  input: z.infer<typeof reflectInput>,
+  call: CallContext,
+): Effect.Effect<readonly Patch[], NotApplied, EventLogService> =>
+  state().pipe(
+    Effect.flatMap((current) =>
+      Effect.forEach((report: z.infer<typeof outcomeReportSchema>) => {
+        const patch = current.patches.get(report.patch);
+        return patch?.applied
+          ? Effect.succeed(patch)
+          : Effect.fail(
+              NotApplied({
+                patch: report.patch,
+                message: `INV-FAB-009: ${report.patch} was never applied, so nothing measured it; session ${call.session} reports it ${report.outcome}`,
+              }),
+            );
+      })(input.outcomes),
+    ),
+  );
 
 export const reflect = define(
   'reflect',
-  'Record what this session noticed, in the shape the next session can retrieve. Lands in your own space at once; a proposal to carry it into the operator’s memory waits for blessing.',
+  'Record what this session noticed, in the shape the next session can retrieve. Lands in your own space at once; a proposal to carry it into the operator’s memory waits for blessing. Outcomes you report on applied patches are the loop’s own measure.',
   'propose',
   reflectInput,
   reflectOutput,
@@ -275,6 +373,7 @@ export const reflect = define(
     Effect.gen(function* () {
       const log = yield* EventLog;
       const consent = yield* Consent;
+      const measured = yield* outcomesOf(input, call);
       const body = { ...input, session: call.session, space: call.space, at: call.at };
       const id = `reflection/${call.fingerprint(body).slice(0, 16)}`;
       const reflection = { id, ...body, status: 'nascent' as const };
@@ -285,6 +384,16 @@ export const reflect = define(
         actor: call.session,
         payload: reflection,
       });
+      yield* Effect.forEach((report: z.infer<typeof outcomeReportSchema>, index: number) =>
+        log.append({
+          kind: 'patch.outcome',
+          at: call.at,
+          space: measured[index]?.space ?? OPERATOR_SPACE,
+          actor: call.session,
+          causedBy: id,
+          payload: { ...report, session: call.session, at: call.at },
+        }),
+      )(input.outcomes);
       const bridge = yield* consent.propose({
         id: `bridge/${call.fingerprint({ id, to: OPERATOR_SPACE }).slice(0, 16)}`,
         from: call.space,
@@ -295,8 +404,99 @@ export const reflect = define(
       });
       // The index is recomputable from the log: a derive, not a write.
       yield* Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh('reflections')));
-      return { reflection: id, bridge: bridge.id };
-    }).pipe(Effect.orDie),
+      return { reflection: id, bridge: bridge.id, outcomes: input.outcomes.length };
+    }),
+);
+
+// ─── propose ──────────────────────────────────────────────────────
+
+const proposeInput = z.object({
+  node: z
+    .string()
+    .min(1)
+    .describe('The node to change, by id, as the operator’s slice names it: today `skill/<name>`.'),
+  body: z.string().min(1).describe('The node’s whole new text. A patch is the text, not a diff.'),
+  because: z.string().min(1).describe('What you observed that this change answers.'),
+  hypothesis: z
+    .string()
+    .min(1)
+    .describe(
+      'What the next session should observe if the change worked, stated so it can fail. It is what that session reports on.',
+    ),
+});
+
+const proposeOutput = z.object({
+  patch: z.string(),
+  base: z.string(),
+  evaluation: evaluationSchema,
+});
+
+export const propose = define(
+  'propose',
+  'Propose a change to one of the operator’s nodes: its whole new text, against the base you read, with why and what should be observable if it worked. The fabric evaluates what it can and the patch waits in his space; only his terminal applies it, and only to the base you named.',
+  'propose',
+  proposeInput,
+  proposeOutput,
+  (input, call) =>
+    Effect.gen(function* () {
+      const canon = yield* Canon;
+      const log = yield* EventLog;
+      const target = yield* Option.match(targetOf(input.node), {
+        onNone: () =>
+          Effect.fail(
+            NoSuchNode({
+              node: input.node,
+              message: `${input.node} is not a node a patch may change; a patch targets ${CHANGE_TARGETS.join(', ')}`,
+            }),
+          ),
+        onSome: Effect.succeed,
+      });
+      const base = yield* canon.read(input.node).pipe(
+        Effect.flatMap(
+          Option.match({
+            onNone: () =>
+              Effect.fail(
+                NoSuchNode({
+                  node: input.node,
+                  message: `${input.node} is not in the canon; read the operator's slice for what is`,
+                }),
+              ),
+            onSome: Effect.succeed,
+          }),
+        ),
+      );
+      const patch: Patch = {
+        id: `patch/${call.fingerprint({ node: input.node, body: input.body, base: base.fingerprint, session: call.session, at: call.at }).slice(0, 16)}`,
+        space: OPERATOR_SPACE,
+        node: input.node,
+        target,
+        baseFingerprint: base.fingerprint,
+        body: input.body,
+        because: input.because,
+        hypothesis: input.hypothesis,
+        proposedAt: call.at,
+        proposedBy: call.session,
+        decision: null,
+        applied: false,
+      };
+      yield* log.append({
+        kind: 'patch.proposed',
+        at: call.at,
+        space: OPERATOR_SPACE,
+        actor: call.session,
+        payload: patch,
+      });
+      const evaluation = yield* canon.evaluate(patch);
+      yield* log.append({
+        kind: 'patch.evaluated',
+        at: evaluation.at,
+        space: OPERATOR_SPACE,
+        actor: RUNTIME_ACTOR,
+        causedBy: patch.id,
+        payload: evaluation,
+      });
+      return { patch: patch.id, base: base.fingerprint, evaluation };
+    }),
 );
 
 // ─── recall ───────────────────────────────────────────────────────
@@ -365,11 +565,12 @@ const pendingOutput = z.object({
   space: z.string(),
   unresolved: z.number(),
   proposals: z.array(z.unknown()),
+  patches: z.array(z.unknown()),
 });
 
 export const pending = define(
   'pending',
-  'The proposals still waiting in a space: what has been offered and not yet answered.',
+  'What is still waiting in a space: the proposals to carry a node across, and the patches to change one, each with what the fabric could check. Offered and not yet answered.',
   'observe',
   pendingInput,
   pendingOutput,
@@ -377,7 +578,13 @@ export const pending = define(
     state().pipe(
       Effect.map((current) => {
         const proposals = pendingIn(current, input.space);
-        return { space: input.space, unresolved: proposals.length, proposals };
+        const patches = patchesPendingIn(current, input.space);
+        return {
+          space: input.space,
+          unresolved: proposals.length + patches.length,
+          proposals,
+          patches,
+        };
       }),
     ),
 );
@@ -401,12 +608,82 @@ export const sync = define(
     ),
 );
 
+// ─── The operator's answer to a patch ─────────────────────────────
+//
+// Not a verb: no session may call it. The terminal runs it, as it runs
+// blessing. A blessed patch is applied to the canon first, only if the
+// base it named is still the base, and the resolution records whether
+// it was; a rejected patch is kept, as data, and touches nothing.
+
+/** The node moved since the patch was proposed, so the patch cannot be
+ *  applied as it stands; a new patch against the new base is the way
+ *  through (INV-FAB-008). */
+export interface BaseMoved {
+  readonly _tag: 'BaseMoved';
+  readonly patch: string;
+  readonly message: string;
+}
+export const BaseMoved = Data.tagged<BaseMoved>('BaseMoved');
+
+/** The patch named is not waiting: unknown, or already answered. */
+export interface NotWaiting {
+  readonly _tag: 'NotWaiting';
+  readonly patch: string;
+  readonly message: string;
+}
+export const NotWaiting = Data.tagged<NotWaiting>('NotWaiting');
+
+export const decidePatch = (
+  id: string,
+  decision: Decision,
+  by: string,
+  at: string,
+): Effect.Effect<Patch, BaseMoved | NotWaiting | LogRejected, EventLogService | CanonService> =>
+  Effect.gen(function* () {
+    const log = yield* EventLog;
+    const canon = yield* Canon;
+    const current = yield* state();
+    const patch = current.patches.get(id);
+    if (patch?.decision !== null) {
+      return yield* Effect.fail(
+        NotWaiting({ patch: id, message: `${id} is not waiting; nothing to decide` }),
+      );
+    }
+    const applied = decision === 'blessed' ? yield* canon.apply(patch) : false;
+    if (decision === 'blessed' && !applied) {
+      return yield* Effect.fail(
+        BaseMoved({
+          patch: id,
+          message: `INV-FAB-008: ${patch.node} moved since ${id} was proposed against it; the patch stays waiting, and a new patch against the new base is the way through`,
+        }),
+      );
+    }
+    yield* log.append({
+      kind: 'patch.resolved',
+      at,
+      space: patch.space,
+      actor: by,
+      causedBy: patch.id,
+      payload: { patch: patch.id, decision, by, at, applied },
+    });
+    return { ...patch, decision, decidedAt: at, decidedBy: by, applied };
+  });
+
+/** The patches applied in a space whose hypotheses no session has
+ *  reported on yet: what `orient` shows a session so it can. */
+export const unmeasuredIn = (current: FabricState, space: string): readonly Patch[] => {
+  const measured = new Set(current.outcomes.map((outcome) => outcome.patch));
+  return [...current.patches.values()].filter(
+    (patch) => patch.space === space && patch.applied && !measured.has(patch.id),
+  );
+};
+
 // ─── The registry ─────────────────────────────────────────────────
 
 /** Every verb the code knows how to run, by name. The manifest decides
  *  which of these a session may see; this decides what a call does. */
 export const REGISTRY: ReadonlyMap<string, VerbDefinition<never>> = new Map(
-  [slice, reflect, recall, pending, sync].map((definition) => [
+  [slice, reflect, propose, recall, pending, sync].map((definition) => [
     definition.verb.name,
     definition as unknown as VerbDefinition<never>,
   ]),

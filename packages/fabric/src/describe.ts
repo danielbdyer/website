@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { canonical } from './canonical';
-import { pendingIn, sourcesOf, type FabricState } from './log';
+import { patchesPendingIn, pendingIn, sourcesOf, type FabricState } from './log';
 import { manifestFor } from './manifest';
 import {
   CHANGE_TARGETS,
@@ -44,7 +44,50 @@ export const INVARIANTS = [
     statement: 'A tenant sees its own space whole and the other space through blessing.',
   },
   { id: 'INV-FAB-007', statement: 'A signature is frozen at blessing.' },
+  {
+    id: 'INV-FAB-008',
+    statement:
+      'A patch is applied only to the base it was proposed against, only by the sovereign, and once.',
+  },
+  { id: 'INV-FAB-009', statement: 'An outcome cites a patch that was applied.' },
 ] as const;
+
+/** The loop's own measure, stated in advance: over the last `window`
+ *  outcomes, the share confirmed must reach `floor` for the loop to
+ *  count as graduated. Graduation gates nothing; it is the number the
+ *  operator reads before trusting the loop with more. */
+export const GRADUATION = { floor: 0.5, window: 5 } as const;
+
+export interface Graduation {
+  readonly floor: number;
+  readonly window: number;
+  readonly proposed: number;
+  readonly applied: number;
+  readonly confirmed: number;
+  readonly contradicted: number;
+  readonly rate: number | undefined;
+  readonly graduated: boolean;
+}
+
+/** The loop measured against its own floor. Pure. */
+export function graduation(state: FabricState): Graduation {
+  const patches = [...state.patches.values()];
+  const recent = state.outcomes
+    .toSorted((a, b) => a.at.localeCompare(b.at))
+    .slice(-GRADUATION.window);
+  const confirmed = recent.filter((outcome) => outcome.outcome === 'confirmed').length;
+  const contradicted = recent.length - confirmed;
+  const rate = recent.length > 0 ? confirmed / recent.length : undefined;
+  return {
+    ...GRADUATION,
+    proposed: patches.length,
+    applied: patches.filter((patch) => patch.applied).length,
+    confirmed,
+    contradicted,
+    rate,
+    graduated: recent.length >= GRADUATION.window && (rate ?? 0) >= GRADUATION.floor,
+  };
+}
 
 export interface Description {
   readonly fabric: {
@@ -61,6 +104,7 @@ export interface Description {
     readonly verbs: readonly string[];
     readonly sources: readonly string[];
     readonly bridges: number;
+    readonly patches: number;
   };
   readonly vocabularies: {
     readonly consequenceClasses: readonly string[];
@@ -72,6 +116,7 @@ export interface Description {
   };
   readonly events: Record<string, unknown>;
   readonly invariants: readonly { readonly id: string; readonly statement: string }[];
+  readonly graduation: Graduation;
   readonly protocol: {
     readonly transport: 'stdio';
     readonly start: string;
@@ -116,6 +161,7 @@ export function describe(state: FabricState): Description {
       ),
       sources: sources.flatMap((source) => (source.blessedAt === undefined ? [source.id] : [])),
       bridges: pendingIn(state, OPERATOR_SPACE).length,
+      patches: patchesPendingIn(state, OPERATOR_SPACE).length,
     },
     vocabularies: {
       consequenceClasses: [...CONSEQUENCE_CLASSES],
@@ -127,12 +173,13 @@ export function describe(state: FabricState): Description {
     },
     events: eventJsonSchema(),
     invariants: INVARIANTS,
+    graduation: graduation(state),
     protocol: {
       transport: 'stdio',
       start: 'pnpm fabric serve',
       resources: RESOURCES,
       hooks: { start: 'pnpm fabric orient', stop: 'pnpm fabric stop-check' },
-      bless: 'pnpm fabric bless <verb | source | bridge>',
+      bless: 'pnpm fabric bless <verb | source | bridge | patch>',
     },
   };
 }
@@ -190,7 +237,40 @@ const sourceTable = (description: Description): readonly string[] => {
           '',
         ]
       : []),
-    `Proposals waiting in \`${manifest.space}\`: ${waiting.bridges}.`,
+    `Proposals waiting in \`${manifest.space}\`: ${waiting.bridges} to carry across, ${waiting.patches} to change a node.`,
+    '',
+  ];
+};
+
+const loop = (description: Description): readonly string[] => {
+  const { graduation: measure } = description;
+  const rate = measure.rate === undefined ? 'no outcome yet' : measure.rate.toFixed(2);
+  return [
+    '## The loop, pointed at itself',
+    '',
+    'A session proposes a change to one of the operator’s nodes with `propose`: the node’s whole new text, the base it read, why, and a hypothesis the next session can check. The fabric evaluates what it can and the patch waits; the operator applies it from his terminal, only to the base it named. The next session sees the applied patch at start and reports through `reflect` whether the hypothesis held. Graduation is a number the operator reads, and it gates nothing.',
+    '',
+    row([
+      'Proposed',
+      'Applied',
+      'Confirmed',
+      'Contradicted',
+      'Rate',
+      'Floor',
+      'Window',
+      'Graduated',
+    ]),
+    row(['---', '---', '---', '---', '---', '---', '---', '---']),
+    row([
+      String(measure.proposed),
+      String(measure.applied),
+      String(measure.confirmed),
+      String(measure.contradicted),
+      rate,
+      String(measure.floor),
+      String(measure.window),
+      measure.graduated ? 'yes' : 'not yet',
+    ]),
     '',
   ];
 };
@@ -231,6 +311,7 @@ export function readmeFrom(description: Description): string {
     '',
     ...verbTable(description),
     ...sourceTable(description),
+    ...loop(description),
     ...speaking(description),
     '## Vocabularies',
     '',

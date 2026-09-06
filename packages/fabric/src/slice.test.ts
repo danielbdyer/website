@@ -24,6 +24,7 @@ import {
   turnsFrom,
   type FabricEvent,
 } from './index';
+import { noCanon } from './node/canon';
 import { noMemoryCompile, recollectionFrom } from './node/compile';
 import { graphSourceOver } from './node/graph-source';
 import { hitsFrom, nodeIdFromUri, reflectionMarkdown } from './node/qmd';
@@ -88,6 +89,7 @@ const runnerWith = (events: readonly FabricEvent[]): Runner => {
       noMemoryCompile,
       noResonance,
       Layer.succeed(Siblings, { list: () => Effect.succeed([]) }),
+      noCanon,
     ),
   );
 };
@@ -126,11 +128,11 @@ describe('the description', () => {
     expect(twice).toEqual(once);
     expect(once.asOf).toBe(AT);
     expect(once.manifest.verbs.map((verb) => verb.name)).toEqual(['reflect', 'slice']);
-    expect(once.waiting.verbs).toEqual(['recall', 'pending', 'sync']);
+    expect(once.waiting.verbs).toEqual(['propose', 'recall', 'pending', 'sync']);
     expect(once.vocabularies.eventKinds).toEqual(EVENT_KINDS);
     expect(EVENT_KINDS).toContain('verb.refused');
     expect(EVENT_KINDS).toContain('source.blessed');
-    expect(once.invariants).toHaveLength(7);
+    expect(once.invariants).toHaveLength(9);
     const schema = eventJsonSchema();
     expect(JSON.stringify(schema)).toContain('"verb.refused"');
     const readme = readmeFrom(once);
@@ -313,6 +315,7 @@ describe('the small handshakes with the vendors', () => {
         { target: 'skill', node: 'skill/coding', change: 'say less', because: 'it ran long' },
       ],
       cites: [],
+      outcomes: [],
       status: 'nascent',
     });
     expect(text).toContain('# drive it');

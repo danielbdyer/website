@@ -45,6 +45,10 @@ export type SourceKind = (typeof SOURCE_KINDS)[number];
 /** Who wrote an event when no session or sovereign did. */
 export const RUNTIME_ACTOR = 'runtime';
 
+/** What a later session found about an applied change. */
+export const OUTCOMES = ['confirmed', 'contradicted'] as const;
+export type Outcome = (typeof OUTCOMES)[number];
+
 // ─── Atoms ────────────────────────────────────────────────────────
 
 const id = z.string().min(1);
@@ -146,6 +150,15 @@ export const changeRequestSchema = z.object({
 });
 export type ChangeRequest = z.infer<typeof changeRequestSchema>;
 
+/** What a session found about a change an earlier session proposed
+ *  and the operator applied: the loop's own measure. */
+export const outcomeReportSchema = z.object({
+  patch: id,
+  outcome: z.enum(OUTCOMES),
+  because: z.string().min(1),
+});
+export type OutcomeReport = z.infer<typeof outcomeReportSchema>;
+
 /** The first thing the fabric holds: what a session noticed, in a
  *  shape the next session can retrieve. Structured at the boundary,
  *  never a paragraph. */
@@ -158,6 +171,7 @@ export const reflectionSchema = z.object({
   observed: z.array(z.string().min(1)).min(1),
   inferred: z.array(z.string().min(1)).default([]),
   shouldChange: z.array(changeRequestSchema).default([]),
+  outcomes: z.array(outcomeReportSchema).default([]),
   cites: z.array(citationSchema).default([]),
   status: z.enum(METABOLIC_STATES).default('nascent'),
 });
@@ -186,6 +200,54 @@ export const refusalSchema = z.object({
   reason: z.string().min(1),
 });
 export type Refusal = z.infer<typeof refusalSchema>;
+
+// ─── The loop pointed at itself ───────────────────────────────────
+
+/** A proposed change to a node in a space: the node's whole new text,
+ *  against the base it was read at, with why and what the next session
+ *  should see if it worked. Pending until the space's sovereign
+ *  answers; applied only then, and only if the base still matches
+ *  (INV-FAB-008). */
+export const patchSchema = z.object({
+  id,
+  space: id,
+  node: id,
+  target: z.enum(CHANGE_TARGETS),
+  baseFingerprint: z.string().min(1),
+  body: z.string(),
+  because: z.string().min(1),
+  hypothesis: z.string().min(1),
+  proposedAt: at,
+  proposedBy: id,
+  decision: z.enum(DECISIONS).nullable(),
+  decidedAt: at.optional(),
+  decidedBy: id.optional(),
+  applied: z.boolean().default(false),
+});
+export type Patch = z.infer<typeof patchSchema>;
+
+/** One check the fabric ran on a patch before the operator saw it. */
+export const checkSchema = z.object({
+  name: z.string().min(1),
+  passed: z.boolean(),
+  detail: z.string().optional(),
+});
+export type Check = z.infer<typeof checkSchema>;
+
+/** What the fabric could verify about a patch on its own: it applies
+ *  to its base, the node still parses, the repository's own lints
+ *  pass. Never a judgment of whether the change is good. */
+export const evaluationSchema = z.object({
+  patch: id,
+  at,
+  checks: z.array(checkSchema),
+  passed: z.boolean(),
+});
+export type Evaluation = z.infer<typeof evaluationSchema>;
+
+/** An outcome, as recorded: which session found it, and when. */
+export const outcomeSchema = outcomeReportSchema.extend({ session: id, at });
+export type OutcomeRecord = z.infer<typeof outcomeSchema>;
 
 // ─── Crossing the wall ────────────────────────────────────────────
 
@@ -257,6 +319,13 @@ export const eventSchema = z.discriminatedUnion('kind', [
     payload: z.object({ proposal: id, decision: z.enum(DECISIONS), by: id, at }),
   }),
   eventBase.extend({ kind: z.literal('reference.cited'), payload: weakReferenceSchema }),
+  eventBase.extend({ kind: z.literal('patch.proposed'), payload: patchSchema }),
+  eventBase.extend({ kind: z.literal('patch.evaluated'), payload: evaluationSchema }),
+  eventBase.extend({
+    kind: z.literal('patch.resolved'),
+    payload: z.object({ patch: id, decision: z.enum(DECISIONS), by: id, at, applied: z.boolean() }),
+  }),
+  eventBase.extend({ kind: z.literal('patch.outcome'), payload: outcomeSchema }),
 ]);
 export type FabricEvent = z.infer<typeof eventSchema>;
 export type FabricEventKind = FabricEvent['kind'];

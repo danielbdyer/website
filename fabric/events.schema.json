@@ -588,6 +588,29 @@
               "minItems": 1,
               "type": "array"
             },
+            "outcomes": {
+              "default": [],
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "because": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "enum": ["confirmed", "contradicted"],
+                    "type": "string"
+                  },
+                  "patch": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": ["patch", "outcome", "because"],
+                "type": "object"
+              },
+              "type": "array"
+            },
             "session": {
               "minLength": 1,
               "type": "string"
@@ -638,6 +661,7 @@
             "observed",
             "inferred",
             "shouldChange",
+            "outcomes",
             "cites",
             "status"
           ],
@@ -864,6 +888,316 @@
             }
           },
           "required": ["space", "onNode", "to", "citation", "at"],
+          "type": "object"
+        },
+        "space": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "step": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "causedBy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "const": "patch.proposed",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": false,
+          "properties": {
+            "applied": {
+              "default": false,
+              "type": "boolean"
+            },
+            "baseFingerprint": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "because": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "decidedAt": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "decidedBy": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "decision": {
+              "anyOf": [
+                {
+                  "enum": ["blessed", "rejected"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "hypothesis": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "node": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "proposedAt": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "proposedBy": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "space": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "target": {
+              "enum": ["prompt", "skill", "verb", "policy"],
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "space",
+            "node",
+            "target",
+            "baseFingerprint",
+            "body",
+            "because",
+            "hypothesis",
+            "proposedAt",
+            "proposedBy",
+            "decision",
+            "applied"
+          ],
+          "type": "object"
+        },
+        "space": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "step": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "causedBy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "const": "patch.evaluated",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": false,
+          "properties": {
+            "at": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "checks": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "detail": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "passed": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["name", "passed"],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "passed": {
+              "type": "boolean"
+            },
+            "patch": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": ["patch", "at", "checks", "passed"],
+          "type": "object"
+        },
+        "space": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "step": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "causedBy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "const": "patch.resolved",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": false,
+          "properties": {
+            "applied": {
+              "type": "boolean"
+            },
+            "at": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "by": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "decision": {
+              "enum": ["blessed", "rejected"],
+              "type": "string"
+            },
+            "patch": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": ["patch", "decision", "by", "at", "applied"],
+          "type": "object"
+        },
+        "space": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "step": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "causedBy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "const": "patch.outcome",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": false,
+          "properties": {
+            "at": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "because": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "outcome": {
+              "enum": ["confirmed", "contradicted"],
+              "type": "string"
+            },
+            "patch": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "session": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": ["patch", "outcome", "because", "session", "at"],
           "type": "object"
         },
         "space": {

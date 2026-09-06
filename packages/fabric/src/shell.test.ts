@@ -20,6 +20,7 @@ import { parseGitmodules } from './node/siblings';
 import { noMemoryCompile } from './node/compile';
 import { graphSourceOver } from './node/graph-source';
 import { noResonance } from './ports';
+import { noCanon } from './node/canon';
 import { handleCall, handleList, runnerOver, type Runner, type ToolResult } from './server';
 import {
   AGENT_SPACE,
@@ -87,6 +88,7 @@ const runnerWith = (blessed: readonly string[]): Runner => {
       noMemoryCompile,
       noResonance,
       noSiblings,
+      noCanon,
     ),
   );
 };
@@ -212,6 +214,7 @@ describe('a session in the fabric', () => {
             inferred: [],
             shouldChange: [],
             cites: [{ space: AGENT_SPACE, node: 'reflection/b' }],
+            outcomes: [],
             status: 'nascent',
           },
         },
@@ -229,6 +232,7 @@ describe('a session in the fabric', () => {
             inferred: [],
             shouldChange: [],
             cites: [],
+            outcomes: [],
             status: 'nascent',
           },
         },

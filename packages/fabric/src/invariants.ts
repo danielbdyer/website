@@ -60,6 +60,24 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
         ];
   });
 
+  const strangerPatches = events.flatMap((event) => {
+    if (event.kind !== 'patch.resolved') return [];
+    const patch = state.patches.get(event.payload.patch);
+    if (!patch) return [`INV-FAB-008: resolution names ${event.payload.patch}, never proposed`];
+    return blessedByOwner(state, patch.space, event.payload.by)
+      ? []
+      : [
+          `INV-FAB-008: ${event.payload.by} resolved patch ${patch.id} in ${patch.space}, whose sovereign is ${state.spaces.get(patch.space)?.sovereign ?? 'unknown'}`,
+        ];
+  });
+
+  const orphanOutcomes = state.outcomes.flatMap((outcome) => {
+    const patch = state.patches.get(outcome.patch);
+    return patch?.applied
+      ? []
+      : [`INV-FAB-009: outcome ${outcome.outcome} cites ${outcome.patch}, which was never applied`];
+  });
+
   const homelessReferences = state.references.flatMap((reference) =>
     reference.space === reference.to.space
       ? [
@@ -74,6 +92,8 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
     ...strangerSources,
     ...sameSpaceBridges,
     ...strangerResolutions,
+    ...strangerPatches,
+    ...orphanOutcomes,
     ...homelessReferences,
   ];
 }
