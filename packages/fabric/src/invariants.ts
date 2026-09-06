@@ -1,14 +1,38 @@
-import type { FabricEvent } from './schema';
+import { RETRIEVAL_VERBS, isAgent, type FabricEvent } from './schema';
 import { project, type FabricState } from './log';
 
 // ─── Invariants ───────────────────────────────────────────────────
 //
 // Every way a log can fail to be a fabric, as messages. Pure. Empty
-// when the log holds INV-FAB-001..004; the fifth and sixth are
-// properties of the fold itself and are held by tests.
+// when the log holds INV-FAB-001..004 and 008..011; the fifth, sixth,
+// and seventh are properties of the fold and the gate, held by tests.
 
 const blessedByOwner = (state: FabricState, space: string, by: string): boolean =>
   state.spaces.get(space)?.sovereign === by;
+
+const retrievalVerbs = new Set(RETRIEVAL_VERBS.map((verb) => `verb/${verb}`));
+
+/** A receipt for a retrieval verb with no retrieval event beside it (INV-FAB-010). */
+const unrecordedRetrievals = (state: FabricState): readonly string[] =>
+  state.receipts.flatMap((receipt) =>
+    retrievalVerbs.has(receipt.verb) &&
+    !state.retrievals.some(
+      (retrieval) => retrieval.session === receipt.session && retrieval.at === receipt.at,
+    )
+      ? [
+          `INV-FAB-010: receipt ${receipt.id} for ${receipt.verb} has no retrieval event for session ${receipt.session} at ${receipt.at}`,
+        ]
+      : [],
+  );
+
+/** An agent event that reached the log with no because (INV-FAB-011);
+ *  the schema refuses these at the edge, so one here was hand-edited. */
+const unreasonedAgentEvents = (events: readonly FabricEvent[]): readonly string[] =>
+  events.flatMap((event) =>
+    isAgent(event.actor) && !event.because
+      ? [`INV-FAB-011: ${event.kind} at step ${event.step} by ${event.actor} carries no because`]
+      : [],
+  );
 
 export function fabricIssues(events: readonly FabricEvent[]): readonly string[] {
   const state = project(events);
@@ -94,6 +118,8 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
     ...strangerResolutions,
     ...strangerPatches,
     ...orphanOutcomes,
+    ...unrecordedRetrievals(state),
+    ...unreasonedAgentEvents(events),
     ...homelessReferences,
   ];
 }

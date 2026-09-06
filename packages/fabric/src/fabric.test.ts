@@ -54,7 +54,7 @@ const reflection = (over: Partial<Reflection> = {}): Reflection =>
 type Bare = Omit<FabricEvent, 'step' | 'actor'>;
 
 const stamp = (events: readonly Bare[]): readonly FabricEvent[] =>
-  events.map((event, step) => ({ actor: 'test', ...event, step }) as FabricEvent);
+  events.map((event, step) => ({ actor: 'runtime', ...event, step }) as FabricEvent);
 
 const opened = (): readonly Bare[] => [
   { kind: 'space.opened', at: AT, space: 'danny', payload: operator },
@@ -143,6 +143,7 @@ describe('the manifest', () => {
           session: 'session/1',
           at: LATER,
           consequence: 'propose',
+          because: 'a session tried',
           inputFingerprint: 'in',
           outputFingerprint: 'out',
         },
@@ -288,31 +289,34 @@ describe('the ports, over the in-memory log', () => {
       kind: 'space.opened',
       at: AT,
       space: 'danny',
-      actor: 'test',
+      actor: 'runtime',
       payload: operator,
     });
     yield* log.append({
       kind: 'space.opened',
       at: AT,
       space: 'agent',
-      actor: 'test',
+      actor: 'runtime',
       payload: agent,
     });
     yield* log.append({
       kind: 'reflection.recorded',
       at: AT,
       space: 'agent',
-      actor: 'test',
+      actor: 'runtime',
       payload: reflection(),
     });
-    const proposed = yield* consent.propose({
-      id: 'bridge/1',
-      from: 'agent',
-      to: 'danny',
-      node: 'reflection/1',
-      evidence: 'a session noticed it',
-      proposedAt: AT,
-    });
+    const proposed = yield* consent.propose(
+      {
+        id: 'bridge/1',
+        from: 'agent',
+        to: 'danny',
+        node: 'reflection/1',
+        evidence: 'a session noticed it',
+        proposedAt: AT,
+      },
+      'agent:session/1',
+    );
     const waiting = yield* consent.pending('danny');
     const resolved = yield* consent.resolve('bridge/1', 'blessed', 'danny', LATER);
     const again = yield* Effect.either(consent.resolve('bridge/1', 'blessed', 'danny', LATER));

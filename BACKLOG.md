@@ -371,6 +371,8 @@ The refinement audit (`REFINEMENT_AUDIT.md`) gathers the house's implemented rea
 
 ## The Fabric
 
+The corpus charter (`CORPUS.md`) holds four items in `FABRIC.md` §"Held" with their triggers and is not restated here: the use signal beyond citation, aliases, graph proximity in the fusion, and capture as a measured path. The fold's quadratic cost is `DECISIONS.md` D-006, with its number.
+
 Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
 
 ### The runtime over the log

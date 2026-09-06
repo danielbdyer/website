@@ -78,6 +78,10 @@ This is the bar for every transform over an aggregate — a verb, a fold handler
 
 ---
 
+**17. The corpus compounds, and the instrument comes first.** Danny's charter of 2026-09-06, kept verbatim in `CORPUS.md`: "A corpus compounds iff outputs become inputs … You will build the instrument that measures R(t) **before** you build features that are supposed to raise it. A feature without a measured effect on retrieval-and-use is a guess. You are not permitted to ship guesses as progress." Every retrieval is an event with its candidates; a use is a later act naming one; the number is folded from the log and printed where the next session reads first. Provenance is complete at the schema: every event names its actor in the closed grammar, and an agent event carries a `because` or is not an event. Every architectural decision is an entry in `DECISIONS.md` with the alternatives it rejected. Every session ends with a record — through `reflect` once it is blessed, and in `CORPUS.md`'s reconciliation until then. Where the charter and an earlier directive disagree, the disagreement is written into `CORPUS.md` with a proposed amendment, because the charter says of itself that it is corpus and should compound. *(Danny, 2026-09-06; `CORPUS.md`; `FABRIC.md` §"Phase 6"; `DECISIONS.md` D-001 and D-002.)*
+
+---
+
 ## Where the Ground Is
 
 | Concern | File |
@@ -85,6 +89,8 @@ This is the bar for every transform over an aggregate — a verb, a fold handler
 | The soul: containers, spanda, the enough, the rooms as lenses | `CLAUDE.md` |
 | The workspace, the slice, git as the vessel, how the agent works | `CATHEDRALS.md` |
 | The runtime a session lives in: the log, the verbs, the receipts, the second tenant, the handshakes | `FABRIC.md` |
+| The charter for the corpus, verbatim, and the fabric's reconciliation with it | `CORPUS.md` |
+| The decisions, each with the alternatives it rejected | `DECISIONS.md` |
 | The axioms, the thresholds, the FP rim | `REACT_NORTH_STAR.md` |
 | The outcome orientations the agent loads by name | `.claude/skills/` |
 | What is held, with its trigger | `BACKLOG.md` |

@@ -53,7 +53,7 @@ const opened = (): readonly Bare[] => [
 type Bare = Omit<FabricEvent, 'step' | 'actor'>;
 
 const stamp = (events: readonly Bare[]): readonly FabricEvent[] =>
-  events.map((event, step) => ({ actor: 'test', ...event, step }) as FabricEvent);
+  events.map((event, step) => ({ actor: 'runtime', ...event, step }) as FabricEvent);
 
 /** A runner over the in-memory log, seeded with the spaces and the
  *  verbs, with the named verbs already blessed by the operator. */
@@ -165,11 +165,13 @@ describe('a session in the fabric', () => {
     const before = await answer<{
       nodes: { id: string; group: string }[];
       pending: { unresolved: number };
-    }>(handleCall(run, call(), 'slice', {}));
+    }>(handleCall(run, call(), 'slice', { because: 'orienting' }));
     expect(before.nodes.map((node) => [node.id, node.group])).toEqual([[reflection, AGENT_SPACE]]);
     expect(before.pending.unresolved).toBe(0);
 
-    const waiting = await answer<{ unresolved: number }>(handleCall(run, call(), 'pending', {}));
+    const waiting = await answer<{ unresolved: number }>(
+      handleCall(run, call(), 'pending', { because: 'counting the gap' }),
+    );
     expect(waiting.unresolved).toBe(1);
 
     await run(
@@ -179,7 +181,7 @@ describe('a session in the fabric', () => {
     );
 
     const after = await answer<{ nodes: { id: string; group: string }[] }>(
-      handleCall(run, call('session/2'), 'slice', {}),
+      handleCall(run, call('session/2'), 'slice', { because: 'the next session orienting' }),
     );
     expect(after.nodes.map((node) => [node.id, node.group])).toEqual([
       [reflection, OPERATOR_SPACE],
@@ -288,11 +290,11 @@ describe('the log as JSON lines', () => {
     const layer = fileEventLog(dir);
     const program = Effect.gen(function* () {
       const log = yield* EventLog;
-      const first = yield* log.append({ ...opened()[0], actor: 'test' } as Omit<
+      const first = yield* log.append({ ...opened()[0], actor: 'runtime' } as Omit<
         FabricEvent,
         'step'
       >);
-      const second = yield* log.append({ ...opened()[1], actor: 'test' } as Omit<
+      const second = yield* log.append({ ...opened()[1], actor: 'runtime' } as Omit<
         FabricEvent,
         'step'
       >);
@@ -300,7 +302,7 @@ describe('the log as JSON lines', () => {
         kind: 'verb.proposed',
         at: AT,
         space: OPERATOR_SPACE,
-        actor: 'test',
+        actor: 'runtime',
         payload: proposedVerbs()[0] as never,
       });
       return { steps: [first.step, second.step, third.step], all: yield* log.read() };

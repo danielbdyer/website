@@ -4,13 +4,25 @@
 // session lives in. FABRIC.md is the specification.
 
 export {
+  ACTOR_KINDS,
+  CANDIDATE_REASONS,
   CHANGE_TARGETS,
   CONSEQUENCE_CLASSES,
   DECISIONS,
   OUTCOMES,
+  RETRIEVAL_VERBS,
   RUNTIME_ACTOR,
   SOURCE_KINDS,
   SPACE_KINDS,
+  actorKind,
+  actorSchema,
+  agentActor,
+  authorActor,
+  candidateSchema,
+  importActor,
+  isAgent,
+  retrievalSchema,
+  eventUnion,
   refusalSchema,
   sourceSchema,
   bridgeProposalSchema,
@@ -32,8 +44,13 @@ export {
   weakReferenceSchema,
 } from './schema';
 export type {
+  ActorKind,
   BridgeProposal,
+  Candidate,
+  CandidateReason,
   ChangeRequest,
+  Retrieval,
+  RetrievalVerb,
   ChangeTarget,
   Check,
   Citation,
@@ -75,6 +92,8 @@ export { manifestFor, toolsFrom } from './manifest';
 export type { ToolListing } from './manifest';
 
 export { fabricIssues } from './invariants';
+export { COMPOUNDING, compounding, retrievalResults } from './compounding';
+export type { Compounding, RetrievalResult, SessionPoint } from './compounding';
 
 export {
   Consent,
@@ -123,6 +142,7 @@ export {
   OPERATOR_SPACE,
   REGISTRY,
   Siblings,
+  candidatesOf,
   collectionsFor,
   decidePatch,
   pending,

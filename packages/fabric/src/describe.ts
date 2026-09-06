@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { canonical } from './canonical';
+import { compounding, type Compounding } from './compounding';
 import { patchesPendingIn, pendingIn, sourcesOf, type FabricState } from './log';
 import { manifestFor } from './manifest';
 import {
@@ -8,7 +9,7 @@ import {
   DECISIONS,
   SOURCE_KINDS,
   SPACE_KINDS,
-  eventSchema,
+  eventUnion,
   type Manifest,
   type Source,
   type Space,
@@ -50,6 +51,16 @@ export const INVARIANTS = [
       'A patch is applied only to the base it was proposed against, only by the sovereign, and once.',
   },
   { id: 'INV-FAB-009', statement: 'An outcome cites a patch that was applied.' },
+  {
+    id: 'INV-FAB-010',
+    statement:
+      'Every retrieval is an event, with its context and every candidate in rank order; a receipt for a retrieval verb has one.',
+  },
+  {
+    id: 'INV-FAB-011',
+    statement:
+      'Every event names its actor in the closed grammar, and an agent event carries a because; the schema refuses one without.',
+  },
 ] as const;
 
 /** The loop's own measure, stated in advance: over the last `window`
@@ -117,6 +128,8 @@ export interface Description {
   readonly events: Record<string, unknown>;
   readonly invariants: readonly { readonly id: string; readonly statement: string }[];
   readonly graduation: Graduation;
+  /** Whether the corpus compounds: retrievals, and how many a later act used. */
+  readonly compounding: Compounding;
   readonly protocol: {
     readonly transport: 'stdio';
     readonly start: string;
@@ -126,12 +139,12 @@ export interface Description {
   };
 }
 
-export const EVENT_KINDS = eventSchema.options.map((option) => option.shape.kind.value);
+export const EVENT_KINDS = eventUnion.options.map((option) => option.shape.kind.value);
 
 /** The event log's schema, as JSON Schema, canonical. One `oneOf` per
  *  kind: the discriminated union crosses into JSON Schema whole. */
 export const eventJsonSchema = (): Record<string, unknown> =>
-  canonical(z.toJSONSchema(eventSchema)) as Record<string, unknown>;
+  canonical(z.toJSONSchema(eventUnion)) as Record<string, unknown>;
 
 export const RESOURCES = [
   'fabric://manifest',
@@ -174,6 +187,7 @@ export function describe(state: FabricState): Description {
     events: eventJsonSchema(),
     invariants: INVARIANTS,
     graduation: graduation(state),
+    compounding: compounding(state),
     protocol: {
       transport: 'stdio',
       start: 'pnpm fabric serve',
@@ -289,6 +303,47 @@ const speaking = (description: Description): readonly string[] => {
   ];
 };
 
+const ratio = (value: number | undefined): string =>
+  value === undefined ? 'none yet' : value.toFixed(2);
+
+const compounds = (description: Description): readonly string[] => {
+  const measure = description.compounding;
+  return [
+    '## Does it compound?',
+    '',
+    'A corpus compounds when outputs become inputs: something stored is surfaced in a context other than the one it was made in, and the next act uses it. Every retrieval a session makes is an event with its candidates in rank order; a use is a later citation or patch by the same session naming a candidate another session made. The numbers below are that measure, folded from the log. They gate nothing; they are what the operator reads before building anything meant to raise them.',
+    '',
+    row([
+      'Retrievals',
+      'Used',
+      'Rate',
+      `Hit@${measure.k}`,
+      'MRR',
+      'Missed',
+      'Proposals decided',
+      'Blessed',
+    ]),
+    row(['---', '---', '---', '---', '---', '---', '---', '---']),
+    row([
+      String(measure.retrievals),
+      String(measure.used),
+      ratio(measure.rate),
+      ratio(measure.hitAtK),
+      ratio(measure.mrr),
+      String(measure.missed),
+      String(measure.acceptance.decided),
+      ratio(measure.acceptance.rate),
+    ]),
+    '',
+    ...(measure.series.length > 0
+      ? [
+          `By session, oldest first, the last ${measure.window}: ${measure.series.map((point) => `${point.used}/${point.retrievals}`).join(', ')}.`,
+          '',
+        ]
+      : []),
+  ];
+};
+
 /** The description as a page any other system, or person, can read
  *  before speaking to the fabric. Generated; never edited by hand. */
 export function readmeFrom(description: Description): string {
@@ -312,6 +367,7 @@ export function readmeFrom(description: Description): string {
     ...verbTable(description),
     ...sourceTable(description),
     ...loop(description),
+    ...compounds(description),
     ...speaking(description),
     '## Vocabularies',
     '',

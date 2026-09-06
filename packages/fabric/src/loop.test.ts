@@ -50,7 +50,7 @@ const LATER = '2026-09-06T13:00:00.000Z';
 type Bare = Omit<FabricEvent, 'step' | 'actor'>;
 
 const stamp = (events: readonly Bare[]): readonly FabricEvent[] =>
-  events.map((event, step) => ({ actor: 'test', ...event, step }) as FabricEvent);
+  events.map((event, step) => ({ actor: 'runtime', ...event, step }) as FabricEvent);
 
 const seeded = (): readonly FabricEvent[] => {
   const verbs = proposedVerbs();
@@ -274,7 +274,7 @@ describe('a patch through the gate', () => {
         step: log.length,
         at: LATER,
         space: OPERATOR_SPACE,
-        actor: AGENT_SPACE,
+        actor: `author:${AGENT_SPACE}`,
         payload: { patch, decision: 'blessed', by: AGENT_SPACE, at: LATER, applied: true },
       },
     ]);
@@ -363,7 +363,8 @@ describe('the loop measured', () => {
           step: log.length,
           at: LATER,
           space: OPERATOR_SPACE,
-          actor: 'session/3',
+          actor: 'agent:session/3',
+          because: 'x',
           payload: {
             patch: 'patch/never',
             outcome: 'contradicted',
