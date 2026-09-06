@@ -32,7 +32,10 @@
               "type": "string"
             },
             "kind": {
-              "enum": ["operator", "agent"],
+              "enum": [
+                "operator",
+                "agent"
+              ],
               "type": "string"
             },
             "sovereign": {
@@ -40,7 +43,11 @@
               "type": "string"
             }
           },
-          "required": ["id", "kind", "sovereign"],
+          "required": [
+            "id",
+            "kind",
+            "sovereign"
+          ],
           "type": "object"
         },
         "space": {
@@ -53,7 +60,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -89,7 +103,12 @@
               "type": "string"
             },
             "consequence": {
-              "enum": ["observe", "derive", "propose", "world"],
+              "enum": [
+                "observe",
+                "derive",
+                "propose",
+                "world"
+              ],
               "type": "string"
             },
             "description": {
@@ -113,7 +132,11 @@
               "type": "string"
             },
             "origin": {
-              "enum": ["declared", "discovered", "emergent"],
+              "enum": [
+                "declared",
+                "discovered",
+                "emergent"
+              ],
               "type": "string"
             },
             "outputSchema": {
@@ -155,7 +178,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -199,7 +229,11 @@
               "type": "string"
             }
           },
-          "required": ["verb", "by", "at"],
+          "required": [
+            "verb",
+            "by",
+            "at"
+          ],
           "type": "object"
         },
         "space": {
@@ -212,7 +246,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -256,7 +297,11 @@
               "type": "string"
             }
           },
-          "required": ["verb", "by", "at"],
+          "required": [
+            "verb",
+            "by",
+            "at"
+          ],
           "type": "object"
         },
         "space": {
@@ -269,7 +314,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -309,7 +361,12 @@
               "type": "string"
             },
             "consequence": {
-              "enum": ["observe", "derive", "propose", "world"],
+              "enum": [
+                "observe",
+                "derive",
+                "propose",
+                "world"
+              ],
               "type": "string"
             },
             "id": {
@@ -360,7 +417,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -408,7 +472,12 @@
               "type": "string"
             }
           },
-          "required": ["verb", "session", "at", "reason"],
+          "required": [
+            "verb",
+            "session",
+            "at",
+            "reason"
+          ],
           "type": "object"
         },
         "space": {
@@ -421,7 +490,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -461,11 +537,19 @@
               "type": "string"
             },
             "kind": {
-              "enum": ["vault", "works", "skills"],
+              "enum": [
+                "vault",
+                "works",
+                "skills"
+              ],
               "type": "string"
             },
             "origin": {
-              "enum": ["declared", "discovered", "emergent"],
+              "enum": [
+                "declared",
+                "discovered",
+                "emergent"
+              ],
               "type": "string"
             },
             "path": {
@@ -477,7 +561,13 @@
               "type": "string"
             }
           },
-          "required": ["id", "space", "kind", "path", "origin"],
+          "required": [
+            "id",
+            "space",
+            "kind",
+            "path",
+            "origin"
+          ],
           "type": "object"
         },
         "space": {
@@ -490,7 +580,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -534,7 +631,11 @@
               "type": "string"
             }
           },
-          "required": ["source", "by", "at"],
+          "required": [
+            "source",
+            "by",
+            "at"
+          ],
           "type": "object"
         },
         "space": {
@@ -547,7 +648,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -604,7 +712,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["space", "node"],
+                "required": [
+                  "space",
+                  "node"
+                ],
                 "type": "object"
               },
               "type": "array"
@@ -639,7 +750,10 @@
                     "type": "string"
                   },
                   "outcome": {
-                    "enum": ["confirmed", "contradicted"],
+                    "enum": [
+                      "confirmed",
+                      "contradicted"
+                    ],
                     "type": "string"
                   },
                   "patch": {
@@ -647,7 +761,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["patch", "outcome", "because"],
+                "required": [
+                  "patch",
+                  "outcome",
+                  "because"
+                ],
                 "type": "object"
               },
               "type": "array"
@@ -674,11 +792,21 @@
                     "type": "string"
                   },
                   "target": {
-                    "enum": ["prompt", "skill", "verb", "policy"],
+                    "enum": [
+                      "prompt",
+                      "skill",
+                      "verb",
+                      "policy"
+                    ],
                     "type": "string"
                   }
                 },
-                "required": ["target", "node", "change", "because"],
+                "required": [
+                  "target",
+                  "node",
+                  "change",
+                  "because"
+                ],
                 "type": "object"
               },
               "type": "array"
@@ -689,7 +817,13 @@
             },
             "status": {
               "default": "nascent",
-              "enum": ["nascent", "privated", "full", "flourishing", "composting"],
+              "enum": [
+                "nascent",
+                "privated",
+                "full",
+                "flourishing",
+                "composting"
+              ],
               "type": "string"
             }
           },
@@ -718,7 +852,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -765,7 +906,10 @@
             "decision": {
               "anyOf": [
                 {
-                  "enum": ["blessed", "rejected"],
+                  "enum": [
+                    "blessed",
+                    "rejected"
+                  ],
                   "type": "string"
                 },
                 {
@@ -799,7 +943,15 @@
               "type": "string"
             }
           },
-          "required": ["id", "from", "to", "node", "evidence", "proposedAt", "decision"],
+          "required": [
+            "id",
+            "from",
+            "to",
+            "node",
+            "evidence",
+            "proposedAt",
+            "decision"
+          ],
           "type": "object"
         },
         "space": {
@@ -812,7 +964,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -852,7 +1011,10 @@
               "type": "string"
             },
             "decision": {
-              "enum": ["blessed", "rejected"],
+              "enum": [
+                "blessed",
+                "rejected"
+              ],
               "type": "string"
             },
             "proposal": {
@@ -860,7 +1022,12 @@
               "type": "string"
             }
           },
-          "required": ["proposal", "decision", "by", "at"],
+          "required": [
+            "proposal",
+            "decision",
+            "by",
+            "at"
+          ],
           "type": "object"
         },
         "space": {
@@ -873,7 +1040,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -936,11 +1110,20 @@
                   "type": "string"
                 }
               },
-              "required": ["space", "node"],
+              "required": [
+                "space",
+                "node"
+              ],
               "type": "object"
             }
           },
-          "required": ["space", "onNode", "to", "citation", "at"],
+          "required": [
+            "space",
+            "onNode",
+            "to",
+            "citation",
+            "at"
+          ],
           "type": "object"
         },
         "space": {
@@ -953,7 +1136,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -1010,7 +1200,10 @@
             "decision": {
               "anyOf": [
                 {
-                  "enum": ["blessed", "rejected"],
+                  "enum": [
+                    "blessed",
+                    "rejected"
+                  ],
                   "type": "string"
                 },
                 {
@@ -1044,7 +1237,12 @@
               "type": "string"
             },
             "target": {
-              "enum": ["prompt", "skill", "verb", "policy"],
+              "enum": [
+                "prompt",
+                "skill",
+                "verb",
+                "policy"
+              ],
               "type": "string"
             }
           },
@@ -1074,7 +1272,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -1124,7 +1329,10 @@
                     "type": "boolean"
                   }
                 },
-                "required": ["name", "passed"],
+                "required": [
+                  "name",
+                  "passed"
+                ],
                 "type": "object"
               },
               "type": "array"
@@ -1137,7 +1345,12 @@
               "type": "string"
             }
           },
-          "required": ["patch", "at", "checks", "passed"],
+          "required": [
+            "patch",
+            "at",
+            "checks",
+            "passed"
+          ],
           "type": "object"
         },
         "space": {
@@ -1150,7 +1363,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -1193,7 +1413,10 @@
               "type": "string"
             },
             "decision": {
-              "enum": ["blessed", "rejected"],
+              "enum": [
+                "blessed",
+                "rejected"
+              ],
               "type": "string"
             },
             "patch": {
@@ -1201,7 +1424,13 @@
               "type": "string"
             }
           },
-          "required": ["patch", "decision", "by", "at", "applied"],
+          "required": [
+            "patch",
+            "decision",
+            "by",
+            "at",
+            "applied"
+          ],
           "type": "object"
         },
         "space": {
@@ -1214,7 +1443,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -1254,7 +1490,10 @@
               "type": "string"
             },
             "outcome": {
-              "enum": ["confirmed", "contradicted"],
+              "enum": [
+                "confirmed",
+                "contradicted"
+              ],
               "type": "string"
             },
             "patch": {
@@ -1266,7 +1505,13 @@
               "type": "string"
             }
           },
-          "required": ["patch", "outcome", "because", "session", "at"],
+          "required": [
+            "patch",
+            "outcome",
+            "because",
+            "session",
+            "at"
+          ],
           "type": "object"
         },
         "space": {
@@ -1279,7 +1524,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     },
     {
@@ -1319,7 +1571,11 @@
                 "additionalProperties": false,
                 "properties": {
                   "by": {
-                    "enum": ["resonance", "mention", "recency"],
+                    "enum": [
+                      "resonance",
+                      "mention",
+                      "recency"
+                    ],
                     "type": "string"
                   },
                   "node": {
@@ -1335,7 +1591,11 @@
                     "type": "number"
                   }
                 },
-                "required": ["node", "rank", "by"],
+                "required": [
+                  "node",
+                  "rank",
+                  "by"
+                ],
                 "type": "object"
               },
               "type": "array"
@@ -1362,11 +1622,23 @@
               "type": "string"
             },
             "verb": {
-              "enum": ["slice", "recall", "orient"],
+              "enum": [
+                "slice",
+                "recall",
+                "orient"
+              ],
               "type": "string"
             }
           },
-          "required": ["id", "session", "at", "verb", "context", "k", "candidates"],
+          "required": [
+            "id",
+            "session",
+            "at",
+            "verb",
+            "context",
+            "k",
+            "candidates"
+          ],
           "type": "object"
         },
         "space": {
@@ -1379,7 +1651,14 @@
           "type": "integer"
         }
       },
-      "required": ["step", "at", "space", "actor", "kind", "payload"],
+      "required": [
+        "step",
+        "at",
+        "space",
+        "actor",
+        "kind",
+        "payload"
+      ],
       "type": "object"
     }
   ]

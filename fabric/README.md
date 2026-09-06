@@ -1,6 +1,6 @@
 # The fabric, described
 
-*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-06T08:57:41.815Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
+*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-06T18:53:52.067Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
 
 ## What this is
 
@@ -19,9 +19,9 @@ Each verb carries its input and output schema as JSON Schema in `manifest.json`.
 
 | Verb | Consequence | What it does |
 | --- | --- | --- |
-| — | — | No verb is blessed yet; the manifest is empty. |
+| `reflect` | propose | Record what this session noticed, in the shape the next session can retrieve. Lands in your own space at once; a proposal to carry it into the operator’s memory waits for blessing. Outcomes you report on applied patches are the loop’s own measure. |
 
-Waiting for the operator's blessing: `slice`, `reflect`, `propose`, `recall`, `pending`, `sync`.
+Waiting for the operator's blessing: `slice`, `propose`, `recall`, `pending`, `sync`.
 
 ## Sources
 
@@ -33,7 +33,7 @@ Where the operator’s space reads from besides the log. A source is proposed an
 
 Waiting for the operator's blessing: `source/skills`, `source/works`, `source/vault`.
 
-Proposals waiting in `danny`: 0 to carry across, 0 to change a node.
+Proposals waiting in `danny`: 1 to carry across, 0 to change a node.
 
 ## The loop, pointed at itself
 
