@@ -357,11 +357,6 @@ Held phases of `CATHEDRALS.md`, the founding document of the workspace the house
 
 Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
 
-### The session shell
-
-**Why:** No server exists. A Model Context Protocol server in `packages/fabric` lists the manifest as tools and appends a receipt per call; a start hook loads a slice; a stop hook calls `reflect`; the log is JSON lines in git. The first four verbs: `slice`, `reflect`, `pending`, `sync`.
-**Trigger:** Danny opens a session that should remember the last one.
-
 ### The vendor behind the port
 
 **Why:** The fold runs in process. ActiveGraph as a sidecar behind `EventLog` and `GraphSource`, speaking the event schema and the slice, owns the log store, the projection, and the memory compile. One afternoon; if it fails, the engine's event store behind the same ports.

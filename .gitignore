@@ -9,3 +9,6 @@ playwright-report/
 .env
 .env.*
 !.env.example
+
+# The fabric marks the current session here; the log beside it is canonical.
+fabric/.session

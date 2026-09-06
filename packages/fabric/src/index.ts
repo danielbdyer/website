@@ -40,7 +40,7 @@ export type {
   WeakReference,
 } from './schema';
 
-export { apply, emptyState, pendingIn, project, visibleReflections } from './log';
+export { apply, emptyState, homeOf, pendingIn, project, visibleReflections } from './log';
 export type { FabricState } from './log';
 
 export { manifestFor, toolsFrom } from './manifest';
@@ -58,3 +58,19 @@ export {
   memoryEventLog,
 } from './ports';
 export type { Aperture, ConsentService, EventLogService, GraphSourceService } from './ports';
+
+export { canonical, canonicalJson, same } from './canonical';
+export { sliceFromState } from './graph';
+export {
+  AGENT_SPACE,
+  OPERATOR_SPACE,
+  REGISTRY,
+  Siblings,
+  pending,
+  proposedVerbs,
+  reflect,
+  refusal,
+  slice,
+  sync,
+} from './verbs';
+export type { CallContext, Sibling, SiblingsService, VerbDefinition } from './verbs';

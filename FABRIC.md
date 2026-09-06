@@ -69,7 +69,7 @@ The manifest is a projection: the verbs of one space that are blessed and not re
 
 **The consent port.** The engine's, unchanged: a proposal is pending with a null decision; the target's sovereign resolves it once; the resolution is an event. `resolve` is never a verb. It is the one operation the fabric refuses to put in the manifest, so that no session, however permitted, can bless.
 
-**The session shell.** A Claude Code or Copilot session, started by a human message or a reply, is the only way the fabric runs. The session starts the fabric as a Model Context Protocol server and ends it. The start hook loads a slice by aperture from both spaces, filtered by tenancy and disclosure. The stop hook collects the reflection. Between sessions nothing runs, nothing polls, and nothing wakes on its own. Every verb call appends a receipt: the verb, the space, the session, a fingerprint of the input, a fingerprint of the output. The payloads stay in the events that carried them.
+**The session shell.** A Claude Code or Copilot session, started by a human message or a reply, is the only way the fabric runs. The session starts the fabric as a Model Context Protocol server and ends it. The start hook marks the session and prints its memory into context: the manifest, what is waiting, and the reflections it may see. The stop hook asks for a reflection if none was recorded for the session, and the session answers with `reflect` — a hook can carry a session's id and a refusal, but it cannot author what the session noticed. Between sessions nothing runs, nothing polls, and nothing wakes on its own. Every verb call appends a receipt: the verb, the space, the session, a fingerprint of the input, a fingerprint of the output. The payloads stay in the events that carried them.
 
 ```
 packages/
@@ -107,6 +107,23 @@ The first thing blessed through the fabric is a reflection from the agent, persi
 
 ---
 
+## Handshakes
+
+Danny's rule, 2026-09-06: a perfect lossless handshake — two vocabularies meeting with nothing translated between them — is the tell that a key conduit belongs there. The fabric is built along these. Where a translation layer would be needed, that is a seam to draw explicitly, not a conduit to force.
+
+| Conduit | The two sides | What crosses without loss |
+|---|---|---|
+| The manifest as tools | zod; JSON Schema; the Model Context Protocol's low-level server | `z.toJSONSchema(schema, { io: 'input' })` emits the schema a verb carries as data, and the protocol's `tools/list` takes that document verbatim. The session's tool list is the manifest with nothing in between. |
+| The session's identity | Claude Code's hooks; `fabric/.session`; every receipt | A hook receives `session_id` as JSON on stdin; the start hook writes it down; the server stamps it on every receipt and reflection. One id, three places, no translation. |
+| Memory into context | The start hook's stdout; the session's context | Whatever the start hook prints is in the session's context. Memory arrives as the last session's letter, not as a tool the session must remember to call. |
+| The reflection gate | The stop hook's stdout; the session's turn | `{ "decision": "block", "reason": … }` on the stop hook's stdout is the reason the session keeps going. The gate is one JSON object, and the session answers it with `reflect`. |
+| Tagged unions on both sides | Effect's `Data.tagged` and `catchTag`; zod's `discriminatedUnion` | An error is `{ _tag }`; an event is `{ kind }`. Both are closed unions dispatched by one field, and the fold over events is a table indexed by that field. |
+| The log and the vessel | JSON Lines; git | One event is one line; one session's lines are one commit; the commit is the provenance. `git log` reads the event log without a tool. |
+| Pins and citations | git submodules; weak references | A submodule pin is a commit hash written in the relating repository — a weak reference by construction. `sync` reads it as one. |
+| Candidates and bridges | ActiveGraph's core pack; the first slice | `memory_candidate`, then `evaluation`, is `reflection.recorded`, then `bridge.proposed`, then a decision. Held until Phase 2 confirms it against the sidecar. |
+
+---
+
 ## Invariants
 
 Each carries an id in the engine's ledger style and a test in `packages/fabric/src/fabric.test.ts`.
@@ -117,6 +134,7 @@ Each carries an id in the engine's ledger style and a test in `packages/fabric/s
 - **INV-FAB-004 — a weak reference crosses a wall as text.** It lives on the citing node, in the citing space, and points to another space. Inside one space a relation is an edge, not a reference.
 - **INV-FAB-005 — the fold is a function.** Projecting the same log yields the same state, and the state survives the round trip through JSON. The only write is an append.
 - **INV-FAB-006 — a tenant sees its own space whole and the other space through blessing.** Inside its own space a session retrieves everything it recorded. Across the wall it retrieves only what a bridge carried over and the sovereign blessed. Private evidence never leaks through retrieval.
+- **INV-FAB-007 — a signature is frozen at blessing.** Before a call, the schema the code would parse with is compared to the schema the blessed verb carries; a difference refuses the call. A change is a new verb and a retirement.
 
 Two declinations are properties rather than checks, and they are stated so a later file cannot quietly reverse them: **the fabric does not reason**, and **`resolve` is not a verb.**
 
@@ -156,12 +174,12 @@ Phases in pull order. Each names its pull, its scope, its exit, and what stays h
 - **Exit:** Typecheck, lint, and tests green. Nothing visible changes.
 - **Held:** The package name, `@dbd/fabric`, until Danny blesses it. Every name in this file is a candidate.
 
-### Phase 1 — The session shell
+### Phase 1 — The session shell (shipped 2026-09-06)
 
-- **Pull:** Danny opens a session that should remember the last one.
-- **Scope:** A Model Context Protocol server in `packages/fabric` that lists the manifest as tools and appends a receipt per call. A start hook that loads a slice; a stop hook that calls `reflect`. The log as JSON lines in git under a path Danny names. The first four verbs: `slice`, `reflect`, `pending`, `sync`.
-- **Exit:** A reflection recorded in one session is retrieved in the next, from the log alone.
-- **Held:** The sidecar. The fold runs in process until the boundary is spiked.
+- **Pull:** Danny said keep going; he wants to model how the agent lives inside this.
+- **Scope:** The server, over stdio, listing the manifest as tools and appending a receipt per call. The start hook, `orient`, marking the session and printing its memory. The stop hook, `stop-check`, asking once for a reflection. The log as JSON lines at `fabric/spaces/<space>.jsonl`. The sovereign's terminal: `init`, `bless`, `reject`, `pending`, `log`. The four verbs, proposed into the operator's space by `init` and waiting there, unblessed.
+- **Exit, met:** Driven end to end over the in-memory log in the tests, and over the file log in a scratch copy — blessed, reflected, crossed, and remembered by the next session from the log alone.
+- **Held:** The sidecar. The fold runs in process until the boundary is spiked. The verbs in this repository wait for Danny's blessing; until then the manifest is empty and the start hook says so.
 
 ### Phase 2 — The vendor behind the port
 
@@ -192,7 +210,7 @@ Phases in pull order. Each names its pull, its scope, its exit, and what stays h
 ## Held
 
 - **The names.** `@dbd/fabric`; the verb names; the path of the log in git. Trigger: Danny's word.
-- **Where the log lives.** JSON lines in this repository, or in the engine's repository once it enters. Trigger: Phase 1.
+- **The log's path.** `fabric/spaces/<space>.jsonl` in this repository is where Phase 1 put it; the name is a candidate, and it may move to the engine's repository once it enters. Trigger: Danny's word, or Phase 2.
 - **The reflection's compile.** Whether the vendor's claim compiler runs on every reflection or only on crossing. Trigger: Phase 2.
 - **World verbs.** None are proposed here. The first will name itself when a session wants to do something the graph cannot hold. Trigger: the first ask.
 - **Copilot as the session.** The hooks are written for Claude Code first. Copilot's equivalent surface is held until a session runs there. Trigger: Danny opens one.
@@ -215,10 +233,14 @@ Phases in pull order. Each names its pull, its scope, its exit, and what stays h
 Today:
 
 - `@dbd/fabric` at [packages/fabric/src/index.ts](./packages/fabric/src/index.ts): the closed vocabularies (consequence classes, space kinds, decisions, change targets), the schema of record for spaces, verbs, receipts, reflections, bridges, weak references, and the nine event kinds; `project` and `apply` as the fold; `manifestFor` and `toolsFrom` as the projection; `fabricIssues` as the invariant check; `EventLog`, `GraphSource`, and `Consent` as Effect tags with an in-memory log and consent over any log.
-- The tests at [packages/fabric/src/fabric.test.ts](./packages/fabric/src/fabric.test.ts) hold INV-FAB-001 through INV-FAB-006 and the six-step slice over the in-memory adapter.
-- The workspace: the `@dbd/fabric` alias in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`; the FP rim extended over `packages/fabric/src` in `eslint.config.js`.
+- The tests at [packages/fabric/src/fabric.test.ts](./packages/fabric/src/fabric.test.ts) hold INV-FAB-001 through INV-FAB-006 and the six-step slice over the in-memory adapter; [packages/fabric/src/shell.test.ts](./packages/fabric/src/shell.test.ts) holds INV-FAB-007, the manifest as tools, a session's reflect-slice-pending-bless-slice over the shared runtime, the grounded memory slice, the file log's per-tenant steps, and the two small handshakes.
+- The verbs at [packages/fabric/src/verbs.ts](./packages/fabric/src/verbs.ts): `slice`, `reflect`, `pending`, `sync`, each a zod schema, a JSON Schema emitted from it, and an Effect program; `refusal` as the gate a call passes.
+- The memory slice at [packages/fabric/src/graph.ts](./packages/fabric/src/graph.ts); the rim at `packages/fabric/src/node/`: the JSON-lines log, the fingerprint, the siblings through git.
+- The shell at [packages/fabric/src/server.ts](./packages/fabric/src/server.ts) and the terminal and hooks at [packages/fabric/src/cli.ts](./packages/fabric/src/cli.ts); `.mcp.json` starts the server for a session; `.claude/settings.json` binds `orient` to session start and `stop-check` to stop; `pnpm fabric` is the operator's command.
+- The log at `fabric/spaces/`: two spaces opened and four verbs proposed, none blessed.
+- The workspace: the fabric is its own TypeScript project with node types (`packages/fabric/tsconfig.json`), checked by `pnpm typecheck` and the pre-commit hook; the `@dbd/fabric` alias in `vite.config.ts` and `vitest.config.ts`; the FP rim extended over `packages/fabric/src` in `eslint.config.js`.
 
-Not yet: everything from Phase 1 on. No server exists. No hook calls `reflect`. No sidecar runs. No submodule is pinned.
+Not yet: everything from Phase 2 on. No sidecar runs. No submodule is pinned. Copilot's hook surface is held.
 
 ---
 
@@ -226,4 +248,4 @@ Not yet: everything from Phase 1 on. No server exists. No hook calls `reflect`. 
 
 **This spec depends on:** `CLAUDE.md`, `CATHEDRALS.md`, `REACT_NORTH_STAR.md`, `CONSTELLATION_ARCHITECTURE.md`, `RENDERING_STRATEGY.md`; in the engine's repository, `AGENTS.md`, `docs/architecture/GRAPH_PROTOCOL.md`, `docs/architecture/SPACE_MODEL.md`; in the product's repository, `AGENTS.md`, `docs/v2-substrate.md`; in the vault, `CLAUDE.md`; in the seed, `CONSTITUTION.md`; in the root, `TECHNICAL_MANIFESTO.md`.
 
-**This spec is depended on by:** `BACKLOG.md`, which holds the phases with their triggers; `CATHEDRALS.md` §"The Shape", which names the package.
+**This spec is depended on by:** `BACKLOG.md`, which holds the phases with their triggers; `CATHEDRALS.md` §"The Shape", which names the package; `AGENTS.md`, whose directives cite it.

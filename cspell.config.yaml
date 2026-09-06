@@ -62,6 +62,8 @@ words:
   - permissioned
   - replayable
   - unretired
+  - monoid
+  - modelcontextprotocol
   - Yohei
   - Nakajima
   # The engine's vocabulary, carried across the wall (CATHEDRALS.md)

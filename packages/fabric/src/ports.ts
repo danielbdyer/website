@@ -95,20 +95,22 @@ export const consentOverLog: Layer.Layer<ConsentService, never, EventLogService>
   Consent,
   Effect.gen(function* () {
     const log = yield* EventLog;
-    const state = (): Effect.Effect<FabricState> => Effect.map(log.read(), project);
+    const state = (): Effect.Effect<FabricState> => log.read().pipe(Effect.map(project));
     return {
       propose: (proposal) =>
-        Effect.map(
-          log.append({
+        log
+          .append({
             kind: 'bridge.proposed',
             at: proposal.proposedAt,
             space: proposal.to,
             payload: { ...proposal, decision: null },
-          }),
-          (event) =>
-            event.kind === 'bridge.proposed' ? event.payload : { ...proposal, decision: null },
-        ),
-      pending: (space) => Effect.map(state(), (current) => pendingIn(current, space)),
+          })
+          .pipe(
+            Effect.map((event) =>
+              event.kind === 'bridge.proposed' ? event.payload : { ...proposal, decision: null },
+            ),
+          ),
+      pending: (space) => state().pipe(Effect.map((current) => pendingIn(current, space))),
       resolve: (proposal, decision, by, at) =>
         Effect.gen(function* () {
           const current = yield* state();
