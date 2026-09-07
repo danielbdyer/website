@@ -1,10 +1,10 @@
 # The fabric, described
 
-*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-06T08:57:41.815Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
+*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-07T08:09:04.370Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
 
 ## What this is
 
-An append-only log per tenant, a graph as memory, verbs as blessed nodes projected into a manifest, a receipt on every call, and consent as the only way across a wall. The session that connects is the only reasoner; the fabric remembers and acts deterministically.
+An append-only log per tenant, a graph as memory, verbs as blessed nodes projected into a manifest, a receipt on every call, and consent as the only way across a wall. A crossing carries a node from one space into another; a bridge relates two nodes with evidence; a patch changes one. Each waits for the sovereign of the space it lands in. The session that connects is the only reasoner; the fabric remembers and acts deterministically.
 
 ## Spaces
 
@@ -19,9 +19,9 @@ Each verb carries its input and output schema as JSON Schema in `manifest.json`.
 
 | Verb | Consequence | What it does |
 | --- | --- | --- |
-| — | — | No verb is blessed yet; the manifest is empty. |
+| `reflect` | propose | Record what this session noticed, in the shape the next session can retrieve. Lands in your own space at once; a crossing to carry it into the operator’s memory waits for his blessing. Outcomes you report on applied patches are the loop’s own measure. |
 
-Waiting for the operator's blessing: `slice`, `reflect`, `propose`, `recall`, `pending`, `sync`.
+Waiting for the operator's blessing: `slice`, `recall`, `pending`, `sync`, `patch`, `bridge`.
 
 ## Sources
 
@@ -33,11 +33,11 @@ Where the operator’s space reads from besides the log. A source is proposed an
 
 Waiting for the operator's blessing: `source/skills`, `source/works`, `source/vault`.
 
-Proposals waiting in `danny`: 0 to carry across, 0 to change a node.
+Waiting in `danny`: 4 crossing(s) to carry a node in, 0 bridge(s) to relate two, 0 patch(es) to change one.
 
 ## The loop, pointed at itself
 
-A session proposes a change to one of the operator’s nodes with `propose`: the node’s whole new text, the base it read, why, and a hypothesis the next session can check. The fabric evaluates what it can and the patch waits; the operator applies it from his terminal, only to the base it named. The next session sees the applied patch at start and reports through `reflect` whether the hypothesis held. Graduation is a number the operator reads, and it gates nothing.
+A session proposes a change to one of the operator’s nodes with `patch`: the node’s whole new text, the base it read, why, and a hypothesis the next session can check. The fabric evaluates what it can and the patch waits; the operator applies it from his terminal, only to the base it named. The next session sees the applied patch at start and reports through `reflect` whether the hypothesis held. Graduation is a number the operator reads, and it gates nothing.
 
 | Proposed | Applied | Confirmed | Contradicted | Rate | Floor | Window | Graduated |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -45,7 +45,7 @@ A session proposes a change to one of the operator’s nodes with `propose`: the
 
 ## Does it compound?
 
-A corpus compounds when outputs become inputs: something stored is surfaced in a context other than the one it was made in, and the next act uses it. Every retrieval a session makes is an event with its candidates in rank order; a use is a later citation or patch by the same session naming a candidate another session made. The numbers below are that measure, folded from the log. They gate nothing; they are what the operator reads before building anything meant to raise them.
+A corpus compounds when outputs become inputs: something stored is surfaced in a context other than the one it was made in, and the next act uses it. Every retrieval a session makes is an event with its candidates in rank order; a use is a later citation, patch, or bridge by the same session naming a candidate another session made. The numbers below are that measure, folded from the log. They gate nothing; they are what the operator reads before building anything meant to raise them.
 
 | Retrievals | Used | Rate | Hit@3 | MRR | Missed | Proposals decided | Blessed |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -56,7 +56,7 @@ A corpus compounds when outputs become inputs: something stored is surfaced in a
 - **Transport:** stdio. Start the server with `pnpm fabric serve`; it speaks the Model Context Protocol.
 - **Resources:** `fabric://manifest`, `fabric://events.schema`, `fabric://readme`.
 - **Hooks:** `pnpm fabric orient` at session start prints memory into context; `pnpm fabric stop-check` at stop asks once for a reflection.
-- **Blessing:** `pnpm fabric bless <verb | source | bridge | patch>`, in the operator's terminal. Never a verb.
+- **Blessing:** `pnpm fabric bless <verb | source | crossing | bridge | patch>`, in the operator's terminal. Never a verb.
 - **The log:** `fabric/spaces/<space>.jsonl`, one event per line, validated by `events.schema.json`. Steps are per tenant.
 
 ## Vocabularies
@@ -66,13 +66,13 @@ A corpus compounds when outputs become inputs: something stored is surfaced in a
 - **decisions:** `blessed`, `rejected`
 - **changeTargets:** `prompt`, `skill`, `verb`, `policy`
 - **sourceKinds:** `vault`, `works`, `skills`
-- **eventKinds:** `space.opened`, `verb.proposed`, `verb.blessed`, `verb.retired`, `verb.called`, `verb.refused`, `source.proposed`, `source.blessed`, `reflection.recorded`, `bridge.proposed`, `bridge.resolved`, `reference.cited`, `patch.proposed`, `patch.evaluated`, `patch.resolved`, `patch.outcome`, `retrieval.surfaced`
+- **eventKinds:** `space.opened`, `verb.proposed`, `verb.blessed`, `verb.retired`, `verb.withdrawn`, `verb.called`, `verb.refused`, `source.proposed`, `source.blessed`, `reflection.recorded`, `crossing.proposed`, `crossing.resolved`, `bridge.proposed`, `bridge.resolved`, `reference.cited`, `patch.proposed`, `patch.evaluated`, `patch.resolved`, `patch.outcome`, `retrieval.surfaced`
 
 ## Invariants
 
 - **INV-FAB-001** — A call is to a verb in the manifest.
 - **INV-FAB-002** — A verb or a source is blessed by the sovereign of its space.
-- **INV-FAB-003** — A bridge crosses a wall and is closed once, by the target's sovereign.
+- **INV-FAB-003** — A crossing crosses a wall and is closed once, by the target's sovereign.
 - **INV-FAB-004** — A weak reference crosses a wall as text.
 - **INV-FAB-005** — The fold is a function: the same log yields the same state.
 - **INV-FAB-006** — A tenant sees its own space whole and the other space through blessing.
@@ -81,3 +81,4 @@ A corpus compounds when outputs become inputs: something stored is surfaced in a
 - **INV-FAB-009** — An outcome cites a patch that was applied.
 - **INV-FAB-010** — Every retrieval is an event, with its context and every candidate in rank order; a receipt for a retrieval verb has one.
 - **INV-FAB-011** — Every event names its actor in the closed grammar, and an agent event carries a because; the schema refuses one without.
+- **INV-FAB-012** — A bridge relates two distinct nodes with evidence, is closed once by the sovereign of the space it lands in, and blessed is an edge in that space's slice.

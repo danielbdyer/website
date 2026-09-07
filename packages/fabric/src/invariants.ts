@@ -4,7 +4,7 @@ import { project, type FabricState } from './log';
 // ─── Invariants ───────────────────────────────────────────────────
 //
 // Every way a log can fail to be a fabric, as messages. Pure. Empty
-// when the log holds INV-FAB-001..004 and 008..011; the fifth, sixth,
+// when the log holds INV-FAB-001..004 and 008..012; the fifth, sixth,
 // and seventh are properties of the fold and the gate, held by tests.
 
 const blessedByOwner = (state: FabricState, space: string, by: string): boolean =>
@@ -34,17 +34,33 @@ const unreasonedAgentEvents = (events: readonly FabricEvent[]): readonly string[
       : [],
   );
 
-export function fabricIssues(events: readonly FabricEvent[]): readonly string[] {
-  const state = project(events);
-
-  const unblessedCalls = state.receipts.flatMap((receipt) => {
+const unblessedCalls = (state: FabricState): readonly string[] =>
+  state.receipts.flatMap((receipt) => {
     const verb = state.verbs.get(receipt.verb);
     return verb?.blessedAt === undefined || verb.retiredAt !== undefined
       ? [`INV-FAB-001: receipt ${receipt.id} calls ${receipt.verb}, which is not in the manifest`]
       : [];
   });
 
-  const strangerBlessings = events.flatMap((event) => {
+// A withdrawal takes back a proposal nothing was granted on; taking
+// back a blessed verb is retiring it, which is the sovereign's.
+const withdrawnBlessings = (
+  state: FabricState,
+  events: readonly FabricEvent[],
+): readonly string[] =>
+  events.flatMap((event) => {
+    if (event.kind !== 'verb.withdrawn') return [];
+    const verb = state.verbs.get(event.payload.verb);
+    if (!verb) return [`INV-FAB-002: verb.withdrawn names ${event.payload.verb}, never proposed`];
+    return verb.blessedAt === undefined
+      ? []
+      : [
+          `INV-FAB-002: ${event.actor} withdrew ${verb.id}, which ${state.spaces.get(verb.space)?.sovereign ?? 'its sovereign'} had blessed; only the sovereign retires a blessed verb`,
+        ];
+  });
+
+const strangerBlessings = (state: FabricState, events: readonly FabricEvent[]): readonly string[] =>
+  events.flatMap((event) => {
     if (event.kind !== 'verb.blessed' && event.kind !== 'verb.retired') return [];
     const verb = state.verbs.get(event.payload.verb);
     if (!verb) return [`INV-FAB-002: ${event.kind} names ${event.payload.verb}, never proposed`];
@@ -55,7 +71,8 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
         ];
   });
 
-  const strangerSources = events.flatMap((event) => {
+const strangerSources = (state: FabricState, events: readonly FabricEvent[]): readonly string[] =>
+  events.flatMap((event) => {
     if (event.kind !== 'source.blessed') return [];
     const source = state.sources.get(event.payload.source);
     if (!source)
@@ -67,24 +84,54 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
         ];
   });
 
-  const sameSpaceBridges = [...state.bridges.values()].flatMap((bridge) =>
-    bridge.from === bridge.to
-      ? [`INV-FAB-003: bridge ${bridge.id} does not cross a wall (${bridge.from} to ${bridge.to})`]
+const sameSpaceCrossings = (state: FabricState): readonly string[] =>
+  [...state.crossings.values()].flatMap((crossing) =>
+    crossing.from === crossing.to
+      ? [
+          `INV-FAB-003: crossing ${crossing.id} does not cross a wall (${crossing.from} to ${crossing.to})`,
+        ]
       : [],
   );
 
-  const strangerResolutions = events.flatMap((event) => {
-    if (event.kind !== 'bridge.resolved') return [];
-    const bridge = state.bridges.get(event.payload.proposal);
-    if (!bridge) return [`INV-FAB-003: resolution names ${event.payload.proposal}, never proposed`];
-    return blessedByOwner(state, bridge.to, event.payload.by)
+const strangerResolutions = (
+  state: FabricState,
+  events: readonly FabricEvent[],
+): readonly string[] =>
+  events.flatMap((event) => {
+    if (event.kind !== 'crossing.resolved') return [];
+    const crossing = state.crossings.get(event.payload.crossing);
+    if (!crossing)
+      return [`INV-FAB-003: resolution names ${event.payload.crossing}, never proposed`];
+    return blessedByOwner(state, crossing.to, event.payload.by)
       ? []
       : [
-          `INV-FAB-003: ${event.payload.by} resolved bridge ${bridge.id} into ${bridge.to}, whose sovereign is ${state.spaces.get(bridge.to)?.sovereign ?? 'unknown'}`,
+          `INV-FAB-003: ${event.payload.by} resolved crossing ${crossing.id} into ${crossing.to}, whose sovereign is ${state.spaces.get(crossing.to)?.sovereign ?? 'unknown'}`,
         ];
   });
 
-  const strangerPatches = events.flatMap((event) => {
+// A bridge relates two nodes, and is answered by the sovereign of the
+// space it lands in (INV-FAB-012).
+const selfBridges = (state: FabricState): readonly string[] =>
+  [...state.bridges.values()].flatMap((bridge) =>
+    bridge.subject === bridge.object
+      ? [`INV-FAB-012: bridge ${bridge.id} relates ${bridge.subject} to itself`]
+      : [],
+  );
+
+const strangerBridges = (state: FabricState, events: readonly FabricEvent[]): readonly string[] =>
+  events.flatMap((event) => {
+    if (event.kind !== 'bridge.resolved') return [];
+    const bridge = state.bridges.get(event.payload.bridge);
+    if (!bridge) return [`INV-FAB-012: resolution names ${event.payload.bridge}, never proposed`];
+    return blessedByOwner(state, bridge.space, event.payload.by)
+      ? []
+      : [
+          `INV-FAB-012: ${event.payload.by} resolved bridge ${bridge.id} in ${bridge.space}, whose sovereign is ${state.spaces.get(bridge.space)?.sovereign ?? 'unknown'}`,
+        ];
+  });
+
+const strangerPatches = (state: FabricState, events: readonly FabricEvent[]): readonly string[] =>
+  events.flatMap((event) => {
     if (event.kind !== 'patch.resolved') return [];
     const patch = state.patches.get(event.payload.patch);
     if (!patch) return [`INV-FAB-008: resolution names ${event.payload.patch}, never proposed`];
@@ -95,14 +142,16 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
         ];
   });
 
-  const orphanOutcomes = state.outcomes.flatMap((outcome) => {
+const orphanOutcomes = (state: FabricState): readonly string[] =>
+  state.outcomes.flatMap((outcome) => {
     const patch = state.patches.get(outcome.patch);
     return patch?.applied
       ? []
       : [`INV-FAB-009: outcome ${outcome.outcome} cites ${outcome.patch}, which was never applied`];
   });
 
-  const homelessReferences = state.references.flatMap((reference) =>
+const homelessReferences = (state: FabricState): readonly string[] =>
+  state.references.flatMap((reference) =>
     reference.space === reference.to.space
       ? [
           `INV-FAB-004: reference on ${reference.onNode} cites ${reference.to.node} in its own space; a weak reference crosses a wall`,
@@ -110,16 +159,22 @@ export function fabricIssues(events: readonly FabricEvent[]): readonly string[] 
       : [],
   );
 
+export function fabricIssues(events: readonly FabricEvent[]): readonly string[] {
+  const state = project(events);
+
   return [
-    ...unblessedCalls,
-    ...strangerBlessings,
-    ...strangerSources,
-    ...sameSpaceBridges,
-    ...strangerResolutions,
-    ...strangerPatches,
-    ...orphanOutcomes,
+    ...unblessedCalls(state),
+    ...withdrawnBlessings(state, events),
+    ...strangerBlessings(state, events),
+    ...strangerSources(state, events),
+    ...sameSpaceCrossings(state),
+    ...strangerResolutions(state, events),
+    ...selfBridges(state),
+    ...strangerBridges(state, events),
+    ...strangerPatches(state, events),
+    ...orphanOutcomes(state),
     ...unrecordedRetrievals(state),
     ...unreasonedAgentEvents(events),
-    ...homelessReferences,
+    ...homelessReferences(state),
   ];
 }

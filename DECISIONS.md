@@ -85,3 +85,176 @@
 - *Persistent (structurally shared) maps.* Rejected: a dependency for a problem a hundred sessions away.
 
 **Reopens when.** The real log's fold p95 crosses 100 ms, which the bench above places near a thousand events; or the first session that notices a slow `slice`.
+
+## D-007 · Synthetic events are the existing import kind, not a new actor
+
+**Decision.** A synthetic event carries actor `import:synthetic` — the `import:<source>` kind the grammar already has, with source `synthetic`. The closed actor grammar (D-002) is not extended.
+
+**Because.** A synthetic session is an import into the fabric from a generator, which is exactly what the import kind means. Extending the grammar for it would touch the schema, the JSON Schema, `describe`, and the README for no gain, and the charter's §1 firewall asks only that a synthetic event be unrepresentable as a real one — which `import:synthetic` already is, since a real session's activity is `agent:<session>`.
+
+**Alternatives.**
+
+- *A new actor kind, `synthetic:<run>`.* Rejected: a fourth prefix in the closed grammar is a schema change with no behavior behind it; the source name inside the import kind already carries the run's identity.
+- *Reuse `runtime` for synthetic events.* Rejected: `runtime` is the fabric's own scaffolding (bootstrap, evaluations), and a synthetic session's activity must be told apart from it; `import:synthetic` is that distinction.
+
+**Reopens when.** A real consumer needs to tell a synthetic import from a real vault import at the actor level, which today the source name `synthetic` already does.
+
+## D-008 · Synthetic event logs never enter the repository
+
+**Decision.** A synthetic run writes its event log to a temporary directory and a `sim:<run-id>` tenant. No synthetic `.jsonl` is committed; the only committed synthetic artifact is `fabric/sim/baseline.json`, the regenerable metrics. The real read path is `fabric/spaces/` alone.
+
+**Because.** The file log's `read` folds every `*.jsonl` in its directory. A synthetic log committed beside the real one is one misconfigured directory away from polluting the real R(t) that `describe`, the README, and `orient` print. The firewall must be structural, not vigilant: physical separation makes the pollution unrepresentable rather than merely forbidden.
+
+**Alternatives.**
+
+- *Commit an example synthetic log for inspection.* Rejected: the inspection value is small and the pollution vector is real; the baseline JSON and the tests are the inspectable artifacts.
+- *Write synthetic logs to `fabric/sim/*.jsonl` and rely on the real read pointing only at `fabric/spaces/`.* Rejected: it makes the firewall a property of a path string in the CLI, not of the filesystem; a temp directory outside the repo cannot be read by the real fold by accident.
+
+**Reopens when.** The real read path gains an actor-level filter that excludes `import:synthetic`, at which point co-location would be safe — but that filter would be cost on the hot path for a risk physical separation already removes.
+
+## D-009 · Provenance is stamped at the log seam, over the real verbs
+
+**Decision.** The synthetic harness runs the real `slice` and `reflect` programs through the real shell (`handleCall`), and stamps `import:synthetic` at the one write in the fabric — an `EventLog` decorator over the real file or memory adapter. Every metric-bearing field (candidates, ranks, citations, the fold) is produced by the real code upstream of the stamp.
+
+**Because.** The charter's §2: "If you bypass the actual code to make numbers, you have proven nothing about the actual system." Stamping provenance at the seam is the smallest change that quarantines the run while leaving the real code path intact, and provenance minted at the event is the fabric's own principle.
+
+**Alternatives.**
+
+- *Forge events directly with `import:synthetic`.* Rejected: it bypasses the verb programs, so a green synthetic number would say nothing about `cut`, `candidatesOf`, or the fold — the code a retrieval change would touch.
+- *Give synthetic sessions import identities upstream, in the verbs.* Rejected: `surfaced` and `reflect` hardcode `agent:<session>`, and changing them would change real verb behavior to serve the harness.
+
+**Reopens when.** The real verbs ever take the actor as a parameter, at which point the stamp moves from the seam to the call.
+
+## D-010 · The metric discriminates; the committed baseline is the §5 gate
+
+**Decision.** The compounding metric responds monotonically to retrieval quality — over a planted corpus, hit@3 climbs from 0.057 at pure noise to 0.850 at real signal, and MRR tracks it — so `fabric/sim/baseline.json` is the anchor the §5 regression gate needs, and a retrieval-code change that lowers the curve is a regression.
+
+**Because.** The charter's §3 names discrimination the real prize: a metric that cannot tell good retrieval from bad would green-light regressions. The synthetic sweep varies retrieval quality with a dial the metric never sees and reads the metric off the real fold; that it climbs is the proof the metric has teeth, and the deterministic curve is a baseline a future change compares against.
+
+**Alternatives.**
+
+- *Baseline a qmd fusion-weight vector.* Rejected: qmd is not synthetically testable, and the baseline's job is to guard the retrieval code — `cut`, `candidatesOf`, the fold — not an embedding model's weights.
+- *Trust that R_sim > 0 proves the metric.* Rejected explicitly by the charter: a synthetic citer cites by construction, so a nonzero number proves only plumbing; discrimination is the separate, higher claim.
+
+**Reopens when.** Real retrieval accumulates and a real baseline can stand beside the synthetic one.
+
+## D-011 · The fold's 100 ms breach is 1,150–2,800 events, mix-dependent; still a hold, sharper trigger
+
+**Decision.** Refines D-006. The fold stays a pure immutable fold. The 100 ms p95 breach is now measured precisely and is mix-dependent: fold-plus-compounding is quadratic with constant about 12.6 × 10⁻⁶ ms per event² on a realistic session mix, breaching 100 ms near 2,800 events, and about 76 × 10⁻⁶ on a reflection-heavy log, breaching near 1,150. The trigger is sharpened to 800 total `fabric/spaces` events.
+
+**Because.** Measured 2026-09-06 (Node 22, this container, p95 over repeated folds): a realistic mix — one reflection, one retrieval, two receipts per unit — folds at 12.8 ms / 1,024 events, 56.9 ms / 2,048, 220.8 ms / 4,096, 848.3 ms / 8,192, a clean quadratic. A reflection-only log, the worst case because `withEntry` copies the reflections map every event, breaches at ~1,150. D-006's estimate of "near a thousand events" was the worst case; the realistic breach is roughly 2,800. At Danny's cadence — about ten to fifteen events a session — that is 100 to 250 sessions, well over a year. Fixing it now is core surgery for a payoff a year out, against the charter's preference for the discrimination proof over breadth.
+
+**Alternatives.**
+
+- *Fix now with persistent (structurally shared) maps in `log.ts`.* The recommended fix when the trigger fires: replace the O(n)-per-append `new Map([...map, entry])` with a persistent map of O(log n) insert, which removes the quadratic while keeping the pure-fold shape and INV-FAB-005; the identity test guards it. Held: no present payoff.
+- *A cached projection advanced on append.* Also removes the fold's cost and the file re-read per call, but adds cache-invalidation state the pure fold does not have. Held as the heavier option.
+- *Characterize to 10⁵ events as the charter's §4 asks.* Not run: at the measured constant, a 10⁵-event fold is about 126 seconds, and the interesting breach is at 1–3k events, two orders of magnitude below. The quadratic is pinned by the 128–8,192 grid; extrapolation to 10⁵ is arithmetic, and burning hours to confirm it would be measurement for its own sake.
+
+**Reopens when.** The real `fabric/spaces` log crosses 800 events, or a session notices a slow start.
+
+## D-012 · The North Star v4 is persisted in the house; its predecessors arrive by Danny's hand
+
+**Decision.** `NORTH_STAR.md` v4 (2026-09-06) is kept verbatim at the repository root, never edited, beside `CORPUS.md`; its reconciliation is `CORPUS.md` Part four. v3 and the v3.2 addendum (§28), which v4 supersedes and which were in none of the six repositories, are filed as `NORTH_STAR_v3.md` and `NORTH_STAR_v3.2.md` when Danny supplies them, also verbatim.
+
+**Because.** v4 §27: "This document is corpus. It changes only by a new version Danny gives; a session's proposed amendments go in the reconciliation." The house already holds one charter this way (the v2 charter in `CORPUS.md` Part one), so the pattern is established. The predecessors are needed because Appendix E ledgers every unit of them, and a ledger is verifiable only beside what it ledgers.
+
+**Alternatives.**
+
+- *Fold v4 into `CORPUS.md` as Part four's opening, like the v2 charter.* Rejected: v4 names itself `NORTH_STAR.md` and says `orient` will surface it; a document meant to be surfaced by name should exist under that name.
+- *Place it in `cathedrals/`, where a `NORTH_STAR.md` already exists.* Rejected: that file is the engine's layered ontology, a different lineage; v4's referents (`fabric orient`, `DECISIONS.md`, INV-FAB-*) are all this repository's.
+- *Treat the missing v3 as lost and rely on Appendix E.* Rejected: the charter's own claim is that nothing cut was lost, and the house should be able to check it.
+
+**Reopens when.** A v5 arrives, by Danny's hand.
+
+## D-013 · D-011's fix is superseded by the SQLite projection; the hold stands
+
+**Decision.** The fold's quadratic cost stays held (D-011's trigger of 800 events is unchanged), but the recommended fix is no longer persistent structurally-shared maps; it is v4 §9's SQLite projection, built at step 5 of §23.
+
+**Because.** v4 §9 dissolves the fold into a projection file that FTS5, sqlite-vec, the node and edge tables, and the retrieval log share, which removes the O(n²) fold *and* the O(n) file re-read per call that persistent maps would have left in place. Two recommended fixes for one measured problem is the pile the decision log exists to prevent. Appendix C's trigger for doing it now — a breach within a year of real cadence — is not met: D-011 places the breach at 100 to 250 sessions.
+
+**Alternatives.**
+
+- *Build the SQLite projection now, since the plan names it.* Rejected: §23 says no step starts because it is interesting, and the trigger is not met; step 5 follows steps 2 and 3 in order.
+- *Keep both fixes on the books, choose at the trigger.* Rejected: the decision log records one recommendation with its because; a later session can overturn it with a numbered entry.
+
+**Reopens when.** D-011's trigger fires, or the discrimination harness shows in-process retrieval matching qmd's quality (v4 §9, "the sidecar decision").
+
+## D-014 · Held items with a step in §23 point at the step, not at a free trigger
+
+**Decision.** Three entries in `FABRIC.md` §"Held" that v4's build order now schedules — the use signal beyond citation (`retrieval.used` / `retrieval.missed`, step 2), capture as a measured path (`note`, step 3, reopening D-005), and `evaluation.recorded` (step 6) — carry a pointer to their step beside their original trigger. Aliases keep Appendix C's trigger, which is the same one the house already held.
+
+**Because.** A held item with two homes — a trigger in one file and a step in another — is answered twice or not at all. The pointer keeps the original trigger's reasoning and says where the work now lives.
+
+**Alternatives.**
+
+- *Delete the held entries, since the plan owns them now.* Rejected: each entry carries the house's own reasoning for holding, which the plan's one-line step does not, and a future session deciding whether to start the step should read both.
+- *Copy §23 into `BACKLOG.md`.* Rejected: a second copy of the build order is a second build order; `BACKLOG.md` points at §23.
+
+**Reopens when.** A v5 changes the build order.
+
+## D-015 · The three originals are in the house; the backlog is the superset the lock fills in
+
+**Decision.** `NORTH_STAR_v3.md`, `NORTH_STAR_v3.2.md` (the §28 addendum), and `THE_LOCK.md` are persisted at the repository root, converted from Danny's PDF exports with the words unchanged and the headings, tables, and monospace blocks restored from the PDFs' layout; each carries an HTML-comment provenance line and is never edited by a session. `NORTH_STAR_BACKLOG.md` is the one backlog of the lineage: every unit of v3, §28, and THE LOCK as a row with its v4 disposition, its step or trigger, and its standing in the house. v4's build order is a subset of it and is filled in there. Three artifacts sit beside it — `INVARIANTS.md`, `VOCABULARY.md`, `NEXT_STEP.md` — each a conformance surface v4 fills in as it goes: what must hold and what holds it, what things are called and where the names collide, and what the smallest next thing is.
+
+**Because.** D-012 promised the originals on arrival so Appendix E could be checked against them rather than trusted; they arrived. The backlog exists because v4 is a narrowing, and a narrowing is only safe if the whole it narrows stays on one page with every cut named; THE LOCK says "both return with their triggers," and a trigger nobody can see never fires. The three artifacts were chosen over others (a lineage document, an event-kind registry alone, a step-2 implementation) because each is a table a later session updates rather than an essay it rereads, and because together they cover the three things a session needs at its start: the rules, the names, the next move.
+
+**Alternatives.**
+
+- *Convert the PDFs by hand into markdown and edit for clarity.* Rejected: the documents are corpus and "never edited"; only formatting the PDF lost is restored, and the provenance comment says so.
+- *Commit the PDFs as the originals.* Rejected for now: the PDFs are exports of markdown Danny wrote; the markdown is the natural form, and the conversion is near-lossless. The PDFs stay with Danny; if a discrepancy is ever suspected, they are the arbiter.
+- *Fold the backlog into `BACKLOG.md`.* Rejected: D-014's reason — a second copy of the build order is a second build order; the site's backlog points at the North Star's.
+- *Write the step-2 code instead of a brief.* Rejected: the charter's posture and Danny's ask ("so v4 can fill in its subset as it goes along"); the brief makes the next session's first hour a decision rather than a rediscovery, and the first act it names costs nothing.
+
+**Reopens when.** A v5 arrives; or a row in the backlog is found to misstate a unit of its original, in which case the original wins and the row is corrected with a note.
+
+## D-016 · `bridge` is a relation with evidence; the carry-across is a `crossing`
+
+**Decision.** By Danny's word (2026-09-07: "I prefer relation-with-evidence"), `bridge` takes the meaning every North Star gives it — v4 §2, "a proposed relation between nodes, with evidence" — and the fabric's former carry-across proposal is renamed a **crossing**. In code: `bridgeSchema` (`subject`, `predicate` from the slice's closed `PREDICATES`, `object`, `evidence`, `space`, `proposedBy`, `decision`) with `bridge.proposed` / `bridge.resolved`; a `bridge` verb of consequence `propose`, proposed into Danny's space at step 19 and unblessed; INV-FAB-012 (a bridge relates two distinct nodes, is closed once by the sovereign of the space it lands in, and blessed is a `declared` edge in that space's slice); `crossingSchema` with `crossing.proposed` / `crossing.resolved`, the `Consent` port over them, and `reflect`'s output field renamed `crossing`. The three carry-across events already in `fabric/spaces/danny.jsonl` (steps 11–13) were rewritten in place — the kind and the id prefix only, every payload field byte-identical — which is the one rewrite the log has had: sha256 `c94b821a…521f0` before, `85f56887…3961d` after. Because `reflect`'s output moved, `reflect` was retired, re-proposed with the new signature, and re-blessed at steps 15–17, the blessing issued on Danny's behalf under his standing authorization of 2026-09-06 ("You may issue it on my behalf") and D-003's rule that a schema change is a new verb.
+
+**Because.** Directive 12 forbids a third name for a thing that has two, and a verb's name freezes at blessing: v4 §23 step 2 builds `fabric bridge`, so the word had to be settled before then, and only Danny could settle it (`VOCABULARY.md`, `CORPUS.md` Part four §C). The carry-across then needed a name of its own; *crossing* is what `FABRIC.md` already called the section ("Crossing the wall") and what the act is. The three old lines were rewritten rather than migrated at parse time because a parse-time alias would keep two spellings of one kind in the schema of record forever, for three lines, and leaving them unreadable would break the fold, which must read the whole log.
+
+**Alternatives.**
+
+- *Keep both meanings under one word, discriminated by payload shape.* Rejected: the fold, the invariants, and every reader would carry the ambiguity forever.
+- *Name the relation something else and keep the fabric's `bridge`.* Rejected: it is the one name every North Star, the lock, and Danny agree on.
+- *Append a `crossing.proposed` beside each old `bridge.proposed` and leave the old lines.* Rejected: the old lines would still fail to parse.
+
+**Reopens when.** Step 8 retires crossings into `import:tenant` proposals; the name goes with them.
+
+## D-017 · The verb that proposes a patch is `patch`; a withdrawal takes back what was never granted
+
+**Decision.** The verb is `patch` (`verb/patch`, step 18); `verb/propose`, never blessed, was withdrawn by the runtime at step 14 through a new event kind, `verb.withdrawn` (`{ verb, at }`, runtime actor), which the fold reads as retired and the manifest and `init` leave alone. INV-FAB-002 extends to it: withdrawing a verb the sovereign had blessed is reported, because taking back a blessed verb is retiring it, which is his. `init` now withdraws and re-proposes an unblessed verb whose signature moved in the build — as it did for `pending` at steps 20–21, whose output gained `crossings` and `bridges` — and only *reports* a blessed one that moved, since retiring it is the operator's.
+
+**Because.** Every North Star names the verb `patch`; the code's `propose` predates v3; Danny chose (2026-09-07: "patch"). The withdrawal kind exists because a superseded proposal otherwise either sits in the waiting list forever or is silently overwritten by a re-proposal over the same id, and the log would lose the fact that the first proposal was made and taken back.
+
+**Alternatives.**
+
+- *Re-propose over the same id.* Rejected: a silent overwrite in the fold; the history is the point of a log.
+- *Retire it by the runtime with `verb.retired`.* Rejected: retiring is the sovereign's act and INV-FAB-002 says so.
+
+**Reopens when.** v3 §6's `verb.deprecated`, with a successor and a `because`, is admitted (v4 §23 step 7's CLI contract is the nearest gate).
+
+## D-018 · The agent is a tenant: its own space answers at once
+
+**Decision.** The sovereignty half of v3.2 §28.5 (NS-28.15, "a specialized agent is a tenant … not a space in the operator's tenant") is now true in code: a bridge a session proposes into its own space is blessed in the same call, by `author:agent` — the space's sovereign — because a tenant sees and rules its own space whole (INV-FAB-006, directive 4); into the operator's space it waits for him. The identity half — its own log directory, a DID, events crossing as `import:tenant` — stays at step 8, and `AGENT_SPACE = 'agent'` stays the name until then. In the vocabulary, the agent's space *is* the agent tenant's space.
+
+**Because.** Danny's word ("agent as tenant"), and the smallest real version was the one the log already supported: the agent has had its own JSONL and its own steps since Phase 1; what it never had was anything it could bless. A bridge is the first thing, and it is proved in `shell.test.ts`: blessed at once in its own space, an edge in its own slice, a ghost in the operator's.
+
+**Alternatives.**
+
+- *A separate log directory and key per agent now.* Rejected: step 8's work, gated on step 6's number.
+- *Agent bridges waiting for Danny even inside the agent's own space.* Rejected: it contradicts INV-FAB-006 and directive 4, and it would make the operator the sovereign of a space that is not his.
+
+**Reopens when.** Step 8.
+
+## D-019 · The markdown bridge is the author's side of `bridge`, and it already exists
+
+**Decision.** The read-time derivation in `packages/fabric/src/node/sources.ts` — wiki links in a blessed source become `references` edges with `origin: 'declared'`, kept only where both ends are present — *is* the markdown bridge of v3 §10 and v4 §10 in its smallest form, and it is the author's side of the same relation the `bridge` verb is the session's side of: the operator asserts a relation by writing a link in his own space, blessed by being his; a session asserts one by asking, with evidence. `bridgeSchema.predicate` is the slice's closed `PREDICATES` so the two produce the same edge. Held for their triggers, not built: typed links (`[[predicate::target]]`) and frontmatter relations (NS-10.1), at the first author link that wants a predicate other than `references`; aliases, at Appendix C's first miss; bridge *events* with author provenance (NS-10.3), at step 3's import, because a read-time derivation is not an event and `import:` provenance is minted once, at the import.
+
+**Because.** Danny's word was conditional — "bring back markdown-bridge if you feel it'll be useful" — and the honest answer is that it is useful and it is there; what would be new is events and types, and each has a trigger nobody has pulled.
+
+**Alternatives.**
+
+- *Emit a `bridge.proposed` event per wiki link at read time.* Rejected: it copies the file into the log without the author provenance the file already carries in git, and it would do so on every read.
+
+**Reopens when.** NS-10.1's trigger, or step 3.

@@ -1,5 +1,6 @@
 import type {
-  BridgeProposal,
+  Bridge,
+  Crossing,
   Evaluation,
   FabricEvent,
   FabricEventKind,
@@ -36,7 +37,8 @@ export interface FabricState {
   readonly refusals: readonly Refusal[];
   readonly sources: ReadonlyMap<string, Source>;
   readonly reflections: ReadonlyMap<string, Reflection>;
-  readonly bridges: ReadonlyMap<string, BridgeProposal>;
+  readonly crossings: ReadonlyMap<string, Crossing>;
+  readonly bridges: ReadonlyMap<string, Bridge>;
   readonly references: readonly WeakReference[];
   readonly patches: ReadonlyMap<string, PatchRecord>;
   readonly outcomes: readonly OutcomeRecord[];
@@ -53,6 +55,7 @@ export const emptyState: FabricState = {
   refusals: [],
   sources: new Map(),
   reflections: new Map(),
+  crossings: new Map(),
   bridges: new Map(),
   references: [],
   patches: new Map(),
@@ -74,7 +77,7 @@ const withEntry = <V>(map: ReadonlyMap<string, V>, key: string, value: V): Reado
  *  proposed it. Unknown ids are reported by the invariants, never
  *  invented by the fold. */
 const amendVerb =
-  (change: (verb: Verb) => Verb): Handler<'verb.blessed' | 'verb.retired'> =>
+  (change: (verb: Verb) => Verb): Handler<'verb.blessed' | 'verb.retired' | 'verb.withdrawn'> =>
   (state, event) => {
     const verb = state.verbs.get(event.payload.verb);
     return verb ? { ...state, verbs: withEntry(state.verbs, verb.id, change(verb)) } : state;
@@ -92,6 +95,10 @@ const handlers: { readonly [K in FabricEventKind]: Handler<K> } = {
   'verb.blessed': (state, event) =>
     amendVerb((verb) => ({ ...verb, blessedAt: event.payload.at }))(state, event),
   'verb.retired': (state, event) =>
+    amendVerb((verb) => ({ ...verb, retiredAt: event.payload.at }))(state, event),
+  // A withdrawal is the proposer taking back what was never granted; it
+  // reads as retired, so the manifest and `init` both leave it alone.
+  'verb.withdrawn': (state, event) =>
     amendVerb((verb) => ({ ...verb, retiredAt: event.payload.at }))(state, event),
   'verb.called': (state, { payload }) => ({ ...state, receipts: [...state.receipts, payload] }),
   'verb.refused': (state, { payload }) => ({ ...state, refusals: [...state.refusals, payload] }),
@@ -112,13 +119,32 @@ const handlers: { readonly [K in FabricEventKind]: Handler<K> } = {
     ...state,
     reflections: withEntry(state.reflections, payload.id, payload),
   }),
+  'crossing.proposed': (state, { payload }) => ({
+    ...state,
+    crossings: withEntry(state.crossings, payload.id, payload),
+  }),
+  // The first answer wins: a crossing is closed once (INV-FAB-003).
+  'crossing.resolved': (state, { payload }) => {
+    const crossing = state.crossings.get(payload.crossing);
+    return crossing?.decision === null
+      ? {
+          ...state,
+          crossings: withEntry(state.crossings, crossing.id, {
+            ...crossing,
+            decision: payload.decision,
+            decidedAt: payload.at,
+            decidedBy: payload.by,
+          }),
+        }
+      : state;
+  },
   'bridge.proposed': (state, { payload }) => ({
     ...state,
     bridges: withEntry(state.bridges, payload.id, payload),
   }),
-  // The first answer wins: a proposal is closed once (INV-FAB-003).
+  // And a bridge is closed once (INV-FAB-012).
   'bridge.resolved': (state, { payload }) => {
-    const bridge = state.bridges.get(payload.proposal);
+    const bridge = state.bridges.get(payload.bridge);
     return bridge?.decision === null
       ? {
           ...state,
@@ -201,19 +227,34 @@ export function patchesPendingIn(state: FabricState, space: string): readonly Pa
   );
 }
 
-/** The proposals still waiting in a space: the gap, counted. */
-export function pendingIn(state: FabricState, space: string): readonly BridgeProposal[] {
-  return [...state.bridges.values()].filter(
-    (bridge) => bridge.to === space && bridge.decision === null,
+/** The crossings still waiting into a space: the gap, counted. */
+export function crossingsPendingIn(state: FabricState, space: string): readonly Crossing[] {
+  return [...state.crossings.values()].filter(
+    (crossing) => crossing.to === space && crossing.decision === null,
   );
 }
 
-/** The space a reflection lives in now: its own until a bridge carried
- *  it across and the sovereign blessed it. */
+/** The bridges still waiting in a space. */
+export function bridgesPendingIn(state: FabricState, space: string): readonly Bridge[] {
+  return [...state.bridges.values()].filter(
+    (bridge) => bridge.space === space && bridge.decision === null,
+  );
+}
+
+/** The bridges blessed in a space: its relations, as the log holds
+ *  them. Each is an edge in the space's slice (INV-FAB-012). */
+export function bridgesIn(state: FabricState, space: string): readonly Bridge[] {
+  return [...state.bridges.values()].filter(
+    (bridge) => bridge.space === space && bridge.decision === 'blessed',
+  );
+}
+
+/** The space a reflection lives in now: its own until a crossing
+ *  carried it over and the sovereign blessed it. */
 export function homeOf(state: FabricState, reflection: Reflection): string {
   return (
-    [...state.bridges.values()].find(
-      (bridge) => bridge.node === reflection.id && bridge.decision === 'blessed',
+    [...state.crossings.values()].find(
+      (crossing) => crossing.node === reflection.id && crossing.decision === 'blessed',
     )?.to ?? reflection.space
   );
 }

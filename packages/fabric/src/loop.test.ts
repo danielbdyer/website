@@ -212,7 +212,7 @@ describe('a patch through the gate', () => {
   it('is proposed against the base read, evaluated, and waits in the operator’s space', async () => {
     const run = runnerWith(canonOver(SKILL));
 
-    const proposed = await answer<Proposed>(handleCall(run, call(), 'propose', proposal));
+    const proposed = await answer<Proposed>(handleCall(run, call(), 'patch', proposal));
     expect(proposed.patch).toMatch(/^patch\//);
     expect(proposed.base).toBe(fingerprint(SKILL));
     expect(proposed.evaluation.passed).toBe(true);
@@ -234,10 +234,10 @@ describe('a patch through the gate', () => {
 
   it('refuses a node the canon does not hold, and one no patch may change', async () => {
     const run = runnerWith(canonOver(SKILL));
-    const missing = await handleCall(run, call(), 'propose', { ...proposal, node: 'skill/absent' });
+    const missing = await handleCall(run, call(), 'patch', { ...proposal, node: 'skill/absent' });
     expect(missing.isError).toBe(true);
     expect(missing.content[0]?.text).toMatch(/not in the canon/);
-    const outside = await handleCall(run, call(), 'propose', {
+    const outside = await handleCall(run, call(), 'patch', {
       ...proposal,
       node: 'reflection/abc',
     });
@@ -250,7 +250,7 @@ describe('a patch through the gate', () => {
 
   it('is applied by the operator to the base it named, once, and never by a session (INV-FAB-008)', async () => {
     const run = runnerWith(canonOver(SKILL));
-    const { patch } = await answer<Proposed>(handleCall(run, call(), 'propose', proposal));
+    const { patch } = await answer<Proposed>(handleCall(run, call(), 'patch', proposal));
 
     const decided = await run(decidePatch(patch, 'blessed', OPERATOR_SPACE, LATER));
     expect(decided.applied).toBe(true);
@@ -285,9 +285,9 @@ describe('a patch through the gate', () => {
 
   it('stays waiting when the base moved, and is rejected without touching the node', async () => {
     const run = runnerWith(canonOver(SKILL));
-    const first = await answer<Proposed>(handleCall(run, call(), 'propose', proposal));
+    const first = await answer<Proposed>(handleCall(run, call(), 'patch', proposal));
     const second = await answer<Proposed>(
-      handleCall(run, call('session/2'), 'propose', {
+      handleCall(run, call('session/2'), 'patch', {
         ...proposal,
         body: SKILL.replace('Write it plainly.', 'Write it, and read it back.'),
       }),
@@ -320,7 +320,7 @@ describe('the loop measured', () => {
 
   it('records an outcome only for an applied patch (INV-FAB-009), and shows the next session what to measure', async () => {
     const run = runnerWith(canonOver(SKILL));
-    const { patch } = await answer<Proposed>(handleCall(run, call(), 'propose', proposal));
+    const { patch } = await answer<Proposed>(handleCall(run, call(), 'patch', proposal));
 
     const early = await handleCall(run, call('session/2', LATER), 'reflect', {
       ...noticed,
@@ -511,7 +511,7 @@ describe('the canon on disk', () => {
       Option.isNone(await run(Canon.pipe(Effect.flatMap((canon) => canon.read('skill/absent'))))),
     ).toBe(true);
 
-    const proposed = await answer<Proposed>(handleCall(run, call(), 'propose', proposal));
+    const proposed = await answer<Proposed>(handleCall(run, call(), 'patch', proposal));
     const byName = Object.fromEntries(
       proposed.evaluation.checks.map((check) => [check.name, check.passed]),
     );
@@ -520,13 +520,13 @@ describe('the canon on disk', () => {
     expect(byName).toHaveProperty('cspell');
 
     const unchanged = await answer<Proposed>(
-      handleCall(run, call('session/2'), 'propose', { ...proposal, body: SKILL }),
+      handleCall(run, call('session/2'), 'patch', { ...proposal, body: SKILL }),
     );
     expect(unchanged.evaluation.checks.find((check) => check.name === 'changes')?.passed).toBe(
       false,
     );
     const headless = await answer<Proposed>(
-      handleCall(run, call('session/3'), 'propose', { ...proposal, body: '# No frontmatter\n' }),
+      handleCall(run, call('session/3'), 'patch', { ...proposal, body: '# No frontmatter\n' }),
     );
     expect(headless.evaluation.checks.find((check) => check.name === 'frontmatter')?.passed).toBe(
       false,

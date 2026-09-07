@@ -98,6 +98,38 @@ words:
   - unrepresentable
   - Yohei
   - Nakajima
+  # Phase 7 — synthetic proof
+  - regenerable
+  - inspectable
+  - decorrelating
+  - fmix
+  - mrrs
+  - quarantined
+  # North Star v4 (NORTH_STAR.md)
+  - metamodel
+  - UCAN
+  - unbless
+  - unblessing
+  - canonicality
+  - CRDT
+  - scriptable
+  - rkey
+  - reranking
+  - rebuildable
+  - keypair
+  - Logseq
+  - GEPA
+  - Orama
+  - Kùzu
+  - ledgering
+  # The lineage originals (NORTH_STAR_v3.md, NORTH_STAR_v3.2.md, THE_LOCK.md) and their backlog
+  - rerank
+  - rerankers
+  - multitenancy
+  - flywheeled
+  - dogfooding
+  - bursty
+  - baselined
   # The engine's vocabulary, carried across the wall (CATHEDRALS.md)
   - midground
   - privated

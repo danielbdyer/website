@@ -8,7 +8,8 @@ import type { Retrieval } from './schema';
 // next action uses it. The fabric measures this before it builds
 // anything meant to raise it. A retrieval is an event with its
 // candidates in rank order; a use is a later event of the same session
-// that names one of them; a candidate counts only when another session
+// that names one of them, in a citation, a patch, or a bridge; a
+// candidate counts only when another session
 // made it, so a session citing its own fresh reflection is not
 // compounding. Everything here is a pure fold over the log.
 
@@ -65,7 +66,7 @@ interface Use {
 }
 
 /** Every time a session named a node in something it made: a citation
- *  in a reflection, or the node a patch changes. */
+ *  in a reflection, the node a patch changes, or either end of a bridge. */
 const usesIn = (state: FabricState): readonly Use[] => [
   ...[...state.reflections.values()].flatMap((reflection) =>
     reflection.cites.map((citation) => ({
@@ -79,6 +80,13 @@ const usesIn = (state: FabricState): readonly Use[] => [
     at: patch.proposedAt,
     node: patch.node,
   })),
+  ...[...state.bridges.values()].flatMap((bridge) =>
+    [bridge.subject, bridge.object].map((node) => ({
+      session: bridge.proposedBy,
+      at: bridge.proposedAt,
+      node,
+    })),
+  ),
 ];
 
 /** The session that made a node, when a session did: a reflection's.
@@ -172,6 +180,7 @@ export function compounding(
     result.firstUsedRank === undefined ? [] : [result.firstUsedRank],
   );
   const decided = [
+    ...[...state.crossings.values()].map((crossing) => crossing.decision),
     ...[...state.bridges.values()].map((bridge) => bridge.decision),
     ...[...state.patches.values()].map((patch) => patch.decision),
   ].filter((decision) => decision !== null);

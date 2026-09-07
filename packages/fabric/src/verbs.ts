@@ -1,9 +1,16 @@
 import { Context, Data, Effect, Option } from 'effect';
 import { z } from 'zod';
-import type { Slice } from '@dbd/slice';
+import { PREDICATES, type Slice } from '@dbd/slice';
 import { canonical, same } from './canonical';
 import { cut } from './graph';
-import { patchesPendingIn, pendingIn, project, sourcesOf, type FabricState } from './log';
+import {
+  bridgesPendingIn,
+  crossingsPendingIn,
+  patchesPendingIn,
+  project,
+  sourcesOf,
+  type FabricState,
+} from './log';
 import { manifestFor } from './manifest';
 import {
   Consent,
@@ -26,6 +33,7 @@ import {
   citationSchema,
   evaluationSchema,
   outcomeReportSchema,
+  type Bridge,
   type Candidate,
   type ChangeTarget,
   type Decision,
@@ -401,7 +409,7 @@ const reflectInput = z.object({
     .array(changeRequestSchema)
     .default([])
     .describe(
-      'What a prompt, skill, verb, or policy should do differently, and why. A wish; `propose` is the patch.',
+      'What a prompt, skill, verb, or policy should do differently, and why. A wish; `patch` is the change.',
     ),
   outcomes: z
     .array(outcomeReportSchema)
@@ -417,7 +425,7 @@ const reflectInput = z.object({
 
 const reflectOutput = z.object({
   reflection: z.string(),
-  bridge: z.string(),
+  crossing: z.string(),
   outcomes: z.number(),
 });
 
@@ -445,7 +453,7 @@ const outcomesOf = (
 
 export const reflect = define(
   'reflect',
-  'Record what this session noticed, in the shape the next session can retrieve. Lands in your own space at once; a proposal to carry it into the operator’s memory waits for blessing. Outcomes you report on applied patches are the loop’s own measure.',
+  'Record what this session noticed, in the shape the next session can retrieve. Lands in your own space at once; a crossing to carry it into the operator’s memory waits for his blessing. Outcomes you report on applied patches are the loop’s own measure.',
   'propose',
   reflectInput,
   reflectOutput,
@@ -477,9 +485,9 @@ export const reflect = define(
           payload: { ...report, session: call.session, at: call.at },
         }),
       )(input.outcomes);
-      const bridge = yield* consent.propose(
+      const crossing = yield* consent.propose(
         {
-          id: `bridge/${call.fingerprint({ id, to: OPERATOR_SPACE }).slice(0, 16)}`,
+          id: `crossing/${call.fingerprint({ id, to: OPERATOR_SPACE }).slice(0, 16)}`,
           from: call.space,
           to: OPERATOR_SPACE,
           node: id,
@@ -490,13 +498,13 @@ export const reflect = define(
       );
       // The index is recomputable from the log: a derive, not a write.
       yield* Resonance.pipe(Effect.flatMap((resonance) => resonance.refresh('reflections')));
-      return { reflection: id, bridge: bridge.id, outcomes: input.outcomes.length };
+      return { reflection: id, crossing: crossing.id, outcomes: input.outcomes.length };
     }),
 );
 
-// ─── propose ──────────────────────────────────────────────────────
+// ─── patch ────────────────────────────────────────────────────────
 
-const proposeInput = z.object({
+const patchInput = z.object({
   node: z
     .string()
     .min(1)
@@ -511,18 +519,18 @@ const proposeInput = z.object({
     ),
 });
 
-const proposeOutput = z.object({
+const patchOutput = z.object({
   patch: z.string(),
   base: z.string(),
   evaluation: evaluationSchema,
 });
 
-export const propose = define(
-  'propose',
+export const patch = define(
+  'patch',
   'Propose a change to one of the operator’s nodes: its whole new text, against the base you read, with why and what should be observable if it worked. The fabric evaluates what it can and the patch waits in his space; only his terminal applies it, and only to the base you named.',
   'propose',
-  proposeInput,
-  proposeOutput,
+  patchInput,
+  patchOutput,
   (input) => input.because,
   (input, call) =>
     Effect.gen(function* () {
@@ -552,7 +560,7 @@ export const propose = define(
           }),
         ),
       );
-      const patch: Patch = {
+      const proposed: Patch = {
         id: `patch/${call.fingerprint({ node: input.node, body: input.body, base: base.fingerprint, session: call.session, at: call.at }).slice(0, 16)}`,
         space: OPERATOR_SPACE,
         node: input.node,
@@ -572,18 +580,123 @@ export const propose = define(
         space: OPERATOR_SPACE,
         actor: agentActor(call.session),
         because: input.because,
-        payload: patch,
+        payload: proposed,
       });
-      const evaluation = yield* canon.evaluate(patch);
+      const evaluation = yield* canon.evaluate(proposed);
       yield* log.append({
         kind: 'patch.evaluated',
         at: evaluation.at,
         space: OPERATOR_SPACE,
         actor: RUNTIME_ACTOR,
-        causedBy: patch.id,
+        causedBy: proposed.id,
         payload: evaluation,
       });
-      return { patch: patch.id, base: base.fingerprint, evaluation };
+      return { patch: proposed.id, base: base.fingerprint, evaluation };
+    }),
+);
+
+// ─── bridge ───────────────────────────────────────────────────────
+//
+// A bridge is a relation with evidence: this node, that node, one of
+// the engine's predicates, and the span or observation that shows it.
+// It lands in the space it names. A session's own space answers at
+// once, because the session is that space's sovereign and a tenant
+// sees its own space whole (INV-FAB-006); the operator's waits for his
+// terminal. Blessed, the bridge is an edge in that space's slice, and
+// the operator's own wiki links are the same edge reached by writing.
+
+const bridgeInput = z.object({
+  subject: z
+    .string()
+    .min(1)
+    .describe('The node the relation starts from, by id as a slice names it.'),
+  predicate: z
+    .enum(PREDICATES)
+    .describe(
+      'The relation, from the engine’s closed set: references, is_a, expands_on, responds_to, contradicts, part_of, inspired_by, succeeds.',
+    ),
+  object: z.string().min(1).describe('The node the relation reaches, by id.'),
+  evidence: z
+    .string()
+    .min(1)
+    .describe(
+      'What shows the relation: the span you read, or the observation, quoted so the sovereign can check it.',
+    ),
+  space: z
+    .string()
+    .min(1)
+    .default(OPERATOR_SPACE)
+    .describe(
+      'Where the relation lands. Your own space answers at once; the operator’s waits for his blessing.',
+    ),
+  because,
+});
+
+const bridgeOutput = z.object({
+  bridge: z.string(),
+  space: z.string(),
+  decision: z.enum(['blessed']).nullable(),
+});
+
+/** A bridge whose ends are the same node relates nothing. */
+export interface NotARelation {
+  readonly _tag: 'NotARelation';
+  readonly message: string;
+}
+export const NotARelation = Data.tagged<NotARelation>('NotARelation');
+
+export const bridge = define(
+  'bridge',
+  'Relate two nodes with evidence: subject, predicate from the engine’s set, object, and the span that shows it. In your own space it is an edge at once; in the operator’s it waits for his blessing, and blessed it is an edge in his slice.',
+  'propose',
+  bridgeInput,
+  bridgeOutput,
+  (input) => input.because,
+  (input, call) =>
+    Effect.gen(function* () {
+      const log = yield* EventLog;
+      if (input.subject === input.object) {
+        return yield* Effect.fail(
+          NotARelation({
+            message: `INV-FAB-012: a bridge relates two nodes; ${input.subject} to itself is not a relation`,
+          }),
+        );
+      }
+      const own = input.space === call.space;
+      const proposed: Bridge = {
+        id: `bridge/${call.fingerprint({ subject: input.subject, predicate: input.predicate, object: input.object, space: input.space, session: call.session, at: call.at }).slice(0, 16)}`,
+        space: input.space,
+        subject: input.subject,
+        predicate: input.predicate,
+        object: input.object,
+        evidence: input.evidence,
+        proposedAt: call.at,
+        proposedBy: call.session,
+        decision: null,
+      };
+      yield* log.append({
+        kind: 'bridge.proposed',
+        at: call.at,
+        space: input.space,
+        actor: agentActor(call.session),
+        because: input.because,
+        payload: proposed,
+      });
+      if (own) {
+        yield* log.append({
+          kind: 'bridge.resolved',
+          at: call.at,
+          space: input.space,
+          actor: authorActor(call.space),
+          causedBy: proposed.id,
+          payload: { bridge: proposed.id, decision: 'blessed', by: call.space, at: call.at },
+        });
+      }
+      return {
+        bridge: proposed.id,
+        space: input.space,
+        decision: own ? ('blessed' as const) : null,
+      };
     }),
 );
 
@@ -663,13 +776,14 @@ const pendingInput = z.object({
 const pendingOutput = z.object({
   space: z.string(),
   unresolved: z.number(),
-  proposals: z.array(z.unknown()),
+  crossings: z.array(z.unknown()),
+  bridges: z.array(z.unknown()),
   patches: z.array(z.unknown()),
 });
 
 export const pending = define(
   'pending',
-  'What is still waiting in a space: the proposals to carry a node across, and the patches to change one, each with what the fabric could check. Offered and not yet answered.',
+  'What is still waiting in a space: the crossings to carry a node in, the bridges to relate two, and the patches to change one, each with what the fabric could check. Offered and not yet answered.',
   'observe',
   pendingInput,
   pendingOutput,
@@ -677,12 +791,14 @@ export const pending = define(
   (input) =>
     state().pipe(
       Effect.map((current) => {
-        const proposals = pendingIn(current, input.space);
+        const crossings = crossingsPendingIn(current, input.space);
+        const bridges = bridgesPendingIn(current, input.space);
         const patches = patchesPendingIn(current, input.space);
         return {
           space: input.space,
-          unresolved: proposals.length + patches.length,
-          proposals,
+          unresolved: crossings.length + bridges.length + patches.length,
+          crossings,
+          bridges,
           patches,
         };
       }),
@@ -779,12 +895,44 @@ export const unmeasuredIn = (current: FabricState, space: string): readonly Patc
   );
 };
 
+// ─── The sovereign's answer to a bridge ───────────────────────────
+//
+// Not a verb either. A bridge waits in the space it names until that
+// space's sovereign answers; the answer is an event, and the first one
+// wins (INV-FAB-012).
+
+export const decideBridge = (
+  id: string,
+  decision: Decision,
+  by: string,
+  at: string,
+): Effect.Effect<Bridge, NotWaiting | LogRejected, EventLogService> =>
+  Effect.gen(function* () {
+    const log = yield* EventLog;
+    const current = yield* state();
+    const waiting = current.bridges.get(id);
+    if (waiting?.decision !== null) {
+      return yield* Effect.fail(
+        NotWaiting({ patch: id, message: `${id} is not waiting; nothing to decide` }),
+      );
+    }
+    yield* log.append({
+      kind: 'bridge.resolved',
+      at,
+      space: waiting.space,
+      actor: authorActor(by),
+      causedBy: waiting.id,
+      payload: { bridge: waiting.id, decision, by, at },
+    });
+    return { ...waiting, decision, decidedAt: at, decidedBy: by };
+  });
+
 // ─── The registry ─────────────────────────────────────────────────
 
 /** Every verb the code knows how to run, by name. The manifest decides
  *  which of these a session may see; this decides what a call does. */
 export const REGISTRY: ReadonlyMap<string, VerbDefinition<never>> = new Map(
-  [slice, reflect, propose, recall, pending, sync].map((definition) => [
+  [slice, reflect, patch, bridge, recall, pending, sync].map((definition) => [
     definition.verb.name,
     definition as unknown as VerbDefinition<never>,
   ]),

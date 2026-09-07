@@ -41,6 +41,8 @@
     "dist",
     ".claude/**",
     "test-results/**",
-    "playwright-report/**"
+    "playwright-report/**",
+    // qmd's regenerable reflection export (gitignored, rebuilt from the log)
+    "fabric/.memory/**"
   ]
 }

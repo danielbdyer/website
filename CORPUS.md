@@ -189,3 +189,143 @@ The deep cut was the instrument, and it was taken in preference to capture, alia
 - **What loop moved.** The measurement loop opened: retrieval → citation → R(t), folded and printed. The self-improvement loop (Phase 5) is unchanged and still waits on the first patch.
 - **What measurement changed.** None moved; one was added. The log is twenty-one events, six verbs proposed and none blessed, R(t) undefined until the first retrieval.
 - **What to challenge next time, and why.** The three items under §10; and the actor grammar's `agent:<session>` where a session id is a UUID from the hook, which is provenance without a name — a session record should say which model ran it, which is one more field on the receipt.
+
+## Part three · Synthetic proof of the loop
+
+*Added 2026-09-06, second session. The charter of this part is `CORPUS.md` above and the prompt "prove the loop synthetically," held as corpus. The prior session built the instrument and reported the truth: R(t) = 0 of 0 retrievals. The loop is architecturally complete and has never closed. This part closes it synthetically — proving the plumbing, that the metric discriminates, and how it scales — and hands over the smallest de-risked act that moves the real number off zero. The code is `packages/fabric/src/sim/`; the record is `DECISIONS.md` D-007 to D-011; the committed baseline is `fabric/sim/baseline.json`.*
+
+### §0 · What synthetic proof establishes, and what it does not
+
+This governs whether any number below means anything, so it comes first.
+
+A generator that emits citations produces R(t) > 0 by construction. That proves the plumbing and nothing else. Synthetic data establishes three things, in ascending worth: **plumbing** — the loop closes end to end through the real code, event to file to fold to retrieval to citation to R_sim; **discrimination** — the metric responds monotonically to retrieval quality, which is the real prize, because a metric that cannot tell good retrieval from bad would green-light regressions; and **scaling** — latency and correctness characterized with numbers.
+
+Synthetic data cannot establish that real retrieval will be useful to Danny — that is real R(t), and only real sessions produce it — and it cannot validate that a citation means genuine use. The synthetic citer cites its planted target by construction, so it can never test the inference the prior session flagged: that "citation implies use" is honest. A green synthetic R(t) does not settle that question, and this part does not pretend it does.
+
+Two numbers are kept strictly apart below. **R_sim** is the synthetic measure, computed by the real `compounding()` fold over quarantined events. **R(t)** is the real measure `describe`, the README, and `orient` print, and it stays 0 of 0 until a real blessing and a real citation. The firewall is what keeps them apart.
+
+### §1 · The firewall
+
+A synthetic event is unrepresentable as a real one, held two ways (D-007, D-008, D-009).
+
+**Provenance at the actor.** Every synthetic event carries actor `import:synthetic` — the import kind the grammar already has, no extension. A real session's activity is `agent:<session>`; the two never collide. The stamp is minted at the log seam, the one write in the fabric, over the real verb programs upstream of it, so every metric-bearing field is the real code's and only the label is the harness's.
+
+**Physical separation.** A synthetic run writes to a temporary directory and a `sim:<run-id>` tenant, never `fabric/spaces/` and never `danny` or `agent`. No synthetic event log is committed; only the regenerable metrics are. The real fold reads `fabric/spaces/` alone, so it cannot see a synthetic event even in principle. `packages/fabric/src/sim/quarantine.test.ts` checks both halves, and that the committed real log folds to a synthetic-free R(t) of 0 of 0.
+
+### §2 · The simulator
+
+Every synthetic session runs through the real shell: `handleCall` parses the input, runs the real `slice` and `reflect` programs, and writes a receipt, exactly as a live session does. The ground truth is planted, not read off the output: seeding sessions record reflections, and each querying session has, by construction, one correct target among them — the node a faithful retriever should surface near rank one — or none, the honest miss. The corpus is not uniform noise: a few seeding reflections are hubs the queries return to eight times as often, a heavy tail of degree; a fixed fraction of queries (0.15) have no answer in the corpus. The generator is a pure seeded hash, so a run is a function of its parameters; the one thing it cannot know in advance is the fingerprint a reflection will get when the real `reflect` writes it, so the harness threads those ids back in. The generative model and its defensibility are in `packages/fabric/src/sim/model.ts`.
+
+Retrieval quality is a dial. The synthetic retriever scores a node for a query as `θ · signal + (1 − θ) · noise`, where the signal is one for the planted target and zero otherwise and the noise is seeded; the real `cut` ranks by that score and the real `candidatesOf` builds the candidate list. The metric never sees θ. It sees only the ranks the real code produced.
+
+### §3 · The metric has teeth
+
+This is the deliverable that matters most, and the result is a clean yes. Sweeping θ from pure noise to real signal, over a forty-reflection corpus averaged across five seeds (`fabric/sim/baseline.json`):
+
+| θ | hit@3 | MRR | rate | targets unsurfaced |
+|---|---|---|---|---|
+| 0.0 | 0.057 | 0.064 | 0.265 | 46.8 |
+| 0.1 | 0.165 | 0.159 | 0.393 | 36.6 |
+| 0.2 | 0.300 | 0.306 | 0.463 | 31.0 |
+| 0.3 | 0.400 | 0.408 | 0.608 | 19.4 |
+| 0.4 | 0.655 | 0.646 | 0.810 | 3.2 |
+| 0.5 | 0.850 | 0.850 | 0.850 | 0.0 |
+| 1.0 | 0.850 | 0.850 | 0.850 | 0.0 |
+
+hit@3 and MRR climb monotonically with planted quality, a fifteen-fold separation between noise and signal, and the count of planted targets nothing surfaced falls to zero. Past θ ≈ 0.5 the curve saturates: retrieval that is at least half signal reliably surfaces the target at rank one in a corpus this size, so the ceiling is the corpus's own coverage, one minus the miss fraction. The metric discriminates. A retrieval change that degrades quality will show as a lower hit@3 and MRR, which is exactly what the charter's §5 regression gate needs, and the deterministic curve in `fabric/sim/baseline.json` is its anchor (D-010). The fast, asserted form runs in CI as `discrimination.test.ts`; the full curve regenerates with `pnpm fabric sim-baseline`.
+
+One honest note on the aggregate. A miss query cites nothing, so it lowers the rate and hit@k as a fixed offset across every θ; at a fixed miss fraction the sweep isolates surfacing quality, which is what makes the climb legible, but the aggregate metric blends retrieval quality with corpus coverage, and a reader of the real number should hold both.
+
+### §3b · orient's k has no interior knee
+
+`orient` surfaces the k newest reflections at session start, with no query — recency, not resonance. Sweeping its k over the same corpus, precision stays poor at every k (never above 0.03) while recall rises only as k approaches the whole corpus; full recall arrives at k = the corpus size, by surfacing everything. There is no interior k where added recall pays for the precision it costs. The finding: proactive recency surfacing cannot substitute for query-time resonance, because the targets a session needs are often older hub reflections that recency pushes down. Keep `orient`'s k small — its current eight is already past any precision benefit — and treat `slice` and its resonance as the retrieval lever, not `orient`'s breadth. This rests on one modeling choice worth naming: hubs in the corpus are among the earlier reflections, which is defensible (foundational insights tend to be older and returned to) but does bias recency's recall down; the conclusion is scoped to a corpus where the most-referenced nodes are not the newest.
+
+### §4 · The fold's breach, and the decision (D-011)
+
+The fold plus `compounding` is cleanly quadratic. Measured 2026-09-06 in this container, p95 over repeated folds on a realistic session mix: 12.8 ms at 1,024 events, 56.9 ms at 2,048, 220.8 ms at 4,096, 848.3 ms at 8,192 — a constant of about 12.6 × 10⁻⁶ ms per event². The charter's 100 ms p95 breaches near 2,800 events on that mix. The cost is mix-dependent: a reflection-heavy log, the worst case, breaches near 1,150, because `withEntry` copies the reflections map every event. The prior session's D-006 estimate of "near a thousand" was that worst case; the realistic breach is roughly 2,800.
+
+The decision is **hold, with a sharper trigger**. At Danny's cadence — about ten to fifteen events a session — even the worst-case breach is a hundred sessions away, well over a year. Fixing it now is core surgery for a payoff a year out, against the charter's preference for the discrimination proof over breadth. The trigger is 800 total `fabric/spaces` events; the recommended fix is persistent structurally-shared maps in `log.ts`, which removes the O(n)-per-append copy while keeping the pure-fold shape and INV-FAB-005, with the identity test as its guard. The full reasoning and the rejected alternatives are in D-011.
+
+A scoped deviation from the charter's §4: it asks for characterization to 10⁵ events. That is not run. At the measured constant a single 10⁵-event fold is about 126 seconds, the interesting breach is at one to three thousand events, two orders of magnitude below, and the quadratic is already pinned by the 128-to-8,192 grid; extrapolation to 10⁵ is arithmetic, and burning hours to confirm it would be measurement for its own sake.
+
+### §5 · The handoff — moving the real number off zero
+
+Everything above de-risks one small act. The minimal sequence that moves real R(t) to its first nonzero value:
+
+1. `pnpm fabric bless reflect`, in Danny's terminal, once.
+2. One real reflection this session, through the blessed `reflect`, citing what it read.
+3. One real citation of it, next session.
+
+State plainly what that will and will not show. It closes the real loop once — R(t) becomes 1 — and proves the plumbing on real provenance, real `agent:<session>` actors, a real citation. It does not yet prove real usefulness, which only accumulates across real sessions, and it does not settle whether citation means genuine use — the question §0 keeps open. That honesty is the point of the whole exercise: the synthetic work exists so the first real blessing is a small, well-understood act and not a leap.
+
+### §6 · Definition of done, for this change
+
+1. **Does this output become an input? Yes.** The retrieval and citation events a synthetic session writes are folded by the real `compounding()` into R_sim; the discrimination curve is written to `fabric/sim/baseline.json`, which a future retrieval change reads and must not lower.
+2. **Is the because recorded where the next session retrieves it? Yes.** The decisions are `DECISIONS.md` D-007 to D-011; this part is `CORPUS.md`, which `orient` surfaces; the session record closes it. The fabric's own `reflect` is still unblessed, so this session's record is here, not an event — the same "no" the first session recorded, and the §5 handoff is its fix.
+3. **Retrievable outside its creation context, and by what names? Yes:** `CORPUS.md` Part three, `DECISIONS.md` D-007 to D-011, `fabric/sim/README.md`, `FABRIC.md` §"Phase 7", and the tests named there.
+4. **Did R(t) move, or did this add the measurement? Neither — it proved the measurement.** R(t) stays 0 of 0, by the firewall's design. R_sim ran the loop closed and showed the metric climbs from hit@3 0.057 at noise to 0.850 at signal. The numbers above are R_sim; the real R(t) is untouched.
+5. **Does it round-trip with the identity test green? Yes.** `quarantine.test.ts` drives a synthetic run through the real file adapter and asserts a fresh reader of the same directory folds to the identical projection (INV-FAB-005), and that the run breaks no invariant.
+
+### Session record, 2026-09-06 · synthetic proof
+
+- **What loop moved.** The synthetic loop, and only it. A generated corpus with planted ground truth ran through the real `slice` and `reflect` verbs, closed retrieval to citation to R_sim, and the metric was swept against retrieval quality. The real loop is untouched by design: R(t) is still 0 of 0.
+- **What R_sim reads, and at what planted quality.** At real signal (θ ≥ 0.5), R_sim is hit@3 0.850, MRR 0.850, no planted target unsurfaced; at pure noise (θ = 0), hit@3 0.057, MRR 0.064, 46.8 of 80 targets unsurfaced. The climb between them is the proof the metric discriminates.
+- **The fold's breach.** 100 ms p95 near 2,800 events on a realistic mix, near 1,150 on a reflection-heavy one; held with a trigger at 800 events (D-011).
+- **What to challenge next time, and why.** Whether the θ-as-a-scalar model of retrieval quality is faithful enough to a real embedding space to trust the saturation point, or whether the baseline should be regenerated against a real qmd index once one exists; and whether the honest-miss fraction blended into the aggregate should be reported apart from surfacing quality, so a reader of the real number is not told a coverage gap is a retrieval failure.
+
+## Part four · The North Star v4, reconciled
+
+*Added 2026-09-07. `NORTH_STAR.md` arrived from Danny late on 2026-09-06 as v4 — "the corpus that compounds, locked to agentic coding memory" — and is persisted verbatim, never edited, at the repository root. It supersedes a v3 and a v3.2 addendum (§28) that were not in any of the six repositories when it arrived; Danny supplied both, with THE LOCK, the same day, and they are filed beside v4 (D-015), so Appendix E's ledger ("nothing cut was lost") is checkable against its originals. The charter's §27 asks for disagreement with a reason and a proposed amendment; §D below is that. The record is `DECISIONS.md` D-012 to D-014.*
+
+### §A · Where the house stands against §23, the build order
+
+| Step | Work | Status on 2026-09-07 |
+|---|---|---|
+| 1 | `bless reflect`; one reflection; one citation next session | **Two of three.** Blessed 2026-09-06 (`verb.blessed`, `by: danny`, issued on his behalf from mobile; the decision his, the record his). One reflection, `reflection/0ecfbab77d92bd63`, written by this session through the real verb. The citation waits, and cannot come from this session: `compounding()` counts a use only when another session made the node, so a session continuing past midnight is still the session that wrote it. R(t) = 1 needs a genuinely new session id. |
+| 2 | Hooks: `PostToolUse` file-read harvest; stop-hook correction capture; model on receipt | **Not built.** The next deep cut; see §D.4 for what it does to the number. |
+| 3 | `import:git`, doc import, `fabric init`, the daemon and thin client | **Not built.** |
+| 4 | Synthetic harness: firewall, discrimination proof, scaling numbers, committed baseline | **Done, before steps 2 and 3.** Part three; `packages/fabric/src/sim/`; `fabric/sim/baseline.json`. The gate's own terms hold: the metric has teeth (hit@3 0.057 → 0.850 across planted quality) and the fold's breach point is known (1,150–2,800 events by mix; D-011). INV-NS-003 is `quarantine.test.ts`. |
+| 5 | SQLite projection; FTS5 + sqlite-vec + graphology; RRF; regression gate armed | **Not built, and not forced.** Appendix C's trigger — "fold breach point within a year of real cadence → SQLite projection now" — is not met: D-011 places the breach at 100 to 250 sessions, over a year at Danny's cadence. SQLite comes in order. The regression gate is armed today against `R_sim`'s baseline, not yet against real data (§16's fifty-retrieval trigger). |
+| 6 | `evaluation.recorded`; `fabric bless` review mode; correction-repeat rate | **Not built.** `evaluation.recorded` was proposed by the first session (Part two, §5) and is now scheduled here. |
+| 7 | Generated docs + drift check; CLI snapshot and contract tests | **In part.** `describe --check` drift-checks `manifest.json`, `events.schema.json`, and `fabric/README.md` on every commit; `DOMAIN_MODEL.md` and `CONTENT_SCHEMA.md` are not generated. No CLI snapshot or contract tests. |
+| 8–11 | Second tenant and DIDs; a dev lead's repo; R(t) on the site; Ax | **Not started.** Step 8 is gated on step 6's correction-repeat number by §23's own rule. |
+
+### §B · Which of Appendix B's invariants already hold, and where
+
+- **Held today, by test:** INV-FAB-001, -006, -010, -011 (`fabric.test.ts`, `compounding.test.ts`); INV-NS-001 and INV-NS-002 (fold determinism and portable-format identity, `compounding.test.ts` over generated logs; `quarantine.test.ts` through the real file adapter); INV-NS-003 (`quarantine.test.ts`, both halves of the firewall and the committed real log's clean R(t)); INV-NS-005 (blessed-versus-proposed, `compounding.test.ts`).
+- **Held in part:** INV-NS-004 — the three generated fabric artifacts are drift-checked; the prose documents §12 names are not yet generated.
+- **Not yet built:** INV-NS-006 through -009 (signing, per-tenant canonicality, narrowing grants, per-session append files), INV-NS-011 (every action a receipt — true for verbs, not yet for hooks), INV-NS-012 and -013 (the CLI's generated contracts and informative refusals; today's CLI has hand-written help and no `--json` contract).
+
+### §C · Vocabulary, where v4 and the code meet
+
+- **The actor grammar gains `@did`.** v4 writes `author:<space>@did` and `agent:<session>@did`. The schema's regex is `\S+` after the prefix, so `author:danny@did:key:…` already parses; no schema change is needed until step 8 makes the suffix meaningful.
+- **`note` returns.** D-005 held capture with the trigger "Danny says he wants to capture through the fabric." v4 §7 is that word: `note` is a lock verb. D-005 reopens by its own rule; the verb is step 3's, because its latency budget (16 ms) needs the daemon.
+- **Three held items are now scheduled.** `retrieval.used` / `retrieval.missed` (the use signal beyond citation) at step 2; `evaluation.recorded` at step 6; `alias.proposed` at Appendix C's first-miss trigger. Their entries in `FABRIC.md` §"Held" now point at the step (D-014).
+- **`bridge` carries two meanings — settled.** In the fabric a bridge carried a node across a wall (INV-FAB-003); in v4 §2 a bridge is "a proposed relation between nodes, with evidence." One word, two concerns, and directive 12 forbids a third name. Danny's word came 2026-09-07 — "I prefer relation-with-evidence, patch, agent as tenant, and bring back markdown-bridge if you feel it'll be useful" — and the four are D-016 (bridge is the relation; the carry-across is a crossing), D-017 (`patch`, and `verb.withdrawn`), D-018 (the agent's own space answers at once), and D-019 (the markdown bridge is `sources.ts` as it stands). The `bridge` and `patch` verbs are proposed and wait for his blessing; `FABRIC.md` Phase 8 is the record.
+- **The receipt grows.** v4's receipt carries `model` and `duration`; today's carries neither. "Model on receipt" is step 2, and it answers the first session's own challenge (Part two, session record).
+
+### §D · Amendments proposed, with their because
+
+1. **Persist the originals.** v4's first line says it supersedes `NORTH_STAR.md` v3 and the §28 addendum, and neither was in the house. Appendix E is a careful ledger, and a ledger is checkable only against what it ledgers. *Because:* the charter's own rule is that nothing cut is lost; the house can only verify that with the originals beside the successor. Danny supplied them the same day; they are filed as `NORTH_STAR_v3.md`, `NORTH_STAR_v3.2.md`, and `THE_LOCK.md`, never edited (D-015), and the whole lineage is now one backlog, `NORTH_STAR_BACKLOG.md`, with `INVARIANTS.md`, `VOCABULARY.md`, and `NEXT_STEP.md` beside it.
+2. **§9 supersedes D-011's fix, not its hold.** D-011 recommended persistent structurally-shared maps when the fold's trigger fires. v4 §9 dissolves the fold into a SQLite projection at step 5 instead, which also removes the file re-read per call. The hold stands (the breach is over a year out); the recommended fix changes to v4's. *Because:* two recommended fixes for one problem is the pile the decision log exists to prevent. D-013.
+3. **§19.2's "scaling harness's 10⁴-event corpus" should be constructed, not driven.** The synthetic harness produces corpora two ways: through the real verbs (for discrimination, where every rank must be the real code's) and by direct construction (for scaling, where only the fold's cost is measured). Driving 10⁴ events through `handleCall` at the current fold is hours; constructing them is seconds, and the fold's cost is the same either way. *Proposed wording:* "measured in CI on a directly constructed 10⁴-event log of the realistic mix." *Because:* a budget that is expensive to measure will not be measured.
+4. **Step 2 changes what R(t) counts, and the number should say so.** When the `PostToolUse` hook logs every file the agent opens as a surfaced candidate, the denominator of R(t) grows by every file read, most of which no citation will ever name. The rate and hit@k will fall when the hook lands — not because retrieval got worse, but because the measure got wider. *Proposed:* report R(t) per retrieval verb (`orient`, `recall`, `slice`, and the hook's file-read as its own verb) and re-baseline at the hook's arrival, so a change in coverage is never read as a regression in retrieval. This is the same honesty Part three §3 asked for about the miss fraction. *Because:* the regression gate must not fire on a definitional change.
+5. **Step 1's third clause needs a new session, not a new day.** Not an amendment to the text; a note against a natural mistake. The session that wrote the first node cannot be the session that cites it into R(t), by the instrument's definition (Part three §0). The first citation is the first act of the next session, and `orient` should say so in its first line until it happens.
+6. **The vendor question, reconciled against v4.** This session's earlier suggestions — persistent maps for the fold, Orama or MiniSearch for lexical search, KùzuDB for graph proximity — are superseded by v4's own choices: SQLite with FTS5 and sqlite-vec in one file (§9), graphology hydrated from the edge table (§9), reciprocal rank fusion with documented weights (§8), remark for the bridge (§10), `@effect/cli` for the surface (§12), Ax at its trigger (§16), `did:key` at step 8. Two survive. **RFC 8785 (JSON Canonicalization Scheme)** for `canonical.ts`: today it backs fingerprints; at §28.2 it backs signatures, where canonical bytes are not optional — *proposed* for adoption at or before step 8, with its removal cost one file. **Cambria's schema lenses** as the conceptual reference for §28.3's versioned kinds ("old events fold under the version they were written in"), not a dependency.
+
+### §E · Definition of done, for this change, in v4's seven questions
+
+1. **Does this output become an input? Yes.** `NORTH_STAR.md` is the document v4 says `orient` will surface; until `orient` is rewired (step 2), `SPECIFICATION_MAP.md`, `FABRIC.md` §"The Sequence," and `BACKLOG.md` point at it, and this part is what the next session reads.
+2. **Is the because recorded where the next session retrieves it? Yes.** D-012 to D-014, and a reflection through the now-blessed `reflect`, the corpus's second node.
+3. **Retrievable outside its creation context, and by what names? Yes:** `NORTH_STAR.md`, `CORPUS.md` Part four, `DECISIONS.md` D-012 to D-014, `FABRIC.md` §"Held."
+4. **Did R(t) or a leading indicator move, or did this add the measurement? Neither moved; a leading indicator did.** R(t) is 0 of 0. The corpus went from one node to two. No new `R_sim` was computed.
+5. **Does it round-trip with the identity test green? Yes**, and trivially: no event kind or log format changed; the tests are unchanged and green.
+6. **Does it derive from the schema of record? Not applicable and honestly so:** the deliverable is prose corpus and decisions; no shape was hand-written, no generated artifact hand-edited.
+7. **Does its CLI path hold its budget and contract? Not applicable:** no verb was added or changed.
+
+### Session record, 2026-09-07 · receiving the North Star
+
+- **What loop moved.** None. A plan arrived and was placed: persisted verbatim, mapped onto the house step by step, its collisions named, six amendments proposed with their because.
+- **What measurement changed.** None. R(t) stays 0 of 0; the corpus holds two reflections; the first citation is the next session's first act.
+- **What to challenge next time, and why.** Whether step 2 should land the file-read harvest and the per-verb R(t) together in one change, so the number is never reported under two definitions; and whether the `bridge` collision (§C) should be settled before `fabric bridge` exists, since a verb name is frozen at blessing and a wrong name would then be a new verb forever — it was, the same day, by Danny's word (D-016).
+- **Which model ran.** Fable 5.1 (`claude-fable-5-1`), the same session id as the day before, which is exactly why it cannot cite its own node.

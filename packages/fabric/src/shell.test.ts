@@ -26,6 +26,7 @@ import {
   AGENT_SPACE,
   OPERATOR_SPACE,
   Siblings,
+  decideBridge,
   proposedVerbs,
   refusal,
   type CallContext,
@@ -155,12 +156,12 @@ describe('a session in the fabric', () => {
 
     const recorded = await handleCall(run, call(), 'reflect', noticed);
     expect(recorded.isError).toBeUndefined();
-    const { reflection, bridge } = JSON.parse(recorded.content[0]?.text ?? '{}') as {
+    const { reflection, crossing } = JSON.parse(recorded.content[0]?.text ?? '{}') as {
       reflection: string;
-      bridge: string;
+      crossing: string;
     };
     expect(reflection).toMatch(/^reflection\//);
-    expect(bridge).toMatch(/^bridge\//);
+    expect(crossing).toMatch(/^crossing\//);
 
     const before = await answer<{
       nodes: { id: string; group: string }[];
@@ -176,7 +177,7 @@ describe('a session in the fabric', () => {
 
     await run(
       Consent.pipe(
-        Effect.flatMap((consent) => consent.resolve(bridge, 'blessed', OPERATOR_SPACE, AT)),
+        Effect.flatMap((consent) => consent.resolve(crossing, 'blessed', OPERATOR_SPACE, AT)),
       ),
     );
 
@@ -239,11 +240,11 @@ describe('a session in the fabric', () => {
           },
         },
         {
-          kind: 'bridge.proposed',
+          kind: 'crossing.proposed',
           at: AT,
           space: OPERATOR_SPACE,
           payload: {
-            id: 'bridge/a',
+            id: 'crossing/a',
             from: AGENT_SPACE,
             to: OPERATOR_SPACE,
             node: 'reflection/a',
@@ -267,11 +268,131 @@ describe('a session in the fabric', () => {
     expect(theirs.nodes).toEqual([]);
     expect(theirs.pending).toEqual({
       unresolved: 1,
-      ghosts: [{ id: 'bridge/a', operation: 'create_entity', title: 'a', evidence: 'e' }],
+      ghosts: [{ id: 'crossing/a', operation: 'create_entity', title: 'a', evidence: 'e' }],
     });
     expect(
       sliceFromState(state, AGENT_SPACE, AT, { query: 'B', topK: 1 }).nodes.map((n) => n.id),
     ).toEqual(['reflection/b']);
+  });
+});
+
+describe('a bridge: a relation with evidence', () => {
+  const related = {
+    subject: 'reflection/a',
+    predicate: 'expands_on' as const,
+    object: 'reflection/b',
+    evidence: 'reflection/a’s second observation restates reflection/b’s first with the date added',
+    because: 'relating what this session read',
+  };
+
+  it('is refused until the operator blesses the verb (INV-FAB-001)', async () => {
+    const run = runnerWith(['reflect']);
+    const refused = await handleCall(run, call(), 'bridge', related);
+    expect(refused.isError).toBe(true);
+    expect(refused.content[0]?.text).toMatch(/^INV-FAB-001: bridge is not in the manifest/);
+    const events = await run(EventLog.pipe(Effect.flatMap((log) => log.read())));
+    expect(project(events).refusals.map((refusal) => refusal.verb)).toEqual(['bridge']);
+  });
+
+  it('lands blessed in the session’s own space at once, since a tenant is its own sovereign', async () => {
+    const run = runnerWith(['reflect', 'bridge', 'slice']);
+    const a = await answer<{ reflection: string }>(
+      handleCall(run, call(), 'reflect', { ...noticed, attempted: 'a' }),
+    );
+    const b = await answer<{ reflection: string }>(
+      handleCall(run, call(), 'reflect', { ...noticed, attempted: 'b' }),
+    );
+    const own = await answer<{ bridge: string; space: string; decision: string | null }>(
+      handleCall(run, call(), 'bridge', {
+        ...related,
+        subject: a.reflection,
+        object: b.reflection,
+        space: AGENT_SPACE,
+      }),
+    );
+    expect(own.bridge).toMatch(/^bridge\//);
+    expect(own.space).toBe(AGENT_SPACE);
+    expect(own.decision).toBe('blessed');
+
+    const mine = await answer<{ edges: { subject: string; predicate: string; object: string }[] }>(
+      handleCall(run, call(), 'slice', { because: 'reading my own space' }),
+    );
+    expect(mine.edges).toEqual([
+      { subject: a.reflection, predicate: 'expands_on', object: b.reflection, origin: 'declared' },
+    ]);
+    const events = await run(EventLog.pipe(Effect.flatMap((log) => log.read())));
+    expect(fabricIssues(events)).toEqual([]);
+    expect(events.find((event) => event.kind === 'bridge.resolved')?.actor).toBe(
+      `author:${AGENT_SPACE}`,
+    );
+  });
+
+  it('waits in the operator’s space as a ghost, and blessed is an edge in his slice (INV-FAB-012)', async () => {
+    const run = runnerWith(['reflect', 'bridge', 'slice', 'pending']);
+    const a = await answer<{ reflection: string; crossing: string }>(
+      handleCall(run, call(), 'reflect', { ...noticed, attempted: 'a' }),
+    );
+    const b = await answer<{ reflection: string; crossing: string }>(
+      handleCall(run, call(), 'reflect', { ...noticed, attempted: 'b' }),
+    );
+    const proposed = await answer<{ bridge: string; decision: string | null }>(
+      handleCall(run, call(), 'bridge', {
+        ...related,
+        subject: a.reflection,
+        object: b.reflection,
+      }),
+    );
+    expect(proposed.decision).toBeNull();
+
+    const waiting = await answer<{ unresolved: number; bridges: { id: string }[] }>(
+      handleCall(run, call(), 'pending', { because: 'counting the gap' }),
+    );
+    expect(waiting.unresolved).toBe(3);
+    expect(waiting.bridges.map((bridge) => bridge.id)).toEqual([proposed.bridge]);
+
+    // The operator carries both reflections across, then blesses the bridge.
+    for (const crossing of [a.crossing, b.crossing]) {
+      await run(
+        Consent.pipe(
+          Effect.flatMap((consent) => consent.resolve(crossing, 'blessed', OPERATOR_SPACE, AT)),
+        ),
+      );
+    }
+    const ghosted = await answer<{ edges: unknown[]; pending: { ghosts: { id: string }[] } }>(
+      handleCall(run, call('session/2'), 'slice', {
+        space: OPERATOR_SPACE,
+        because: 'the next session reading the operator’s space',
+      }),
+    );
+    expect(ghosted.edges).toEqual([]);
+    expect(ghosted.pending.ghosts.map((ghost) => ghost.id)).toEqual([proposed.bridge]);
+
+    await run(decideBridge(proposed.bridge, 'blessed', OPERATOR_SPACE, AT));
+    const drawn = await answer<{ edges: { subject: string; object: string }[] }>(
+      handleCall(run, call('session/2'), 'slice', {
+        space: OPERATOR_SPACE,
+        because: 'reading again once blessed',
+      }),
+    );
+    expect(drawn.edges).toEqual([
+      { subject: a.reflection, predicate: 'expands_on', object: b.reflection, origin: 'declared' },
+    ]);
+    const again = await run(
+      decideBridge(proposed.bridge, 'rejected', OPERATOR_SPACE, AT).pipe(Effect.either),
+    );
+    expect(again._tag).toBe('Left');
+    const events = await run(EventLog.pipe(Effect.flatMap((log) => log.read())));
+    expect(fabricIssues(events)).toEqual([]);
+  });
+
+  it('refuses a node related to itself', async () => {
+    const run = runnerWith(['bridge']);
+    const refused = await handleCall(run, call(), 'bridge', {
+      ...related,
+      object: related.subject,
+    });
+    expect(refused.isError).toBe(true);
+    expect(refused.content[0]?.text).toMatch(/INV-FAB-012/);
   });
 });
 

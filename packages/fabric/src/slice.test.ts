@@ -128,11 +128,11 @@ describe('the description', () => {
     expect(twice).toEqual(once);
     expect(once.asOf).toBe(AT);
     expect(once.manifest.verbs.map((verb) => verb.name)).toEqual(['reflect', 'slice']);
-    expect(once.waiting.verbs).toEqual(['propose', 'recall', 'pending', 'sync']);
+    expect(once.waiting.verbs).toEqual(['patch', 'bridge', 'recall', 'pending', 'sync']);
     expect(once.vocabularies.eventKinds).toEqual(EVENT_KINDS);
     expect(EVENT_KINDS).toContain('verb.refused');
     expect(EVENT_KINDS).toContain('source.blessed');
-    expect(once.invariants).toHaveLength(11);
+    expect(once.invariants).toHaveLength(12);
     const schema = eventJsonSchema();
     expect(JSON.stringify(schema)).toContain('"verb.refused"');
     const readme = readmeFrom(once);

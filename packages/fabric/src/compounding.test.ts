@@ -129,13 +129,13 @@ const reflectionEvent = fc
           },
         },
         {
-          kind: 'bridge.proposed' as const,
+          kind: 'crossing.proposed' as const,
           at,
           space: OPERATOR_SPACE,
           actor: agentActor(session),
           because: attempted,
           payload: {
-            id: `bridge/${id.slice(11)}`,
+            id: `crossing/${id.slice(11)}`,
             from: AGENT_SPACE,
             to: OPERATOR_SPACE,
             node: id,
@@ -148,8 +148,8 @@ const reflectionEvent = fc
     };
   });
 
-/** A log: the spaces, some reflections with their bridges, and the
- *  operator answering some of the bridges. */
+/** A log: the spaces, some reflections with their crossings, and the
+ *  operator answering some of the crossings. */
 const logArbitrary = fc
   .array(reflectionEvent, { minLength: 0, maxLength: 6 })
   .chain((reflections) =>
@@ -168,12 +168,12 @@ const logArbitrary = fc
               ? []
               : [
                   {
-                    kind: 'bridge.resolved' as const,
+                    kind: 'crossing.resolved' as const,
                     at: LATER,
                     space: OPERATOR_SPACE,
                     actor: authorActor(OPERATOR_SPACE),
                     payload: {
-                      proposal: `bridge/${entry.reflection.id.slice(11)}`,
+                      crossing: `crossing/${entry.reflection.id.slice(11)}`,
                       decision,
                       by: OPERATOR_SPACE,
                       at: LATER,
@@ -222,8 +222,8 @@ describe('properties of any log', () => {
         const state = project(events);
         const blessedNodes = new Set(
           events.flatMap((event) =>
-            event.kind === 'bridge.resolved' && event.payload.decision === 'blessed'
-              ? [state.bridges.get(event.payload.proposal)?.node]
+            event.kind === 'crossing.resolved' && event.payload.decision === 'blessed'
+              ? [state.crossings.get(event.payload.crossing)?.node]
               : [],
           ),
         );
@@ -313,7 +313,7 @@ describe('the instrument', () => {
     const run = runnerWith(stamp([...opened(), ...blessedVerbs()]));
 
     // Session one reflects; the operator blesses it across.
-    const first = await answer<{ reflection: string; bridge: string }>(
+    const first = await answer<{ reflection: string; crossing: string }>(
       handleCall(run, call('session/1', AT), 'reflect', {
         attempted: 'orient on the six repositories',
         observed: ['the vault dates the triad to December 2025'],
@@ -321,7 +321,7 @@ describe('the instrument', () => {
     );
     await run(
       Consent.pipe(
-        Effect.flatMap((consent) => consent.resolve(first.bridge, 'blessed', OPERATOR_SPACE, AT)),
+        Effect.flatMap((consent) => consent.resolve(first.crossing, 'blessed', OPERATOR_SPACE, AT)),
       ),
     );
 
@@ -395,6 +395,41 @@ describe('the instrument', () => {
     });
     const state = project(await run(EventLog.pipe(Effect.flatMap((log) => log.read()))));
     expect(compounding(state)).toMatchObject({ retrievals: 1, used: 0, missed: 1 });
+  });
+
+  it('counts a bridge as a use of both its ends, like a citation', async () => {
+    const run = runnerWith(stamp([...opened(), ...blessedVerbs()]));
+    const first = await answer<{ reflection: string; crossing: string }>(
+      handleCall(run, call('session/1', AT), 'reflect', {
+        attempted: 'first',
+        observed: ['the triad was axiomatized in December 2025'],
+      }),
+    );
+    await run(
+      Consent.pipe(
+        Effect.flatMap((consent) => consent.resolve(first.crossing, 'blessed', OPERATOR_SPACE, AT)),
+      ),
+    );
+    const seen = await answer<{ nodes: { id: string }[] }>(
+      handleCall(run, call('session/2', LATER), 'slice', { because: 'orienting' }),
+    );
+    expect(seen.nodes.map((node) => node.id)).toEqual([first.reflection]);
+    const later = '2026-09-06T13:30:00.000Z';
+    const own = await answer<{ reflection: string }>(
+      handleCall(run, call('session/2', later), 'reflect', {
+        attempted: 'second',
+        observed: ['the corpus was compiled in July 2026'],
+      }),
+    );
+    await handleCall(run, call('session/2', later), 'bridge', {
+      subject: own.reflection,
+      predicate: 'succeeds',
+      object: first.reflection,
+      evidence: 'the dates in the two observations order them',
+      because: 'relating what was read to what was found',
+    });
+    const state = project(await run(EventLog.pipe(Effect.flatMap((log) => log.read()))));
+    expect(compounding(state)).toMatchObject({ retrievals: 1, used: 1, hitAtK: 1, missed: 0 });
   });
 
   it('flags a retrieval receipt with no retrieval event (INV-FAB-010)', () => {

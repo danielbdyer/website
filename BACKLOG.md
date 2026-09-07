@@ -371,7 +371,7 @@ The refinement audit (`REFINEMENT_AUDIT.md`) gathers the house's implemented rea
 
 ## The Fabric
 
-The corpus charter (`CORPUS.md`) holds four items in `FABRIC.md` §"Held" with their triggers and is not restated here: the use signal beyond citation, aliases, graph proximity in the fusion, and capture as a measured path. The fold's quadratic cost is `DECISIONS.md` D-006, with its number.
+The corpus charter (`CORPUS.md`) holds four items in `FABRIC.md` §"Held" with their triggers and is not restated here: the use signal beyond citation, aliases, graph proximity in the fusion, and capture as a measured path. The fold's quadratic cost is `DECISIONS.md` D-006, refined by D-011 with the precise 100 ms breach (1,150–2,800 events, mix-dependent) and a trigger at 800 events. Phase 7 (synthetic proof) shipped the same second session: the loop closes synthetically, the metric discriminates retrieval quality (`fabric/sim/baseline.json`), and the firewall keeps the real R(t) at 0 of 0. What comes after is `NORTH_STAR.md` v4 §23, the build order gated by the log; this file does not restate it, and the held items it schedules now point at their step (`FABRIC.md` §"Held", D-014). The full lineage — v3, §28, THE LOCK — is one backlog at `NORTH_STAR_BACKLOG.md` (D-015), which this file also does not restate.
 
 Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
 
@@ -387,7 +387,7 @@ Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each pha
 
 ### The second tenant
 
-**Why:** The agent space opened; the bridge proposal on `reflect`; `hg bless` resolving it; the retrieval filter live, so a blessed reflection appears in an operator session and an unblessed one does not.
+**Why:** The agent space opened; the crossing on `reflect`; `hg bless` resolving it; the retrieval filter live, so a blessed reflection appears in an operator session and an unblessed one does not.
 **Trigger:** The first reflection that should cross into the operator space.
 
 ### The workspace as submodules
@@ -397,8 +397,8 @@ Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each pha
 
 ### The canon beyond skills
 
-**Why:** `propose` changes what the canon holds, and today that is the skills. Prompt, verb, and policy nodes are targets the schema admits; a verb's text is code, and a policy node does not exist yet. Each needs its own evaluation — a fork of the runtime rather than the lints — which is where the runtime over the log enters.
-**Trigger:** The first `propose` refused for naming a node the canon does not hold.
+**Why:** `patch` changes what the canon holds, and today that is the skills. Prompt, verb, and policy nodes are targets the schema admits; a verb's text is code, and a policy node does not exist yet. Each needs its own evaluation — a fork of the runtime rather than the lints — which is where the runtime over the log enters.
+**Trigger:** The first `patch` refused for naming a node the canon does not hold.
 
 ### The fabric's names
 
