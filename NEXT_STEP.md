@@ -4,7 +4,7 @@
 
 ## Before step 2: the citation
 
-Step 1 is two of three. The third clause — one real citation next session — is not step 2's and cannot be this session's (the instrument excludes self-citation). **The next session's first act is to read `orient`, then cite one of the two nodes it surfaces in its own reflection.** That moves R(t) from 0 of 0 to 1 of 1, and it should happen before any code, because it is the only act in the whole plan that costs nothing and proves the real loop.
+Step 1 is two of three. The third clause — one real citation next session — is not step 2's and cannot be this session's (the instrument excludes self-citation). **The next session's first act is to read `orient`, then cite one of the nodes it surfaces in its own reflection — or, once Danny has blessed `bridge`, relate two of them with evidence, which counts the same way.** That moves R(t) from 0 of 0 to 1 of 1, and it should happen before any code, because it is the only act in the whole plan that costs nothing and proves the real loop. Two blessings are Danny's and no session's: `pnpm fabric bless patch` and `pnpm fabric bless bridge` (D-016, D-017).
 
 ## What step 2 is, in the house's terms
 
@@ -54,7 +54,9 @@ Not the daemon (step 3), not SQLite (step 5; its trigger is not met, D-013), not
 
 ## Decisions step 2 will write
 
-- D-016: what a file read is (both, kept apart), and the name `read` for the hook's retrieval verb.
-- D-017: `evaluation.recorded` admitted at step 2 as a proposal-only kind, with its shape.
-- D-018: `model` and `duration` on the receipt, and `unknown` as the honest absent value.
+- D-020: what a file read is (both, kept apart), and the name `read` for the hook's retrieval verb.
+- D-021: `evaluation.recorded` admitted at step 2 as a proposal-only kind, with its shape.
+- D-022: `model` and `duration` on the receipt, and `unknown` as the honest absent value.
 - A row in `NORTH_STAR_BACKLOG.md` for each, flipped from `not built`, citing the commit.
+
+D-016 through D-019 were taken on 2026-09-07 by the four names Danny settled — bridge, patch, tenant, the markdown bridge — before step 2 began.

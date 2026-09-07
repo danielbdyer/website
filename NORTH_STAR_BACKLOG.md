@@ -74,11 +74,11 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 | NS-2.12 | Verb: named, typed, schema-bound Effect program in a manifest, producing a receipt | constraint | K, lock | — | holds | `VerbDefinition`, `verb.called` |
 | NS-2.13 | Manifest: verbs a space may invoke with state; INV-FAB-001 | constraint | K, lock | INV-FAB-001 | holds | `manifestFor`; `refusal` |
 | NS-2.14 | Receipt: inputs, outputs, provenance, `because` (v4: + model, duration) | constraint | X, lock | step 2 | partial | fingerprints and `because`; no model, no duration |
-| NS-2.15 | Proposal: any unblessed agent event, in shadow | constraint | K, lock | — | holds | bridges and patches with `decision: null` |
-| NS-2.16 | Blessing: the author event that promotes, with author provenance | constraint | K, lock | — | holds | `verb.blessed`, `bridge.resolved`, `patch.resolved` by `author:` |
+| NS-2.15 | Proposal: any unblessed agent event, in shadow | constraint | K, lock | — | holds | crossings, bridges, and patches with `decision: null` |
+| NS-2.16 | Blessing: the author event that promotes, with author provenance | constraint | K, lock | — | holds | `verb.blessed`, `crossing.resolved`, `bridge.resolved`, `patch.resolved` by `author:` |
 | NS-2.17 | Reflection: structured session record through `reflect`; not capture | constraint | K, lock | — | holds | blessed 2026-09-06; two recorded |
 | NS-2.18 | Capture: one string through `note`; not reflection | constraint | K, lock | step 3 | not built | |
-| NS-2.19 | Bridge: a proposed relation between nodes, with evidence | constraint | K, lock | step 2 (`fabric bridge`) | collision | the fabric's bridge carries a node across a wall (INV-FAB-003); → Part four §C; a name Danny settles before it freezes |
+| NS-2.19 | Bridge: a proposed relation between nodes, with evidence | constraint | K, lock | step 2 (`fabric bridge`) | partial | settled 2026-09-07 (D-016): `bridgeSchema`, `bridge.proposed` / `.resolved`, INV-FAB-012, the `bridge` verb proposed and unblessed; the carry-across is now a crossing |
 | NS-2.20 | Patch: proposed change to the fabric's behavior, hypothesis stated to fail, with outcome | constraint | K, lock | — | done | Phase 5 |
 | NS-2.21 | Retrieval: any verb that surfaces memory, logged as `retrieval.surfaced` | constraint | K, lock | INV-FAB-010 | done | |
 | NS-2.22 | Use: citation or patch (v4 adds: a file it actually opened); for the author: blessing, quotation, dismissal's inverse | constraint | X, lock | step 2 | partial | citation and patch counted; file-open and author-use not |
@@ -141,7 +141,7 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 | NS-6.4 | Receipt: inputs, outputs, provenance, `because`, duration (v4: model) | build | X, lock | step 2 | partial | no duration, no model |
 | NS-6.5 | Skill reference on each verb | build | K, lock | §20 | not built | |
 | NS-6.6 | Lifecycle: proposal → blessing → deprecation with `because` and successor, never deletion | build | K, lock | — | partial | `verb.retired` exists; no successor, no `because` on it |
-| NS-6.7 | Memory verbs: `note`, `reflect`, `orient`, `recall`, `slice`, `bridge`, `patch`, `evaluate`, `bless` | verb | N, lock (+ `unbless`, `describe`, `why`, `trust`, `init`, `doctor`, `log`) | v4 §6 | partial | `reflect` blessed; `slice`, `recall`, `propose` (= patch), `pending`, `sync` proposed; `note`, `bridge`, `evaluate`, `bless`-as-verb, `why`, `trust`, `unbless` absent |
+| NS-6.7 | Memory verbs: `note`, `reflect`, `orient`, `recall`, `slice`, `bridge`, `patch`, `evaluate`, `bless` | verb | N, lock (+ `unbless`, `describe`, `why`, `trust`, `init`, `doctor`, `log`) | v4 §6 | partial | `reflect` blessed; `slice`, `recall`, `patch`, `bridge`, `pending`, `sync` proposed (D-016, D-017); `note`, `evaluate`, `bless`-as-verb, `why`, `trust`, `unbless` absent |
 | NS-6.8 | Browser verbs | verb | H → D.1 | — | held | |
 | NS-6.9 | Plugin verbs | verb | N, lock (first plugin) | step 2 | not built | |
 | NS-6.10 | Every CLI command is a verb; nothing on the CLI is not a verb | constraint | K, lock | INV-NS-012 | not built | `init`, `bless`, `describe`, `orient` are commands, not verbs |
@@ -185,9 +185,9 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 
 | ID | Unit | Type | v4 | Where | Status | Note |
 |---|---|---|---|---|---|---|
-| NS-10.1 | Wiki links → typed edges through remark, resolved through aliases; unresolvable → `alias.proposed` or `node.proposed` | build | K, lock | v4 §10; no §23 step | not built | v4 §23 has no explicit bridge step (v3 step 6 was one); step 3's doc import is the nearest gate |
+| NS-10.1 | Wiki links → typed edges through remark, resolved through aliases; unresolvable → `alias.proposed` or `node.proposed` | build | K, lock | v4 §10; no §23 step | partial | wiki links are `references` edges with author origin at read time in `node/sources.ts` (D-019); typed links, aliases, and `node.proposed` held for their triggers; step 3's doc import is the nearest gate |
 | NS-10.2 | Frontmatter → type; unknown field → `type.proposed` with instances | build | K, lock | v4 §11 | not built | |
-| NS-10.3 | Bridge events carry author provenance, canonical on arrival | constraint | K, lock | — | holds by design | |
+| NS-10.3 | Bridge events carry author provenance, canonical on arrival | constraint | K, lock | step 3 | holds by design | an author's link is read, not logged, until step 3's import mints the event once (D-019); a session's bridge into its own space is `author:agent` on arrival (D-018) |
 | NS-10.4 | Round-trip: agent edits rendered back to markdown into a branch; the PR is the blessing surface for prose; voices separate | build | H → D.5 | a prose work edited by an agent | held | |
 | NS-10.5 | The published site is a projection; R(t) on the site at its trigger | build | N, lock (R(t) only) / D.5 (works) | step 10 | held | |
 | NS-10.6 | Existing docs are nodes at `init` *(v4 addition from LOCK §2)* | build | X, lock | step 3 | not built | |
@@ -201,7 +201,7 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 | NS-11.3 | A proposal has four parts: distinction, instances, `because`, falsifier | constraint | K, lock | — | practiced | the reconciliations' amendments carry all four |
 | NS-11.4 | Nothing built for an unblessed type | constraint | K, lock | — | holds | |
 | NS-11.5 | Blessing regenerates: DDL, JSON Schema, arbitraries, forms, docs | build | N, lock | D.4 | not built | |
-| NS-11.6 | Acceptance rate tracked; tighten below ~30%, loosen above ~90% | metric | K, lock | `describe` | partial | `compounding.acceptance` over bridges and patches; no per-kind, no band |
+| NS-11.6 | Acceptance rate tracked; tighten below ~30%, loosen above ~90% | metric | K, lock | `describe` | partial | `compounding.acceptance` over crossings, bridges, and patches; no per-kind, no band |
 
 ## v3 §12 · The schema of record
 
@@ -304,7 +304,7 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 | NS-20.1 | `orient` root: reads the foyer, prints R(t), loads the named branch | skill | K, lock | — | partial | prints R(t); no branch loading |
 | NS-20.2 | memory / reflecting (`reflect`) | skill | K, lock | step 1 | done | blessed |
 | NS-20.3 | memory / recalling (`recall`, `slice`) | skill | K, lock | — | partial | verbs proposed, unblessed; no skill file |
-| NS-20.4 | memory / bridging (`bridge`, `patch`) | skill | K, lock | after recall | partial | `propose` exists; `bridge` verb not; no skill file |
+| NS-20.4 | memory / bridging (`bridge`, `patch`) | skill | K, lock | after recall | partial | `bridge` and `patch` verbs exist, unblessed; no skill file |
 | NS-20.5 | memory / evaluating (`evaluate`) | skill | K, lock | first correction | not built | |
 | NS-20.6 | corpus / writing-prose, writing-specs | skill | K, lock | — | done | `.claude/skills/` |
 | NS-20.7 | corpus / alias-proposing | skill | K, lock | first miss | not built | |
@@ -357,7 +357,7 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 | NS-23.3 | 3 `note` in a resident process | capture p99 ≤ 16 ms | 3 | not built | |
 | NS-23.4 | 4 Synthetic proof | firewall; discrimination; breach | 4 | done | out of order, by its own gate |
 | NS-23.5 | 5 SQLite projection; graphology; RRF | identity on SQLite; p95 at 10⁴ | 5 | not built | trigger not met (D-013) |
-| NS-23.6 | 6 Markdown bridge | first author edge from markdown | no explicit v4 step | not built | v4 §10 describes it; gate is implicit — a gap to name |
+| NS-23.6 | 6 Markdown bridge | first author edge from markdown | no explicit v4 step | partial | the first author edge from markdown exists at read time (D-019); events and types wait for step 3 |
 | NS-23.7 | 7 `evaluation.recorded`; first correction | first author evaluation canonical | 6 | not built | |
 | NS-23.8 | 8 Metamodel loop | first blessed type regenerates | held D.4 | held | |
 | NS-23.9 | 9 Generated docs with drift; MCP and arbitraries from schema | commit fails on drift | 7 | partial | three artifacts drift-checked |
@@ -378,7 +378,7 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 | NS-25.1 | Start: read `orient`, cite what you use | constraint | K, lock | — | practiced | |
 | NS-25.2 | Every decision a `because` in `DECISIONS.md`; every rejected approach recorded | constraint | K, lock | — | practiced | |
 | NS-25.3 | Every correction an author evaluation first | constraint | K, lock | step 6 | not built | no evaluation kind yet |
-| NS-25.4 | Every tension a relation, never resolved by the session | constraint | K, lock | — | practiced | the `bridge` collision is held, not settled |
+| NS-25.4 | Every tension a relation, never resolved by the session | constraint | K, lock | — | practiced | the `bridge` collision was held until Danny's word settled it (D-016) |
 | NS-25.5 | Every proposal: instances, `because`, falsifier | constraint | K, lock | — | practiced | |
 | NS-25.6 | End: a session record through `reflect`, naming the model | constraint | K, lock | — | done | two reflections; the model named in the second's record |
 | NS-26.1 | No CRDT or sync framework | constraint | K, lock | — | holds | |
@@ -401,7 +401,7 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 | NS-A.2 | `receipt` | kind | K, lock | done | named `verb.called` in the code; `verb.refused` beside it |
 | NS-A.3 | `note.captured` | kind | K, lock | not built | proposed kind |
 | NS-A.4 | `reflection.recorded` | kind | K, lock | done | |
-| NS-A.5 | `bridge.proposed` / `bridge.decided` | kind | K, lock | done | named `bridge.resolved` in the code |
+| NS-A.5 | `bridge.proposed` / `bridge.decided` | kind | K, lock | done | `bridge.proposed` / `bridge.resolved` for the relation (D-016); `crossing.proposed` / `crossing.resolved` for the carry-across |
 | NS-A.6 | `patch.proposed` / `.decided` / `.outcome` | kind | K, lock | done | `.resolved`, plus `.evaluated` (the fabric's own checks) |
 | NS-A.7 | `retrieval.surfaced` | kind | K, lock | done | |
 | NS-A.8 | `retrieval.used` / `retrieval.missed` *(v4 new)* | kind | X, lock | not built | step 2 |
@@ -470,7 +470,7 @@ One row, LOCK-7.1, is a cross-reference to the NS-23 rows and carries no standin
 | NS-28.12 | A foreign claim's source blessing is evidence, not authority | invariant | K, lock | INV-NS-007 | not built | |
 | NS-28.13 | Contradiction across tenants is a `contradicts` edge across addresses | build | K, lock | step 8 | not built | |
 | NS-28.14 | Retrieval spans subscribed tenants; foreign candidates marked; R(t) per source | build | K, lock | step 8 | not built | |
-| NS-28.15 | A specialized agent is a tenant: own log, projections, key, scoped manifest; not a space in the operator's tenant | build | N, lock | step 8 | not built | today the agent is a *space* (`agent`) inside one log directory — the v3.2 model changes this |
+| NS-28.15 | A specialized agent is a tenant: own log, projections, key, scoped manifest; not a space in the operator's tenant | build | N, lock | step 8 | partial | the sovereignty half holds (D-018): the agent's space answers at once, a bridge into it blessed by `author:agent`; own log directory, key, and scoped manifest are step 8 |
 | NS-28.16 | Capability delegated, attenuated, signed: verbs, spaces, kinds, expiry, budget; grants only narrow | invariant | N, lock | INV-NS-008 | not built | |
 | NS-28.17 | Minimal signed grant first; UCAN at a second issuer | build | N, lock / D.7 | a second issuer | held | |
 | NS-28.18 | The grant is an event in both logs (`capability.granted` / `.revoked`); the delegation graph a projection | kind | K, lock | step 8 | not built | |

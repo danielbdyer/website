@@ -206,3 +206,55 @@
 - *Write the step-2 code instead of a brief.* Rejected: the charter's posture and Danny's ask ("so v4 can fill in its subset as it goes along"); the brief makes the next session's first hour a decision rather than a rediscovery, and the first act it names costs nothing.
 
 **Reopens when.** A v5 arrives; or a row in the backlog is found to misstate a unit of its original, in which case the original wins and the row is corrected with a note.
+
+## D-016 · `bridge` is a relation with evidence; the carry-across is a `crossing`
+
+**Decision.** By Danny's word (2026-09-07: "I prefer relation-with-evidence"), `bridge` takes the meaning every North Star gives it — v4 §2, "a proposed relation between nodes, with evidence" — and the fabric's former carry-across proposal is renamed a **crossing**. In code: `bridgeSchema` (`subject`, `predicate` from the slice's closed `PREDICATES`, `object`, `evidence`, `space`, `proposedBy`, `decision`) with `bridge.proposed` / `bridge.resolved`; a `bridge` verb of consequence `propose`, proposed into Danny's space at step 19 and unblessed; INV-FAB-012 (a bridge relates two distinct nodes, is closed once by the sovereign of the space it lands in, and blessed is a `declared` edge in that space's slice); `crossingSchema` with `crossing.proposed` / `crossing.resolved`, the `Consent` port over them, and `reflect`'s output field renamed `crossing`. The three carry-across events already in `fabric/spaces/danny.jsonl` (steps 11–13) were rewritten in place — the kind and the id prefix only, every payload field byte-identical — which is the one rewrite the log has had: sha256 `c94b821a…521f0` before, `85f56887…3961d` after. Because `reflect`'s output moved, `reflect` was retired, re-proposed with the new signature, and re-blessed at steps 15–17, the blessing issued on Danny's behalf under his standing authorization of 2026-09-06 ("You may issue it on my behalf") and D-003's rule that a schema change is a new verb.
+
+**Because.** Directive 12 forbids a third name for a thing that has two, and a verb's name freezes at blessing: v4 §23 step 2 builds `fabric bridge`, so the word had to be settled before then, and only Danny could settle it (`VOCABULARY.md`, `CORPUS.md` Part four §C). The carry-across then needed a name of its own; *crossing* is what `FABRIC.md` already called the section ("Crossing the wall") and what the act is. The three old lines were rewritten rather than migrated at parse time because a parse-time alias would keep two spellings of one kind in the schema of record forever, for three lines, and leaving them unreadable would break the fold, which must read the whole log.
+
+**Alternatives.**
+
+- *Keep both meanings under one word, discriminated by payload shape.* Rejected: the fold, the invariants, and every reader would carry the ambiguity forever.
+- *Name the relation something else and keep the fabric's `bridge`.* Rejected: it is the one name every North Star, the lock, and Danny agree on.
+- *Append a `crossing.proposed` beside each old `bridge.proposed` and leave the old lines.* Rejected: the old lines would still fail to parse.
+
+**Reopens when.** Step 8 retires crossings into `import:tenant` proposals; the name goes with them.
+
+## D-017 · The verb that proposes a patch is `patch`; a withdrawal takes back what was never granted
+
+**Decision.** The verb is `patch` (`verb/patch`, step 18); `verb/propose`, never blessed, was withdrawn by the runtime at step 14 through a new event kind, `verb.withdrawn` (`{ verb, at }`, runtime actor), which the fold reads as retired and the manifest and `init` leave alone. INV-FAB-002 extends to it: withdrawing a verb the sovereign had blessed is reported, because taking back a blessed verb is retiring it, which is his. `init` now withdraws and re-proposes an unblessed verb whose signature moved in the build — as it did for `pending` at steps 20–21, whose output gained `crossings` and `bridges` — and only *reports* a blessed one that moved, since retiring it is the operator's.
+
+**Because.** Every North Star names the verb `patch`; the code's `propose` predates v3; Danny chose (2026-09-07: "patch"). The withdrawal kind exists because a superseded proposal otherwise either sits in the waiting list forever or is silently overwritten by a re-proposal over the same id, and the log would lose the fact that the first proposal was made and taken back.
+
+**Alternatives.**
+
+- *Re-propose over the same id.* Rejected: a silent overwrite in the fold; the history is the point of a log.
+- *Retire it by the runtime with `verb.retired`.* Rejected: retiring is the sovereign's act and INV-FAB-002 says so.
+
+**Reopens when.** v3 §6's `verb.deprecated`, with a successor and a `because`, is admitted (v4 §23 step 7's CLI contract is the nearest gate).
+
+## D-018 · The agent is a tenant: its own space answers at once
+
+**Decision.** The sovereignty half of v3.2 §28.5 (NS-28.15, "a specialized agent is a tenant … not a space in the operator's tenant") is now true in code: a bridge a session proposes into its own space is blessed in the same call, by `author:agent` — the space's sovereign — because a tenant sees and rules its own space whole (INV-FAB-006, directive 4); into the operator's space it waits for him. The identity half — its own log directory, a DID, events crossing as `import:tenant` — stays at step 8, and `AGENT_SPACE = 'agent'` stays the name until then. In the vocabulary, the agent's space *is* the agent tenant's space.
+
+**Because.** Danny's word ("agent as tenant"), and the smallest real version was the one the log already supported: the agent has had its own JSONL and its own steps since Phase 1; what it never had was anything it could bless. A bridge is the first thing, and it is proved in `shell.test.ts`: blessed at once in its own space, an edge in its own slice, a ghost in the operator's.
+
+**Alternatives.**
+
+- *A separate log directory and key per agent now.* Rejected: step 8's work, gated on step 6's number.
+- *Agent bridges waiting for Danny even inside the agent's own space.* Rejected: it contradicts INV-FAB-006 and directive 4, and it would make the operator the sovereign of a space that is not his.
+
+**Reopens when.** Step 8.
+
+## D-019 · The markdown bridge is the author's side of `bridge`, and it already exists
+
+**Decision.** The read-time derivation in `packages/fabric/src/node/sources.ts` — wiki links in a blessed source become `references` edges with `origin: 'declared'`, kept only where both ends are present — *is* the markdown bridge of v3 §10 and v4 §10 in its smallest form, and it is the author's side of the same relation the `bridge` verb is the session's side of: the operator asserts a relation by writing a link in his own space, blessed by being his; a session asserts one by asking, with evidence. `bridgeSchema.predicate` is the slice's closed `PREDICATES` so the two produce the same edge. Held for their triggers, not built: typed links (`[[predicate::target]]`) and frontmatter relations (NS-10.1), at the first author link that wants a predicate other than `references`; aliases, at Appendix C's first miss; bridge *events* with author provenance (NS-10.3), at step 3's import, because a read-time derivation is not an event and `import:` provenance is minted once, at the import.
+
+**Because.** Danny's word was conditional — "bring back markdown-bridge if you feel it'll be useful" — and the honest answer is that it is useful and it is there; what would be new is events and types, and each has a trigger nobody has pulled.
+
+**Alternatives.**
+
+- *Emit a `bridge.proposed` event per wiki link at read time.* Rejected: it copies the file into the log without the author provenance the file already carries in git, and it would do so on every read.
+
+**Reopens when.** NS-10.1's trigger, or step 3.

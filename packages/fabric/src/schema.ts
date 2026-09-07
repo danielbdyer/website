@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { METABOLIC_STATES, ORIGINS } from '@dbd/slice';
+import { METABOLIC_STATES, ORIGINS, PREDICATES } from '@dbd/slice';
 
 // ─── @dbd/fabric — the schema of record ─────────────────────────────
 //
@@ -323,8 +323,9 @@ export type OutcomeRecord = z.infer<typeof outcomeSchema>;
 
 /** A proposal to carry a node from one space into another. It lands as
  *  pending in the target space, with `decision` null until the target's
- *  sovereign answers (INV-FAB-003). */
-export const bridgeProposalSchema = z.object({
+ *  sovereign answers (INV-FAB-003). A crossing moves a node; a bridge,
+ *  below, relates two. */
+export const crossingSchema = z.object({
   id,
   from: id,
   to: id,
@@ -336,7 +337,32 @@ export const bridgeProposalSchema = z.object({
   decidedAt: at.optional(),
   decidedBy: id.optional(),
 });
-export type BridgeProposal = z.infer<typeof bridgeProposalSchema>;
+export type Crossing = z.infer<typeof crossingSchema>;
+
+// ─── Bridges ──────────────────────────────────────────────────────
+
+/** A relation with evidence: subject, predicate, object, and the span
+ *  or observation that shows it. A session proposes one; it waits in
+ *  the space it names until that space's sovereign answers, and a
+ *  tenant's own space answers at once, since the tenant is its
+ *  sovereign. Blessed, it is an edge in that space's slice
+ *  (INV-FAB-012). The predicate is the engine's closed set, so a
+ *  bridge and a declared wiki link are the same relation reached two
+ *  ways: the operator's by writing, the session's by asking. */
+export const bridgeSchema = z.object({
+  id,
+  space: id,
+  subject: id,
+  predicate: z.enum(PREDICATES),
+  object: id,
+  evidence: z.string().min(1),
+  proposedAt: at,
+  proposedBy: id,
+  decision: z.enum(DECISIONS).nullable(),
+  decidedAt: at.optional(),
+  decidedBy: id.optional(),
+});
+export type Bridge = z.infer<typeof bridgeSchema>;
 
 /** A weak reference: a citation written onto the relating node, in its
  *  own space, pointing across the wall by text. Never an edge. */
@@ -379,6 +405,10 @@ export const eventUnion = z.discriminatedUnion('kind', [
     kind: z.literal('verb.retired'),
     payload: z.object({ verb: id, by: id, at }),
   }),
+  eventBase.extend({
+    kind: z.literal('verb.withdrawn'),
+    payload: z.object({ verb: id, at }),
+  }),
   eventBase.extend({ kind: z.literal('verb.called'), payload: receiptSchema }),
   eventBase.extend({ kind: z.literal('verb.refused'), payload: refusalSchema }),
   eventBase.extend({ kind: z.literal('source.proposed'), payload: sourceSchema }),
@@ -387,10 +417,15 @@ export const eventUnion = z.discriminatedUnion('kind', [
     payload: z.object({ source: id, by: id, at }),
   }),
   eventBase.extend({ kind: z.literal('reflection.recorded'), payload: reflectionSchema }),
-  eventBase.extend({ kind: z.literal('bridge.proposed'), payload: bridgeProposalSchema }),
+  eventBase.extend({ kind: z.literal('crossing.proposed'), payload: crossingSchema }),
+  eventBase.extend({
+    kind: z.literal('crossing.resolved'),
+    payload: z.object({ crossing: id, decision: z.enum(DECISIONS), by: id, at }),
+  }),
+  eventBase.extend({ kind: z.literal('bridge.proposed'), payload: bridgeSchema }),
   eventBase.extend({
     kind: z.literal('bridge.resolved'),
-    payload: z.object({ proposal: id, decision: z.enum(DECISIONS), by: id, at }),
+    payload: z.object({ bridge: id, decision: z.enum(DECISIONS), by: id, at }),
   }),
   eventBase.extend({ kind: z.literal('reference.cited'), payload: weakReferenceSchema }),
   eventBase.extend({ kind: z.literal('patch.proposed'), payload: patchSchema }),

@@ -6,19 +6,28 @@ import {
   type SliceEdge,
   type SliceNode,
 } from '@dbd/slice';
-import { homeOf, pendingIn, visibleReflections, type FabricState } from './log';
+import {
+  bridgesIn,
+  bridgesPendingIn,
+  crossingsPendingIn,
+  homeOf,
+  visibleReflections,
+  type FabricState,
+} from './log';
 import type { Aperture } from './ports';
-import type { Reflection } from './schema';
+import type { Bridge, Reflection } from './schema';
 
 // ─── The fabric's own memory, as a slice ───────────────────────────
 //
 // The first GraphSource is the fold itself: what a tenant may see of
 // the reflections, cut for one turn. A reflection is a node whose
-// `group` is the space it lives in now — its own space until a bridge
-// carries it across and the sovereign blesses it. Citations between
-// two reflections both in the slice are declared `references`; a
-// citation to anything else stays a weak reference and is not drawn.
-// Proposals still waiting are ghosts. Pure: time is an argument.
+// `group` is the space it lives in now — its own space until a crossing
+// carries it over and the sovereign blesses it. Citations between two
+// reflections both in the slice are declared `references`; a citation
+// to anything else stays a weak reference and is not drawn. A bridge
+// blessed in the space is an edge, kept when both its ends are drawn
+// (INV-FAB-012). Crossings and bridges still waiting are ghosts. Pure:
+// time is an argument.
 
 const nodeFrom = (state: FabricState, reflection: Reflection): SliceNode => ({
   id: reflection.id,
@@ -47,21 +56,50 @@ const edgesFrom = (reflection: Reflection, known: ReadonlySet<string>): readonly
 
 const ghostFrom =
   (state: FabricState) =>
-  (bridgeId: string): readonly Ghost[] => {
-    const bridge = state.bridges.get(bridgeId);
-    const reflection = bridge ? state.reflections.get(bridge.node) : undefined;
-    return bridge && reflection
+  (crossingId: string): readonly Ghost[] => {
+    const crossing = state.crossings.get(crossingId);
+    const reflection = crossing ? state.reflections.get(crossing.node) : undefined;
+    return crossing && reflection
       ? [
           {
-            id: bridge.id,
+            id: crossing.id,
             operation: 'create_entity' as const,
             title: reflection.attempted,
-            evidence: bridge.evidence,
-            ...(bridge.confidence === undefined ? {} : { confidence: bridge.confidence }),
+            evidence: crossing.evidence,
+            ...(crossing.confidence === undefined ? {} : { confidence: crossing.confidence }),
           },
         ]
       : [];
   };
+
+/** A bridge still waiting, as the ghost of the edge it would be. */
+const ghostOfBridge = (bridge: Bridge): Ghost => ({
+  id: bridge.id,
+  operation: 'create_relation',
+  subject: bridge.subject,
+  predicate: bridge.predicate,
+  object: bridge.object,
+  evidence: bridge.evidence,
+});
+
+/** The edges a space's blessed bridges are, in proposal order. A
+ *  bridge is a declared relation: someone asserted it, with evidence,
+ *  and the sovereign agreed. Drawn only where both ends are drawn. */
+export const bridgeEdges = (state: FabricState, space: string): readonly SliceEdge[] =>
+  bridgesIn(state, space).map((bridge) => ({
+    subject: bridge.subject,
+    predicate: bridge.predicate,
+    object: bridge.object,
+    origin: 'declared' as const,
+  }));
+
+/** The parts a space's bridges add to a merge: no nodes of their own,
+ *  only edges, kept by the merge where both ends survived. */
+export const bridgeParts = (state: FabricState, space: string): SliceParts => ({
+  axes: [],
+  nodes: [],
+  edges: bridgeEdges(state, space),
+});
 
 const matches =
   (query: string | undefined) =>
@@ -88,16 +126,25 @@ export function sliceFromState(
     .toSorted(newestFirst)
     .slice(0, aperture.topK ?? Number.POSITIVE_INFINITY);
   const known = new Set(seen.map((reflection) => reflection.id));
-  const waiting = pendingIn(state, viewer);
+  const waiting = crossingsPendingIn(state, viewer);
+  const waitingBridges = bridgesPendingIn(state, viewer);
   return parseSlice({
     space: viewer,
     asOf,
     axes: [],
     nodes: seen.map((reflection) => nodeFrom(state, reflection)),
-    edges: seen.flatMap((reflection) => edgesFrom(reflection, known)),
+    edges: [
+      ...seen.flatMap((reflection) => edgesFrom(reflection, known)),
+      ...bridgeEdges(state, viewer).filter(
+        (edge) => known.has(edge.subject) && known.has(edge.object),
+      ),
+    ],
     pending: {
-      unresolved: waiting.length,
-      ghosts: waiting.flatMap((bridge) => ghostFrom(state)(bridge.id)),
+      unresolved: waiting.length + waitingBridges.length,
+      ghosts: [
+        ...waiting.flatMap((crossing) => ghostFrom(state)(crossing.id)),
+        ...waitingBridges.map(ghostOfBridge),
+      ],
     },
   });
 }

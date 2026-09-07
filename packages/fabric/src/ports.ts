@@ -1,7 +1,7 @@
 import { Context, Data, Effect, Layer, Ref } from 'effect';
 import type { Slice } from '@dbd/slice';
-import { authorActor, type BridgeProposal, type Decision, type FabricEvent } from './schema';
-import { pendingIn, project, type FabricState } from './log';
+import { authorActor, type Crossing, type Decision, type FabricEvent } from './schema';
+import { crossingsPendingIn, project, type FabricState } from './log';
 
 // ─── Ports ────────────────────────────────────────────────────────
 //
@@ -52,20 +52,21 @@ export const noResonance: Layer.Layer<ResonanceService> = Layer.succeed(Resonanc
   refresh: () => Effect.void,
 });
 
-/** The consent loop. `propose` lands as pending in the target space;
- *  `resolve` is the sovereign's act and is never exposed as a verb. */
+/** The consent loop for crossings. `propose` lands as pending in the
+ *  target space; `resolve` is the sovereign's act and is never exposed
+ *  as a verb. */
 export interface ConsentService {
   readonly propose: (
-    proposal: Omit<BridgeProposal, 'decision' | 'decidedAt' | 'decidedBy'>,
+    crossing: Omit<Crossing, 'decision' | 'decidedAt' | 'decidedBy'>,
     actor: string,
-  ) => Effect.Effect<BridgeProposal, LogRejected>;
-  readonly pending: (space: string) => Effect.Effect<readonly BridgeProposal[]>;
+  ) => Effect.Effect<Crossing, LogRejected>;
+  readonly pending: (space: string) => Effect.Effect<readonly Crossing[]>;
   readonly resolve: (
-    proposal: string,
+    crossing: string,
     decision: Decision,
     by: string,
     at: string,
-  ) => Effect.Effect<BridgeProposal, LogRejected | NotPending>;
+  ) => Effect.Effect<Crossing, LogRejected | NotPending>;
 }
 export const Consent = Context.GenericTag<ConsentService>('@dbd/fabric/Consent');
 
@@ -90,10 +91,10 @@ export interface LogRejected {
 }
 export const LogRejected = Data.tagged<LogRejected>('LogRejected');
 
-/** A resolution named a proposal that is not waiting. */
+/** A resolution named a crossing that is not waiting. */
 export interface NotPending {
   readonly _tag: 'NotPending';
-  readonly proposal: string;
+  readonly crossing: string;
 }
 export const NotPending = Data.tagged<NotPending>('NotPending');
 
@@ -120,43 +121,43 @@ export const memoryEventLog = (
     }),
   );
 
-/** Consent over any EventLog: proposals and resolutions are events. */
+/** Consent over any EventLog: crossings and resolutions are events. */
 export const consentOverLog: Layer.Layer<ConsentService, never, EventLogService> = Layer.effect(
   Consent,
   Effect.gen(function* () {
     const log = yield* EventLog;
     const state = (): Effect.Effect<FabricState> => log.read().pipe(Effect.map(project));
     return {
-      propose: (proposal, actor) =>
+      propose: (crossing, actor) =>
         log
           .append({
-            kind: 'bridge.proposed',
-            at: proposal.proposedAt,
-            space: proposal.to,
+            kind: 'crossing.proposed',
+            at: crossing.proposedAt,
+            space: crossing.to,
             actor,
-            because: proposal.evidence,
-            payload: { ...proposal, decision: null },
+            because: crossing.evidence,
+            payload: { ...crossing, decision: null },
           })
           .pipe(
             Effect.map((event) =>
-              event.kind === 'bridge.proposed' ? event.payload : { ...proposal, decision: null },
+              event.kind === 'crossing.proposed' ? event.payload : { ...crossing, decision: null },
             ),
           ),
-      pending: (space) => state().pipe(Effect.map((current) => pendingIn(current, space))),
-      resolve: (proposal, decision, by, at) =>
+      pending: (space) => state().pipe(Effect.map((current) => crossingsPendingIn(current, space))),
+      resolve: (id, decision, by, at) =>
         Effect.gen(function* () {
           const current = yield* state();
-          const bridge = current.bridges.get(proposal);
-          if (bridge?.decision !== null) return yield* Effect.fail(NotPending({ proposal }));
+          const crossing = current.crossings.get(id);
+          if (crossing?.decision !== null) return yield* Effect.fail(NotPending({ crossing: id }));
           yield* log.append({
-            kind: 'bridge.resolved',
+            kind: 'crossing.resolved',
             at,
-            space: bridge.to,
+            space: crossing.to,
             actor: authorActor(by),
-            causedBy: bridge.id,
-            payload: { proposal, decision, by, at },
+            causedBy: crossing.id,
+            payload: { crossing: id, decision, by, at },
           });
-          return { ...bridge, decision, decidedAt: at, decidedBy: by };
+          return { ...crossing, decision, decidedAt: at, decidedBy: by };
         }),
     };
   }),

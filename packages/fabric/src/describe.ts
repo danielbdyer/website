@@ -1,7 +1,13 @@
 import { z } from 'zod';
 import { canonical } from './canonical';
 import { compounding, type Compounding } from './compounding';
-import { patchesPendingIn, pendingIn, sourcesOf, type FabricState } from './log';
+import {
+  bridgesPendingIn,
+  crossingsPendingIn,
+  patchesPendingIn,
+  sourcesOf,
+  type FabricState,
+} from './log';
 import { manifestFor } from './manifest';
 import {
   CHANGE_TARGETS,
@@ -36,7 +42,7 @@ export const INVARIANTS = [
   { id: 'INV-FAB-002', statement: 'A verb or a source is blessed by the sovereign of its space.' },
   {
     id: 'INV-FAB-003',
-    statement: "A bridge crosses a wall and is closed once, by the target's sovereign.",
+    statement: "A crossing crosses a wall and is closed once, by the target's sovereign.",
   },
   { id: 'INV-FAB-004', statement: 'A weak reference crosses a wall as text.' },
   { id: 'INV-FAB-005', statement: 'The fold is a function: the same log yields the same state.' },
@@ -60,6 +66,11 @@ export const INVARIANTS = [
     id: 'INV-FAB-011',
     statement:
       'Every event names its actor in the closed grammar, and an agent event carries a because; the schema refuses one without.',
+  },
+  {
+    id: 'INV-FAB-012',
+    statement:
+      "A bridge relates two distinct nodes with evidence, is closed once by the sovereign of the space it lands in, and blessed is an edge in that space's slice.",
   },
 ] as const;
 
@@ -114,6 +125,7 @@ export interface Description {
   readonly waiting: {
     readonly verbs: readonly string[];
     readonly sources: readonly string[];
+    readonly crossings: number;
     readonly bridges: number;
     readonly patches: number;
   };
@@ -173,7 +185,8 @@ export function describe(state: FabricState): Description {
         verb.blessedAt === undefined && verb.retiredAt === undefined ? [verb.name] : [],
       ),
       sources: sources.flatMap((source) => (source.blessedAt === undefined ? [source.id] : [])),
-      bridges: pendingIn(state, OPERATOR_SPACE).length,
+      crossings: crossingsPendingIn(state, OPERATOR_SPACE).length,
+      bridges: bridgesPendingIn(state, OPERATOR_SPACE).length,
       patches: patchesPendingIn(state, OPERATOR_SPACE).length,
     },
     vocabularies: {
@@ -193,7 +206,7 @@ export function describe(state: FabricState): Description {
       start: 'pnpm fabric serve',
       resources: RESOURCES,
       hooks: { start: 'pnpm fabric orient', stop: 'pnpm fabric stop-check' },
-      bless: 'pnpm fabric bless <verb | source | bridge | patch>',
+      bless: 'pnpm fabric bless <verb | source | crossing | bridge | patch>',
     },
   };
 }
@@ -251,7 +264,7 @@ const sourceTable = (description: Description): readonly string[] => {
           '',
         ]
       : []),
-    `Proposals waiting in \`${manifest.space}\`: ${waiting.bridges} to carry across, ${waiting.patches} to change a node.`,
+    `Waiting in \`${manifest.space}\`: ${waiting.crossings} crossing(s) to carry a node in, ${waiting.bridges} bridge(s) to relate two, ${waiting.patches} patch(es) to change one.`,
     '',
   ];
 };
@@ -262,7 +275,7 @@ const loop = (description: Description): readonly string[] => {
   return [
     '## The loop, pointed at itself',
     '',
-    'A session proposes a change to one of the operator’s nodes with `propose`: the node’s whole new text, the base it read, why, and a hypothesis the next session can check. The fabric evaluates what it can and the patch waits; the operator applies it from his terminal, only to the base it named. The next session sees the applied patch at start and reports through `reflect` whether the hypothesis held. Graduation is a number the operator reads, and it gates nothing.',
+    'A session proposes a change to one of the operator’s nodes with `patch`: the node’s whole new text, the base it read, why, and a hypothesis the next session can check. The fabric evaluates what it can and the patch waits; the operator applies it from his terminal, only to the base it named. The next session sees the applied patch at start and reports through `reflect` whether the hypothesis held. Graduation is a number the operator reads, and it gates nothing.',
     '',
     row([
       'Proposed',
@@ -311,7 +324,7 @@ const compounds = (description: Description): readonly string[] => {
   return [
     '## Does it compound?',
     '',
-    'A corpus compounds when outputs become inputs: something stored is surfaced in a context other than the one it was made in, and the next act uses it. Every retrieval a session makes is an event with its candidates in rank order; a use is a later citation or patch by the same session naming a candidate another session made. The numbers below are that measure, folded from the log. They gate nothing; they are what the operator reads before building anything meant to raise them.',
+    'A corpus compounds when outputs become inputs: something stored is surfaced in a context other than the one it was made in, and the next act uses it. Every retrieval a session makes is an event with its candidates in rank order; a use is a later citation, patch, or bridge by the same session naming a candidate another session made. The numbers below are that measure, folded from the log. They gate nothing; they are what the operator reads before building anything meant to raise them.',
     '',
     row([
       'Retrievals',
@@ -354,7 +367,7 @@ export function readmeFrom(description: Description): string {
     '',
     '## What this is',
     '',
-    'An append-only log per tenant, a graph as memory, verbs as blessed nodes projected into a manifest, a receipt on every call, and consent as the only way across a wall. The session that connects is the only reasoner; the fabric remembers and acts deterministically.',
+    'An append-only log per tenant, a graph as memory, verbs as blessed nodes projected into a manifest, a receipt on every call, and consent as the only way across a wall. A crossing carries a node from one space into another; a bridge relates two nodes with evidence; a patch changes one. Each waits for the sovereign of the space it lands in. The session that connects is the only reasoner; the fabric remembers and acts deterministically.',
     '',
     '## Spaces',
     '',

@@ -1,5 +1,5 @@
 import { Effect, Layer } from 'effect';
-import { mergeParts, sliceFromState, type SliceParts } from '../graph';
+import { bridgeParts, mergeParts, sliceFromState, type SliceParts } from '../graph';
 import { project, sourcesOf, type FabricState } from '../log';
 import { EventLog, GraphSource, type EventLogService, type GraphSourceService } from '../ports';
 import { readSource } from './sources';
@@ -8,8 +8,9 @@ import { readSource } from './sources';
 //
 // One `GraphSource` for the whole fabric. A viewer's own space is the
 // fold, whole. Another space is what its sovereign has disclosed: the
-// blessed sources, read by a reader the shell supplies, and the
-// reflections he has blessed across (INV-FAB-006), merged into one
+// blessed sources, read by a reader the shell supplies, the reflections
+// he has blessed across (INV-FAB-006), and the bridges he has blessed
+// between any two of those nodes (INV-FAB-012), merged into one
 // grounded slice. Time is the aperture's `asOf`; the clock is never
 // read here.
 
@@ -34,7 +35,7 @@ export const graphSourceOver = (
             const own = sliceFromState(state, space, asOf);
             if (aperture.viewer === space) return own;
             const parts = yield* Effect.promise(() => read(state, space, asOf));
-            return mergeParts(space, asOf, own.pending, [own, ...parts]);
+            return mergeParts(space, asOf, own.pending, [own, ...parts, bridgeParts(state, space)]);
           }),
       })),
     ),

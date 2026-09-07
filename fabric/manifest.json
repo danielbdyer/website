@@ -5,7 +5,7 @@
     "log": "fabric/spaces/<space>.jsonl",
     "session": "fabric/.session"
   },
-  "asOf": "2026-09-07T06:45:21.055Z",
+  "asOf": "2026-09-07T08:09:04.370Z",
   "spaces": [
     {
       "id": "agent",
@@ -20,12 +20,12 @@
   ],
   "manifest": {
     "space": "danny",
-    "asOf": "2026-09-07T06:45:21.055Z",
+    "asOf": "2026-09-07T08:09:04.370Z",
     "verbs": [
       {
         "id": "verb/reflect",
         "name": "reflect",
-        "description": "Record what this session noticed, in the shape the next session can retrieve. Lands in your own space at once; a proposal to carry it into the operator’s memory waits for blessing. Outcomes you report on applied patches are the loop’s own measure.",
+        "description": "Record what this session noticed, in the shape the next session can retrieve. Lands in your own space at once; a crossing to carry it into the operator’s memory waits for his blessing. Outcomes you report on applied patches are the loop’s own measure.",
         "consequence": "propose",
         "inputSchema": {
           "properties": {
@@ -110,7 +110,7 @@
             },
             "shouldChange": {
               "default": [],
-              "description": "What a prompt, skill, verb, or policy should do differently, and why. A wish; `propose` is the patch.",
+              "description": "What a prompt, skill, verb, or policy should do differently, and why. A wish; `patch` is the change.",
               "items": {
                 "properties": {
                   "because": {
@@ -154,7 +154,7 @@
         },
         "outputSchema": {
           "properties": {
-            "bridge": {
+            "crossing": {
               "type": "string"
             },
             "outcomes": {
@@ -166,12 +166,12 @@
           },
           "required": [
             "reflection",
-            "bridge",
+            "crossing",
             "outcomes"
           ],
           "type": "object"
         },
-        "blessedAt": "2026-09-06T18:52:52.431Z"
+        "blessedAt": "2026-09-07T08:04:18.943Z"
       }
     ]
   },
@@ -179,17 +179,19 @@
   "waiting": {
     "verbs": [
       "slice",
-      "propose",
       "recall",
       "pending",
-      "sync"
+      "sync",
+      "patch",
+      "bridge"
     ],
     "sources": [
       "source/skills",
       "source/works",
       "source/vault"
     ],
-    "bridges": 3,
+    "crossings": 4,
+    "bridges": 0,
     "patches": 0
   },
   "vocabularies": {
@@ -223,11 +225,14 @@
       "verb.proposed",
       "verb.blessed",
       "verb.retired",
+      "verb.withdrawn",
       "verb.called",
       "verb.refused",
       "source.proposed",
       "source.blessed",
       "reflection.recorded",
+      "crossing.proposed",
+      "crossing.resolved",
       "bridge.proposed",
       "bridge.resolved",
       "reference.cited",
@@ -540,6 +545,69 @@
             "required": [
               "verb",
               "by",
+              "at"
+            ],
+            "type": "object"
+          },
+          "space": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "step": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "step",
+          "at",
+          "space",
+          "actor",
+          "kind",
+          "payload"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+            "type": "string"
+          },
+          "because": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "causedBy": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "kind": {
+            "const": "verb.withdrawn",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": false,
+            "properties": {
+              "at": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string"
+              },
+              "verb": {
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "verb",
               "at"
             ],
             "type": "object"
@@ -1123,7 +1191,7 @@
             "type": "string"
           },
           "kind": {
-            "const": "bridge.proposed",
+            "const": "crossing.proposed",
             "type": "string"
           },
           "payload": {
@@ -1235,7 +1303,7 @@
             "type": "string"
           },
           "kind": {
-            "const": "bridge.resolved",
+            "const": "crossing.resolved",
             "type": "string"
           },
           "payload": {
@@ -1250,20 +1318,222 @@
                 "minLength": 1,
                 "type": "string"
               },
+              "crossing": {
+                "minLength": 1,
+                "type": "string"
+              },
               "decision": {
                 "enum": [
                   "blessed",
                   "rejected"
                 ],
                 "type": "string"
+              }
+            },
+            "required": [
+              "crossing",
+              "decision",
+              "by",
+              "at"
+            ],
+            "type": "object"
+          },
+          "space": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "step": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "step",
+          "at",
+          "space",
+          "actor",
+          "kind",
+          "payload"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+            "type": "string"
+          },
+          "because": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "causedBy": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "kind": {
+            "const": "bridge.proposed",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": false,
+            "properties": {
+              "decidedAt": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string"
               },
-              "proposal": {
+              "decidedBy": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "decision": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "blessed",
+                      "rejected"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "evidence": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "object": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "predicate": {
+                "enum": [
+                  "references",
+                  "is_a",
+                  "expands_on",
+                  "responds_to",
+                  "contradicts",
+                  "part_of",
+                  "inspired_by",
+                  "succeeds"
+                ],
+                "type": "string"
+              },
+              "proposedAt": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string"
+              },
+              "proposedBy": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "space": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "subject": {
                 "minLength": 1,
                 "type": "string"
               }
             },
             "required": [
-              "proposal",
+              "id",
+              "space",
+              "subject",
+              "predicate",
+              "object",
+              "evidence",
+              "proposedAt",
+              "proposedBy",
+              "decision"
+            ],
+            "type": "object"
+          },
+          "space": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "step": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "step",
+          "at",
+          "space",
+          "actor",
+          "kind",
+          "payload"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "pattern": "^(runtime|author:\\S+|agent:\\S+|import:\\S+)$",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+            "type": "string"
+          },
+          "because": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "causedBy": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "kind": {
+            "const": "bridge.resolved",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": false,
+            "properties": {
+              "at": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string"
+              },
+              "bridge": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "by": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "decision": {
+                "enum": [
+                  "blessed",
+                  "rejected"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "bridge",
               "decision",
               "by",
               "at"
@@ -1914,7 +2184,7 @@
     },
     {
       "id": "INV-FAB-003",
-      "statement": "A bridge crosses a wall and is closed once, by the target's sovereign."
+      "statement": "A crossing crosses a wall and is closed once, by the target's sovereign."
     },
     {
       "id": "INV-FAB-004",
@@ -1947,6 +2217,10 @@
     {
       "id": "INV-FAB-011",
       "statement": "Every event names its actor in the closed grammar, and an agent event carries a because; the schema refuses one without."
+    },
+    {
+      "id": "INV-FAB-012",
+      "statement": "A bridge relates two distinct nodes with evidence, is closed once by the sovereign of the space it lands in, and blessed is an edge in that space's slice."
     }
   ],
   "graduation": {
@@ -1982,6 +2256,6 @@
       "start": "pnpm fabric orient",
       "stop": "pnpm fabric stop-check"
     },
-    "bless": "pnpm fabric bless <verb | source | bridge | patch>"
+    "bless": "pnpm fabric bless <verb | source | crossing | bridge | patch>"
   }
 }

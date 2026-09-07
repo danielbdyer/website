@@ -19,15 +19,16 @@
 |---|---|---|---|---|---|
 | INV-FAB-001 | A call is to a verb in the manifest. | A verb not in the operator's manifest is refused. | `verbs.ts` `refusal`; `server.ts` `handleCall` appends `verb.refused` | `fabric.test.ts`, `slice.test.ts` (a refusal is an event) | held |
 | INV-FAB-002 | A verb or a source is blessed by the sovereign of its space. | — | `invariants.ts` `strangerBlessings`, `strangerSources` | `fabric.test.ts` | held |
-| INV-FAB-003 | A bridge crosses a wall and is closed once, by the target's sovereign. | — | `log.ts` first-answer-wins; `invariants.ts` `sameSpaceBridges`, `strangerResolutions` | `fabric.test.ts` | held |
+| INV-FAB-003 | A crossing crosses a wall and is closed once, by the target's sovereign. | — | `log.ts` first-answer-wins; `invariants.ts` `sameSpaceCrossings`, `strangerResolutions` | `fabric.test.ts` | held; named a bridge until D-016 |
 | INV-FAB-004 | A weak reference crosses a wall as text. | — | `invariants.ts` `homelessReferences` | `fabric.test.ts` | held |
 | INV-FAB-005 | The fold is a function: the same log yields the same state. | INV-NS-001 | `log.ts` `project` is a pure reduce | `compounding.test.ts` "the fold is deterministic" over generated logs | held |
-| INV-FAB-006 | A tenant sees its own space whole and the other space through blessing. | A reflection is in the operator's projection iff a blessed bridge carries it. | `log.ts` `visibleReflections`, `homeOf` | `compounding.test.ts` "nothing an agent writes reaches the operator's projection without his blessing"; `fabric.test.ts` | held |
+| INV-FAB-006 | A tenant sees its own space whole and the other space through blessing. | A reflection is in the operator's projection iff a blessed crossing carries it. | `log.ts` `visibleReflections`, `homeOf` | `compounding.test.ts` "nothing an agent writes reaches the operator's projection without his blessing"; `fabric.test.ts` | held |
 | INV-FAB-007 | A signature is frozen at blessing. | — | `verbs.ts` `refusal` compares the blessed `inputSchema` to the code's | `shell.test.ts` | held; live since `reflect` was blessed 2026-09-06 |
 | INV-FAB-008 | A patch is applied only to the base it was proposed against, only by the sovereign, and once. | — | `verbs.ts` `decidePatch` (`BaseMoved`, `NotWaiting`); `invariants.ts` `strangerPatches` | `loop.test.ts` | held |
 | INV-FAB-009 | An outcome cites a patch that was applied. | — | `verbs.ts` `outcomesOf` (`NotApplied`); `invariants.ts` `orphanOutcomes` | `loop.test.ts` | held |
 | INV-FAB-010 | Every retrieval is an event, with its context and every candidate in rank order; a receipt for a retrieval verb has one. | same | `verbs.ts` `surfaced` in `slice` and `recall`; `cli.ts` `recordOrient`; `invariants.ts` `unrecordedRetrievals` | `compounding.test.ts` | held for the three retrieval verbs; the hook's file reads are step 2 |
 | INV-FAB-011 | Every event names its actor in the closed grammar, and an agent event carries a `because`; the schema refuses one without. | An agent event without a non-empty `because` is unrepresentable in the log. | `schema.ts` `actorSchema` regex; `eventSchema.superRefine`; `invariants.ts` `unreasonedAgentEvents` | `compounding.test.ts` "every event says who wrote it and, for an agent, why" | held |
+| INV-FAB-012 | A bridge relates two distinct nodes with evidence, is closed once by the sovereign of the space it lands in, and blessed is an edge in that space's slice. | v4 §2 (bridge), §10 (the markdown bridge makes the same edge) | `verbs.ts` `bridge` (`NotARelation`), `decideBridge`; `log.ts` first-answer-wins, `bridgesIn`; `graph.ts` `bridgeEdges`; `invariants.ts` `selfBridges`, `strangerBridges` | `shell.test.ts` "a bridge: a relation with evidence"; `fabric.test.ts` "a bridge in the fold" | held since 2026-09-07 (D-016) |
 
 ## The North Star's invariants
 
@@ -49,7 +50,7 @@
 
 ## Where the two lists overlap
 
-INV-FAB-005 and INV-NS-001 are one property stated twice; INV-FAB-006 and INV-NS-005 are two halves of one mechanism (what a tenant sees, and what reaches canonical). The North Star's Appendix B lists four of the fabric's eleven; the other seven (002, 003, 004, 005, 007, 008, 009) are the fabric's own and hold regardless. When the registry is generated from `describe.ts`, the overlap becomes a cross-reference, not a duplicate.
+INV-FAB-005 and INV-NS-001 are one property stated twice; INV-FAB-006 and INV-NS-005 are two halves of one mechanism (what a tenant sees, and what reaches canonical). The North Star's Appendix B lists four of the fabric's twelve; the other eight (002, 003, 004, 005, 007, 008, 009, 012) are the fabric's own and hold regardless. When the registry is generated from `describe.ts`, the overlap becomes a cross-reference, not a duplicate.
 
 ## What would move a row
 

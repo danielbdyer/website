@@ -25,7 +25,8 @@ export {
   eventUnion,
   refusalSchema,
   sourceSchema,
-  bridgeProposalSchema,
+  bridgeSchema,
+  crossingSchema,
   changeRequestSchema,
   checkSchema,
   citationSchema,
@@ -45,7 +46,8 @@ export {
 } from './schema';
 export type {
   ActorKind,
-  BridgeProposal,
+  Bridge,
+  Crossing,
   Candidate,
   CandidateReason,
   ChangeRequest,
@@ -78,10 +80,12 @@ export type {
 
 export {
   apply,
+  bridgesIn,
+  bridgesPendingIn,
+  crossingsPendingIn,
   emptyState,
   homeOf,
   patchesPendingIn,
-  pendingIn,
   project,
   sourcesOf,
   visibleReflections,
@@ -116,7 +120,7 @@ export type {
 } from './ports';
 
 export { canonical, canonicalJson, same } from './canonical';
-export { cut, mergeParts, sliceFromState } from './graph';
+export { bridgeEdges, bridgeParts, cut, mergeParts, sliceFromState } from './graph';
 export type { SliceParts } from './graph';
 export { changed, diffLines, unified } from './diff';
 export type { Hunk } from './diff';
@@ -137,16 +141,19 @@ export {
   Canon,
   MemoryCompile,
   NoSuchNode,
+  NotARelation,
   NotApplied,
   NotWaiting,
   OPERATOR_SPACE,
   REGISTRY,
   Siblings,
+  bridge,
   candidatesOf,
   collectionsFor,
+  decideBridge,
   decidePatch,
+  patch,
   pending,
-  propose,
   proposedVerbs,
   recall,
   reflect,

@@ -8,8 +8,8 @@
 
 | Term | The collision | Where | What is at stake |
 |---|---|---|---|
-| **bridge** | The fabric: a proposal to carry a node across a wall into another space (`bridge.proposed`, INV-FAB-003). v3/v4 §2: "a proposed relation between nodes, with evidence." | `schema.ts` `bridgeProposalSchema` vs v4 §2, §6 (`fabric bridge`) | v4 step 2 names a `bridge` verb. If it is blessed under the fabric's meaning, the relation-with-evidence needs another name; if under v4's, the carry-across does. → `CORPUS.md` Part four §C |
-| **tenant** | v3 §2: "one log's scope — a person, a space, or a `sim:<run>`." v3.2 §28.2 and v4 §2: "one log's scope *and one identity*" — a keypair, a DID; each specialized agent a tenant. | v3 vs §28 vs code | The code has one log directory with two *spaces* (`danny`, `agent`) and no identity. Under v3.2 the agent becomes a tenant of its own, not a space; that is a data-model move (NS-28.15), not a rename. |
+| **bridge** | **Settled 2026-09-07 (D-016).** A bridge is v3/v4 §2's: "a proposed relation between nodes, with evidence" — `bridgeSchema`, `bridge.proposed` / `bridge.resolved`, the `bridge` verb (proposed, unblessed), INV-FAB-012. The fabric's former carry-across is a **crossing** (`crossingSchema`, `crossing.proposed` / `crossing.resolved`, INV-FAB-003). | `schema.ts` | The three old carry-across lines in the log were renamed in place; digests in D-016. |
+| **tenant** | v3 §2: "one log's scope — a person, a space, or a `sim:<run>`." v3.2 §28.2 and v4 §2: "one log's scope *and one identity*" — a keypair, a DID; each specialized agent a tenant. | v3 vs §28 vs code | The code has one log directory with two *spaces* (`danny`, `agent`) and no identity. Under v3.2 the agent becomes a tenant of its own, not a space. **Half settled 2026-09-07 (D-018):** the agent's space answers at once — a bridge into it is blessed in the same call by `author:agent` — so the sovereignty half holds; the identity half (own log directory, DID, `import:tenant`) is step 8. |
 | **space** | v3 §2: "the operator's, a session's own, the author's." v4 §2: "a tenant's named partition." | code: `OPERATOR_SPACE = 'danny'`, `AGENT_SPACE = 'agent'` | Consistent, provided the agent's space becomes the agent tenant's space when NS-28.15 lands. |
 | **receipt** | v3 §2: inputs, outputs, provenance, `because`. v3 §6: + duration. v4 §2: + model. | code: `verb.called` payload has fingerprints and `because`; no `model`, no `duration` | Two fields to add at v4 step 2. The event kind is named `verb.called` in the code and `receipt` in every North Star; a kind rename is a migration. |
 | **bless** | The fabric: an operator act, "never a verb," run from the terminal. v4 §6, §19: a lock verb, `fabric bless`, with review mode, batch, and `--dry`. | `cli.ts` `bless` vs v4 §19.5 | The sovereignty is unchanged (only `author:` provenance blesses); what changes is that the act becomes a verb with a receipt (INV-NS-011). Held: whether an author-only verb belongs in the *operator's* manifest an agent can list. |
@@ -32,10 +32,12 @@
 | North Star | Code today | Note |
 |---|---|---|
 | `receipt` | `verb.called` (and `verb.refused` beside it) | a rename is a migration; v3.2 §28.3 namespaces all kinds as `dyer.fabric.*`, which is the same migration once |
-| `bridge.proposed` / `bridge.decided` | `bridge.proposed` / `bridge.resolved` | `decided` vs `resolved` |
+| `bridge.proposed` / `bridge.decided` | `bridge.proposed` / `bridge.resolved` (a relation with evidence, D-016) | `decided` vs `resolved` |
+| — | `crossing.proposed` / `crossing.resolved` | the carry-across of a node into another space; no North Star name (D-016) |
+| — | `verb.withdrawn` | the runtime taking back an unblessed proposal; no North Star name (D-017) |
 | `patch.proposed` / `.decided` / `.outcome` | `patch.proposed` / `.evaluated` / `.resolved` / `.outcome` | the code has one more kind, the fabric's own evaluation of a patch |
 | `verb.proposed` / `.decided` / `.deprecated` | `verb.proposed` / `.blessed` / `.retired` | `retired` has no successor or `because`; v3 §6 `deprecated` does |
-| `blessing` / `unblessing` | `verb.blessed`, `source.blessed`, `bridge.resolved`, `patch.resolved` | blessing is per-kind in the code, one kind in the North Star; no unblessing |
+| `blessing` / `unblessing` | `verb.blessed`, `source.blessed`, `crossing.resolved`, `bridge.resolved`, `patch.resolved` | blessing is per-kind in the code, one kind in the North Star; no unblessing |
 | `retrieval.surfaced` | `retrieval.surfaced` | agree; `retrieval.used` / `.missed` are v4 additions not yet built |
 | `reflection.recorded` | `reflection.recorded` | agree |
 | `space.*`, `verb.*`, `source.*` | `space.opened`, `verb.*`, `source.proposed` / `.blessed` | agree |
@@ -51,13 +53,13 @@
 | `orient` | `orient` | `orient` | `orient` (a CLI command, runtime actor) | a command, not a verb |
 | `recall` | `recall` | `recall` | `recall` | proposed |
 | `slice` | `slice` | `slice` | `slice` | proposed |
-| `bridge` | — | `bridge` | — (`bridge.proposed` is written by `reflect`) | collision above |
-| `patch` | — | `patch` | `propose` | **two names**: the verb that proposes a patch is `propose` in the code and `patch` in every North Star |
+| `bridge` | — | `bridge` | `bridge` | proposed 2026-09-07; settled (D-016) |
+| `patch` | — | `patch` | `patch` | proposed 2026-09-07; `propose` withdrawn (D-017) |
 | `evaluate` | `evaluate` | `evaluate` | — | step 6 |
 | `bless` | `bless` | `bless`, `unbless` | `bless`, `reject` (CLI commands) | `reject` ≈ dismiss; `unbless` absent |
 | — | `describe` | `describe`, `why`, `trust`, `init`, `doctor`, `log` | `describe`, `init`, `log`, `pending`, `sync`, `index`, `stop-check`, `sim-baseline` (CLI) | `pending` and `sync` are verbs the North Star does not name; `why`, `trust`, `doctor` absent |
 
-Two verb-name facts to settle before blessing beyond `reflect`: **`propose` vs `patch`** for the verb that proposes a patch (the code's name was chosen before v3 named it; both are blessed nowhere yet, so either can win without a migration), and **`bridge`** (above).
+The two verb-name facts that had to be settled before blessing beyond `reflect` — **`propose` vs `patch`** and **`bridge`** — were settled by Danny's word on 2026-09-07 (D-016, D-017). Both verbs are proposed and wait for his blessing; `reflect` was re-signed the same day because its output field followed the rename.
 
 ## Terms v4 introduced
 

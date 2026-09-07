@@ -7,12 +7,14 @@ import {
   DECISIONS,
   EventLog,
   SPACE_KINDS,
+  bridgeEdges,
+  bridgesPendingIn,
   consentOverLog,
   fabricIssues,
   manifestFor,
   memoryEventLog,
   parseEvent,
-  pendingIn,
+  crossingsPendingIn,
   project,
   reflectionSchema,
   toolsFrom,
@@ -176,11 +178,11 @@ describe('crossing the wall', () => {
     ...opened(),
     { kind: 'reflection.recorded', at: AT, space: 'agent', payload: reflection() },
     {
-      kind: 'bridge.proposed',
+      kind: 'crossing.proposed',
       at: AT,
       space: 'danny',
       payload: {
-        id: 'bridge/1',
+        id: 'crossing/1',
         from: 'agent',
         to: 'danny',
         node: 'reflection/1',
@@ -193,7 +195,7 @@ describe('crossing the wall', () => {
 
   it('holds the gap: a reflection is the agent’s until blessed across (INV-FAB-006)', () => {
     const state = project(stamp(crossing()));
-    expect(pendingIn(state, 'danny')).toHaveLength(1);
+    expect(crossingsPendingIn(state, 'danny')).toHaveLength(1);
     expect(visibleReflections(state, 'agent').map((entry) => entry.id)).toEqual(['reflection/1']);
     expect(visibleReflections(state, 'danny')).toEqual([]);
   });
@@ -202,40 +204,40 @@ describe('crossing the wall', () => {
     const blessed = stamp([
       ...crossing(),
       {
-        kind: 'bridge.resolved',
+        kind: 'crossing.resolved',
         at: LATER,
         space: 'danny',
-        payload: { proposal: 'bridge/1', decision: 'blessed', by: 'danny', at: LATER },
+        payload: { crossing: 'crossing/1', decision: 'blessed', by: 'danny', at: LATER },
       },
       {
-        kind: 'bridge.resolved',
+        kind: 'crossing.resolved',
         at: LATER,
         space: 'danny',
-        payload: { proposal: 'bridge/1', decision: 'rejected', by: 'danny', at: LATER },
+        payload: { crossing: 'crossing/1', decision: 'rejected', by: 'danny', at: LATER },
       },
     ]);
     const state = project(blessed);
-    expect(state.bridges.get('bridge/1')?.decision).toBe('blessed');
-    expect(pendingIn(state, 'danny')).toEqual([]);
+    expect(state.crossings.get('crossing/1')?.decision).toBe('blessed');
+    expect(crossingsPendingIn(state, 'danny')).toEqual([]);
     expect(visibleReflections(state, 'danny').map((entry) => entry.id)).toEqual(['reflection/1']);
     expect(fabricIssues(blessed)).toEqual([]);
   });
 
-  it('refuses a stranger’s blessing and a bridge that goes nowhere', () => {
+  it('refuses a stranger’s blessing and a crossing that goes nowhere', () => {
     const events = stamp([
       ...crossing(),
       {
-        kind: 'bridge.resolved',
+        kind: 'crossing.resolved',
         at: LATER,
         space: 'danny',
-        payload: { proposal: 'bridge/1', decision: 'blessed', by: 'agent', at: LATER },
+        payload: { crossing: 'crossing/1', decision: 'blessed', by: 'agent', at: LATER },
       },
       {
-        kind: 'bridge.proposed',
+        kind: 'crossing.proposed',
         at: LATER,
         space: 'agent',
         payload: {
-          id: 'bridge/2',
+          id: 'crossing/2',
           from: 'agent',
           to: 'agent',
           node: 'reflection/1',
@@ -246,8 +248,8 @@ describe('crossing the wall', () => {
       },
     ]);
     expect(fabricIssues(events)).toEqual([
-      'INV-FAB-003: bridge bridge/2 does not cross a wall (agent to agent)',
-      'INV-FAB-003: agent resolved bridge bridge/1 into danny, whose sovereign is danny',
+      'INV-FAB-003: crossing crossing/2 does not cross a wall (agent to agent)',
+      'INV-FAB-003: agent resolved crossing crossing/1 into danny, whose sovereign is danny',
     ]);
   });
 
@@ -281,6 +283,119 @@ describe('crossing the wall', () => {
   });
 });
 
+describe('a bridge in the fold', () => {
+  const bridged = (space: string, decidedBy: string): readonly Bare[] => [
+    ...opened(),
+    {
+      kind: 'bridge.proposed',
+      at: AT,
+      space,
+      payload: {
+        id: 'bridge/1',
+        space,
+        subject: 'reflection/1',
+        predicate: 'contradicts',
+        object: 'vault/the triad predates the tradition',
+        evidence: 'the reflection dates the triad to December 2025; the claim dates it later',
+        proposedAt: AT,
+        proposedBy: 'session/1',
+        decision: null,
+      },
+    },
+    {
+      kind: 'bridge.resolved',
+      at: LATER,
+      space,
+      payload: { bridge: 'bridge/1', decision: 'blessed', by: decidedBy, at: LATER },
+    },
+  ];
+
+  it('waits, is closed once by the sovereign of its space, and is then an edge (INV-FAB-012)', () => {
+    const events = stamp([
+      ...bridged('danny', 'danny'),
+      {
+        kind: 'bridge.resolved',
+        at: LATER,
+        space: 'danny',
+        payload: { bridge: 'bridge/1', decision: 'rejected', by: 'danny', at: LATER },
+      },
+    ]);
+    const state = project(events);
+    expect(state.bridges.get('bridge/1')?.decision).toBe('blessed');
+    expect(bridgesPendingIn(state, 'danny')).toEqual([]);
+    expect(bridgeEdges(state, 'danny')).toEqual([
+      {
+        subject: 'reflection/1',
+        predicate: 'contradicts',
+        object: 'vault/the triad predates the tradition',
+        origin: 'declared',
+      },
+    ]);
+    expect(fabricIssues(events)).toEqual([]);
+  });
+
+  it('refuses a stranger’s answer and a node related to itself', () => {
+    const events = stamp([
+      ...bridged('danny', 'agent'),
+      {
+        kind: 'bridge.proposed',
+        at: AT,
+        space: 'agent',
+        payload: {
+          id: 'bridge/2',
+          space: 'agent',
+          subject: 'reflection/1',
+          predicate: 'references',
+          object: 'reflection/1',
+          evidence: 'none',
+          proposedAt: AT,
+          proposedBy: 'session/1',
+          decision: null,
+        },
+      },
+    ]);
+    expect(fabricIssues(events)).toEqual([
+      'INV-FAB-012: bridge bridge/2 relates reflection/1 to itself',
+      'INV-FAB-012: agent resolved bridge bridge/1 in danny, whose sovereign is danny',
+    ]);
+  });
+
+  it('lets the runtime withdraw an unblessed verb, and not a blessed one (INV-FAB-002)', () => {
+    const withdrawn = stamp([
+      ...opened(),
+      { kind: 'verb.proposed', at: AT, space: 'danny', payload: verb() },
+      {
+        kind: 'verb.withdrawn',
+        at: LATER,
+        space: 'danny',
+        payload: { verb: 'verb/reflect', at: LATER },
+      },
+    ]);
+    expect(project(withdrawn).verbs.get('verb/reflect')?.retiredAt).toBe(LATER);
+    expect(manifestFor('danny', LATER, project(withdrawn).verbs.values()).verbs).toEqual([]);
+    expect(fabricIssues(withdrawn)).toEqual([]);
+    const overreach = stamp([
+      ...opened(),
+      { kind: 'verb.proposed', at: AT, space: 'danny', payload: verb() },
+      {
+        kind: 'verb.blessed',
+        at: AT,
+        space: 'danny',
+        payload: { verb: 'verb/reflect', by: 'danny', at: AT },
+      },
+      {
+        kind: 'verb.withdrawn',
+        at: LATER,
+        space: 'danny',
+        payload: { verb: 'verb/reflect', at: LATER },
+      },
+    ]);
+    expect(fabricIssues(overreach)).toEqual([
+      'INV-FAB-002: runtime withdrew verb/reflect, which danny had blessed; only the sovereign retires a blessed verb',
+    ]);
+  });
+});
+
 describe('the ports, over the in-memory log', () => {
   const program = Effect.gen(function* () {
     const log = yield* EventLog;
@@ -308,7 +423,7 @@ describe('the ports, over the in-memory log', () => {
     });
     const proposed = yield* consent.propose(
       {
-        id: 'bridge/1',
+        id: 'crossing/1',
         from: 'agent',
         to: 'danny',
         node: 'reflection/1',
@@ -318,8 +433,8 @@ describe('the ports, over the in-memory log', () => {
       'agent:session/1',
     );
     const waiting = yield* consent.pending('danny');
-    const resolved = yield* consent.resolve('bridge/1', 'blessed', 'danny', LATER);
-    const again = yield* Effect.either(consent.resolve('bridge/1', 'blessed', 'danny', LATER));
+    const resolved = yield* consent.resolve('crossing/1', 'blessed', 'danny', LATER);
+    const again = yield* Effect.either(consent.resolve('crossing/1', 'blessed', 'danny', LATER));
     const events = yield* log.read();
     return { proposed, waiting, resolved, again, events };
   });
@@ -329,7 +444,7 @@ describe('the ports, over the in-memory log', () => {
       program.pipe(Effect.provide(consentOverLog), Effect.provide(memoryEventLog())),
     );
     expect(result.proposed.decision).toBeNull();
-    expect(result.waiting.map((bridge) => bridge.id)).toEqual(['bridge/1']);
+    expect(result.waiting.map((crossing) => crossing.id)).toEqual(['crossing/1']);
     expect(result.resolved.decision).toBe('blessed');
     expect(result.again._tag).toBe('Left');
     expect(result.events.map((event) => event.step)).toEqual([0, 1, 2, 3, 4]);
