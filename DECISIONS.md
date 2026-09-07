@@ -191,3 +191,18 @@
 - *Copy §23 into `BACKLOG.md`.* Rejected: a second copy of the build order is a second build order; `BACKLOG.md` points at §23.
 
 **Reopens when.** A v5 changes the build order.
+
+## D-015 · The three originals are in the house; the backlog is the superset the lock fills in
+
+**Decision.** `NORTH_STAR_v3.md`, `NORTH_STAR_v3.2.md` (the §28 addendum), and `THE_LOCK.md` are persisted at the repository root, converted from Danny's PDF exports with the words unchanged and the headings, tables, and monospace blocks restored from the PDFs' layout; each carries an HTML-comment provenance line and is never edited by a session. `NORTH_STAR_BACKLOG.md` is the one backlog of the lineage: every unit of v3, §28, and THE LOCK as a row with its v4 disposition, its step or trigger, and its standing in the house. v4's build order is a subset of it and is filled in there. Three artifacts sit beside it — `INVARIANTS.md`, `VOCABULARY.md`, `NEXT_STEP.md` — each a conformance surface v4 fills in as it goes: what must hold and what holds it, what things are called and where the names collide, and what the smallest next thing is.
+
+**Because.** D-012 promised the originals on arrival so Appendix E could be checked against them rather than trusted; they arrived. The backlog exists because v4 is a narrowing, and a narrowing is only safe if the whole it narrows stays on one page with every cut named; THE LOCK says "both return with their triggers," and a trigger nobody can see never fires. The three artifacts were chosen over others (a lineage document, an event-kind registry alone, a step-2 implementation) because each is a table a later session updates rather than an essay it rereads, and because together they cover the three things a session needs at its start: the rules, the names, the next move.
+
+**Alternatives.**
+
+- *Convert the PDFs by hand into markdown and edit for clarity.* Rejected: the documents are corpus and "never edited"; only formatting the PDF lost is restored, and the provenance comment says so.
+- *Commit the PDFs as the originals.* Rejected for now: the PDFs are exports of markdown Danny wrote; the markdown is the natural form, and the conversion is near-lossless. The PDFs stay with Danny; if a discrepancy is ever suspected, they are the arbiter.
+- *Fold the backlog into `BACKLOG.md`.* Rejected: D-014's reason — a second copy of the build order is a second build order; the site's backlog points at the North Star's.
+- *Write the step-2 code instead of a brief.* Rejected: the charter's posture and Danny's ask ("so v4 can fill in its subset as it goes along"); the brief makes the next session's first hour a decision rather than a rediscovery, and the first act it names costs nothing.
+
+**Reopens when.** A v5 arrives; or a row in the backlog is found to misstate a unit of its original, in which case the original wins and the row is corrected with a note.

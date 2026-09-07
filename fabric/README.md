@@ -1,6 +1,6 @@
 # The fabric, described
 
-*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-07T06:02:55.762Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
+*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-07T06:45:21.055Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
 
 ## What this is
 
@@ -33,7 +33,7 @@ Where the operator’s space reads from besides the log. A source is proposed an
 
 Waiting for the operator's blessing: `source/skills`, `source/works`, `source/vault`.
 
-Proposals waiting in `danny`: 2 to carry across, 0 to change a node.
+Proposals waiting in `danny`: 3 to carry across, 0 to change a node.
 
 ## The loop, pointed at itself
 

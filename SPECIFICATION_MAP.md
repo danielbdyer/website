@@ -292,6 +292,13 @@ CONTENT_SCHEMA + DESIGN_SYSTEM
               every call, consent as the only way across a wall.
               │
               ├─→ NORTH_STAR.md
+              ├─→ NORTH_STAR_v3.md
+              ├─→ NORTH_STAR_v3.2.md
+              ├─→ THE_LOCK.md
+              ├─→ NORTH_STAR_BACKLOG.md
+              ├─→ INVARIANTS.md
+              ├─→ VOCABULARY.md
+              ├─→ NEXT_STEP.md
               ├─→ CORPUS.md
               │     The charter for the corpus, verbatim, and the
               │     fabric's reconciliation with it.
@@ -332,6 +339,21 @@ The loom. The runtime a local agent session lives in, and the ground Danny's six
 
 **`NORTH_STAR.md`** | Grounds | Exists | Depends on: `CORPUS.md` + `FABRIC.md` + `DECISIONS.md`
 Danny's North Star v4 (2026-09-06) for the corpus that compounds, locked to agentic coding memory, kept verbatim and never edited by a session: the invariant (a corpus compounds iff outputs become inputs), the vocabulary as a closed grammar, three bands and one spine, the verb model, capture, retrieval, the SQLite projection, the markdown bridge, types admitted from use, the schema of record, evaluation, tension, synthetic proof, the CLI as first-class citizen, the skill tree, the eleven-step build order gated by the log, and the multi-tenant semantics; with Appendix D holding what the lock set aside and Appendix E ledgering every unit of v3 and §28. Its reconciliation against the house is `CORPUS.md` Part four.
+
+**`NORTH_STAR_v3.md`** · **`NORTH_STAR_v3.2.md`** · **`THE_LOCK.md`** | Grounds | Exist | Depends on: `CORPUS.md`
+The lineage v4 supersedes, persisted verbatim on 2026-09-07 from Danny's PDF exports (words unchanged; headings, tables, and code blocks restored; never edited by a session): v3, the full North Star with Electron, browser verbs, and the metamodel loop; v3.2, the §28 addendum on multi-tenancy, identity, the local/deployed stack, inference tiers, and orchestration; and THE LOCK, the narrowing to agentic coding memory with its wedge, flywheel, thirty days, and named risks. D-015.
+
+**`NORTH_STAR_BACKLOG.md`** | Grounds | Exists | Depends on: `NORTH_STAR_v3.md` + `NORTH_STAR_v3.2.md` + `THE_LOCK.md` + `NORTH_STAR.md`
+The one backlog of the lineage: every unit of v3, §28, and THE LOCK as a row — requirement, constraint, build, verb, kind, metric, invariant, trigger — with its v4 disposition, its §23 step or trigger, and its standing in the house on 2026-09-07. v4 is a subset of it and fills its subset in here; nothing is deleted, a superseded row is marked. Ends with what the whole says read together.
+
+**`INVARIANTS.md`** | Grounds | Exists | Depends on: `FABRIC.md` + `NORTH_STAR.md`
+The registry of every invariant the lineage names, INV-FAB-001..011 and INV-NS-001..013, with the file that holds it, the test that proves it, and its standing (held, partial, vacuous, not built), plus what would move each unbuilt row. Hand-derived today; a drift-checked projection of `describe.ts` once INV-NS-004 covers it.
+
+**`VOCABULARY.md`** | Grounds | Exists | Depends on: `NORTH_STAR.md` + `FABRIC.md`
+The concordance of names across v2, v3, §28, THE LOCK, v4, and the code: the collisions to settle before a name freezes (`bridge`, `tenant`, `receipt`, `bless`, `propose` vs `patch`), the actor grammar by version, every event kind's North Star name beside the code's, every verb list side by side, and the terms the code has that no North Star names.
+
+**`NEXT_STEP.md`** | Grounds | Exists | Depends on: `NORTH_STAR.md` + `CORPUS.md`
+The brief for v4 §23 step 2 — use signal without asking: the citation that comes first, model on receipt, the file-read harvest and the decision of what a file read is, correction capture and the `evaluation.recorded` dependency it exposes, the per-verb R(t) amendment that travels with it, the order inside the step, what it does not touch, and the decisions it will write.
 
 **`CORPUS.md`** | Grounds | Exists | Depends on: `AGENTS.md` + `FABRIC.md`
 Danny's charter for the personal knowledge system — "the corpus that compounds" — kept verbatim, and the fabric's reconciliation with it, section by section: what already holds, what Phase 6 built the day it arrived (the instrument for R(t), actors and `because` at the schema, the four property tests), what is held with a trigger, the amendments proposed where the charter and a standing directive disagree, the definition of done answered with numbers, and the session record. Part three, added the second session of 2026-09-06, is the synthetic proof of the loop: what synthetic data can and cannot establish, the `import:synthetic` firewall, the discrimination result (the metric climbs with retrieval quality), the fold's measured breach, and the handoff that moves real R(t) off zero.
