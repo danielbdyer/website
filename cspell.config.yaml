@@ -105,6 +105,23 @@ words:
   - fmix
   - mrrs
   - quarantined
+  # North Star v4 (NORTH_STAR.md)
+  - metamodel
+  - UCAN
+  - unbless
+  - unblessing
+  - canonicality
+  - CRDT
+  - scriptable
+  - rkey
+  - reranking
+  - rebuildable
+  - keypair
+  - Logseq
+  - GEPA
+  - Orama
+  - Kùzu
+  - ledgering
   # The engine's vocabulary, carried across the wall (CATHEDRALS.md)
   - midground
   - privated

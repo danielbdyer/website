@@ -371,7 +371,7 @@ The refinement audit (`REFINEMENT_AUDIT.md`) gathers the house's implemented rea
 
 ## The Fabric
 
-The corpus charter (`CORPUS.md`) holds four items in `FABRIC.md` §"Held" with their triggers and is not restated here: the use signal beyond citation, aliases, graph proximity in the fusion, and capture as a measured path. The fold's quadratic cost is `DECISIONS.md` D-006, refined by D-011 with the precise 100 ms breach (1,150–2,800 events, mix-dependent) and a trigger at 800 events. Phase 7 (synthetic proof) shipped the same second session: the loop closes synthetically, the metric discriminates retrieval quality (`fabric/sim/baseline.json`), and the firewall keeps the real R(t) at 0 of 0.
+The corpus charter (`CORPUS.md`) holds four items in `FABRIC.md` §"Held" with their triggers and is not restated here: the use signal beyond citation, aliases, graph proximity in the fusion, and capture as a measured path. The fold's quadratic cost is `DECISIONS.md` D-006, refined by D-011 with the precise 100 ms breach (1,150–2,800 events, mix-dependent) and a trigger at 800 events. Phase 7 (synthetic proof) shipped the same second session: the loop closes synthetically, the metric discriminates retrieval quality (`fabric/sim/baseline.json`), and the firewall keeps the real R(t) at 0 of 0. What comes after is `NORTH_STAR.md` v4 §23, the build order gated by the log; this file does not restate it, and the held items it schedules now point at their step (`FABRIC.md` §"Held", D-014).
 
 Held phases of `FABRIC.md`, the runtime a local agent session lives in. Each phase names its pull there; the pulls are repeated here so the backlog stays the one place held things are listed.
 

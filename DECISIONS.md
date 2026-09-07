@@ -151,3 +151,43 @@
 - *Characterize to 10⁵ events as the charter's §4 asks.* Not run: at the measured constant, a 10⁵-event fold is about 126 seconds, and the interesting breach is at 1–3k events, two orders of magnitude below. The quadratic is pinned by the 128–8,192 grid; extrapolation to 10⁵ is arithmetic, and burning hours to confirm it would be measurement for its own sake.
 
 **Reopens when.** The real `fabric/spaces` log crosses 800 events, or a session notices a slow start.
+
+## D-012 · The North Star v4 is persisted in the house; its predecessors arrive by Danny's hand
+
+**Decision.** `NORTH_STAR.md` v4 (2026-09-06) is kept verbatim at the repository root, never edited, beside `CORPUS.md`; its reconciliation is `CORPUS.md` Part four. v3 and the v3.2 addendum (§28), which v4 supersedes and which were in none of the six repositories, are filed as `NORTH_STAR_v3.md` and `NORTH_STAR_v3.2.md` when Danny supplies them, also verbatim.
+
+**Because.** v4 §27: "This document is corpus. It changes only by a new version Danny gives; a session's proposed amendments go in the reconciliation." The house already holds one charter this way (the v2 charter in `CORPUS.md` Part one), so the pattern is established. The predecessors are needed because Appendix E ledgers every unit of them, and a ledger is verifiable only beside what it ledgers.
+
+**Alternatives.**
+
+- *Fold v4 into `CORPUS.md` as Part four's opening, like the v2 charter.* Rejected: v4 names itself `NORTH_STAR.md` and says `orient` will surface it; a document meant to be surfaced by name should exist under that name.
+- *Place it in `cathedrals/`, where a `NORTH_STAR.md` already exists.* Rejected: that file is the engine's layered ontology, a different lineage; v4's referents (`fabric orient`, `DECISIONS.md`, INV-FAB-*) are all this repository's.
+- *Treat the missing v3 as lost and rely on Appendix E.* Rejected: the charter's own claim is that nothing cut was lost, and the house should be able to check it.
+
+**Reopens when.** A v5 arrives, by Danny's hand.
+
+## D-013 · D-011's fix is superseded by the SQLite projection; the hold stands
+
+**Decision.** The fold's quadratic cost stays held (D-011's trigger of 800 events is unchanged), but the recommended fix is no longer persistent structurally-shared maps; it is v4 §9's SQLite projection, built at step 5 of §23.
+
+**Because.** v4 §9 dissolves the fold into a projection file that FTS5, sqlite-vec, the node and edge tables, and the retrieval log share, which removes the O(n²) fold *and* the O(n) file re-read per call that persistent maps would have left in place. Two recommended fixes for one measured problem is the pile the decision log exists to prevent. Appendix C's trigger for doing it now — a breach within a year of real cadence — is not met: D-011 places the breach at 100 to 250 sessions.
+
+**Alternatives.**
+
+- *Build the SQLite projection now, since the plan names it.* Rejected: §23 says no step starts because it is interesting, and the trigger is not met; step 5 follows steps 2 and 3 in order.
+- *Keep both fixes on the books, choose at the trigger.* Rejected: the decision log records one recommendation with its because; a later session can overturn it with a numbered entry.
+
+**Reopens when.** D-011's trigger fires, or the discrimination harness shows in-process retrieval matching qmd's quality (v4 §9, "the sidecar decision").
+
+## D-014 · Held items with a step in §23 point at the step, not at a free trigger
+
+**Decision.** Three entries in `FABRIC.md` §"Held" that v4's build order now schedules — the use signal beyond citation (`retrieval.used` / `retrieval.missed`, step 2), capture as a measured path (`note`, step 3, reopening D-005), and `evaluation.recorded` (step 6) — carry a pointer to their step beside their original trigger. Aliases keep Appendix C's trigger, which is the same one the house already held.
+
+**Because.** A held item with two homes — a trigger in one file and a step in another — is answered twice or not at all. The pointer keeps the original trigger's reasoning and says where the work now lives.
+
+**Alternatives.**
+
+- *Delete the held entries, since the plan owns them now.* Rejected: each entry carries the house's own reasoning for holding, which the plan's one-line step does not, and a future session deciding whether to start the step should read both.
+- *Copy §23 into `BACKLOG.md`.* Rejected: a second copy of the build order is a second build order; `BACKLOG.md` points at §23.
+
+**Reopens when.** A v5 changes the build order.
