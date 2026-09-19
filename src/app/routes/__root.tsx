@@ -53,6 +53,11 @@ export const Route = createRootRoute({
   notFoundComponent: NotFound,
 });
 
+/** The surfaces that fill the viewport with no chrome: the sky, a
+ *  work opened in it, and the place the sky keeps off the chart
+ *  (/scale). The root treats each as it treats the sky. */
+const IMMERSIVE_ROUTES: ReadonlySet<string> = new Set(['/sky', '/sky/$room/$slug', '/scale']);
+
 /** The room's classes: on /sky it is the sky and does not tilt. */
 function roomClassName(isSky: boolean): string {
   return isSky
@@ -86,7 +91,7 @@ function RootComponent() {
     select: (s) => s.matches.at(-1)?.pathname ?? s.location.pathname,
   });
   const isSky = useRouterState({
-    select: (s) => s.matches.some((m) => m.routeId === '/sky' || m.routeId === '/sky/$room/$slug'),
+    select: (s) => s.matches.some((m) => IMMERSIVE_ROUTES.has(m.routeId)),
   });
   const isInitialMount = useRef(true);
   // Pathnames the visitor has already seen in this session. First visit

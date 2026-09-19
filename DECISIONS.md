@@ -85,3 +85,45 @@
 - *Persistent (structurally shared) maps.* Rejected: a dependency for a problem a hundred sessions away.
 
 **Reopens when.** The real log's fold p95 crosses 100 ms, which the bench above places near a thousand events; or the first session that notices a slow `slice`.
+
+## D-007 · The passage is the whisper's fourth line, and a dwell reveals it
+
+**Decision.** Objects of Scale is reached from the sky by a fourth line in the whisper — *off the chart · Objects of Scale* — rendered at one star only (*small weather*) and only after the visitor has stood there seven seconds with the sky still. Nothing is rendered before the dwell.
+
+**Because.** Danny's idea was a place you could *secretly* travel to from one of the sky's stars. The whisper is the sky's one voice and its named seam for additions (`CONSTELLATION_WALK.md` §"The Generative Horizon"); a line that arrives to the visitor who stays is of a piece with the poem it leaves from, which is about staying; and rendering nothing before the dwell keeps the secret from the accessibility tree as well as the eye, without making the door anything less than a real link once it is there.
+
+**Alternatives.**
+
+- *A ninth bearing.* Rejected: the compass is closed — eight facets, eight points — and a bearing travels within the sky; this leaves it.
+- *A ghost star at the rim.* Rejected: ghosts are the generative horizon's word for agent-proposed works awaiting blessing; borrowing it for a door would give one word two meanings.
+- *A gesture (a long press on the star, an arrow into an empty bearing).* Rejected for now: the sky's input grammar is small and every gesture in it is a destination; a hidden gesture is a puzzle, and a dwell is a courtesy. Held if the dwell proves too easy to miss.
+- *Always visible at the star.* Rejected: not a secret.
+
+**Reopens when.** The corpus grows a star the passage belongs under more truly than *small weather*; or a visitor Danny watches never finds it.
+
+## D-008 · Off the chart is a place of its own, not a room and not a work
+
+**Decision.** `/scale` is a top-level route with none of the house's chrome (the root treats it as it treats `/sky`), its own palette and type, `noindex, nofollow` so the sitemap leaves it out, and one way back: the sky, standing at the star the passage left from.
+
+**Because.** The proposal's open question — *where does it live?* — was answered by the idea that followed it: behind a star. A bestiary of speed records in *Superhot*'s light is not a work in a room and not the house's voice; giving it a room would make it a category of the site rather than a place the site keeps. The address stays real so the page can be shared and prerendered; the sitemap exclusion keeps it unlisted rather than unreachable.
+
+**Alternatives.**
+
+- *A work in the Studio, with the bestiary embedded (MDX).* Rejected: a work is Danny's voice in a room; the bestiary is a made thing with its own light and its own grammar, and MDX is itself held.
+- *An overlay in the sky, like a work opened there.* Rejected: the overlay keeps the visitor in the sky looking at a work; the bestiary wants the whole viewport, its own scroll, and its own palette.
+- *A separate deploy.* Rejected: one repository, one build, one address grammar; the route is one lazy chunk.
+
+**Reopens when.** The bestiary grows a dependency the house's budget cannot carry as a lazy layer, or Danny wants it findable.
+
+## D-009 · Two records in 2D canvas before any engine
+
+**Decision.** The first form is the proposal's own smallest next thing: the falcon and Bertie, and the transition between them, as seven stroked paths on a 2D canvas — flat color, no 3D — with the true-rate treadmill, the counter, the clock, and the pause. Three.js, the toon shader, the lab, the pipeline, sound, and the other twenty-two records are held with triggers in `OBJECTS_OF_SCALE.md`.
+
+**Because.** The proposal names three questions the whole project rests on — does a seven-tube falcon read as a falcon; does restart-on-arrival feel fresh or nag; does a football field at 59 beats per minute feel like 242 mph — and says that if one fails it is cheap to learn now. Directive 1: the smallest version that can become real today, the rest named with triggers. The 2D renderer is kept as the no-WebGL fallback in the proposal's own plan, so nothing built here is thrown away.
+
+**Alternatives.**
+
+- *Build the engine (Director, TubeRig, Treadmill, HUD) in Three.js first.* Rejected: one to two weeks of production ahead of the questions it depends on; a guess shipped as progress.
+- *The door with a placeholder behind it.* Rejected: a door to a "coming soon" is worse than no door; the passage needed a place to open onto.
+
+**Reopens when.** The three questions are answered yes by living with the slice.

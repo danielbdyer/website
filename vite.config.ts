@@ -41,6 +41,11 @@ export default defineConfig({
         // sky still prerenders rather than relying on a Foyer link to
         // be discovered by crawlLinks.
         { path: '/sky' },
+        // Objects of Scale — off the chart. Reached through the sky's
+        // one passage and by its address; listed so it prerenders (no
+        // prerendered page links to it), and kept out of the sitemap
+        // by its noindex meta (OBJECTS_OF_SCALE.md §"The passage").
+        { path: '/scale' },
         // The eight facet pages. Listed explicitly so an unused facet
         // (no work currently carries it) still renders its empty state
         // — crawlLinks would otherwise miss it because no chip points
