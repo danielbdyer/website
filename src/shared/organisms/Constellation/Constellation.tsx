@@ -5,6 +5,8 @@ import { Firmament } from '@/shared/atoms/Firmament/Firmament';
 import { Daystar, type SkyHour } from '@/shared/molecules/Daystar/Daystar';
 import { WebGLFirmament } from '@/shared/molecules/WebGLFirmament/WebGLFirmament';
 import { SkyWhisper } from '@/shared/molecules/SkyWhisper/SkyWhisper';
+import { SkyPassage } from '@/shared/molecules/SkyPassage/SkyPassage';
+import { passageFrom } from '@/shared/content/passage';
 import { cn } from '@/shared/utils/cn';
 import { useDusk } from './useDusk';
 import { Stage } from './Stage';
@@ -95,15 +97,19 @@ export function Constellation({
           (tokens.css §"The dusk"). */}
       <div aria-hidden="true" className="constellation-dusk" />
       <Daystar hour={hour} />
-      <SkyWhisper
-        place={whisperPlaceOf(graph, walk.here)}
-        bearings={bearingsOf(graph, walk.here)}
-        concordant={whisperConcordantOf(graph, walk.here)}
-        onBearing={travel.travelTo}
-        onAttend={walk.attendFacet}
-        traveling={traveling}
-        className="absolute right-6 bottom-16 left-6 z-10 sm:right-auto sm:bottom-6"
-      />
+      <div className="absolute right-6 bottom-16 left-6 z-10 sm:right-auto sm:bottom-6">
+        <SkyWhisper
+          place={whisperPlaceOf(graph, walk.here)}
+          bearings={bearingsOf(graph, walk.here)}
+          concordant={whisperConcordantOf(graph, walk.here)}
+          onBearing={travel.travelTo}
+          onAttend={walk.attendFacet}
+          traveling={traveling}
+        />
+        {/* The fourth line: a passage out of the sky, at one star, for
+            the visitor who stands there a while. */}
+        <SkyPassage passage={passageFrom(walk.here)} here={walk.here} traveling={traveling} />
+      </div>
     </nav>
   );
 }

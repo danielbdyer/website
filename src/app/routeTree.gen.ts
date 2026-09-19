@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudyRouteImport } from './routes/study'
 import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SkyRouteImport } from './routes/sky'
+import { Route as ScaleRouteImport } from './routes/scale'
 import { Route as SalonRouteImport } from './routes/salon'
 import { Route as GardenRouteImport } from './routes/garden'
 import { Route as IndexRouteImport } from './routes/index'
@@ -32,6 +33,11 @@ const StudioRoute = StudioRouteImport.update({
 const SkyRoute = SkyRouteImport.update({
   id: '/sky',
   path: '/sky',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScaleRoute = ScaleRouteImport.update({
+  id: '/scale',
+  path: '/scale',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalonRoute = SalonRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/garden': typeof GardenRoute
   '/salon': typeof SalonRoute
+  '/scale': typeof ScaleRoute
   '/sky': typeof SkyRouteWithChildren
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/garden': typeof GardenRoute
   '/salon': typeof SalonRoute
+  '/scale': typeof ScaleRoute
   '/sky': typeof SkyRouteWithChildren
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/garden': typeof GardenRoute
   '/salon': typeof SalonRoute
+  '/scale': typeof ScaleRoute
   '/sky': typeof SkyRouteWithChildren
   '/studio': typeof StudioRoute
   '/study': typeof StudyRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/garden'
     | '/salon'
+    | '/scale'
     | '/sky'
     | '/studio'
     | '/study'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/garden'
     | '/salon'
+    | '/scale'
     | '/sky'
     | '/studio'
     | '/study'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/garden'
     | '/salon'
+    | '/scale'
     | '/sky'
     | '/studio'
     | '/study'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GardenRoute: typeof GardenRoute
   SalonRoute: typeof SalonRoute
+  ScaleRoute: typeof ScaleRoute
   SkyRoute: typeof SkyRouteWithChildren
   StudioRoute: typeof StudioRoute
   StudyRoute: typeof StudyRoute
@@ -167,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/sky'
       fullPath: '/sky'
       preLoaderRoute: typeof SkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scale': {
+      id: '/scale'
+      path: '/scale'
+      fullPath: '/scale'
+      preLoaderRoute: typeof ScaleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/salon': {
@@ -228,6 +248,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GardenRoute: GardenRoute,
   SalonRoute: SalonRoute,
+  ScaleRoute: ScaleRoute,
   SkyRoute: SkyRouteWithChildren,
   StudioRoute: StudioRoute,
   StudyRoute: StudyRoute,

@@ -5,7 +5,7 @@
     "log": "fabric/spaces/<space>.jsonl",
     "session": "fabric/.session"
   },
-  "asOf": "2026-09-06T08:57:41.815Z",
+  "asOf": "2026-09-19T09:12:06.042Z",
   "spaces": [
     {
       "id": "agent",
@@ -20,7 +20,7 @@
   ],
   "manifest": {
     "space": "danny",
-    "asOf": "2026-09-06T08:57:41.815Z",
+    "asOf": "2026-09-19T09:12:06.042Z",
     "verbs": []
   },
   "sources": [],
@@ -1500,10 +1500,20 @@
   "compounding": {
     "k": 3,
     "window": 8,
-    "retrievals": 0,
+    "retrievals": 1,
     "used": 0,
+    "rate": 0,
+    "hitAtK": 0,
+    "mrr": 0,
     "missed": 0,
-    "series": [],
+    "series": [
+      {
+        "session": "session/unmarked-966",
+        "at": "2026-09-19T09:12:06.042Z",
+        "retrievals": 1,
+        "used": 0
+      }
+    ],
     "acceptance": {
       "decided": 0,
       "blessed": 0

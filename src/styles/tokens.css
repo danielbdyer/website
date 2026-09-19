@@ -2560,3 +2560,188 @@ html.descending::view-transition-new(daystar) {
   margin: 1.6em auto;
   border-radius: 2px;
 }
+
+/* ─── The passage ────────────────────────────────────────────────────
+   The whisper's fourth line, at one star, for the visitor who has
+   stood there a while: *off the chart · Objects of Scale*. It arrives
+   the way the concordance does — quietly, beneath the bearings — and
+   fades in over a held breath rather than appearing. The door is a
+   real link and leaves the sky. CONSTELLATION_WALK.md §"The Whisper". */
+.sky-passage {
+  pointer-events: none;
+  line-height: 1.6;
+  text-shadow: 0 0 14px var(--bg);
+  animation: sky-passage-arrive 1800ms ease-out both;
+}
+
+.sky-passage__door {
+  pointer-events: auto;
+  color: var(--text-3);
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in oklab, currentcolor 40%, transparent);
+  text-underline-offset: 0.22em;
+  transition: color 200ms ease-out;
+}
+
+.sky-passage__door:hover,
+.sky-passage__door:focus-visible {
+  color: var(--accent-gold);
+}
+
+.sky-arrival:has(.work-overlay) .sky-passage {
+  opacity: 0;
+}
+
+@keyframes sky-passage-arrive {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ─── Objects of Scale ───────────────────────────────────────────────
+   Off the chart: not a room of the house, and not in its light. A pale
+   matte stage, bone white toward pale concrete; one heavy grotesk;
+   flat black objects of scale; nothing on the surface that is not a
+   tube or a plane. The palette is the bestiary's own and does not
+   follow the hour — the stage inverts to black only off-planet, which
+   is a held page (OBJECTS_OF_SCALE.md §"Visual language"). The
+   grotesk is the system's for now; the face is held. */
+.bestiary {
+  --stage: #eeebe4;
+  --ink: #161616;
+  --ink-2: #5a5852;
+  --ink-3: #8a8780;
+
+  color: var(--ink);
+  background: var(--stage);
+  font-family: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+}
+
+.bestiary__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Native scroll-snap, one stop per page, and a flick can't skip one.
+   No scroll-jacking: momentum, keyboard paging, and assistive tech
+   all work for free. */
+.bestiary__scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.bestiary__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.bestiary__page {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* The top seventy percent is the stage: the canvas shows through it,
+   and the motion stays inside this band. */
+.bestiary__stage {
+  flex: 0 0 70%;
+}
+
+.bestiary__placard {
+  flex: 1 1 auto;
+  padding: 1.25rem var(--spacing-edge, 1.5rem) 1.5rem;
+}
+
+.placard__line {
+  margin: 0 0 0.5rem;
+  max-width: 14ch;
+  font-size: clamp(1.75rem, 5.2vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+}
+
+.placard__facts,
+.placard__counter,
+.placard__foot {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.placard__counter {
+  margin-top: 0.6rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.placard__count {
+  font-weight: 800;
+}
+
+.placard__foot {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.placard__badge {
+  padding: 0.1rem 0.4rem;
+  border: 1.5px solid currentcolor;
+  border-radius: 2px;
+}
+
+/* The two controls that sit over the stage: the way back and the
+   pause. Both are at least the touch target, and read in the ink. */
+.bestiary__return,
+.bestiary__pause {
+  position: absolute;
+  top: 0.75rem;
+  z-index: 2;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--stage);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.bestiary__return {
+  left: 0.75rem;
+}
+
+.bestiary__pause {
+  right: 0.75rem;
+}
+
+.bestiary__return:hover,
+.bestiary__pause:hover {
+  background: var(--ink);
+  color: var(--stage);
+}

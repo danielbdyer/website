@@ -370,6 +370,11 @@ export default tseslint.config(
       'src/shared/webgl/atmosphereRenderer.ts',
       // The daystar's painter sizes the canvas it is handed.
       'src/shared/webgl/daystarPaint.ts',
+      // The bestiary's rim: the 2D painter writes the canvas in
+      // place per frame; the shell mutates its own schedule, clock,
+      // and scroll position (OBJECTS_OF_SCALE.md §"Enforced in Code").
+      'src/shared/dom/scalePainter.ts',
+      'src/shared/hooks/useBestiary.ts',
     ],
     rules: {
       'no-restricted-syntax': 'off',

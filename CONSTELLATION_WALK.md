@@ -128,6 +128,8 @@ The first line is where you are. The second is what leads away — each facet a 
 
 **The third line.** When a work's words are in concordance with the one you stand at and no facet joins them, the whisper adds *in concordance · {title}*, and taking it travels there (§"Presence").
 
+**The fourth line.** At one star, and only to a visitor who has stood there a while, the whisper adds *off the chart · Objects of Scale*, and taking it leaves the sky for a place that is neither a star nor a room. Nothing is rendered before the dwell; the sky keeps the passage the way a house keeps a door behind a bookcase. The star, the dwell, and the place are `OBJECTS_OF_SCALE.md` §"The Passage."
+
 ---
 
 ## The Walk's Memory
@@ -167,12 +169,13 @@ What stays: the two hours and the dusk; the weather's turn on the clock (the sta
 - Whether hovering a room's name in the whisper should light the room's stars as a region — rooms are atmospheres, not figures, and the compass is by facet; the room parallel (`CONSTELLATION_PARALLEL.md`) may want this.
 - The return flight on refresh, the rest distance and the trench, and the near-straight strings single-facet works make along their bearing — felt tunings, each named with its trigger in `BACKLOG.md`.
 - The whisper on small screens shares the foot of the frame with the return link; it sits above the link below the `sm` breakpoint for now.
+- Where the passage lives as the corpus grows, and how long the dwell is (`OBJECTS_OF_SCALE.md` §"Held").
 
 ---
 
 ## Enforced in Code
 
-*Shipped 2026-09-01:* the compass placement, the spread, and the facet figures live in `src/shared/content/constellation.ts`; the neighborhood, bearings (with the thread each travels along), names within a stroke, and the arrow-key choice in `src/shared/content/skyWalk.ts`; destination travel in `src/shared/hooks/useSkyTravel.ts`, which replaced the physics navigation hook (the wells, the flick, the coast, and the demonstration drift are gone); the walk's state in `src/shared/hooks/useSkyWalk.ts` and `src/shared/state/hereStorage.ts`; the input grammar in `src/shared/organisms/Constellation/useSkyInteractions.ts` (a pointer press never triggers focus-travel; only keyboard focus does); the whisper in `src/shared/molecules/SkyWhisper/`; threads as paths in `src/shared/atoms/Thread/Thread.tsx` with the projector moving the hit twin.
+*Shipped 2026-09-01:* the compass placement, the spread, and the facet figures live in `src/shared/content/constellation.ts`; the neighborhood, bearings (with the thread each travels along), names within a stroke, and the arrow-key choice in `src/shared/content/skyWalk.ts`; destination travel in `src/shared/hooks/useSkyTravel.ts`, which replaced the physics navigation hook (the wells, the flick, the coast, and the demonstration drift are gone); the walk's state in `src/shared/hooks/useSkyWalk.ts` and `src/shared/state/hereStorage.ts`; the input grammar in `src/shared/organisms/Constellation/useSkyInteractions.ts` (a pointer press never triggers focus-travel; only keyboard focus does); the whisper in `src/shared/molecules/SkyWhisper/`; threads as paths in `src/shared/atoms/Thread/Thread.tsx` with the projector moving the hit twin. *2026-09-19:* the whisper's fourth line — the passage — in `src/shared/content/passage.ts`, `src/shared/hooks/useDwell.ts`, and `src/shared/molecules/SkyPassage/`.
 
 *Shipped 2026-09-02, the second pass with Danny:* the dolly is gone and travel is a sine glide with the deep field's streak (`uTravel` in `src/shared/webgl/atmosphereShaders.ts`, carried by `src/shared/state/skyCamera.ts`); the rest distance adapts to the frame (`restDistanceFor`, `skyWalk.ts`); the scrub along a track lives in `useSkyTravel.ts`; the compass is drawn — meridians and sector atmospheres in the dome shader, names at the rim in `src/shared/atoms/Compass/` projected by `skyProjector.projectCompass`, dotted second figures in `Thread.tsx`; the horizon rim in the dome shader; label layout in `src/shared/dom/labelLayout.ts` applied by `skyProjector.placeLabels`; the concordance in `src/shared/content/concordance.ts` and presence in `src/shared/content/presence.ts`, with absent stars receding in both the SVG (`data-present`) and the atmosphere (`aPresence`). Not yet built: the proposed state and its author gate, the placement override, embeddings behind the concordance.
 

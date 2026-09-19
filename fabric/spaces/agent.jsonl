@@ -1,1 +1,2 @@
 {"step":0,"at":"2026-09-06T08:57:41.815Z","space":"agent","actor":"runtime","kind":"space.opened","payload":{"id":"agent","kind":"agent","sovereign":"agent"}}
+{"step":1,"at":"2026-09-19T09:12:06.042Z","space":"agent","actor":"runtime","because":"the start hook printed the newest reflections into the session’s context","kind":"retrieval.surfaced","payload":{"id":"retrieval/orient-session/unmarked-966-2026-09-19T09:12:06.042Z","session":"session/unmarked-966","at":"2026-09-19T09:12:06.042Z","verb":"orient","context":"session start","k":8,"candidates":[]}}

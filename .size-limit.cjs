@@ -41,10 +41,14 @@ module.exports = [
     // week) added ~1KB to the main entry — the lift carried frame by
     // frame, the heavens' pitch bridge, the glyph's stand-in with its
     // store and its lazily fetched character — and the floor moved
-    // from 225 to 227.
+    // from 225 to 227. Objects of Scale (2026-09-19) is a route of its
+    // own — the straws, the director, the two records, the 2D painter,
+    // the shell — about 5KB gzipped that only a visitor who finds the
+    // passage ever requests; the floor moved from 227 to 233 with it.
+    // Its 3D renderer, when it comes, is a lazy layer, not this.
     name: 'eager client JS (every chunk a navigation can request)',
     path: ['dist/client/assets/*.js', ...LAZY_LAYERS.map((glob) => `!${glob}`)],
-    limit: '227 KB',
+    limit: '233 KB',
     gzip: true,
   },
   {

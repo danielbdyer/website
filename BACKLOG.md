@@ -249,6 +249,22 @@ When a backlog item is taken up, it is removed from this file. Git history prese
 
 ---
 
+## Off the Chart
+
+Held items of `OBJECTS_OF_SCALE.md` §"Held" carry their triggers there and are not restated one by one. The two that a hand can take up next:
+
+### The third character
+
+**Why:** Two of twenty-four records are drawn (Bertie, the falcon), by hand, as control points. The third character is where the lab (a route to pick two pages and scrub the morph) and the authoring pipeline (a Figma template with seven named stroke layers, a script that samples them into the record) earn their keep — and where the falcon's answer to *does a seven-tube falcon read as a falcon?* is either trusted or revised.
+**Trigger:** Danny draws, or asks for, the next record; or the falcon does not read and the tube count (seven, five, nine) is reopened.
+
+### The passage's star
+
+**Why:** The passage leaves from *small weather* because it is the one star and the right one today. As the corpus grows, the star it belongs under may change; the passage is one value in `src/shared/content/passage.ts`, and the dwell (`PASSAGE_DWELL_MS`, seven seconds) is a felt tuning.
+**Trigger:** A new work whose words are more truly about scale, speed, or distance than *small weather*; or Danny watching a visitor never find the door.
+
+---
+
 ## Infrastructure
 
 ### Print stylesheet

@@ -198,6 +198,8 @@ Everything the constellation does is in service of the visitor's attention. The 
 | **Press on the sky and drag** | The sky follows the hand — fully along a thread, at seven tenths elsewhere. The star nearest the center claims as you go; let go and the sky settles onto it, or springs home if none is near | *Taking hold of the sky, and aiming it* |
 | **Take the whisper's concordant line** | Travel to the work whose words echo this one though no facet joins them | *The edge you would not have thought to look for* |
 | **Tab to a star** | Travel to it; Enter opens it | *The same walk, by keyboard* |
+| **Stand at *small weather* a while** | The whisper adds a fourth line, *off the chart · Objects of Scale*; taking it leaves the sky ([`OBJECTS_OF_SCALE.md`](./OBJECTS_OF_SCALE.md)) | *A door behind the bookcase* |
+| **Stand at *small weather* a while** | The whisper adds a fourth line, *off the chart · Objects of Scale*; taking it leaves the sky ([`OBJECTS_OF_SCALE.md`](./OBJECTS_OF_SCALE.md)) | *A door behind the bookcase* |
 | **Scroll down (past the threshold)** | The carpet furls, the body descends, the Foyer returns | *Returning to the room* |
 
 What the constellation refuses:
