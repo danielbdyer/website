@@ -426,6 +426,9 @@ words:
   - supertag
   - supertags
   - headspace
+  - supertagged
+  - interactable
+  - storyboarded
 
 dictionaries:
   - en_US
