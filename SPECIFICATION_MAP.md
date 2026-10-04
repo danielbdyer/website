@@ -196,6 +196,11 @@ The component architecture is where the two trunks converge into one built thing
                              The library the site and the outliner
                              share: nouns, verbs, five modes, and the
                              functions that bind them.
+                             │
+                             └─→ COMPONENT_CATALOG.md
+                                   Every component and mode foreseen,
+                                   by concern: assumptions, what is known,
+                                   what is worth doing, what is left open.
                             ▲
          DESIGN_SYSTEM ─────┘
          (outside)
@@ -209,6 +214,14 @@ The implemented realities of the house read against their higher disposition, so
 
 **`COMPONENT_GRAMMAR.md`** | The House | Exists | Depends on: `REACT_NORTH_STAR.md` + `REFINEMENT_AUDIT.md` + `PATTERN_LANGUAGE.md` + `HYPOTHESIS.md`; in the harness, its `REACT_NORTH_STAR.md` and D-126
 The shape of the component library the site and the harness's outliner will share (2026-10-04, at Danny's ask). Three axes that vary independently: the noun (one, the node, with an anatomy that extends pattern 1 from works to every node), the verb (defined once, with a consequence class: observe, record, decide, cross, world), and the mode (the sky, the page, the authored page, the outline, the relational mode). The praxis pipeline both codebases already built without saying so: gesture, command, plan, intent, with one union of intents across every mode. Four pure functions that bind the axes (`anatomyOf`, `offered`, `prominenceOf`, `orientationOf`); crossings that cannot be built without the node they came from, and that ask for readiness on the look-up's state machine; hooks and compound components in both React specifications' taxonomy; an author layer that attaches to parts by address and never ships to a visitor; shared components promoted at their second consumer; the four points where the two React specifications disagree; seven candidate invariants with their checks; and the order of work, beginning with adjudication A1. A plan for the shape, not a build plan.
+
+**`COMPONENT_CATALOG.md`** | The House | Exists | Depends on: `COMPONENT_GRAMMAR.md` + `ARCHITECTURE.md` + `VISION.md` + `PATTERN_LANGUAGE.md`
+Every component and mode the composite is expected to need, laid out by the concern each separates rather than by how it should be built (2026-10-04, at Danny's ask that the next agent "find joy in implementing it how they wish"). Its parts:
+
+- Twelve core assumptions, each with what changes if it is wrong.
+- The five modes, plus the type editor, the arena, the agent's surface and the Foyer. Each comes with what it is for, what is known, assumed and worth doing, what is left open, and what to watch for.
+- Components grouped by concern: anatomy, ink, verbs, authority, attention, orientation, crossings, gatherings, fragments, chrome, honesty, and the agent's surface.
+- A table of seams where a refactor might dissolve several components into one, offered to be overturned.
 
 ## The Threshold — Where the House Meets the World
 
@@ -321,6 +334,11 @@ CONTENT_SCHEMA + DESIGN_SYSTEM
                                 Where the composite goes: the end state,
                                 the principles, the path in phases, the
                                 measures, and the hints for the next session.
+                                │
+                                └─→ ARCHITECTURE.md
+                                      The grammar of the whole: one loop of
+                                      eight arrows, five axes, the forbidden
+                                      combinations, the six boundaries.
 ```
 
 **`RENDERING_STRATEGY.md`** | Grounds | Exists | Depends on: `REACT_NORTH_STAR.md` + `PERFORMANCE_BUDGET.md` + `CONTENT_SCHEMA.md`
@@ -338,8 +356,18 @@ The inspection regime. What to test, what not to test, coverage philosophy, the 
 **`MEDIA_STRATEGY.md`** | Grounds | Gap | Depends on: `CONTENT_SCHEMA.md` + `DESIGN_SYSTEM.md`
 The workshop. Images, audio, video — formats, optimization, CDN delivery, alt text philosophy, responsive images. The Salon is the cellist's son's room; audio is potentially a first-class medium. This file bridges inside (content) and outside (design) at the infrastructure level: how non-text materials are prepared, optimized, and delivered. Depends on the content schema (what media types exist in the content model) and the design system (how media is presented).
 
-**`EVOLUTION_PROTOCOL.md`** | Grounds | Gap | Depends on: All of the above
-The master plan. How the codebase grows over time. Refactoring triggers (already partially in `REACT_NORTH_STAR.md` as the "Evolution Protocol" section), migration patterns, how new rooms or content types would be added, what "living over finished" means for the codebase itself. The site grows like a garden — this file says how you tend it. This is the capstone of the entire graph: the one file that needs every other file's context to make sense, because it specifies how the whole system evolves.
+**`EVOLUTION_PROTOCOL.md`** | Grounds | Exists | Depends on: All of the above, and most directly `ARCHITECTURE.md`, `VISION.md` and `AGENTS.md`
+The master plan for how the composite codebase changes, written 2026-10-04 for the house, the harness and the vault together. Its parts:
+
+- Who decides what: Danny decides what the system is for, what reaches his record, what a word means, and what a visitor sees. The agent decides the rest, with rejected alternatives recorded.
+- The two speeds: wait for the pull on *what*; once pulled, build without waiting to be sure on *how*.
+- Fifteen kinds of change, each with its path, record, decider and check.
+- The triggers for structural change, gathered from both React specifications and both charters.
+- A session from start to finish.
+- The loop by which the codebase changes itself.
+- How documents change: dated amendments, never silent rewrites.
+- When a plan is bettered: a better design that keeps the coordinates is the hoped-for outcome.
+- Measuring evolution, and what the protocol refuses.
 
 **`CATHEDRALS.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `DOMAIN_MODEL.md` + `GRAPH_AND_LINKING.md` + `REACT_NORTH_STAR.md` + `RENDERING_STRATEGY.md` + `CONSTELLATION_ARCHITECTURE.md`
 The shared ground. Danny's second repository, `cathedrals` — a consent-gated knowledge graph whose constitution is *agents propose; the author blesses* — turned out to stand on the same three operations as the house. This file names what each project preserves, what is blended (one thing, two registers, never a third), the wall they share and the one door through it (`@dbd/slice`, a bounded view of the graph as plain data with a schema of record), dependency injection without a container, git as the vessel, the agent's preferences for the engine's successor, the practice the agent works by, and the phases with their pulls. The movements from "What Is Preserved" through "How the Agent Works Here" are written to become the workspace's root `CLAUDE.md` when the site moves under `apps/`.
@@ -361,6 +389,19 @@ Danny's words of 2026-10-04, kept verbatim, on joining this repository with the 
 
 **`VISION.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `AGENTS.md` + `HYPOTHESIS.md` + `COMPONENT_GRAMMAR.md` + `DYERVERSE.md`; in the harness, `NORTH_STAR.md`
 Where the composite codebase goes: the house, the harness and the vault, as of 2026-10-04, written at Danny's request as the high-water mark later sessions iterate from. Its parts:
+
+**`ARCHITECTURE.md`** | Grounds | Exists | Depends on: `VISION.md` + `COMPONENT_GRAMMAR.md` + `CATHEDRALS.md` + `REFINEMENT_AUDIT.md` + `REACT_NORTH_STAR.md`; in the harness, `NORTH_STAR.md` and A-13
+The grammar of the whole codebase, stated as what must always be true rather than as a blueprint (2026-10-04). Its parts:
+
+- One loop of eight arrows: gesture, plan, perform, stamp, append, fold, project, render. Beside the log sits the second record, the markdown corpus (D-049).
+- Five independent axes on which every unit of code has one coordinate: zone, arrow, capability, moment, actor.
+- The admissible combinations, with the forbidden ones as the invariants, each with its check.
+- The six boundaries, as the places where one coordinate changes.
+- Agents as actors in the same loop, with the chief of staff as a projection rather than an agent.
+- The loop at two scales.
+- How the coordinates sort the existing code.
+- What changes at the join: the vault bound by a recorded pin, not a submodule, because of A-13.
+- The checks to build, in order, and what is deliberately free.
 
 - The conclusion in nine statements.
 - His words as the felt specification, each with what it requires and how it is checked.
@@ -458,7 +499,10 @@ The five outcomes today:
 | `MANIFESTO_NOTES.md` | Exists | Technical accompaniment to the manifesto: file paths, lint rules, drift inventory. Updated as drift resolves or surfaces. |
 | `HYPOTHESIS.md` | Exists | Danny's two messages of 2026-10-04 on the harness, the outliner, the landing page, the `#hypothesis` tag, the sign-in at the moon, and one node rendered four ways, with the agent's reflections and fourteen questions for the next conversation. A record before building; its one decision, opened-with, is directive 18 in `AGENTS.md`. |
 | `COMPONENT_GRAMMAR.md` | Exists | The shared component library's shape: nouns, verbs, five modes, the praxis pipeline, four binding functions, the author layer, candidate invariants, and the order of work. A plan; nothing built. |
+| `COMPONENT_CATALOG.md` | Exists | Every foreseen component and mode, by concern, with assumptions and seams worth looking for. Unprescriptive by design. |
 | `VISION.md` | Exists | Where the composite goes, as of 2026-10-04: the end state, principles, phases with falsifiers, measures, open decisions, and hints for the next session. Amended by dated change. |
+| `ARCHITECTURE.md` | Exists | The composite's grammar as invariants: one loop of arrows, five axes, forbidden combinations, six boundaries, checks to build. |
+| `EVOLUTION_PROTOCOL.md` | Exists | How the composite changes: who decides, fifteen kinds of change, triggers, the session, amendments, and when a plan is bettered. Filled 2026-10-04; formerly a gap. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 

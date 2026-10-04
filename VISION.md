@@ -10,7 +10,7 @@
 
 ## The Conclusion First
 
-1. **One person's practice, one record, many views of it.** Danny writes, decides, publishes and sees relations in one place. Visitors see what he chose to show. All of it is projected from the record: append-only logs under one discipline. Today that is two logs, the outline's (one per document, D-130) and the harness's (one per tenant), to be joined by B-47.
+1. **One person's practice, two records, many views of them.** Danny writes, decides, publishes and sees relations in one place. Visitors see what he chose to show. Underneath sit two records at different grain, neither derived from the other (harness D-049, his decision of 2026-09-14). The first is the append-only logs, the record of what happened. Today that is the outline's log (one per document, D-130) and the harness's log (one per tenant), to be joined by B-47. The second is the markdown corpus, the record of his prose, readable in git with none of this software. Everything else is a view of one or the other.
 2. **The writing surface stays Workflowy-calm, and power arrives at the moment it helps.** Structure is induced from use and approved by him. A field is a question with a right moment, never a form in front of the sentence. This is his `#hypothesis`: "the over-embedding of fielding into Tana was a distraction from being able to pay attention to the actual work surface."
 3. **Every crossing is opened-with** (directive 18, D-142). The move is his, made in the place he already is, and the system follows. A change of mode asks for readiness, not only consent.
 4. **The site is the published face.** For a visitor it is static, and it stays byte-identical whether or not Danny is editing it. The author's layer exists only on his enrolled devices, only at night, and only after his name has been carried to the moon.
@@ -41,7 +41,7 @@ Danny named what that contact feels like, and his words are the specification. D
 | "the editor and the actual render of the content itself were basically identical" | The authored page is the page plus one layer. | Invariant: the author layer imports no page module. *(proposed)* |
 | "a door they cannot open - they'd have to know it's there, first of all" | A visitor never receives the author's version of any page. | A byte-identity test on the Worker's responses. *(proposed)* |
 | "Yep, only the night." | The moon is the only receiver for the sign-in gesture, and it appears only at night. | The theme toggle already shows the moon by night (`ThemeToggle.tsx`). *(exists, as the threshold)* |
-| "safely and efficaciously pulled in but not polluted" | The vault enters by pinned reference and is read-only from outside. | A submodule pin, read through the markdown adapter. *(proposed)* |
+| "safely and efficaciously pulled in but not polluted" | The vault enters by pinned reference and is read-only from outside. | A pin recorded as data, with the vault read where it lives (amended below). *(proposed)* |
 | "a consensual binding … tracked as a dependency and induces some friction to be able to break that linkage" | Every binding across zones is explicit, pinned, and removed only deliberately. | A name plus a hash: a submodule pin, an AT Protocol strong reference, a content-hashed event id. *(proposed)* |
 | "as little dynamism and client side bundle in the frontend as possible" | Static HTML for visitors, with no author code in their bundle. | `PERFORMANCE_BUDGET.md`: initial JavaScript at most 100 KB target and 150 KB limit, gzipped. Today: 118 KB. *(exists)* |
 | "non-disruptive to the soma or psyche, and keeps you feeling very connected to yourself" | All of the above, judged by him. | His own Evaluation, recorded in the harness, after a month of use. *(proposed)* |
@@ -74,7 +74,7 @@ A target, described as a sequence of moments, so that each requirement can be tr
 
 **An evening on the site.** He dims the room. The sun becomes the moon. He carries his name from the nav to the moon, the moon draws it the last distance, and his fingerprint confirms. Nothing visible changes except that the page is now his to touch. He right-clicks the Study's deck and edits it in place. He selects a paragraph of an essay, writes, and clicks off; it saves. The page is the same page a visitor sees.
 
-**Publishing.** In the outline he right-clicks a node and chooses Publish. The site's fields (title, room, facets) are asked for at that moment, already filled in where they can be guessed. He accepts. The page exists for visitors within moments, as static HTML, because the edge renders it from the record and caches it. No rebuild of the whole site.
+**Publishing.** In the outline he right-clicks a node and chooses Publish. The site's fields (title, room, facets) are asked for at that moment, already filled in where they can be guessed. He accepts. The work's markdown file is written and committed to main, and the site deploys from it as static HTML. His prose is now in git, readable with no software at all (D-049).
 
 **The relational mode.** Before a session of structuring, he crosses deliberately: the readiness gesture, begun, felt, completed. Typed nodes come forward and everything else is quieted, still within reach. Vault claims appear in their own zone, read-only. He binds a claim into an essay as a quoted claim. The binding is a name plus a hash, so if the claim later changes in the vault, the essay keeps the version he chose until he moves the pin.
 
@@ -96,7 +96,7 @@ A target, described as a sequence of moments, so that each requirement can be tr
                          └──────┬──────────┬──────────┬──────────┬──────┘
                                 │          │          │          │
                         the outline   the page    the sky    the markdown
-                        (writing)     (reading)  (relations)  (local search)
+                        (writing)     (reading)  (relations)  (prose's record)
                                 │          │          │
                                 └── author layer (his devices, at night) ──┘
 
@@ -108,13 +108,13 @@ A target, described as a sequence of moments, so that each requirement can be tr
 | **The record** | Two append-only logs under one discipline. The outline's own log, one per document (D-130), holds everything written in the outline. The harness's log, one per tenant, holds the author's record. Approved bullets reach the harness's log as Notes through B-47's adapter (D-131). Whether the two logs ever become one is held. | Both logs *exist*; B-47 is *admitted* and not built. |
 | **The schema of record** | One zod schema per boundary, with the portable JSON Schema generated and drift-checked. At the wall between zones, `@dbd/slice` carries a bounded view. | *Exists* on both sides. The slice/view naming collision is *held*. |
 | **The outline** | `packages/outline` (pure core, intents, server, sync, MCP) and `packages/outline-app` (the renderer). | *Exists.* |
-| **The page** | The site's routes, prerendered. Later they are rendered at the edge from the record's approved state and cached, with each publish clearing the pages it changed. | Prerendering *exists*; edge rendering is *held* behind the publish trigger. |
+| **The page** | The site's routes, prerendered from the markdown corpus. Rendering at the edge is held, for the day the time from Publish to visible grows too long. | Prerendering *exists*; edge rendering is *held* behind the publish trigger. |
 | **The sky** | The site's `/sky`, drawing a slice. | *Exists* for works; drawing outline nodes is *proposed*. |
 | **The authored page** | The page plus the author layer, attached to parts by address (`data-address`, `data-part`) and dispatching the outline's intents to its API. | *Proposed* (`COMPONENT_GRAMMAR.md`). |
 | **The Worker** | It runs first for page requests (`run_worker_first`, present in the installed wrangler schema). It recognizes his enrolled device and adds the author layer with HTMLRewriter. Everyone else gets the static file unchanged. | *Proposed.* |
 | **Identity** | Passkeys (WebAuthn) added to the outliner's identity (D-135), one per enrolled device, with a second device as the recovery path. Cloudflare Access with a device check is an optional outer gate. An `httpOnly` cookie scoped to `.danielbdyer.com`. | *Proposed.* D-135's identity *exists*. |
-| **The markdown projection** | Files written from the record, so an agent can search the whole site with `grep`. | *Proposed.* Read-only or two-way is an open decision. |
-| **The vault zone** | `book-research` as a git submodule at a pinned commit, read by the harness's markdown adapter into its own namespace. | *Proposed.* |
+| **The markdown corpus** | The second record (D-049): his prose as files in git, readable without this software, and searchable by any agent with `grep`. The outline reads a work through the markdown adapter (`import.markdown`, carrying the file's path and content hash). An edit made in the outline is written back to the file by the round trip of §10. | The record *exists* (`src/content/`). Writing back from the outline is *proposed*. Whether a materialized tree round-trips is the harness's open Q-50. |
+| **The vault zone** | `book-research` bound by a pin recorded as data (a name plus a commit hash), checked out beside the repository, and read by the harness's markdown adapter into its own namespace. It is never inside the repository (A-13). | *Proposed* (amended below). |
 | **Namespaces and bindings** | Type names qualified by zone, in the manner of AT Protocol lexicon ids. Bindings across zones are a name plus a hash. Signed events come with federation. | Namespacing is *proposed*; signing is *held* (D-135). |
 | **Agents** | Harness hooks for every session. The fabric's MCP server, ported to serve the harness's verbs. The chief of staff, scoring when he arrives. "Discuss with AI" (D-139). The patch loop, ported from the fabric, so an amendment can be applied to a file. | Hooks and Discuss *exist*; the rest is *proposed*. |
 
@@ -124,11 +124,11 @@ A target, described as a sequence of moments, so that each requirement can be tr
 
 Each has a statement, the reason, the check that would catch its violation, and its source.
 
-### 1. One record; everything else is a view
+### 1. Two records; everything else is a view
 
-**Statement.** The append-only logs are the only truth: the outline's and the harness's, joined by B-47. The outline, the article, the sky, the markdown files and the static HTML are projections of them.
-**Because.** Two stores of one truth drift (harness `CLAUDE.md`: "One behavior lives in one place"). Danny saw it directly: "I think honestly these are the same thing!" (`HYPOTHESIS.md`, answer 12).
-**Check.** No write path except intents into the log. If the markdown projection becomes editable, it gets one merge rule, written as a decision.
+**Statement.** Only two things cannot be regenerated. The logs are the record of what happened. The markdown corpus is the record of his prose. Neither derives from the other (D-049). The outline view, the article, the sky, the static HTML and every index are views of them.
+**Because.** D-049, decided by him and recorded with his provenance: "losing the corpus must not cost the state, and losing the log must not cost the writing." Making markdown a projection of the log was rejected, because "it makes the author's own prose a derived artifact of a system he wants to outlive." His "these are the same thing!" (`HYPOTHESIS.md`, answer 12) is honored as one work held in two records at different grain, with a rule for how they meet.
+**Check.** The site builds from markdown alone, with no log present (*to build*). The state rebuilds from the log alone (INV-NS-001, INV-NS-002). An import names the file and the version it saw (`source.path`, `source.contentHash`).
 
 ### 2. Structure is induced from use, and the author approves it
 
@@ -239,7 +239,7 @@ The phases are ordered by what each one unblocks, and each starts only on its pu
 ### Phase 3 — The join
 
 **Pull.** The visibility and root decisions.
-**Scope.** If one visibility is acceptable, the harness becomes the root and the site enters by `git subtree add` under `apps/site`, with its history. The fabric's five ideas become harness backlog stories. Then the fabric is retired in one change, the vault enters as a submodule, and the harness's hooks run every session. If one visibility is not acceptable, the two stay separate repositories with one contract.
+**Scope.** If one visibility is acceptable, the harness becomes the root and the site enters by `git subtree add` under `apps/site`, with its history. The fabric's five ideas become harness backlog stories. Then the fabric is retired in one change, the vault is bound by a recorded pin, and the harness's hooks run every session. If one visibility is not acceptable, the two stay separate repositories with one contract.
 **Exit.** One install, one `pnpm check`, and both deploys working: the site to Cloudflare Workers and the outline to `outline-cloud`.
 **Measure.** Time to a green check on a clean clone.
 **Falsifier.** A change that touches the outline and the site needing two pull requests after the join. If so, the join did not do its job.
@@ -260,10 +260,10 @@ The phases are ordered by what each one unblocks, and each starts only on its pu
 
 ### Phase 6 — Works as nodes
 
-**Pull.** Phase 3, plus the decision on the markdown projection.
-**Scope.** The site's works are imported into an outline document; the outliner already imports Markdown. From then on, the markdown files under `src/content/` are the projection, written from the record, and the site keeps building from them exactly as it does today.
-**Exit.** A change to a work's node in the outline reaches its page through the projection and a build.
-**Falsifier.** A work's markdown and its node disagree, and no single place can say which is right.
+**Pull.** Phase 3, plus the answer to the harness's Q-50: whether, and how, the materialized tree round-trips.
+**Scope.** The site's works become nodes the outline can edit, while their files under `src/content/` stay the record of his prose (D-049). The outline reads each work through the markdown adapter, with its path and content hash. An edit in the outline is written back to the file by §10's round trip. The site keeps building from markdown exactly as it does today.
+**Exit.** A change made to a work in the outline lands in its markdown file. The site still builds with no log present.
+**Falsifier.** A work's markdown and its node disagree, and no rule says which wins.
 
 ### Phase 7 — One part, authored
 
@@ -272,13 +272,19 @@ The phases are ordered by what each one unblocks, and each starts only on its pu
 **Exit.** He edits a title on the live page, and the record shows the event with his provenance.
 **Falsifier.** Editing in place that needs the page to know about editing.
 
-### Phase 8 — Publishing from the record
+### Phase 8 — Publishing is a commit
 
 **Pull.** Phase 7, plus the decision on content previews.
-**Scope.** The Publish command in the outline's menu, with the site's fields asked for at that moment. The page rendered from the record's approved state at the edge and cached, with a publish clearing what it changed. B-47's adapter, so outline nodes reach the record as Notes.
-**Exit.** A node published from the outline is visible to visitors as static HTML.
-**Measure.** The time from Publish to visible, measured first and then budgeted.
-**Falsifier.** Visitor-facing pages that are no longer static. If that happens, edge rendering has cost what the site promised it would not.
+**Scope.**
+
+- The Publish command in the outline's menu. The site's fields are asked for at that moment.
+- Publishing writes the work's markdown file and commits it to main. "A blessing is a commit" (`CATHEDRALS.md` §"Git Is the Vessel").
+- The site deploys from main as it does now. This matches answer 12: publishing from anywhere, a localhost session included, "but only on the main branch."
+- B-47's adapter, so outline nodes reach the harness's record as Notes.
+
+**Exit.** A node published from the outline is visible to visitors as static HTML, and its prose is in git.
+**Measure.** The time from Publish to visible, which is build plus deploy, measured first and then budgeted. Rendering at the edge is held for the day that time is too long.
+**Falsifier.** He waits on a deploy often enough to mind. If so, the held edge rendering is pulled.
 
 ### Phase 9 — B-46, reshaped
 
@@ -311,7 +317,7 @@ The phases are ordered by what each one unblocks, and each starts only on its pu
 
 ### Phase 12 — The vault zone
 
-**Pull.** Phase 3's submodule, and a work that wants to quote a claim.
+**Pull.** Phase 3's pin, and a work that wants to quote a claim.
 **Scope.** Vault notes read into their own namespace. Quoted claims and transclusions with pinned bindings. Vault claims as a second region of the sky.
 **Exit.** One essay quoting one claim by binding.
 **Falsifier.** Anything written into the vault from outside it.
@@ -376,7 +382,7 @@ The phases are ordered by what each one unblocks, and each starts only on its pu
 | A small client | Initial JavaScript at most 100 KB target, 150 KB limit, gzipped | 118 KB |
 | Quiet agents | Acceptance of shown proposals between 70 and 80 percent; all proposals between 30 and 90 percent (§11) | Not measured. |
 | Compounding | R(t): retrieval hit rate and mean reciprocal rank (`compounding()`) | 0 of 0 at this session's start |
-| Publishing | Time from Publish to visible | Not built. |
+| Publishing | Time from Publish to visible: build plus deploy | Not built. |
 | The writing | His Evaluation after each surface-changing phase | — |
 
 ---
@@ -411,7 +417,7 @@ These are what this session learned, so they do not have to be learned again.
   - **Harness:** `echo '{"session_id":"…","hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=/home/user/harness .claude/hooks/harness.sh start`.
   - **Site:** `pnpm --silent fabric orient`.
 - The harness's `record` is not approved. A session's record goes at the top of its `RECONCILIATION.md` as a new section, and the pull request body carries it. The session's retrieval events (`.harness/log/harness/agent-<session>.jsonl`) are committed separately: "This session's retrieval events in the harness log."
-- The site's directive 7 asks every session to `reflect`, but `reflect` was never blessed. Say so; do not pretend.
+- The site's directive 7 asks every session to `reflect`, but `reflect` was never blessed. Say so; do not pretend. Until it is blessed, the site's session record goes at the end of `CORPUS.md`'s reconciliation (directive 17). This session nearly forgot.
 
 **The site's checks.**
 
@@ -428,6 +434,7 @@ These are what this session learned, so they do not have to be learned again.
 
 **Writing.**
 
+- Before proposing anything about the record, read the harness's `DECISIONS.md` for Danny's earlier answers. This file's first draft contradicted D-049, his decision about markdown, and A-13, his clean-room rule, and both were caught only on a second reading.
 - Before naming anything, read `REFINEMENT_AUDIT.md` §"The primitives, resolved" and `PATTERN_LANGUAGE.md`. Address, anatomy, orientation, gesture, lens and the tiers of state are already named. This session nearly introduced "lede" for pattern 1's `meta` and `deck`, and "lens" for a mode that is not one.
 - The harness writes plainly (its `CLAUDE.md`, "The one directive"): no metaphor, lines wrapped near 100 characters, and decisions in the form Statement, Because, Rejected alternatives, Consequences, Falsifiers, Provenance. The site has three voices, and the agent writes to Danny in plain words (directive 14).
 
@@ -460,7 +467,7 @@ These are what this session learned, so they do not have to be learned again.
 | **B-46** | Reshape it as in `HYPOTHESIS.md`; keep it as admitted | Reshape it | Phase 9 |
 | **Directive 5** | Score on arrival; amend the directive to allow a clock | Score on arrival | Phase 10 |
 | **Content previews** | None for content, one per pull request for code; previews for both | None for content | Phase 8 |
-| **The markdown projection** | Read-only; two-way with a merge rule | Read-only | Phase 6 |
+| **The markdown round trip** (harness Q-50) | Write back through a pull request (§10); write back by a direct commit to main | His; answer 12 leans toward a direct commit | Phase 6 |
 | **Words** | Replacements for *gate* and for "armed, fire" | Candidates in "Names" | — |
 | **Adjudication A1** | Adopt pattern 1 | Adopt | Phase 1 |
 
@@ -475,6 +482,14 @@ Its own falsifiers:
 - **The writing.** After the first three phases, Danny says the work cost him writing.
 - **The order.** A phase is built out of order because the order was wrong, not because a pull arrived early.
 - **The instrument.** Six months pass and no measure in "Measures" has moved, because none was ever taken.
+
+---
+
+## Amendments
+
+**2026-10-04, the vault's binding.** The vault is bound by a pin recorded as data, not by a git submodule. The harness's approved amendment A-13 says a real vault "is never a dependency of the build and it never lives in the repository," and of profiling a corpus, "About a dozen numbers enter the repository. No note does." A submodule would put the vault's notes in every checkout. A recorded pin keeps everything Danny asked for in answer 14 ("a consensual binding … tracked as a dependency," with friction to break it) without that. *Caused by:* reading A-13 while writing `ARCHITECTURE.md`. *Changed:* the felt-specification table, the architecture table, and Phases 3 and 12.
+
+**2026-10-04, two records (D-049).** The first draft made the markdown files a projection of the log. That contradicts D-049, Danny's own decision of 2026-09-14: the log and the markdown corpus are "two records at different grain," and projecting markdown from the log was rejected because "it makes the author's own prose a derived artifact of a system he wants to outlive." The vision now follows D-049. One work is held in two records, and the round trip between them is the harness's open Q-50. Publishing became simpler for it: a publish is a commit to main, and rendering at the edge is held. *Caused by:* reading D-049 while writing `EVOLUTION_PROTOCOL.md`. *Changed:* conclusion 1, the publishing moment, the architecture table, principle 1, Phases 6 and 8, the measures, and the open decisions. *Open:* his answer 12 ("these are the same thing!", "materialized … or synced down") leans toward a sync between the two records. D-049 permits that as a round trip. If he means something closer to a projection, D-049 would need amending, and the decision is his.
 
 ---
 
