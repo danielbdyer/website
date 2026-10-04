@@ -82,6 +82,27 @@ This is the bar for every transform over an aggregate — a verb, a fold handler
 
 ---
 
+**18. Opened-with.** The phrase is Danny's, from his reflection on recognition: "a trueness or a clarity that was always already there, but just now opened-with - not an opened-by, or opened-into" (`book-research`, `reflections/on recognition (2026-08-24).md`). Of the phrase, on 2026-10-04: "I think that has broad implications for everything we do here in this composite codebase that is starting to come together" — and, naming it a directive, "this deserves the christening of a new day." It governs every surface, verb, crossing and contract in the composite codebase: this house, the harness (`danielbdyer/harness`), and the vault (`danielbdyer/book-research`).
+
+- **Not opened-by.** Nothing is done to the author or the visitor that they did not take up. No form that asks before he is ready; no thinking done for him that his body does not get to recognize.
+- **Not opened-into.** Nothing is a separate place behind a door. No admin area apart from the site, no chat window apart from the writing, no repository absorbed into another.
+- **Opened-with.** The move is his, made in the place he already is, and the system moves with him.
+
+The test, in review, is three questions: *what opens it, what does it open into, what does it open with.* A design that answers only the first two is not ready.
+
+Where it already holds, so the directive has referents:
+
+- In the harness's outliner, writing in an agent's bullet, or under it, approves it (harness D-123): approval by taking the thing up and continuing.
+- The sky's "felt sense is the Foyer's ceiling opening, not a separate room" (`INFORMATION_ARCHITECTURE.md`), and the look-up that reaches it is spring-held: "Release early and the room settles back."
+- Repositories meet at a contract, and none imports another's internals (`DYERVERSE.md` §"The Shape").
+- "Discuss with AI" puts the answer under his own question, in his outline, where he writes with it (harness D-139).
+
+Where it asks for change, held: the word *gate*. Both repositories call the author's approval a gate, and a gate is opened-by: something waits outside until it is let through. In the outliner the keep and the thing kept happen together. In his words about recognition, there is "no 'which' — one event." The replacement word is held (directive 12). And the sign-in is his name carried to the moon glyph, never a form (`HYPOTHESIS.md` §"What the moon asks of the sign-in").
+
+It extends directives 3 and 4. Directive 3 says who decides, and directive 4 says whose space a thing belongs to. Directive 18 says how a crossing feels to the one who makes it. *(Danny, 2026-10-04; `HYPOTHESIS.md`; harness `CLAUDE.md` §"Opened-with" and `DECISIONS.md` D-142.)*
+
+---
+
 ## Where the Ground Is
 
 | Concern | File |

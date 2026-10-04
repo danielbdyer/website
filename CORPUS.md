@@ -189,3 +189,21 @@ The deep cut was the instrument, and it was taken in preference to capture, alia
 - **What loop moved.** The measurement loop opened: retrieval → citation → R(t), folded and printed. The self-improvement loop (Phase 5) is unchanged and still waits on the first patch.
 - **What measurement changed.** None moved; one was added. The log is twenty-one events, six verbs proposed and none blessed, R(t) undefined until the first retrieval.
 - **What to challenge next time, and why.** The three items under §10; and the actor grammar's `agent:<session>` where a session id is a UUID from the hook, which is provenance without a name — a session record should say which model ran it, which is one more field on the receipt.
+
+### Session record, 2026-10-04
+
+Not in the fabric's log: `reflect` is still not blessed. Directive 17 places the record here until it is.
+
+- **What loop moved.** The documentation loop. Danny's four messages about joining this house with the harness and the vault are kept verbatim in `HYPOTHESIS.md`, with reflections. One decision became a standing directive: opened-with, directive 18 here and D-142 in the harness. Five documents now carry the understanding forward:
+  - `COMPONENT_GRAMMAR.md`, the library's shape;
+  - `COMPONENT_CATALOG.md`, every component by concern;
+  - `VISION.md`, where the composite goes;
+  - `ARCHITECTURE.md`, the invariants as a grammar of the whole;
+  - `EVOLUTION_PROTOCOL.md`, how it all changes, filling the spec map's oldest gap.
+
+  No code changed.
+- **What measurement changed.** None moved. The fabric's log gained one `retrieval.surfaced` event from this session's orient. R(t) here is one retrieval, none used. The site's checks stayed green at 567 tests through every push.
+- **What to challenge next time, and why.**
+  - **Two first drafts contradicted Danny's own earlier decisions in the harness.** One was a submodule for the vault, against A-13. The other was markdown as a projection of the log, against D-049. Both were caught on a second reading and amended with dated entries. The next session should read the harness's `DECISIONS.md` before proposing anything about the record.
+  - **The visibility decision blocks the join.** The harness is private; the site and the vault are public.
+  - **Every invariant in `ARCHITECTURE.md` marked "to build" is a check not yet made.** Until each fails without the thing it guards, it is a sentence, not a guard.
