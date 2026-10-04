@@ -1,6 +1,6 @@
 # The fabric, described
 
-*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-09-06T08:57:41.815Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
+*Generated from the log by `pnpm fabric describe`; do not edit. As of 2026-10-04T01:55:59.612Z. The specification is `FABRIC.md` one level up; this page is what a system that only has this folder needs.*
 
 ## What this is
 
@@ -49,7 +49,9 @@ A corpus compounds when outputs become inputs: something stored is surfaced in a
 
 | Retrievals | Used | Rate | Hit@3 | MRR | Missed | Proposals decided | Blessed |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0 | 0 | none yet | none yet | none yet | 0 | 0 | none yet |
+| 1 | 0 | 0.00 | 0.00 | 0.00 | 0 | 0 | none yet |
+
+By session, oldest first, the last 8: 0/1.
 
 ## Speaking to it
 
