@@ -419,6 +419,14 @@ words:
   - clowny
   - watercolored
 
+  # The harness and its outliner (HYPOTHESIS.md), and the tools
+  # Danny measures it against
+  - outliner
+  - Workflowy
+  - supertag
+  - supertags
+  - headspace
+
 dictionaries:
   - en_US
   - typescript

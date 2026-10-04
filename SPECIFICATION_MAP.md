@@ -303,6 +303,11 @@ CONTENT_SCHEMA + DESIGN_SYSTEM
                     The whole. The six repositories read as one,
                     what they share, what they call by different
                     names, the culture, and where it is headed.
+                    │
+                    └─→ HYPOTHESIS.md
+                          The harness, rejoined. Danny's words on the
+                          outliner, the site, and the #hypothesis tag,
+                          with the agent's reflections. Decides nothing.
 ```
 
 **`RENDERING_STRATEGY.md`** | Grounds | Exists | Depends on: `REACT_NORTH_STAR.md` + `PERFORMANCE_BUDGET.md` + `CONTENT_SCHEMA.md`
@@ -337,6 +342,9 @@ The house's decision log, opened 2026-09-06 at the charter's ask: one entry per 
 
 **`DYERVERSE.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `CATHEDRALS.md` + `FABRIC.md` + `AGENTS.md`
 The manifesto of the whole, under the name `CATHEDRALS.md` decided for the workspace. Reads the six repositories as one: the lineage from the root through the seed to the engine, the vault, the product, and the house; the five convergences they share without having said so (the sovereign and the sacred gap, provenance minted at the event, the bounded read for one turn, the apparatus that names the day it stops, the state machine that can do everything except finish); the words that collide across them and the rule for holding them; the shape and its three laws; the culture as norms a newcomer would notice; where it is headed, each convergence with its trigger; what the six refuse; and what it asks. Written 2026-09-06 with Danny. `MANIFESTO.md` remains the site's manifesto.
+
+**`HYPOTHESIS.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `AGENTS.md` + `DYERVERSE.md`; in the harness, `NORTH_STAR.md` §7, §10, §11
+Danny's words of 2026-10-04, kept verbatim, on joining this repository with the harness (`danielbdyer/harness`, the fabric's successor in its own repository), on a landing page that shows him whole, on making the site plugin-focused, and on the `#hypothesis` tag: the first time he classified his own thinking inside his outliner, and a hypothesis that Tana's fields at writing time distract from the writing. The agent's reflections follow, conclusion first: the parallels located in code on both sides, fields as questions with a right moment, zoom as the place where a node's structure appears, the middle path between D-125 and B-46, publishing as the moment the site's fields are asked, three readings of "plugin," the Foyer's standing refusal of a dashboard, the names that now collide across the wall, and nine questions for the next conversation. It decides nothing and changes no code. Its name is a candidate.
 
 ---
 
@@ -420,6 +428,7 @@ The five outcomes today:
 | `FABRIC.md` | Exists | The runtime a local agent session lives in, and the ground the six repositories share (2026-09-06, with Danny). The vendor (ActiveGraph's event-sourced model, behind a port), the five layers (log, tenants, verbs, consent, session shell), the first slice (a reflection blessed across), the invariants (INV-FAB-001..009), the workspace as submodules with a `sync` verb, and six phases with pulls. Phase 0 shipped `@dbd/fabric` with its schema, fold, manifest projection, invariant check, Effect ports, in-memory adapter, and tests; Phase 1 shipped the session shell (server, hooks, terminal, the JSON-lines log) and the handshake table; Phase 2 in part: actor and cause on events, refusals as events, the self-description with its drift check and resources, sources for the operator's space, the compile sidecar, and qmd as resonance; Phase 5 shipped the loop pointed at itself: `propose` as a patch against a base, the fabric's own evaluation, blessing that applies once, outcomes reported by the next session, and graduation stated in advance (INV-FAB-008, 009). Six verbs and three sources wait for blessing. Depends on `CLAUDE.md`, `CATHEDRALS.md`, `REACT_NORTH_STAR.md`, `CONSTELLATION_ARCHITECTURE.md`. |
 | `MANIFESTO.md` | Exists | The slingshot — six arrows already in motion, named so the building can lean into them on purpose. Companion: `MANIFESTO_NOTES.md`. |
 | `MANIFESTO_NOTES.md` | Exists | Technical accompaniment to the manifesto: file paths, lint rules, drift inventory. Updated as drift resolves or surfaces. |
+| `HYPOTHESIS.md` | Exists | Danny's words of 2026-10-04 on the harness, the outliner, the landing page and the `#hypothesis` tag, with the agent's reflections and the questions for the next conversation. A record before building; decides nothing. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 
