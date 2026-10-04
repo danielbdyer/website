@@ -1,6 +1,6 @@
 # Hypothesis
 
-*A record of what Danny said on 2026-10-04, in two messages, about joining this repository with the harness, and of the agent's reflections on each, written before anything is built. It sits on the grounds beside [DYERVERSE.md](./DYERVERSE.md), the manifesto of the whole, which was written before the harness existed as a repository and does not know about it. It is downstream of [CLAUDE.md](./CLAUDE.md) and [AGENTS.md](./AGENTS.md), and it reads, in the harness (`danielbdyer/harness`), `NORTH_STAR.md` §7, §10, §11 and §12, `DECISIONS.md` D-123 to D-139, and `research/three-systems.md`; and, in the vault (`danielbdyer/book-research`), Danny's reflection on recognition and the notes around it.*
+*A record of what Danny said on 2026-10-04, in three messages, about joining this repository with the harness, and of the agent's reflections on each, written before anything is built. It sits on the grounds beside [DYERVERSE.md](./DYERVERSE.md), the manifesto of the whole, which was written before the harness existed as a repository and does not know about it. It is downstream of [CLAUDE.md](./CLAUDE.md) and [AGENTS.md](./AGENTS.md), and it reads, in the harness (`danielbdyer/harness`), `NORTH_STAR.md` §7, §10, §11 and §12, `DECISIONS.md` D-123 to D-139, and `research/three-systems.md`; and, in the vault (`danielbdyer/book-research`), Danny's reflection on recognition and the notes around it.*
 
 *It is named for the first tag Danny wrote in his outliner that classified his own thinking. The name is a candidate (directive 12). This file is not a specification and not a plan. It is the conversation written down so that the next one starts from it, and the reflections are offered to be corrected.*
 
@@ -285,9 +285,23 @@ The vault is also the repository that learned earliest, and at the most cost, wh
 
 ---
 
-## What This File Does Not Decide
+## The Third Exchange: Opened-With
 
-It decides nothing. No code was changed in any repository. The harness was only read, at `c226cef`, and the vault was only read, at its default branch on 2026-10-04. Every rule written in bold above is a candidate. The proposed order of work is:
+After reading the second message's reflections, Danny wrote:
+
+> I love that you recognize opened-with - I think that has broad implications for everything we do here in this composite codebase that is starting to come together
+
+The agent named where the codebase already works that way: approval by writing in a proposal (harness D-123), the sky as "the Foyer's ceiling opening, not a separate room," repositories meeting at a contract, and "Discuss with AI" answering under his own question (harness D-139). It also named the one word the principle asks to change, *gate*. Then it asked whether the principle should be a standing directive. He answered:
+
+> Yes, absolutely, this deserves the christening of a new day, in my mind. this little David over here has returned from the moon and the moon was good, I love what you see for this codebase after reflecting on my input with me, and I'd be delighted to go there with you.
+
+It is recorded as directive 18 in [AGENTS.md](./AGENTS.md), dated 2026-10-04. It is recorded in the harness as well, as a section of its `CLAUDE.md` and as decision D-142, so sessions there hold it too. The replacement for *gate* is held.
+
+---
+
+## What This File Decides
+
+It decides one thing: opened-with is a standing directive (directive 18 in `AGENTS.md`; D-142 in the harness). Everything else in it is a candidate. No code was changed in any repository. The harness was only read, at `c226cef`, and the vault was only read, at its default branch on 2026-10-04. Every rule written in bold above is a candidate. The proposed order of work is:
 
 1. Danny reads and corrects this file.
 2. Questions 1 to 3 are answered, and the smallest real change to this site is named from the answers.
