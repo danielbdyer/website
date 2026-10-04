@@ -187,10 +187,15 @@ The component architecture is where the two trunks converge into one built thing
                      at ~31K bytes; also partially covers
                      testing, dependencies, and performance.
                        │
-                       └─→ REFINEMENT_AUDIT.md
-                             Where inside and outside became code
-                             and where they did not quite meet;
-                             the adjudications.
+                       ├─→ REFINEMENT_AUDIT.md
+                       │     Where inside and outside became code
+                       │     and where they did not quite meet;
+                       │     the adjudications.
+                       │
+                       └─→ COMPONENT_GRAMMAR.md
+                             The library the site and the outliner
+                             share: nouns, verbs, five modes, and the
+                             functions that bind them.
                             ▲
          DESIGN_SYSTEM ─────┘
          (outside)
@@ -201,6 +206,9 @@ The component architecture. The fourteen axioms, atomic hierarchy, dependency di
 
 **`REFINEMENT_AUDIT.md`** | The House | Exists | Depends on: every spec it cites
 The implemented realities of the house read against their higher disposition, so a refinement treatment can be adjudicated. Resolves the primitives the concerns share (address, anatomy, orientation, gesture, lens, and state in three tiers), then audits view transitions and continuity, filtering semantics, the overlay, deep-link resourcing, the crossing from any content up to the sky and back, facets in the UI, and congruency, each as disposition, reality with file and line, gap, treatment, and adjudication; names the contradictions between specs it inherits; and ends in thirteen decisions only Danny makes, with options and the strength of the evidence. Made 2026-09-06 by reading the tree, driving the built site in a browser, and probing the deployed preview. Its sibling for the sky alone is `CONSTELLATION_IMPLEMENTATION_AUDIT.md`.
+
+**`COMPONENT_GRAMMAR.md`** | The House | Exists | Depends on: `REACT_NORTH_STAR.md` + `REFINEMENT_AUDIT.md` + `PATTERN_LANGUAGE.md` + `HYPOTHESIS.md`; in the harness, its `REACT_NORTH_STAR.md` and D-126
+The shape of the component library the site and the harness's outliner will share (2026-10-04, at Danny's ask). Three axes that vary independently: the noun (one, the node, with an anatomy that extends pattern 1 from works to every node), the verb (defined once, with a consequence class: observe, record, decide, cross, world), and the mode (the sky, the page, the authored page, the outline, the relational mode). The praxis pipeline both codebases already built without saying so: gesture, command, plan, intent, with one union of intents across every mode. Four pure functions that bind the axes (`anatomyOf`, `offered`, `prominenceOf`, `orientationOf`); crossings that cannot be built without the node they came from, and that ask for readiness on the look-up's state machine; hooks and compound components in both React specifications' taxonomy; an author layer that attaches to parts by address and never ships to a visitor; shared components promoted at their second consumer; the four points where the two React specifications disagree; seven candidate invariants with their checks; and the order of work, beginning with adjudication A1. A plan for the shape, not a build plan.
 
 ## The Threshold — Where the House Meets the World
 
@@ -344,7 +352,7 @@ The house's decision log, opened 2026-09-06 at the charter's ask: one entry per 
 The manifesto of the whole, under the name `CATHEDRALS.md` decided for the workspace. Reads the six repositories as one: the lineage from the root through the seed to the engine, the vault, the product, and the house; the five convergences they share without having said so (the sovereign and the sacred gap, provenance minted at the event, the bounded read for one turn, the apparatus that names the day it stops, the state machine that can do everything except finish); the words that collide across them and the rule for holding them; the shape and its three laws; the culture as norms a newcomer would notice; where it is headed, each convergence with its trigger; what the six refuse; and what it asks. Written 2026-09-06 with Danny. `MANIFESTO.md` remains the site's manifesto.
 
 **`HYPOTHESIS.md`** | Grounds | Exists | Depends on: `CLAUDE.md` + `AGENTS.md` + `DYERVERSE.md`; in the harness, `NORTH_STAR.md` §7, §10, §11
-Danny's words of 2026-10-04, kept verbatim, on joining this repository with the harness (`danielbdyer/harness`, the fabric's successor in its own repository), on a landing page that shows him whole, on making the site plugin-focused, and on the `#hypothesis` tag: the first time he classified his own thinking inside his outliner, and a hypothesis that Tana's fields at writing time distract from the writing. The agent's reflections follow, conclusion first: the parallels located in code on both sides, fields as questions with a right moment, zoom as the place where a node's structure appears, the middle path between D-125 and B-46, publishing as the moment the site's fields are asked, three readings of "plugin," the Foyer's standing refusal of a dashboard, the names that now collide across the wall, and nine questions for the next conversation. A second message the same day adds the sign-in as his name carried to the moon glyph, an editor identical to the render, one node rendered four ways (star, page, editable page, outline) with the orientation contract of `CONSTELLATION_PARALLEL.md` extended to all of them, crossings that ask for readiness on the grammar of the look-up, a relational lens, and the vault (`danielbdyer/book-research`) as a possible third participant, read through his reflection on recognition. A third exchange made one decision: opened-with became directive 18 in `AGENTS.md`. It changes no code. Its name is a candidate.
+Danny's words of 2026-10-04, kept verbatim, on joining this repository with the harness (`danielbdyer/harness`, the fabric's successor in its own repository), on a landing page that shows him whole, on making the site plugin-focused, and on the `#hypothesis` tag: the first time he classified his own thinking inside his outliner, and a hypothesis that Tana's fields at writing time distract from the writing. The agent's reflections follow, conclusion first: the parallels located in code on both sides, fields as questions with a right moment, zoom as the place where a node's structure appears, the middle path between D-125 and B-46, publishing as the moment the site's fields are asked, three readings of "plugin," the Foyer's standing refusal of a dashboard, the names that now collide across the wall, and nine questions for the next conversation. A second message the same day adds the sign-in as his name carried to the moon glyph, an editor identical to the render, one node rendered four ways (star, page, editable page, outline) with the orientation contract of `CONSTELLATION_PARALLEL.md` extended to all of them, crossings that ask for readiness on the grammar of the look-up, a relational mode, and the vault (`danielbdyer/book-research`) as a possible third participant, read through his reflection on recognition. A third exchange made one decision: opened-with became directive 18 in `AGENTS.md`. It changes no code. Its name is a candidate.
 
 ---
 
@@ -429,6 +437,7 @@ The five outcomes today:
 | `MANIFESTO.md` | Exists | The slingshot — six arrows already in motion, named so the building can lean into them on purpose. Companion: `MANIFESTO_NOTES.md`. |
 | `MANIFESTO_NOTES.md` | Exists | Technical accompaniment to the manifesto: file paths, lint rules, drift inventory. Updated as drift resolves or surfaces. |
 | `HYPOTHESIS.md` | Exists | Danny's two messages of 2026-10-04 on the harness, the outliner, the landing page, the `#hypothesis` tag, the sign-in at the moon, and one node rendered four ways, with the agent's reflections and fourteen questions for the next conversation. A record before building; its one decision, opened-with, is directive 18 in `AGENTS.md`. |
+| `COMPONENT_GRAMMAR.md` | Exists | The shared component library's shape: nouns, verbs, five modes, the praxis pipeline, four binding functions, the author layer, candidate invariants, and the order of work. A plan; nothing built. |
 
 **The domain model overlap: resolved.** `CLAUDE.md` and `DANNY_FOUNDATION.md` previously described rooms, facets, works, and design principles in different registers — one poetic, one tabular. `DOMAIN_MODEL.md` now holds the structural content canonically; `CLAUDE.md` continues to hold the soul. `DANNY_FOUNDATION.md` has been retired; its history remains navigable via git per the archaeological commitment in `TRANSPARENCY.md`.
 

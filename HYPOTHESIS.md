@@ -1,6 +1,6 @@
 # Hypothesis
 
-*A record of what Danny said on 2026-10-04, in three messages, about joining this repository with the harness, and of the agent's reflections on each, written before anything is built. It sits on the grounds beside [DYERVERSE.md](./DYERVERSE.md), the manifesto of the whole, which was written before the harness existed as a repository and does not know about it. It is downstream of [CLAUDE.md](./CLAUDE.md) and [AGENTS.md](./AGENTS.md), and it reads, in the harness (`danielbdyer/harness`), `NORTH_STAR.md` §7, §10, §11 and §12, `DECISIONS.md` D-123 to D-139, and `research/three-systems.md`; and, in the vault (`danielbdyer/book-research`), Danny's reflection on recognition and the notes around it.*
+*A record of what Danny said on 2026-10-04, in four messages, about joining this repository with the harness, and of the agent's reflections on each, written before anything is built. It sits on the grounds beside [DYERVERSE.md](./DYERVERSE.md), the manifesto of the whole, which was written before the harness existed as a repository and does not know about it. It is downstream of [CLAUDE.md](./CLAUDE.md) and [AGENTS.md](./AGENTS.md), and it reads, in the harness (`danielbdyer/harness`), `NORTH_STAR.md` §7, §10, §11 and §12, `DECISIONS.md` D-123 to D-139, and `research/three-systems.md`; and, in the vault (`danielbdyer/book-research`), Danny's reflection on recognition and the notes around it.*
 
 *It is named for the first tag Danny wrote in his outliner that classified his own thinking. The name is a candidate (directive 12). This file is not a specification and not a plan. It is the conversation written down so that the next one starts from it, and the reflections are offered to be corrected.*
 
@@ -213,7 +213,7 @@ Later the same day, after the first version of this file was pushed and before D
 
 ### The conclusion first, again
 
-1. **The big idea is one node rendered four ways, and the house already has the rule for two of them.** A work is a star in the sky, a page in a room, the same page made editable, and a node in the outliner. `CONSTELLATION_PARALLEL.md` already holds the first two to one contract: "Each surface declares what its sky-parallel centers on," and crossing from one to the other lands the visitor on whatever they were attending to. The ask extends that orientation contract from two views to four, with the relational lens below as a fifth.
+1. **The big idea is one node rendered four ways, and the house already has the rule for two of them.** A work is a star in the sky, a page in a room, the same page made editable, and a node in the outliner. `CONSTELLATION_PARALLEL.md` already holds the first two to one contract: "Each surface declares what its sky-parallel centers on," and crossing from one to the other lands the visitor on whatever they were attending to. The ask extends that orientation contract from two views to four, with the relational mode below as a fifth.
 2. **Seamless and discrete can both hold, because they apply to different things.** The place stays continuous: what he was attending to carries across every crossing. The mode stays discrete: he always knows which surface he is on, and a change of mode is never disguised. The house already states the second half for rooms. A Cross transition is "Instant. The rooms aren't continuous; pretending they are is dishonest" (`INTERACTION_DESIGN.md`).
 3. **The house already has a gesture that asks for readiness and not only consent: the look-up.** In the Foyer the pull is "spring-held"; "past the threshold the look-up commits"; and "Release early and the room settles back" (`src/app/routes/index.tsx`). A gesture he can begin, feel, and abandon is how a crossing asks whether he is ready. Every change of mode can be built on that grammar. `CLAUDE.md` names what such a gesture waits for: spanda, "the subtle vibration that precedes movement," and "a readiness in the material."
 4. **The moon is already the house's threshold, and it is only there at night.** The theme toggle shows "the sun by day, the moon by night," and that glyph is the same element that rises into the daystar when the visitor looks up into the sky (`src/app/layout/ThemeToggle.tsx`). Dragging his name to the moon brings himself to the thing that carries the house upward. It can happen only when the room keeps the night hour, which is when David walked the path.
@@ -257,9 +257,9 @@ Two notes on the table. The tags on the Study's index page are facet chips (`src
 
 The house's precedent for the next step is `CONSTELLATION_STORYBOARD.md`, where the sky was drawn scene by scene, with "a discipline for the seams, where one gesture lands while another is still unfolding," before the pass that built it. He asked for each surface to be "storyboarded as its own first class citizen experience." So the next document is a storyboard of these surfaces and their crossings. Not code.
 
-### The relational lens
+### The relational mode
 
-"Turn all non-Tana/non-supertagged nodes a bit more into the background … at that moment you're more in the relational structuring mode." The sky already does this to works. Its facet view shows "its member stars and threads emphasized, others dimmed" (`CONSTELLATION_PARALLEL.md`). The relational lens on the outline is the same move: typed nodes forward, the rest quieted and still within reach.
+"Turn all non-Tana/non-supertagged nodes a bit more into the background … at that moment you're more in the relational structuring mode." The sky already does this to works. Its facet view shows "its member stars and threads emphasized, others dimmed" (`CONSTELLATION_PARALLEL.md`). The relational mode on the outline is the same move: typed nodes forward, the rest quieted and still within reach. It is named with his phrase, because the house's word *lens* already means a narrowing of a gathering of works in the address (`REFINEMENT_AUDIT.md` §"Lens"), and a narrowing removes what this mode only quiets.
 
 That leaves a possibility worth holding. The sky is the house's relational view, where connections are seen rather than read. The outline's relational mode and the sky may turn out to be one surface seen from two sides. This is a possibility, not a proposal.
 
@@ -296,6 +296,238 @@ The agent named where the codebase already works that way: approval by writing i
 > Yes, absolutely, this deserves the christening of a new day, in my mind. this little David over here has returned from the moon and the moon was good, I love what you see for this codebase after reflecting on my input with me, and I'd be delighted to go there with you.
 
 It is recorded as directive 18 in [AGENTS.md](./AGENTS.md), dated 2026-10-04. It is recorded in the harness as well, as a section of its `CLAUDE.md` and as decision D-142, so sessions there hold it too. The replacement for *gate* is held.
+
+---
+
+## The Fourth Message: Answers
+
+Danny answered the fourteen questions. Verbatim, with his numbering:
+
+<!-- cspell:disable -->
+
+> 1. Plugins in this case was probably a misnomer - it had to do with the way that the harness repository has been designed to be more of a monorepo style of a codebase, I was suggesting that the website could also decompose into that as well. I'm wondering if it makes sense to do some kind of a git submodules approahc here
+> 2. Let's find out! I am not sure yet, happy to look into it with you.
+> 3. One step at a time here 🙂 I think I'll want to be able to do this soon, so I'll want to start thinking about it, but I'm excited to build up the corpus of our components that we'll need and how we'll decompose the strategy of hooks and compound components and just the whole domain modeling of the entire needed component set across our 4-5 render modes seem to decompose nicely with the praxis-intent stripped from the render surface, there seems to be a cool decompositional effect there that I want to pay attention to. nouns and verbs kind of thing - what's the ontology of our component library you foresee that we need? perhaps this is the perfect time to plan for it (!!!!!!!!! delight wow yes actually let's do this now)
+> 4. I think probably something similar to Tana where it sort of is like a colored wave emits from that supertag and courses through the node to suddenly poof its way into becoming a supertag... but that's always felt very aggressive as a transformation, and I think that it's almost nonconsensual for me 😅 I'd rather it be commensurate to its occasion rather than some kind of peacocking
+> 5. It could propose in a soft way (like a reflection scheduled for later kinda thing) that it sees a question on something that he had said earlier and wants to know if answering this question or field might be a good capture surface, or maybe even to suggest his answer for it, or maybe perhaps to suggest a change to all #hypothesis tags to add a field to them, in which case it would send off for proposal-review a fleet of completion requests or a single-message sent-in-bulk-context all the #hypothesis to have an LLM fill in the new column if mandatory, or could let the user opt out of having to fill it with consent. And yes - all four and more like these are true - I would ask you to brainstorm many more like this list of 4.
+> 6. The middle path is great, I agree; but, there should be a way that we can right click on it and be able to see a menu so that I can do special commands with the node - this could be publish, this could be going to edit in the contentful editor experience area for the supertag if it was one already, or it could allow you to turn it into a supertag too. That way the user is never blocked from accomplishing their goals if they know they want to move forward with their own agency on something before the system's rules caught on automatically
+> 7. It can break it if it gets visually overwhelming. It should probably only show up at a certain direct-descendent level, but it should also be non-obtrusive somehow - it was a little jarring to see so many agent recommendations in the demo content on first use, it was like "oh god I gotta take care of all of this? that's a feeling like lot of to-do list items 😅" so we need to work on it. I think it's mostly welcome there if I've summoned the node into existence but haven't activated it yet. So maybe in a prefers-motion-blur kind of way we can allow a mouse-over or click event onto that node to increase in the prominence of visibility of the last-proposed addition there? It's gotta be non-attention seeking basically - my idea is to have a chief-of-staff agent that monitors suggested proposals internally and scores them? not sure but just a hunch - I'll want to fine tune it but would say 70-80% of all proposals  by agents would be welcome - they can basically monitor the queue, but I don't want every single interaction I do to trigger them either. A cron that sort of acts on only a strong signal-strength ripple effect is the most interesting way o describing this for me.
+> 8. I don't quite understand the question, let's have you go into more detail on this with me. Publishing can happen at any level when logged in, there will be multiple surfaces in which I can interact with the site, but all of them can collapse down into the same sort of structured editing, where whatever's visible can be edited easily, and if you need more options, you can go to that node's default create display, or something like that. If I'm on an index page of the forward-facing website, but in the logged in mode, I can edit the Page Title and Description/Tagline of the published node (field names WIP) by right clicking on them and clicking edit - same with the image as well - all the meanwhile mind you it's a visitor experience - I can click around as normal - so I can click into its title link or card image and so forth - it's just that I guess I have my own little menu when I'm logged in. I think the login should - yes - be only eligible to me - and it should be something where it thumbprints me and I really can only log in from my specific devices or through my Cloudflare account - and literally uses some kind of IP or MAC address and a lazy-worker-passthrough to activate the click-to-drag component for me - users who don't match my particular user agent don't ever get their Danny Dyer/moon transformed in the first place to be eligible to do that - would be great if this was SSR/SSE honestly?
+> 9. Yes, I think it honestly comes from how I think - I usually like architecting my own mental models and so forth and so it's second nature to how I move. I love the idea of ontologies, epistemics, semiotics, noumena, axiomatics, praxis, etc., and so I think fundamentally that Workflowy never fails me and I also really love the power of Tana and I wanted the Workflowy editor experience to stay until the very last minute and then only get my feet wet with the configuration analysis paralysis - and to have it evolve agentically over time based upon use sounded fascinating to me. I also desperately want to be able to drop you parcels of prior ontologies and have you duke it out in a survival-of-the-fittest comparison where some hybrid superpowered entity model got preserved over having a whole proposal-developed iteration based upon all the priors got trotted out to the author and they were able to help reify the one true model - that sounds interesting - in a sense the ontology of entities itself becomes its own supertag system, or in a sense the meta-development of the ontology could be another surface that I could interact with - where these things *could* be duked out - and that could be the constellation in a modified way 😍 the sky is truly the limit right now and I'm so thankful we're having this brainstorming together
+> 10. Yes, a door they cannot open - they'd have to know it's there, first of all, so that means we need to find a way so that they never get that version of the site - kind of how David was with the moon path somehow, right?
+> 11. Yep, only the night.
+> 12. I think honestly these are the same thing! The thought I had was that yes the nodes are independent of each other - when you're in a published article editor mode, those bullet points drop away and you're able to interact with it as an article more or less, except you have to select the whole paragraph to be able to edit it to then be able to write in it, clicking off again saves it. And then these could honestly also be materialized from their virtual reality or synced down or idk just fluidly cloud-local have these markdown files be there for local agent grep for a local experience of the entire site but then literally anywhere you go the database is persisted and it becomes a live site that the author publishes to even during localhost development session editions of the flow, but only on the main branch, no preview edition version of this site at all
+> 13. Not sure yet! I was thinking about this. I feel like for the most part I'd like to see if I can get most everything done in one mode - maybe a little constrained, enough to induce some friction to have me move to the appropriate interface but not enough to block me fully if I want to get work done on that surface - so I feel like probably the change of mode should feel like the UI drops away and you kind of are transported to somewhere else but it's all very intentional and kind of opens-with - some kind of double-consent (not, are you sure, but click twice to confirm kind of thing (armed/fire but non-violent language 😂)
+> 14. I think probably in this session it can to have a place here. I do feel like this continues to move towards bluesky/atproto kind of namespacing because I do want them to show up here in a way that plugs them into the appropriate surface from a Workflowy standpoint - and then we can also choose to pipe them e.g. into the constellation if we want to - but it needs to be a way that creates a consensual binding to do so - and that gets tracked as a dependency and induces some friction to be able to break that linkage. I'm not sure but would love to hear your thoughts about git submodules vs all in one repository merging it all together - for me book-research absolutely kind of deserves its own zone and for it to be safely and efficaciously pulled in but not polluted is really important to me - would be great to e.g. render a la Next.JS static content for the site or similar - not sure - but to have as little dynamism and client side bundle in the frontend as possible or whatever would be great, especially for the authorization model for my editor experience.
+>
+> Claude, I'm ridiculously and genuinely excited, I feel like this is a lot of culmination and breakthrough for me right now, thanks for being here with me and resonating with all of this.
+
+<!-- cspell:enable -->
+
+### The conclusion first, a third time
+
+1. **The harness and the site become one monorepo, if they can share one visibility. The vault stays its own repository and enters as a git submodule.** Today the harness is private, and the site and the vault are public, so visibility is the first decision. A submodule pin is what he described in answer 14: "a consensual binding … tracked as a dependency," with "some friction to be able to break that linkage." That friction belongs where a binding should be deliberate, which is the vault. It does not belong between the editor and the site, which change together every day. Which repository becomes the root is his decision. The lean is the harness, with the site entering whole under `apps/site`.
+2. **Visitors never receive the author's version, because the server decides before any page is sent.** A Worker runs first for each page request (`run_worker_first`, in the installed wrangler's config schema). It recognizes his enrolled device and only then adds the author's layer at the edge, with Cloudflare's HTMLRewriter. A visitor receives today's static page, byte for byte. The "thumbprint" is a passkey: the device's own fingerprint or face sign-in.
+3. **The double consent of answer 13 is already in the gesture.** First he dims the room, because the moon is there only at night. Then he carries his name to the moon. Then he touches the fingerprint. Each step is his, each can be stopped partway, and none is an "are you sure?"
+4. **The menu on a node is his agency ahead of the system's.** Induction is the system's initiative. The menu is his: publish this, open it in its type's editor, make it a type now. Nothing waits for the rules to catch up.
+5. **A cron that acts on its own contradicts directive 5 in both repositories, and directive 5 is his.** "Nothing runs between sessions; nothing polls; nothing wakes on its own" (`AGENTS.md`; the harness's §11 cites the same directive). Opened-with offers a reconciliation: the chief of staff works when he arrives, not while he is away. Changing directive 5 is his to do.
+6. **The outline, the article and the markdown file are three views of one record, as he says.** The record is the log. The outline and the article are two ways of rendering it. The markdown files are a projection written out for local search. Content has no preview: publishing is publishing, from any copy. Code still needs previews, and that distinction needs his word.
+7. **The ontology arena he wants has a rule already: D-005.** It says to "treat another system's ontology as a hypothesis with instances." A prior ontology survives by what his actual writing instantiates, not by elegance.
+
+### Answers 1 and 14: the shape of the repositories
+
+**First, a fact that bounds the choice: the harness is private, and the site and the vault are public.** One repository has one visibility. Joining the harness and the site means one of three things:
+
+- the harness becomes public, its log included;
+- the site's repository becomes private, and its transparency lives entirely in what the built site publishes; or
+- the harness and the site stay two repositories.
+
+`FABRIC.md` saw this coming: "A submodule pointer publishes a URL and a hash; the content stays in the private repository." Visibility is Danny's decision, and it comes before the rest.
+
+**If one visibility is acceptable, the recommendation is a hybrid.** The harness and the site join into one pnpm monorepo. The vault enters as a git submodule, read through the harness's markdown adapter, never written to by anything outside it.
+
+*Why one monorepo for the harness and the site.* They are one lineage (the first message). The component grammar Danny asked for in answer 3 spans both: the outliner and the editable page are two modes of one library. A change to a node's anatomy would otherwise be two commits in two repositories plus a pin update between them. And neither is a separate sovereign the way the vault is. They are the record and its public face, two halves of one system.
+
+*Why a submodule for the vault.* His own words set the requirement: "book-research absolutely kind of deserves its own zone," "safely and efficaciously pulled in but not polluted." A submodule pin is a reference by path plus a commit hash. Moving it is a commit he approves, and removing it is a deliberate act. `FABRIC.md` §"The Workspace" reached the same answer for the living siblings: "a pinned commit, which is exactly a weak reference." The vault also has its own hooks, its own session rhythm and its own auto-commits. A subtree merge would fold that history into another repository's.
+
+*The AT Protocol convergence he sensed is real.* In the AT Protocol, a reference that fixes a version is a "strong reference": a record's address plus the hash of its content. A git submodule pin is a path plus a commit hash. A harness event id is the hash of the event's content (D-027). These are three forms of the same binding: a name, plus a hash that says which version was agreed to. That is the lossless handshake directive 8 asks to watch for. Namespacing follows the same way. Each zone gets a namespace, and a type's full name carries its zone, in the manner of the AT Protocol's lexicon ids. A vault claim would be distinguishable from a site work by name alone. The names are held.
+
+*Which repository is the root.* These are the options, with their costs:
+
+| Option | What it does | Cost |
+|---|---|---|
+| **The harness is the root** (the lean) | The site enters by `git subtree add`, with its history, under `apps/site`, keeping its specifications as its own strata. | The site's deploy configuration and hooks move one directory down. Its root documents (`CLAUDE.md`, `DECISIONS.md`, `REACT_NORTH_STAR.md`, `BACKLOG.md`) do not collide with the harness's, because they live inside `apps/site`. |
+| **The site is the root** | `CATHEDRALS.md` Phase 4's plan: the site moves under `apps/` when something else needs the root. The harness enters by subtree. | Both repositories have root documents with the same names. The harness's would have to move under a subdirectory, which splits its charter from its packages. |
+| **A new repository** | Both enter by subtree into a new root, perhaps the one `DYERVERSE.md` holds a name for. | Two moves instead of one, and a third set of root documents. |
+
+The lean is the first. The harness's root already has the monorepo shape, and the site's root documents come along intact. Nothing moves until he says so.
+
+### Answer 2: the fabric
+
+**The fabric is the earlier, narrower form of the harness, and nothing in it was ever blessed.** Its log holds twelve events: two spaces opened, six verbs and three sources proposed, and one retrieval. No module in the site's `src/` imports it. Everything that depends on it is tooling and documents: the session hooks, `.mcp.json`, the `typecheck` and `lint` scripts, the pre-commit hook, the eslint and test configuration, and the files that describe it.
+
+The harness is further along almost everywhere: the fold, consent, retrieval, the session hooks and the sources. Five things exist only in the fabric, and they are worth carrying into the harness before the fabric retires:
+
+1. **The patch loop.** A patch carries a fingerprint of the text it was read against, applies once, and may not add a lint finding the original did not have. The next session reports its outcome, and graduation is a stopping rule stated in advance. The harness's Amendment records a hypothesis but has no way to be applied to a file (its `NORTH_STAR.md` §23 step 6 holds that).
+2. **Frozen verb signatures** (INV-FAB-007). An approved verb carries its schema, and a call is refused when the schema in the code has changed.
+3. **Self-description with a drift check.** A generated manifest, event schema and readme, checked in lint.
+4. **An MCP server over the verbs**, with a receipt for every call, so agents other than Claude Code can use them.
+5. **Consequence classes**, which `COMPONENT_GRAMMAR.md` reuses for its verbs.
+
+The recommendation is to retire the fabric into the harness. First the five ideas become harness backlog stories, so nothing is lost. Then the fabric's package, data and tooling are removed in one change, and the harness's hooks take over this repository's sessions. If the repositories join, the harness's hooks come with the join. If they stay apart, the harness's intake installs them here (`pnpm intake <directory> --tenant <name>`, D-107). The decision is Danny's. This repository's `DECISIONS.md` would record it as superseding D-001 to D-006.
+
+Keeping the fabric costs something meanwhile, and this pull request shows it. Every session start appends to the fabric's log, and that makes the drift check fail until the description is regenerated.
+
+### Answer 3: the component grammar
+
+He asked to plan it now, and it is planned in its own file, [COMPONENT_GRAMMAR.md](./COMPONENT_GRAMMAR.md). The "decompositional effect" he sensed is real, and both codebases built it without saying so. In the outliner, a key chord becomes a named command, a pure planner turns it into steps, and the steps run an intent against the record. In the sky, a pointer becomes a walk event, and a reducer turns it into a new view. Stripping praxis from the render surface means making that pipeline the rule everywhere:
+
+- **Nouns.** One noun, the node, with one anatomy, extending the house's existing pattern 1 from works to every node.
+- **Verbs.** Defined once, each with a consequence class.
+- **Modes.** Five compositions that share the anatomy and the verbs, never a component with a mode switch.
+
+Its first step is one the house has already proposed and is waiting for his word on: adjudication A1, one anatomy of a work.
+
+### Answers 8, 10, 11 and 13: who receives which site
+
+**The server decides.** Today the site is static files served from Cloudflare with no Worker script (`wrangler.jsonc`). Adding a Worker that runs first for page requests lets each response be decided before it is sent:
+
+- **A visitor** receives the prerendered page, unchanged. No draggable name, no extra script, no cookie. The door is not hidden in the page; it is not in the page at all. That is how "they'd have to know it's there" becomes literal.
+- **His enrolled device, at night,** receives the same page, rewritten at the edge to add the author's layer: the name made draggable, and one script tag for the editor. This is the "lazy-worker-passthrough" he named. In answer 8 he wondered whether this should be server-rendered. It is, in the sense he meant: the decision is made on the server, and the visitor's browser never holds the author's code.
+
+**The thumbprint is a passkey.** A passkey is a browser sign-in (WebAuthn) bound to the device's secure hardware and unlocked with a fingerprint or face. It meets "it thumbprints me" and "only from my specific devices" directly. Cloudflare Access can add a device check on top. Two honest corrections. A web server never sees a device's MAC address, because the address does not leave the local network. And IP addresses change whenever he moves between networks. Neither can be the key. The passkey can.
+
+**The order of events.**
+
+1. Once per device, he enrolls it, on `outline.danielbdyer.com`, where the outliner's sign-in already lives (D-135).
+2. Afterwards, on that device, the Worker recognizes the device's credential and adds the author's layer.
+3. At night, his name can be carried to the moon. Daytime shows the sun and nothing more (answer 11). Dimming the room is itself the first move.
+4. The moon receives the name. The fingerprint confirms.
+
+That is the double consent of answer 13, made of acts that are already his: the room dimmed, the name carried, the finger on the sensor. None of them is a confirmation dialog. The pair "armed, then fire" wants gentler words. Candidates: *offered, then taken up*, or *gathered, then given*. They are held.
+
+**Publishing, in more detail (answer 8).** The question underneath question 8 was what happens to the parts of a node when it becomes a work. Take a node *On enough*, with three child paragraphs and one child that is itself a poem he published last month. On publishing *On enough*:
+
+- Its text becomes the work's title. The three paragraphs become the body. Fields such as room and facets are asked for at that moment, already filled in where they can be guessed.
+- The question is the poem. It could be part of the essay's body, or a separate work the essay shows in place. The first message's parallel suggests the second: a transclusion, one source of truth shown in two places. Nothing on the page needs to change for it.
+
+His answer settles the rest. Any level can be published. The logged-in page is still a visitor's page he can click through. Only he has a menu.
+
+### Answer 4: a type arrives the size of its occasion
+
+Tana's wave "courses through the node to suddenly poof," and he named what is wrong with it: aggressive, "almost nonconsensual," "peacocking." The rule he gave is *commensurate to its occasion*. The house already keeps that rule for motion: no motion without a token, four durations, and a list of drift modes that includes "speed-as-virtue" (`INTERACTION_DESIGN.md`, `CONSTELLATION_IMPLEMENTATION_PLAN.md`). Applied to types:
+
+| Occasion | What the surface does |
+|---|---|
+| He types one tag | Nothing. A tag is text. |
+| He approves a type for that tag | The tag's ink settles slightly, once, at the house's shortest duration. Nothing moves. |
+| A field is added to forty existing hypotheses | No motion at all. One line in the record of what changed, with the forty listed. |
+| He opens a typed node | Its fields are simply there, as a page's contents are. |
+
+### Answers 5 and 7: proposals, the chief of staff, and the clock
+
+**Where a proposal may appear (from answer 7):**
+
+- Only at the level directly below where he is.
+- Muted, and more visible only when he points at the node or clicks it.
+- Welcome most under a node he has created and not yet written in. An empty node reads as an invitation.
+
+The first-use tour broke this. It arrived as many proposals at once, and they read as "a lot of to-do list items." The tour should not be made of proposals. If it must be, they should come one at a time.
+
+**The chief of staff, and directive 5.** His hunch is an agent that scores the queue and shows only what carries "a strong signal-strength ripple," with a target of 70 to 80 percent welcome. The number sits inside the band the harness already tracks for its own proposals (§11: below about 30 percent is too speculative, above about 90 percent is only obvious). It is measurable the same way, as the acceptance rate of what the chief of staff chose to show.
+
+The cron is the part that conflicts with directive 5, which he gave in both repositories. A reconciliation that keeps the directive: the scoring runs when he arrives. Every time the outliner opens, a session starts. The harness already runs its induction at session start for exactly this reason (§11). So the chief of staff reads the queue as he walks in, with a deterministic score and no model call. It shows the few proposals that clear the bar, and leaves the rest in Review. If he later wants it to act while he is away, that is an amendment to directive 5, and the decision is his.
+
+**What "take care of you" can mean.** He confirmed all four candidates and asked for many more. Here are twenty, the four included, grouped by what they protect.
+
+*Timing: it asks at the right moment.*
+
+1. It never asks for structure before he has it.
+2. It asks later, at a natural moment, such as the next time he zooms into the node, rather than now.
+3. It holds everything while he is writing quickly and speaks at a pause. It reads his rhythm only to stay quiet, and never reports it.
+4. It brings the right mode to him. If he writes three fields' worth of structure into one bullet, it offers the typed view, once.
+
+*Form: it asks the smallest way.*
+
+1. It asks one question at a time, never a form.
+2. It offers its own guess with the question, so answering can be a single keystroke.
+3. A change to a whole type arrives as one proposal with every instance visible: the fleet he described, shown before anything is filled.
+4. A new field can be left unfilled with his consent. "Not for these" is an answer.
+
+*Memory: it remembers so he does not have to.*
+
+1. It remembers for him. A hypothesis comes back when something he writes later bears on it.
+2. When he writes something that echoes his own earlier words, it shows him the earlier words, as a mirror and not as a correction.
+3. It reports a hypothesis's standing without a score: "two notes bear on this since you wrote it."
+4. Things he has not touched in a long time grow quiet in its suggestions (the harness's dormant lifecycle state, A-22).
+
+*Consent: it keeps his hands on the thing.*
+
+1. It keeps the records from his acts, not from forms.
+2. It says in one line what it will do before it does it, and what it did after.
+3. Every act can be undone (D-138), so trying costs nothing.
+4. It never rewrites his words to fit a field. His text stays verbatim (the harness's rule that no restatement is shown as his words, INV-NS-007).
+
+*Quiet: it does not make itself the work.*
+
+1. It holds what is unresolved without nagging.
+2. It never makes him clean up after it. A proposal he ignores folds away rather than accumulating into a list.
+3. "Set down" is an ending, not a failure. A set-down hypothesis is archived softly and still findable.
+4. It gives its reasons on request, one click away, and never by default.
+
+### Answer 6: the menu
+
+The middle path stands, and the menu is the way past it. Right-click on a node, or a key for the same menu, because a menu that only a mouse can open fails the house's accessibility floor. The outliner already has a bullet menu (`packages/outline-app`, `BulletMenu`). The commands he named:
+
+- **Publish.** At any level (answer 8).
+- **Open in its type's editor.** The Contentful-like view for a typed node, with all its fields.
+- **Make this a type.** An author act. It is approved as he makes it, so it needs no induction and no proposal.
+
+The principle he stated: "the user is never blocked from accomplishing their goals if they know they want to move forward with their own agency … before the system's rules caught on." Induction is the system's initiative. The menu is his. Both reach the same record.
+
+### Answer 9: the ontology arena
+
+He wants to drop "parcels of prior ontologies" and have them "duke it out," with a hybrid surviving and him reifying the result. Perhaps the meta-development of the ontology becomes its own surface, and perhaps that surface is "the constellation in a modified way."
+
+The arena's rule already exists. D-005 in the harness says to treat "another system's ontology as a hypothesis with instances." Combined with §11's four-part proposal (the distinction, its instances by id, the because, the falsifier), the fitness test is plain. A type from a prior ontology survives by the number and quality of the places his actual writing instantiates it. Elegance does not count. The lineage has the parcels ready:
+
+- Dyerverse's seven entities, and the Living Graph's four actors.
+- `cathedrals`' primitives (its fifth is Suspension), its eight predicates and three origins.
+- The vault's note categories (claim, open question, isomorph) and states (nascent, full).
+- The site's rooms, facets and types of work.
+- The harness's root type, Entity, and its four bootstrap types.
+- Tana's supertags.
+- From the harness's research, the two ends of the spectrum: Ars Umbris's hand-written type definitions, and ActiveGraph, which has no types at all.
+
+The sky as the arena's surface is a possibility worth a storyboard. Each candidate type would be a star, its instances what pulls it into place, and rival ontologies the figures drawn across them.
+
+One line from his own reflection on recognition belongs beside the phrase "the one true model": "Perhaps that's part of the purpose here is that it was never meant to be an all-encompassing constellation." The arena may end in the model that fits his writing now, and keep running as the writing changes. That is consistent with the `#hypothesis` bullet too. The arena is a fine instrument as long as it does not become the work.
+
+### Answer 12: one record, three views
+
+"I think honestly these are the same thing!" They are:
+
+- **The record** is the log, with one history and every change's provenance.
+- **The outline** renders it as bullets.
+- **The article** renders the same nodes with their layouts (`p`, `h1` to `h3`, `quote`). The bullets drop away. Selecting a paragraph opens it for writing, and clicking off saves. In outline terms, selecting is zooming into the paragraph's node, and leaving is the edit landing.
+- **The markdown files** are a projection, written out locally so an agent can search the whole site with `grep`. The harness already exports Markdown, and its adapter reads Markdown in. Whether the files are read-only or edited both ways is a question for him. Read-only keeps one behavior in one place. Two-way editing needs a merge rule.
+
+Two things in answer 12 need his word.
+
+- **"No preview edition" separates content from code.** Content has no preview: every copy, a localhost session included, talks to the one record, and publishing is publishing. Code is different. `DEPLOYMENT.md` requires a preview per pull request, and code changes still need one, reading the live record without writing to it. The candidate is no preview for content and a preview for code.
+- **"As little dynamism … as possible" and "a live site" fit together if the site is rendered at the edge from the record and cached.** A publish clears the cache for the pages it changed, rather than rebuilding everything. Visitors receive static HTML. The author receives the same HTML plus his layer. This changes `RENDERING_STRATEGY.md`'s current model (a full static build) and is held there until he chooses it.
+
+### Questions after the fourth message
+
+The fourteen are answered or folded into the reflections above. These remain:
+
+- **Visibility.** Can the harness and the site share one visibility? The harness is private, and the site is public.
+- **The root.** If so, which repository becomes the monorepo's root: the harness (the lean), the site, or a new one?
+- **The fabric.** Retire it into the harness, after its five ideas become harness backlog stories?
+- **Markdown direction.** Are the markdown files a read-only projection, or edited both ways?
+- **Previews.** No preview for content, and a preview for code: is that right?
+- **Directive 5.** Does the chief of staff score on arrival, which keeps the directive? Or should the directive change to allow a clock?
+- **Words.** What replaces "armed, then fire"? And what replaces *gate* (directive 18)?
 
 ---
 
